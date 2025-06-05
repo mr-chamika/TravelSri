@@ -42,10 +42,10 @@ const Login = () => {
     };
 
     return (
-        <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100 p-4 w-full">
+        <div className=" flex flex-col justify-center items-center h-screen bg-gray-100 w-full px-96">
             <form
                 onSubmit={handleSubmit}
-                className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm mb-4"
+                className=" w-full flex flex-col"
             >
                 <h2 className="text-xl font-semibold mb-4 text-center">Add Student</h2>
                 <div className="mb-3">
@@ -70,14 +70,14 @@ const Login = () => {
                 </div>
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+                    className=" bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
                 >
                     Submit
                 </button>
             </form>
 
             <button
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 w-96"
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 w-full mt-3"
                 onClick={getAll}
             >
                 Get All
