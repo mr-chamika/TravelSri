@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/logop.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.xnew"
     },
     "web": {
       "bundler": "metro",

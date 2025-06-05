@@ -23,9 +23,10 @@ export default function _Layout() {
                 marginHorizontal: 15,
                 marginBottom: 20,
                 height: 60,
-
+                //position: 'absolute',
                 paddingTop: 9,
                 borderColor: '#3e3d6b',
+                position: 'absolute',
 
             },
             tabBarItemStyle: {

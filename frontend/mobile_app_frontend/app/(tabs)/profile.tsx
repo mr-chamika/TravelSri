@@ -70,44 +70,46 @@ export default function App() {
     const less = () => setOk(false);
 
     return (
-        <ScrollView contentContainerStyle={{ alignItems: 'center', paddingVertical: 10 }}>
-            <View className="mb-4 w-[300px]">
-                <TextInput
-                    className="border border-gray-400 rounded px-4 py-2 text-base"
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Enter name"
-                />
-            </View>
-            <View className="mb-4 w-[300px]">
-                <TextInput
-                    className="border border-gray-400 rounded px-4 py-2 text-base"
-                    value={address}
-                    onChangeText={setAddress}
-                    placeholder="Enter address"
-                />
-            </View>
-            <Pressable onPress={handleSubmit} className="bg-blue-500 rounded py-3 mb-4">
-                <Text className="text-white text-center font-semibold w-[300px]">Submit</Text>
-            </Pressable>
-
-            <Pressable onPress={getAll} className="bg-green-500 rounded  py-3 mb-6">
-                <Text className="text-white text-center font-semibold w-[300px]">Get All</Text>
-            </Pressable>
-
-            {ok && (
-                <View className="space-y-4 mb-6">
-                    {students.map((student) => (
-                        <View key={student._id} className="border border-gray-300 p-4 rounded">
-                            <Text className="text-lg">Name: {student.name}</Text>
-                            <Text className="text-lg">Address: {student.address}</Text>
-                        </View>
-                    ))}
-                    <Pressable onPress={less} className="bg-red-500 rounded px-4 py-3">
-                        <Text className="text-white text-center font-semibold">Show Less</Text>
-                    </Pressable>
+        <View className='h-[90%]'>
+            <ScrollView contentContainerStyle={{ alignItems: 'center', paddingVertical: 10 }}>
+                <View className="mb-4 w-[300px]">
+                    <TextInput
+                        className="border border-gray-400 rounded px-4 py-2 text-base"
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Enter name"
+                    />
                 </View>
-            )}
-        </ScrollView>
+                <View className="mb-4 w-[300px]">
+                    <TextInput
+                        className="border border-gray-400 rounded px-4 py-2 text-base"
+                        value={address}
+                        onChangeText={setAddress}
+                        placeholder="Enter address"
+                    />
+                </View>
+                <Pressable onPress={handleSubmit} className="bg-blue-500 rounded py-3 mb-4">
+                    <Text className="text-white text-center font-semibold w-[300px]">Submit</Text>
+                </Pressable>
+
+                <Pressable onPress={getAll} className="bg-green-500 rounded  py-3 mb-6">
+                    <Text className="text-white text-center font-semibold w-[300px]">Get All</Text>
+                </Pressable>
+
+                {ok && (
+                    <View className="space-y-4 mb-6">
+                        {students.map((student) => (
+                            <View key={student._id} className="border border-gray-300 p-4 rounded">
+                                <Text className="text-lg">Name: {student.name}</Text>
+                                <Text className="text-lg">Address: {student.address}</Text>
+                            </View>
+                        ))}
+                        <Pressable onPress={less} className="bg-red-500 rounded px-4 py-3">
+                            <Text className="text-white text-center font-semibold">Show Less</Text>
+                        </Pressable>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
     );
 }
