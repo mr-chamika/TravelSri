@@ -15,7 +15,14 @@ export default function Profile() {
 } */
 
 import React, { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+
+import Constants from 'expo-constants';
+const { manifest } = Constants;
+
+const backendUrl = manifest.debuggerHost
+    ? `http://${manifest.debuggerHost.split(':').shift()}:8080`
+    : 'http://localhost:8080';
 
 export default function App() {
 
@@ -33,7 +40,7 @@ export default function App() {
     const [ok, setOk] = useState(false);
 
     const handleSubmit = () => {
-        fetch('http://10.22.127.137:8080/student/add', {
+        fetch(`${backendUrl}/student/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, address }),
@@ -51,7 +58,7 @@ export default function App() {
 
     const getAll = () => {
         setOk(true);
-        fetch('http://10.22.127.137:8080/student/getAll')
+        fetch(`${backendUrl}/student/getAll`)
             .then((res) => res.json())
             .then((data: Student[]) => setStudents(data))
             .catch((err) => {
@@ -63,7 +70,7 @@ export default function App() {
     const less = () => setOk(false);
 
     return (
-        <View className='w-full flex-1 justify-center items-center'>
+        <ScrollView contentContainerStyle={{ alignItems: 'center', paddingVertical: 10 }}>
             <View className="mb-4 w-[300px]">
                 <TextInput
                     className="border border-gray-400 rounded px-4 py-2 text-base"
@@ -101,6 +108,6 @@ export default function App() {
                     </Pressable>
                 </View>
             )}
-        </View>
+        </ScrollView>
     );
 }
