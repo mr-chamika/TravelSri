@@ -58,7 +58,7 @@ const Login = () => {
                         className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                 </div>
-                <div className="mb-4">
+                <div className='mb-4'>
                     <input
                         type="text"
                         value={address}
@@ -84,7 +84,7 @@ const Login = () => {
             </button>
 
             {ok && (
-                <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+                <div className=" bg-white p-6 rounded-lg shadow-md w-full max-w-md">
                     <h3 className="text-lg font-bold mb-4">Student List</h3>
                     {students.map((student) => (
                         <div
