@@ -1,0 +1,29 @@
+# Ignore all node_modules
+**/node_modules/
+
+# React Native / Expo specific
+frontend/mobile_app_frontend/.expo/
+frontend/mobile_app_frontend/dist/
+frontend/mobile_app_frontend/web-build/
+frontend/mobile_app_frontend/expo-env.d.ts
+
+# React Web build
+frontend/web_frontend/build/
+
+# Java-related ignores
+backend/target/
+*.class
+*.jar
+*.war
+*.iml
+
+# Logs
+*.log
+
+# macOS and Windows junk
+.DS_Store
+Thumbs.db
+
+# Environment and secret files
+*.env
+*.env.local
