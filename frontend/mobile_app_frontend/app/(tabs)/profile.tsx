@@ -20,7 +20,9 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 
 export default function App() {
 
-    const ip = '';//Enter you ip
+
+    //const ip = 'localhost';// to connect pc browser
+    const ip = '192.168.215.38';//Enter you ip for connect the phone
 
     interface Student {
         _id: string;
