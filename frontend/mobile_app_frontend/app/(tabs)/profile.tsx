@@ -17,20 +17,17 @@ export default function Profile() {
 import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import Constants from 'expo-constants';
-const { manifest } = Constants;
-
-const backendUrl = manifest.debuggerHost
-    ? `http://${manifest.debuggerHost.split(':').shift()}:8080`
-    : 'http://localhost:8080';
 
 export default function App() {
+
+    const ip = '';//Enter you ip
 
     interface Student {
         _id: string;
         name: string;
         address: string;
     }
+    const backendUrl = `http://${ip}:8080`;
 
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
@@ -62,6 +59,8 @@ export default function App() {
             .then((res) => res.json())
             .then((data: Student[]) => setStudents(data))
             .catch((err) => {
+
+                alert('Check your ip is metro ip ?')
                 console.error('Error:', err);
                 Alert.alert('Error', 'Failed to fetch students');
             });
@@ -70,8 +69,8 @@ export default function App() {
     const less = () => setOk(false);
 
     return (
-        <View className='h-[90%]'>
-            <ScrollView contentContainerStyle={{ alignItems: 'center', paddingVertical: 10 }}>
+        <View className='w-full h-[90%]'>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 10, justifyContent: 'center' }}>
                 <View className="mb-4 w-[300px]">
                     <TextInput
                         className="border border-gray-400 rounded px-4 py-2 text-base"
