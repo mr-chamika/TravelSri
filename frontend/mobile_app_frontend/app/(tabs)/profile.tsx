@@ -22,7 +22,7 @@ export default function App() {
 
 
     //const ip = 'localhost';// to connect pc browser
-    const ip = '192.168.215.38';//Enter you ip for connect the phone
+    const ip = '';//Enter you ip for connect the phone
 
     interface Student {
         _id: string;
