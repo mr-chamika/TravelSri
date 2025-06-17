@@ -1,100 +1,131 @@
 import { Tabs } from "expo-router"
-import { Image } from "react-native"
-const Home = require('../../assets/images/home1.png')
+import { SafeAreaView } from "react-native-safe-area-context"
+import { Image, View, Text, StatusBar } from "react-native"
 const HomeA = require('../../assets/images/home2.png')
-const User = require('../../assets/images/user1.png')
 const UserA = require('../../assets/images/user2.png')
-const Search = require('../../assets/images/search1.png')
-const SearchA = require('../../assets/images/search2.png')
+const Car = require('../../assets/images/tabbar/car_r.png')
+const Locat = require('../../assets/images/tabbar/create1.png')
+import Topbar from '../../components/Topbar'
 
 export default function _Layout() {
 
     return (
+        <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+            <StatusBar barStyle="dark-content" backgroundColor='#F2F0EF' />
 
-        <Tabs screenOptions={{
+            <Topbar />
 
-            tabBarShowLabel: false,
-            headerShown: false,
+            <Tabs screenOptions={{
 
-            tabBarStyle: {
+                tabBarShowLabel: false,
+                headerShown: false,
 
-                backgroundColor: '#3e3d6b',
-                borderRadius: 25,
-                marginHorizontal: 15,
-                marginBottom: 20,
-                height: 60,
-                //position: 'absolute',
-                paddingTop: 9,
-                borderColor: '#3e3d6b',
-                position: 'absolute',
+                tabBarStyle: {
 
-            },
-            tabBarItemStyle: {
+                    backgroundColor: '#FEFA17',
+                    borderRadius: 23,
+                    marginHorizontal: 15,
+                    marginBottom: 20,
+                    height: 65,
+                    paddingTop: 13,
+                    borderColor: '#FEFA17',
+                    position: 'absolute',
 
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 40,
-                width: 50
+                },
+                tabBarItemStyle: {
 
-            },
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10',
+                    height: 40,
+                    width: 50
 
-
-        }}>
-
-            <Tabs.Screen
-
-                name="index"
-                options={{
-
-                    tabBarIcon: ({ focused }) => {
-                        return (
-
-                            <Image source={focused ? HomeA : Home} />
-
-                        )
-
-                    },
+                },
 
 
-                }}
+            }}>
 
-            />
-            <Tabs.Screen
+                <Tabs.Screen
 
-                name="profile"
-                options={{
+                    name="index"
+                    options={{
 
-                    tabBarIcon: ({ focused }) => {
-                        return (
+                        tabBarIcon: ({ focused }) => {
+                            return (
+                                <View className={`p-2 rounded-[20px] ${focused ? 'bg-white' : 'bg-transparent'}`}>
+                                    <Image source={HomeA} />
+                                </View>
+                            )
 
-                            <Image source={focused ? UserA : User} />
+                        },
 
-                        )
 
-                    },
-                }}
+                    }}
 
-            />
-            <Tabs.Screen
+                />
 
-                name="search"
-                options={{
+                <Tabs.Screen
 
-                    tabBarIcon: ({ focused }) => {
-                        return (
+                    name="carRental"
+                    options={{
 
-                            <Image source={focused ? SearchA : Search} />
+                        tabBarIcon: ({ focused }) => {
+                            return (
 
-                        )
+                                <View className={`p-2 rounded-[20px] ${focused ? 'bg-white' : 'bg-transparent'}`}>
+                                    <Image
+                                        source={Car}
+                                    />
+                                </View>
+                            )
 
-                    },
-                }}
+                        },
+                    }}
 
-            />
+                />
 
-        </Tabs>
+                <Tabs.Screen
 
+                    name="create"
+                    options={{
+
+                        tabBarIcon: ({ focused }) => {
+                            return (
+
+                                <View className={`p-2 rounded-[20px] ${focused ? 'bg-white' : 'bg-transparent'}`}>
+                                    <Image
+                                        source={Locat}
+                                    />
+                                </View>
+                            )
+
+                        },
+                    }}
+
+                />
+
+                <Tabs.Screen
+
+                    name="profile"
+                    options={{
+
+                        tabBarIcon: ({ focused }) => {
+                            return (
+                                <View className={`p-2 rounded-[20px] ${focused ? 'bg-white' : 'bg-transparent'}`}>
+
+                                    <Image source={UserA} />
+                                </View>
+
+                            )
+
+                        },
+                    }}
+
+                />
+
+            </Tabs>
+        </SafeAreaView>
     )
 
 }
