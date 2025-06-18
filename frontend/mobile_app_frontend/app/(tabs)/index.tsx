@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, TextInput, TouchableOpacity, View, Text } from "react-native";
+import { View, Text } from "react-native";
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
 
