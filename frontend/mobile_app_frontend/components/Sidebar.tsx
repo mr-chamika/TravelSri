@@ -34,27 +34,27 @@ export default function Sidebar({ close }: TopbarProps) {
             </View>
 
             <View>
-                <TouchableOpacity className='mr-10 my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/groupTravel') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/groupTravel') }}>
                     <Image source={group} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Group Travel</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='mr-10 my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/equipmentHire') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/equipmentHire') }}>
                     <Image source={equipments} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Equipments Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='mr-10 my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/hotelBooking') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/hotelBooking') }}>
                     <Image source={hotel} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Hotel Booking</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='mr-10 my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/guideHire') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/guideHire') }}>
                     <Image source={guide} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Guide Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='mr-10 my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/translator') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/translator') }}>
                     <Image source={translator} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Translator</Text>
                 </TouchableOpacity>
