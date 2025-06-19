@@ -4,11 +4,11 @@ import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 
-const pic = require('../../assets/images/tabbar/tower.png')
 
 cssInterop(Image, { className: "style" });
 
 
+const pic = require('../../assets/images/tabbar/tower.png')
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
 
@@ -38,8 +38,8 @@ export default function Index() {
   }
 
   return (
-    <View className="flex flex-col justify-between h-[80%]">
-      <View className="w-full items-center mt-10 ">
+    <View className="bg-[#F2F5FA] flex flex-col gap-5 h-full">
+      <View className="w-full items-center mt-1 ">
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Morning Nirdha !</Text>
 
@@ -51,9 +51,10 @@ export default function Index() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="px-4 ml-8"
+          className="px-5"
+          contentContainerStyle={{ paddingRight: 40 }}
         >
-          <View className="flex flex-row gap-10">
+          <View className=" flex-row gap-10">
             <TouchableOpacity className="w-[83px]">
               <Image
                 className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
@@ -97,14 +98,15 @@ export default function Index() {
       </View>
       <View>
 
-        <Text className="text-[22px] font-semibold m-3">Group Travels</Text>
+        <Text className="text-[22px] font-semibold mt-10 m-3">Group Travels</Text>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="px-5"
+          className="px-2"
+          contentContainerStyle={{ paddingRight: 20 }}
         >
-          <View className="flex flex-row gap-10 w-full">
+          <View className="flex-row gap-10">
             <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
               <Image
                 className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"

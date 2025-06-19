@@ -15,7 +15,7 @@ export default function Topbar({ pressing }: TopbarProps) {
 
     return (
 
-        <View className=' h-[64px] items-center justify-center px-2'>
+        <View className='bg-[#F2F5FA] h-[64px] items-center justify-center px-2'>
 
             <View className='justify-between flex flex-row w-full px-2'>
                 <TouchableOpacity onPress={pressing}>
