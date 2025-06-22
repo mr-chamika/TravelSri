@@ -1,11 +1,11 @@
 import { Text, View, TouchableOpacity } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Href, useRouter } from 'expo-router'
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 
 cssInterop(Image, { className: "style" });
 
-const Profile = require('../assets/images/sideTabs/profile.png')
+const Profile = require('../assets/images/sideTabs/image.png')
 const group = require('../assets/images/sideTabs/grp.png')
 const equipments = require('../assets/images/sideTabs/equips.png')
 const hotel = require('../assets/images/sideTabs/bed.png')
@@ -19,6 +19,16 @@ interface TopbarProps {
 export default function Sidebar({ close }: TopbarProps) {
 
     const router = useRouter();
+
+    const handleNavigation = (path: Href) => {
+
+        // setTimeout(() => {
+        //     router.push(path);
+        // }, 200);
+        router.push(path);
+        close();
+
+    };
 
     return (
 
@@ -34,27 +44,27 @@ export default function Sidebar({ close }: TopbarProps) {
             </View>
 
             <View>
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/groupTravel') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/groupTravel') }}>
                     <Image source={group} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Group Travel</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/equipmentHire') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/equipmentHire') }}>
                     <Image source={equipments} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Equipments Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/hotelBooking') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/hotelBooking') }}>
                     <Image source={hotel} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Hotel Booking</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/guideHire') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/guideHire') }}>
                     <Image source={guide} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Guide Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { close; router.push('/sideTabs/translator') }}>
+                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/translator') }}>
                     <Image source={translator} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Translator</Text>
                 </TouchableOpacity>

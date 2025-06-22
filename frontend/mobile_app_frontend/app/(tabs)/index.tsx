@@ -8,7 +8,8 @@ import { Image } from 'expo-image'
 cssInterop(Image, { className: "style" });
 
 
-const pic = require('../../assets/images/tabbar/tower.png')
+// const pic = require('../../assets/images/tabbar/tower.png')
+const pic = require('../../assets/images/tabbar/towert.png')
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
 
@@ -108,6 +109,10 @@ export default function Index() {
         >
           <View className="flex-row gap-10">
             <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
+              <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
+                <Text className="bg-gray-100 rounded-md px-2">Travel #1</Text>
+                <Text className="bg-gray-100 rounded-md px-2">18/20</Text>
+              </View>
               <Image
                 className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
                 source={pic}
@@ -131,7 +136,11 @@ export default function Index() {
 
               </View>
             </View>
-            <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px]">
+            <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
+              <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
+                <Text className="bg-gray-100 rounded-md px-2">Travel #1</Text>
+                <Text className="bg-gray-100 rounded-md px-2">18/20</Text>
+              </View>
               <Image
                 className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
                 source={pic}
@@ -155,6 +164,7 @@ export default function Index() {
 
               </View>
             </View>
+
 
           </View>
         </ScrollView>
