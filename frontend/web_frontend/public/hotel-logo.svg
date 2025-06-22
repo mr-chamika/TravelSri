@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Hotel Logo</title>
+    <g id="Hotel-Logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Background" fill="#FFD54F" x="0" y="0" width="200" height="200"></rect>
+        <g id="Hotel" transform="translate(40.000000, 50.000000)" fill="#3D4852">
+            <path d="M28,0 L28,100 L0,100 L0,0 L28,0 Z M20,16 L8,16 L8,42 L20,42 L20,16 Z M20,58 L8,58 L8,84 L20,84 L20,58 Z" id="H"></path>
+            <rect id="Mid" x="44" y="34" width="32" height="32" rx="2"></rect>
+            <path d="M92,0 L120,0 L120,100 L92,100 L92,0 Z M100,16 L100,42 L112,42 L112,16 L100,16 Z M100,58 L100,84 L112,84 L112,58 L100,58 Z" id="H-Copy"></path>
+        </g>
+    </g>
+</svg>

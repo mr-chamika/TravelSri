@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>TravelSri Logo</title>
+    <g id="Logo" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="Background" fill="#FCD34D" cx="50" cy="50" r="50"></circle>
+        <path d="M65.5,30 C70.1944204,30 74,33.8055796 74,38.5 C74,40.6575313 73.1373543,42.6182255 71.7004552,44.0292899 L50,65.7297451 L28.2995448,44.0292899 C26.8626457,42.6182255 26,40.6575313 26,38.5 C26,33.8055796 29.8055796,30 34.5,30 C36.6575313,30 38.6182255,30.8626457 40.0292899,32.2995448 L50,42.2702549 L59.9707101,32.2995448 C61.3817745,30.8626457 63.3424687,30 65.5,30 Z" id="Heart" fill="#FFFFFF"></path>
+    </g>
+</svg>
