@@ -8,9 +8,8 @@ import {
   Legend
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import ChartService from '../../../services/chartService';
+import { format } from 'date-fns';
 
-// Register chart components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const HotelDashboard = () => {
@@ -24,27 +23,50 @@ const HotelDashboard = () => {
     checkInsToday: 12
   };
 
-  const currentDate = new Date();
-  const [selectedDay, setSelectedDay] = useState(currentDate.getDate());
-  const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
-  const currentYear = currentDate.getFullYear();
-  const [selectedMonth] = useState(`${currentMonth} ${currentYear}`);
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-  const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const today = new Date();
+
+  const selectedMonthYear = format(calendarDate, 'MMMM yyyy');
+  const daysInMonth = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate();
+  const firstDayIndex = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1).getDay();
+  const prevMonthDays = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 0).getDate();
+
+  const days = [];
+
+  // Previous month's trailing days
+  for (let i = firstDayIndex; i > 0; i--) {
+    days.push({ day: prevMonthDays - i + 1, isCurrentMonth: false });
+  }
+
+  // Current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push({ day: i, isCurrentMonth: true });
+  }
+
+  // Fill up to 42 total days (6 weeks)
+  while (days.length < 42) {
+    days.push({ day: days.length - daysInMonth - firstDayIndex + 1, isCurrentMonth: false });
+  }
+
+  const handlePrevMonth = () => {
+    setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
 
   const [monthlyData] = useState([
-    { month: 'May', percentage: 85, bookings: 132, revenue: 19750, occupancyRate: 78 },
-    { month: 'Jun', percentage: 65, bookings: 98, revenue: 15200, occupancyRate: 62 },
-    { month: 'Jul', percentage: 80, bookings: 121, revenue: 18300, occupancyRate: 75 },
-    { month: 'Aug', percentage: 45, bookings: 78, revenue: 12450, occupancyRate: 42 },
-    { month: 'Sep', percentage: 95, bookings: 145, revenue: 22800, occupancyRate: 88 },
-    { month: 'Oct', percentage: 85, bookings: 135, revenue: 19850, occupancyRate: 79 },
-    { month: 'Nov', percentage: 85, bookings: 137, revenue: 20200, occupancyRate: 80 },
-    { month: 'Dec', percentage: 85, bookings: 139, revenue: 22450, occupancyRate: 82 },
-    { month: 'Jan', percentage: 95, bookings: 148, revenue: 24890, occupancyRate: 90 },
-    { month: 'Feb', percentage: 90, bookings: 143, revenue: 23700, occupancyRate: 85 }
+    { month: 'Sep', percentage: 85, bookings: 132, revenue: 19750, occupancyRate: 78 },
+    { month: 'Oct', percentage: 65, bookings: 98, revenue: 15200, occupancyRate: 62 },
+    { month: 'Nov', percentage: 80, bookings: 121, revenue: 18300, occupancyRate: 75 },
+    { month: 'Dec', percentage: 45, bookings: 78, revenue: 12450, occupancyRate: 42 },
+    { month: 'Jan', percentage: 95, bookings: 145, revenue: 22800, occupancyRate: 88 },
+    { month: 'Feb', percentage: 85, bookings: 135, revenue: 19850, occupancyRate: 79 },
+    { month: 'Mar', percentage: 85, bookings: 137, revenue: 20200, occupancyRate: 80 },
+    { month: 'Apr', percentage: 85, bookings: 139, revenue: 22450, occupancyRate: 82 },
+    { month: 'May', percentage: 95, bookings: 148, revenue: 24890, occupancyRate: 90 },
+    { month: 'Jun', percentage: 90, bookings: 143, revenue: 23700, occupancyRate: 85 }
   ]);
 
   const getChartData = () => {
@@ -69,7 +91,7 @@ const HotelDashboard = () => {
 
   const getChartOptions = () => ({
     responsive: true,
-    maintainAspectRatio: false, // allows the chart to stretch fully
+    maintainAspectRatio: false,
     plugins: {
       tooltip: {
         callbacks: {
@@ -101,11 +123,11 @@ const HotelDashboard = () => {
       <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'AVAILABLE ROOMS', value: dashboardData.availableRooms },
           { label: 'TOTAL BOOKINGS', value: dashboardData.totalBookings },
-          { label: 'Earnings', value: dashboardData.earnings },
+          { label: 'EARNINGS', value: `LKR ${dashboardData.earnings.toLocaleString()}` },
           { label: 'CHECK-INS TODAY', value: dashboardData.checkInsToday }
         ].map((stat, index) => (
           <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
@@ -116,7 +138,7 @@ const HotelDashboard = () => {
       </div>
 
       {/* Chart and Calendar */}
-      <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Chart */}
         <div className="flex-1 bg-white p-6 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -142,31 +164,41 @@ const HotelDashboard = () => {
         </div>
 
         {/* Calendar */}
-        <div className="w-80 bg-white p-6 rounded-lg shadow-sm">
+        <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-medium">{selectedMonth}</h3>
-            <div className="flex">
-              <button className="p-1"><span className="material-icons text-gray-500">chevron_left</span></button>
-              <button className="p-1"><span className="material-icons text-gray-500">chevron_right</span></button>
+            <h3 className="font-medium">{selectedMonthYear}</h3>
+            <div className="flex space-x-1">
+              <button onClick={handlePrevMonth} className="p-1 rounded hover:bg-gray-200">
+                <span className="material-icons text-gray-500">chevron_left</span>
+              </button>
+              <button onClick={handleNextMonth} className="p-1 rounded hover:bg-gray-200">
+                <span className="material-icons text-gray-500">chevron_right</span>
+              </button>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-              <div key={i} className="text-center text-sm text-gray-500">{d}</div>
+
+          <div className="grid grid-cols-7 gap-1 text-sm text-gray-500 mb-2">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+              <div key={i} className="text-center">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-2">
-            {Array.from({ length: adjustedFirstDay }).map((_, i) => (
-              <div key={`empty-${i}`} />
-            ))}
-            {days.map((day) => (
+
+          <div className="grid grid-cols-7 gap-1 min-h-[252px]">
+            {days.map((date, index) => (
               <div
-                key={day}
-                className={`h-8 w-8 flex items-center justify-center text-sm rounded-full cursor-pointer
-                  ${day === selectedDay ? 'bg-yellow-300 text-black' : 'hover:bg-gray-100'}`}
-                onClick={() => setSelectedDay(day)}
+                key={index}
+                className={`
+                  aspect-square w-full flex items-center justify-center text-sm rounded-full cursor-pointer
+                  ${date.isCurrentMonth
+                    ? date.day === today.getDate()
+                        && calendarDate.getMonth() === today.getMonth()
+                        && calendarDate.getFullYear() === today.getFullYear()
+                        ? 'bg-yellow-300 text-black font-semibold'
+                        : 'hover:bg-gray-100 text-gray-800'
+                    : 'text-gray-400'}
+                `}
               >
-                {day}
+                {date.day}
               </div>
             ))}
           </div>

@@ -53,24 +53,24 @@ const EarningsPage = () => {
   };
 
   const monthlyData = [
-    { month: 'May', percentage: 80, earnings: 42500, bookings: 14 },
-    { month: 'Jun', percentage: 65, earnings: 35400, bookings: 12 },
-    { month: 'Jul', percentage: 90, earnings: 48200, bookings: 16 },
-    { month: 'Aug', percentage: 45, earnings: 25350, bookings: 8 },
-    { month: 'Sep', percentage: 85, earnings: 45700, bookings: 15 },
-    { month: 'Oct', percentage: 82, earnings: 44300, bookings: 14 },
-    { month: 'Nov', percentage: 79, earnings: 42800, bookings: 14 },
-    { month: 'Dec', percentage: 85, earnings: 46200, bookings: 15 },
+    { month: 'Feb', percentage: 80, earnings: 42500, bookings: 14 },
+    { month: 'Mar', percentage: 65, earnings: 35400, bookings: 12 },
+    { month: 'Apr', percentage: 90, earnings: 48200, bookings: 16 },
+    { month: 'May', percentage: 45, earnings: 25350, bookings: 8 },
+    { month: 'Jun', percentage: 85, earnings: 45700, bookings: 15 },
+    { month: 'Jul', percentage: 82, earnings: 44300, bookings: 14 },
+    { month: 'Aug', percentage: 79, earnings: 42800, bookings: 14 },
+    { month: 'Sep', percentage: 85, earnings: 46200, bookings: 15 },
     { month: 'Jan', percentage: 88, earnings: 47500, bookings: 16 },
-    { month: 'Feb', percentage: 75, earnings: 39800, bookings: 13 },
-    { month: 'Mar', percentage: 68, earnings: 36400, bookings: 12 },
-    { month: 'Apr', percentage: 60, earnings: 32000, bookings: 11 },
-    { month: 'May', percentage: 40, earnings: 24000, bookings: 7 },
-    { month: 'Jun', percentage: 70, earnings: 37200, bookings: 12 },
-    { month: 'Jul', percentage: 80, earnings: 42500, bookings: 14 },
-    { month: 'Aug', percentage: 90, earnings: 48000, bookings: 16 },
-    { month: 'Sep', percentage: 95, earnings: 51000, bookings: 17 },
-    { month: 'Oct', percentage: 85, earnings: 45700, bookings: 15 }
+    { month: 'Oct', percentage: 75, earnings: 39800, bookings: 13 },
+    { month: 'Nov', percentage: 68, earnings: 36400, bookings: 12 },
+    { month: 'Dec', percentage: 60, earnings: 32000, bookings: 11 },
+    { month: 'Jan', percentage: 40, earnings: 24000, bookings: 7 },
+    { month: 'Feb', percentage: 70, earnings: 37200, bookings: 12 },
+    { month: 'Mar', percentage: 80, earnings: 42500, bookings: 14 },
+    { month: 'Apr', percentage: 90, earnings: 48000, bookings: 16 },
+    { month: 'May', percentage: 95, earnings: 51000, bookings: 17 },
+    { month: 'Jun', percentage: 85, earnings: 45700, bookings: 15 }
   ];
 
   const revenueBreakdown = [
