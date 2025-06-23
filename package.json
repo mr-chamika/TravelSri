@@ -1,0 +1,20 @@
+{
+  "name": "travelsri",
+  "version": "1.0.0",
+  "description": "A travel management app to introduce group travel concept for third year group project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mr-chamika/TravelSri.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mr-chamika/TravelSri/issues"
+  },
+  "homepage": "https://github.com/mr-chamika/TravelSri#readme"
+}
