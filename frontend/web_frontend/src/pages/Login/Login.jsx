@@ -1,110 +1,77 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-const Login = () => {
-    const [name, setName] = useState('');
-    const [address, setAddress] = useState('');
-    const [students, setStudents] = useState([]);
-    const [ok, setOk] = useState(false);
+const LoginPage = () => {
+  const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
-        fetch('http://localhost:8080/student/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, address }),
-        })
-            .then(res => res.text())
-            .then(data => {
-                console.log(data);
-                setName('');
-                setAddress('');
-            })
-            .catch(err => console.error('Error:', err));
-    };
-
-    const getAll = () => {
-        setOk(true);
-
-        fetch('http://localhost:8080/student/getAll')
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                setStudents(data);
-            })
-            .catch(err => console.error('Error:', err));
-    };
-
-    const less = () => {
-        setOk(false);
-    };
-
-    return (
-        <div className=" flex flex-col justify-center items-center h-screen bg-gray-100 w-full px-96">
-            <form
-                onSubmit={handleSubmit}
-                className=" w-full flex flex-col"
-            >
-                <h2 className="text-xl font-semibold mb-4 text-center">Add Student</h2>
-                <div className="mb-3">
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter name"
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                </div>
-                <div className='mb-4'>
-                    <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Enter address"
-                        required
-                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    className=" bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-                >
-                    Submit
-                </button>
-            </form>
-
-            <button
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 w-full mt-3"
-                onClick={getAll}
-            >
-                Get All
-            </button>
-
-            {ok && (
-                <div className=" bg-white p-6 rounded-lg shadow-md w-full max-w-md">
-                    <h3 className="text-lg font-bold mb-4">Student List</h3>
-                    {students.map((student) => (
-                        <div
-                            key={student._id}
-                            className="border-b border-gray-200 pb-3 mb-3"
-                        >
-                            <p><strong>Name:</strong> {student.name}</p>
-                            <p><strong>Address:</strong> {student.address}</p>
-                        </div>
-                    ))}
-                    <button
-                        onClick={less}
-                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                    >
-                        Show Less
-                    </button>
-                </div>
-            )}
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-yellow-100 via-white to-yellow-50 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+        {/* Logo and title */}
+        <div className="mb-6 text-center">
+          <img src="/logo.svg" alt="TravelSri Logo" className="w-12 h-12 mx-auto mb-2" />
+          <h1 className="text-2xl font-bold text-gray-800">Welcome to TravelSri</h1>
+          <p className="text-sm text-gray-500">Sign in to your account</p>
         </div>
-    );
+
+        {/* Login form */}
+        <form className="space-y-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Email</label>
+            <div className="relative">
+              <input
+                type="email"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                placeholder="you@example.com"
+                required
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">email</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full px-4 py-2 pl-10 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                placeholder="••••••••"
+                required
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">lock</span>
+              <button
+                type="button"
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-yellow-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <span className="material-icons text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="rounded border-gray-300" />
+              Remember me
+            </label>
+            <a href="#" className="text-yellow-500 hover:underline">Forgot password?</a>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2 mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded-md transition"
+          >
+            Sign In
+          </button>
+        </form>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Don’t have an account?{' '}
+          <a href="#" className="text-yellow-500 hover:underline font-medium">Create one</a>
+        </p>
+      </div>
+    </div>
+  );
 };
 
-export default Login;
+export default LoginPage;
