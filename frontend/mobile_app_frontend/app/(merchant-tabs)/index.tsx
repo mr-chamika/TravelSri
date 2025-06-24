@@ -306,21 +306,6 @@ const Listings: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <AntDesign name="home" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="message-square" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="credit-card" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Feather name="user" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
