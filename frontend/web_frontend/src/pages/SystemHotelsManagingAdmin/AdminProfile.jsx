@@ -6,11 +6,11 @@ const AdminProfile = () => {
   // Mock user data
   const adminUser = {
     name: 'Theekshana Thathsara',
-    email: 'john.doe@example.com',
-    role: 'System Administrator',
+    email: 'thathsara@example.com',
+    role: 'Hotel Managing System Administrator',
     phone: '+94 77 123 4567',
     joinDate: '2022-05-10',
-    avatar: '/admin-profile.jpg'
+    avatar: 'https://randomuser.me/api/portraits/men/75.jpg'
   };
   
   // Mock security settings

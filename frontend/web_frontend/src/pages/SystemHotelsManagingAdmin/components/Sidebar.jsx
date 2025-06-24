@@ -25,7 +25,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </button>
         <div className="w-12 h-12 rounded-full bg-gray-300 overflow-hidden">
           <img 
-            src="/admin-profile.jpg" 
+            src="https://randomuser.me/api/portraits/men/75.jpg" 
             alt="Admin" 
             className="w-full h-full object-cover"
             onError={(e) => {
