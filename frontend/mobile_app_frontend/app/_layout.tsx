@@ -1,23 +1,21 @@
+import { AuthProvider } from '../contexts/AuthContext';
 import { Stack } from "expo-router";
 import './global.css';
 
 export default function RootLayout() {
   return (
-    <Stack>
+    <Stack screenOptions={{ headerShown: false }}>
+      {/* Authentication Screens */}
 
-      <Stack.Screen
 
-        name="(tabs)"
-        options={{ headerShown: false }}
+      {/* Role-Based Tabs */}
+      <Stack.Screen name="(merchant-tabs)" />
+      <Stack.Screen name="(customer-tabs)" />
+      <Stack.Screen name="(admin-tabs)" />
 
-      />
-      <Stack.Screen
-
-        name="sideTabs"
-        options={{ headerShown: false }}
-
-      />
-
+      {/* Optional / Legacy */}
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="sideTabs" />
     </Stack>
   );
 }

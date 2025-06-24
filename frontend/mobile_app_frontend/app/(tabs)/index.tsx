@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View, Text } from "react-native";
+import { useAuth } from '../contexts/AuthContext';
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
 
