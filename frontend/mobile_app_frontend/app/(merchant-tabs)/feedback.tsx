@@ -1,357 +1,417 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
   TextInput,
   ScrollView,
-  Image,
   TouchableOpacity,
+  SafeAreaView,
   StatusBar,
-  Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
-type ListingItem = {
+interface Feedback {
   id: number;
-  title: string;
-  price: string;
-  image: string;
-  quantity: number;
-  isNew?: boolean;
-};
+  name: string;
+  time: string;
+  rating: number;
+  text: string;
+  avatar: string;
+}
 
-const listings: ListingItem[] = [
-  {
-    id: 1,
-    title: 'Wood',
-    price: '500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1419640303358-44f0d27f48e7?w=300&h=200&fit=crop',
-    quantity: 20,
-  },
-  {
-    id: 2,
-    title: 'RainCoat',
-    price: '1500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5e?w=300&h=200&fit=crop',
-    quantity: 20,
-    isNew: true,
-  },
-  {
-    id: 3,
-    title: 'Shoes',
-    price: '3000.0 LKR',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=200&fit=crop',
-    quantity: 20,
-  },
-  {
-    id: 4,
-    title: 'Camera',
-    price: '25000.0 LKR',
-    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=200&fit=crop',
-    quantity: 5,
-  },
-  {
-    id: 5,
-    title: 'Backpack',
-    price: '2500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=200&fit=crop',
-    quantity: 15,
-    isNew: true,
-  },
-  {
-    id: 6,
-    title: 'Sunglasses',
-    price: '1200.0 LKR',
-    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop',
-    quantity: 30,
-  },
-  {
-    id: 7,
-    title: 'Travel Mug',
-    price: '800.0 LKR',
-    image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300&h=200&fit=crop',
-    quantity: 25,
-  },
-  {
-    id: 8,
-    title: 'Hat',
-    price: '750.0 LKR',
-    image: 'https://images.unsplash.com/photo-1521369909029-2afed882baee?w=300&h=200&fit=crop',
-    quantity: 12,
-    isNew: true,
-  },
-];
+interface RatingBar {
+  stars: number;
+  percentage: number;
+}
 
-const ListingCard: React.FC<{
-  item: ListingItem;
-  onMorePress: () => void;
-}> = ({ item, onMorePress }) => (
-  <View style={styles.card}>
-    <View style={styles.imageContainer}>
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
-      <View style={styles.quantityBadge}>
-        <Text style={styles.quantityText}>{item.quantity}</Text>
+const Feedback: React.FC = () => {
+  const [searchText, setSearchText] = useState<string>('');
+
+  // Sample feedback data
+  const feedbacks: Feedback[] = [
+    {
+      id: 1,
+      name: 'Гусейнова Гульшана',
+      time: 'Дней назад',
+      rating: 5,
+      text: 'Здравствуй у нас работе приложения изначайно чекается. Но есть сложно, я везде распознаю мелкое правило под числу, а вызов к бананам господстной для ЮЗО. Спал на готовом продукеняни по дней будет жестковатых Мы делаю.Экономьлам, что знаете его колледж на 60%.',
+      avatar: '👤'
+    },
+    {
+      id: 2,
+      name: 'Гусейнова Гульшана',
+      time: 'Дней назад',
+      rating: 5,
+      text: 'Здравствуй у нас работе приложения изначайно чекается. Но есть сложно, я везде распознаю мелкое правило под числу, а вызов к бананам господстной для ЮЗО. Спал на готовом продукеняни по дней будет жестковатых Мы делаю.Экономьлам, что знаете его колледж на 60%.',
+      avatar: '👤'
+    },
+    {
+      id: 3,
+      name: 'Гусейнова Гульшана',
+      time: 'Дней назад',
+      rating: 5,
+      text: 'Здравствуй у нас работе приложения изначайно чекается. Но есть сложно, я везде распознаю мелкое правило под числу, а вызов к бананам господстной для ЮЗО. Спал на готовом продукеняни по дней будет жестковатых Мы делаю.Экономьлам, что знаете его колледж на 60%.',
+      avatar: '👤'
+    },
+  ];
+
+  const renderStars = (rating: number): JSX.Element[] => {
+    return Array.from({ length: 5 }, (_, index) => (
+      <Ionicons
+        key={index}
+        name={index < rating ? 'star' : 'star-outline'}
+        size={14}
+        color={index < rating ? '#FFD700' : '#E0E0E0'}
+      />
+    ));
+  };
+
+  const renderRatingBars = (): JSX.Element[] => {
+    const ratings: RatingBar[] = [
+      { stars: 5, percentage: 85 },
+      { stars: 4, percentage: 60 },
+      { stars: 3, percentage: 40 },
+      { stars: 2, percentage: 20 },
+      { stars: 1, percentage: 10 },
+    ];
+
+    return ratings.map((rating) => (
+      <View key={rating.stars} style={styles.ratingRow}>
+        <Text style={styles.ratingNumber}>{rating.stars}</Text>
+        <Ionicons name="star" size={12} color="#FFD700" />
+        <View style={styles.ratingBarContainer}>
+          <View style={[styles.ratingBar, { width: `${rating.percentage}%` }]} />
+        </View>
       </View>
-      {item.isNew && <View style={styles.newBadge} />}
-    </View>
-    <View style={styles.cardContent}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <View style={styles.cardFooter}>
-        <Text style={styles.cardPrice}>{item.price}</Text>
-        <TouchableOpacity onPress={onMorePress}>
-          <MaterialIcons name="more-horiz" size={24} color="#666" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-);
+    ));
+  };
 
-const Listings: React.FC = () => {
-  const [searchText, setSearchText] = useState('');
-  const [filteredListings, setFilteredListings] = useState(listings);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
+  const handleMenuPress = (): void => {
+    // Handle menu button press
+    console.log('Menu pressed');
+  };
 
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-    const filtered = listings.filter((item) =>
-      item.title.toLowerCase().includes(text.toLowerCase())
-    );
-    setFilteredListings(filtered);
+  const handleNotificationPress = (): void => {
+    // Handle notification button press
+    console.log('Notification pressed');
+  };
+
+  const handleReplyPress = (feedbackId: number): void => {
+    // Handle reply button press
+    console.log('Reply pressed for feedback:', feedbackId);
+  };
+
+  const handleNavPress = (navItem: string): void => {
+    // Handle navigation press
+    console.log('Navigation pressed:', navItem);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.menuIcon}>
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
+        <TouchableOpacity style={styles.menuButton} onPress={handleMenuPress}>
+          <Ionicons name="menu" size={24} color="#000" />
+        </TouchableOpacity>
+        <View style={styles.headerTitleContainer}>
+          <Ionicons name="airplane" size={20} color="#FFD700" />
+          <Text style={styles.headerTitle}>TravelSri</Text>
         </View>
-
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <Text style={styles.logoText}>🏝️</Text>
-          </View>
-          <Text style={styles.logoTitle}>TravelSri</Text>
-        </View>
-
-        <TouchableOpacity>
-          <Feather name="bell" size={24} color="#000" />
+        <TouchableOpacity style={styles.notificationButton} onPress={handleNotificationPress}>
+          <Ionicons name="notifications" size={24} color="#FFD700" />
         </TouchableOpacity>
       </View>
 
-      {/* Listings Header */}
-      <View style={styles.listingsHeader}>
-        <Text style={styles.listingsTitle}>Listings</Text>
-        <TouchableOpacity>
-          <AntDesign name="plus" size={24} color="#000" />
-        </TouchableOpacity>
+      {/* Page Title */}
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageTitle}>Feedbacks</Text>
       </View>
 
-      {/* Search */}
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={20} color="#666" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search listings..."
-            value={searchText}
-            onChangeText={handleSearch}
-          />
-        </View>
-        <TouchableOpacity>
-          <MaterialIcons name="tune" size={24} color="#666" />
+        <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Ba"
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity style={styles.filterButton}>
+          <Ionicons name="options" size={20} color="#999" />
         </TouchableOpacity>
       </View>
 
-      {/* Listings */}
-      <ScrollView style={styles.listingsContainer} showsVerticalScrollIndicator={false}>
-        {filteredListings.map((item) => (
-          <ListingCard
-            key={item.id}
-            item={item}
-            onMorePress={() => {
-              setSelectedItem(item);
-              setModalVisible(true);
-            }}
-          />
-        ))}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Rating Summary */}
+        <View style={styles.ratingSummary}>
+          <View style={styles.ratingLeft}>
+            <Text style={styles.ratingScore}>4.5</Text>
+            <View style={styles.ratingStars}>
+              {renderStars(5)}
+            </View>
+            <Text style={styles.reviewsCount}>2890 reviews</Text>
+          </View>
+          <View style={styles.ratingRight}>
+            {renderRatingBars()}
+          </View>
+        </View>
+
+        {/* Feedback List */}
+        <View style={styles.feedbackList}>
+          {feedbacks.map((feedback) => (
+            <View key={feedback.id} style={styles.feedbackItem}>
+              <View style={styles.feedbackHeader}>
+                <View style={styles.userInfo}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{feedback.avatar}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.userName}>{feedback.name}</Text>
+                    <Text style={styles.timeText}>{feedback.time}</Text>
+                  </View>
+                </View>
+                <View style={styles.feedbackRating}>
+                  {renderStars(feedback.rating)}
+                </View>
+              </View>
+              <Text style={styles.feedbackText}>{feedback.text}</Text>
+              <TouchableOpacity
+                style={styles.replyButton}
+                onPress={() => handleReplyPress(feedback.id)}
+              >
+                <Text style={styles.replyButtonText}>Reply</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
       </ScrollView>
 
-      {/* Modal */}
-      <Modal
-        transparent
-        animationType="slide"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{selectedItem?.title}</Text>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                console.log('Delete:', selectedItem);
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.modalButtonText}>Delete</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                console.log('Change:', selectedItem);
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.modalButtonText}>Change</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: '#ccc' }]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.modalButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
 
-export default Listings;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#FFFFFF',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  menuIcon: {
-    width: 24,
-    justifyContent: 'space-between',
-    height: 18,
+  menuButton: {
+    padding: 5,
   },
-  menuLine: {
-    width: '100%',
-    height: 2,
-    backgroundColor: '#000',
-  },
-  logoContainer: { flexDirection: 'row', alignItems: 'center' },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#FFD700',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  logoText: { fontSize: 16 },
-  logoTitle: { fontSize: 18, fontWeight: 'bold', color: '#000' },
-  listingsHeader: {
+  headerTitleContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#fff',
+    alignItems: 'center',
   },
-  listingsTitle: { fontSize: 24, fontWeight: 'bold', color: '#000' },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#000',
+  },
+  notificationButton: {
+    padding: 5,
+  },
+  pageHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#FFFFFF',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#f1f3f4',
-    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginVertical: 10,
     paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginRight: 10,
-    alignItems: 'center',
-  },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 16, color: '#000' },
-  listingsContainer: { flex: 1, paddingHorizontal: 20 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    overflow: 'hidden',
+    paddingVertical: 10,
+    borderRadius: 25,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  imageContainer: { height: 150, position: 'relative' },
-  cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  quantityBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 12,
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  filterButton: {
+    padding: 5,
+  },
+  content: {
+    flex: 1,
+  },
+  ratingSummary: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  ratingLeft: {
+    alignItems: 'center',
+    marginRight: 30,
+  },
+  ratingScore: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    marginVertical: 5,
+  },
+  reviewsCount: {
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: '#F0F0F0',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
-  quantityText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  newBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 12,
-    height: 12,
-    backgroundColor: '#ff4444',
-    borderRadius: 6,
+  ratingRight: {
+    flex: 1,
   },
-  cardContent: { padding: 15 },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: '#333', marginBottom: 8 },
-  cardFooter: {
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ratingNumber: {
+    fontSize: 12,
+    color: '#666',
+    width: 15,
+    marginRight: 5,
+  },
+  ratingBarContainer: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    marginLeft: 10,
+  },
+  ratingBar: {
+    height: '100%',
+    backgroundColor: '#FFD700',
+    borderRadius: 3,
+  },
+  feedbackList: {
+    paddingHorizontal: 20,
+  },
+  feedbackItem: {
+    backgroundColor: '#FFFFFF',
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  feedbackHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
-  cardPrice: { fontSize: 16, fontWeight: 'bold', color: '#000' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 10,
   },
-  modalContainer: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 5,
+  avatarText: {
+    fontSize: 20,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  modalButton: {
-    paddingVertical: 10,
-    backgroundColor: '#FFD700',
-    borderRadius: 8,
-    marginVertical: 5,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    fontSize: 16,
+  userName: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#000',
   },
+  timeText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  feedbackRating: {
+    flexDirection: 'row',
+  },
+  feedbackText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 15,
+  },
+  replyButton: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  replyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    justifyContent: 'space-around',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  navItem: {
+    padding: 10,
+  },
+  activeNavItem: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 10,
+  },
 });
+
+export default Feedback;

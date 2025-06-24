@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router';
+import { Feather, MaterialIcons, FontAwesome5, AntDesign } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function MerchantTabLayout() {
   return (
@@ -18,51 +20,53 @@ export default function MerchantTabLayout() {
         },
       }}
     >
-      {/* Only show this page in the tab bar */}
+      {/* Home tab */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Feather name="home" size={size} color={color} />
           ),
         }}
       />
 
+      {/* Listings tab */}
       <Tabs.Screen
         name="feedback"
         options={{
-          title: 'Listings',
+          title: 'Feedback',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+            <MaterialCommunityIcons name="message-text-outline" size={size} color={color} />
           ),
         }}
       />
 
+      {/* Orders tab */}
       <Tabs.Screen
         name="payment"
         options={{
-          title: 'Orders',
+          title: 'Payment',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
+            <MaterialCommunityIcons name="credit-card-outline" size={size} color={color} />
           ),
         }}
       />
 
+      {/* Profile tab */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <AntDesign name="user" size={size} color={color} />
           ),
         }}
       />
 
-      {/* Hide extra pages from tab bar */}
+      {/* Hide extra screens from tab bar */}
       <Tabs.Screen name="AddItem" options={{ href: null }} />
       <Tabs.Screen name="ChangeItem" options={{ href: null }} />
-
     </Tabs>
   );
 }
