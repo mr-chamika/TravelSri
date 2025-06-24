@@ -1,117 +1,135 @@
 import React, { useState } from 'react';
 
+/* ------------------------------------------------------------------ */
+/*  Quick modal for “View”                                            */
+/* ------------------------------------------------------------------ */
+const ViewModal = ({ notification, onClose }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <header className="flex justify-between items-center px-5 py-3 border-b bg-gray-50">
+        <h3 className="font-semibold text-lg">{notification.title}</h3>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <span className="material-icons">close</span>
+        </button>
+      </header>
+      <div className="p-5 space-y-2 text-sm">
+        <p><strong>Room:</strong> {notification.roomNumber}</p>
+        <p><strong>Received:</strong> {notification.time}</p>
+        <p><strong>Status:</strong> {notification.isRead ? 'Read' : 'Unread'}</p>
+        {/* put more content/details here if needed */}
+      </div>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                    */
+/* ------------------------------------------------------------------ */
 const NotificationsPage = () => {
   const [activeTab, setActiveTab] = useState('ALL');
+  const [selected, setSelected]  = useState(null);   // for View modal
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
   const [notifications, setNotifications] = useState([
-    { id: 1, type: 'booking_confirmed', title: 'Booking Confirmed', roomNumber: '101', time: '2 hours ago', isRead: false, category: 'Message' },
-    { id: 2, type: 'room_availability', title: 'Room Availability Changed', roomNumber: '202', time: '2 hours ago', isRead: false, category: 'Unread' },
-    { id: 3, type: 'booking_cancelled', title: 'Booking Cancelled', roomNumber: '303', time: '2 hours ago', isRead: false, category: 'Unread' },
-    { id: 4, type: 'special_request', title: 'Special Request', roomNumber: '204', time: '2 hours ago', isRead: false, category: 'Message' },
-    { id: 5, type: 'booking_confirmed', title: 'Booking Confirmed', roomNumber: '101', time: '2 hours ago', isRead: true, category: 'Message' }
+    { id: 1, type: 'booking_confirmed', title: 'Booking Confirmed',  roomNumber: '101', time: '2 hours ago', isRead: false, category: 'Message' },
+    { id: 2, type: 'room_availability',  title: 'Room Availability Changed', roomNumber: '202', time: '2 hours ago', isRead: false, category: 'Unread' },
+    { id: 3, type: 'booking_cancelled',  title: 'Booking Cancelled', roomNumber: '303', time: '2 hours ago', isRead: false, category: 'Unread' },
+    { id: 4, type: 'special_request',    title: 'Special Request',   roomNumber: '204', time: '2 hours ago', isRead: false, category: 'Message' },
+    { id: 5, type: 'booking_confirmed',  title: 'Booking Confirmed', roomNumber: '101', time: '3 days ago', isRead: true,  category: 'Message' },
   ]);
 
-  const filteredNotifications =
-    activeTab === 'ALL'
+  /* ---------------- helpers ---------------- */
+  const unread    = notifications.filter(n => !n.isRead);
+  const messages  = notifications.filter(n => n.category === 'Message');
+  const filtered  = activeTab === 'ALL'
       ? notifications
-      : notifications.filter(notification => notification.category === activeTab);
+      : notifications.filter(n => (activeTab === 'Unread') ? !n.isRead : n.category === 'Message');
 
-  const markAsRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notif => notif.id === id ? { ...notif, isRead: true } : notif)
-    );
-  };
+  const markAsRead = id => setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n));
 
-  const viewNotification = (id) => {
-    console.log(`Viewing notification ${id}`);
-  };
+  const markAllRead = () => setNotifications(prev =>
+      prev.map(n => ({ ...n, isRead: true })));
 
-  const getNotificationIcon = (type) => {
-    const base = "material-icons text-2xl";
+  const icon = (type) => {
+    const cls = 'material-icons text-2xl';
     switch (type) {
-      case 'booking_confirmed':
-        return <span className={`${base} text-green-600`}>check_circle</span>;
-      case 'room_availability':
-        return <span className={`${base} text-blue-500`}>meeting_room</span>;
-      case 'booking_cancelled':
-        return <span className={`${base} text-red-600`}>cancel</span>;
-      case 'special_request':
-        return <span className={`${base} text-gray-600`}>phone</span>;
-      default:
-        return <span className={`${base} text-gray-600`}>notifications</span>;
+      case 'booking_confirmed': return <span className={`${cls} text-green-600`}>check_circle</span>;
+      case 'room_availability': return <span className={`${cls} text-blue-500`}>meeting_room</span>;
+      case 'booking_cancelled': return <span className={`${cls} text-red-600`}>cancel</span>;
+      case 'special_request':   return <span className={`${cls} text-gray-600`}>phone</span>;
+      default:                  return <span className={`${cls} text-gray-600`}>notifications</span>;
     }
   };
 
-  const tabButtonStyle = (tab) =>
-    `px-4 py-2 text-sm font-medium border border-gray-300 transition duration-150 ease-in-out 
-    ${activeTab === tab ? 'bg-yellow-400 text-black' : 'bg-white text-gray-700 hover:bg-gray-100'}
-    first:rounded-l-lg last:rounded-r-lg`;
+  /* ---------------- style helper ---------------- */
+  const tabBtn = (tab) =>
+    `px-4 py-2 text-sm font-medium border border-gray-300 first:rounded-l-lg last:rounded-r-lg
+     transition ${activeTab === tab ? 'bg-yellow-400 text-black' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
 
+  /* ---------------- render ---------------- */
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-6 space-y-5">
+      {/* header */}
+      <header className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Notifications</h1>
-        <p className="text-gray-500">{currentDate}</p>
+        <span className="text-gray-500">{today}</span>
+      </header>
+
+      {/* tab bar */}
+      <div className="inline-flex rounded-md shadow-sm">
+        <button className={tabBtn('ALL')}    onClick={() => setActiveTab('ALL')}>All ({notifications.length})</button>
+        <button className={tabBtn('Unread')} onClick={() => setActiveTab('Unread')}>Unread ({unread.length})</button>
+        <button className={tabBtn('Message')}onClick={() => setActiveTab('Message')}>Messages ({messages.length})</button>
       </div>
 
-      {/* Tabs */}
-      <div className="inline-flex rounded-md shadow-sm mb-5">
-        <button className={tabButtonStyle('ALL')} onClick={() => setActiveTab('ALL')}>ALL</button>
-        <button className={tabButtonStyle('Unread')} onClick={() => setActiveTab('Unread')}>Unread (2)</button>
-        <button className={tabButtonStyle('Message')} onClick={() => setActiveTab('Message')}>Messages (3)</button>
+      {/* mark-all-as-read */}
+      <div className="flex justify-end">
+        {unread.length > 0 && (
+          <button
+            onClick={markAllRead}
+            className="flex items-center px-3 py-1 text-xs border border-yellow-400 text-yellow-700 rounded hover:bg-yellow-50 transition"
+          >
+            <span className="material-icons text-sm mr-1">done_all</span>
+            Mark all as read
+          </button>
+        )}
       </div>
 
-      {/* Filter Button */}
-      <div className="flex justify-end mb-4">
-        <button className="flex items-center px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 transition">
-          <span className="material-icons text-sm">filter_list</span>
-          <span className="ml-1 text-sm">Filter</span>
-        </button>
-      </div>
-
-      {/* Notifications List */}
+      {/* list */}
       <div className="space-y-4">
-        {filteredNotifications.map(notification => (
+        {filtered.map(n => (
           <div
-            key={notification.id}
-            className={`
-              p-4 rounded-lg border transition
-              ${notification.isRead
-                ? 'bg-gray-100 border-gray-200'
-                : 'bg-white border-yellow-400 shadow-md'}
-            `}
+            key={n.id}
+            className={`p-4 rounded-lg border transition
+              ${n.isRead ? 'bg-gray-100 border-gray-200' : 'bg-white border-yellow-400 shadow-md'}`}
           >
             <div className="flex items-start">
               <div className="mr-4 mt-1 w-8 h-8 flex items-center justify-center">
-                {getNotificationIcon(notification.type)}
+                {icon(n.type)}
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium text-base">{notification.title}</h3>
-                    <p className="text-sm text-gray-600 mt-0.5">Room: {notification.roomNumber}</p>
+                    <h3 className="font-medium">{n.title}</h3>
+                    <p className="text-sm text-gray-600">Room: {n.roomNumber}</p>
                   </div>
-                  <span className="text-xs text-gray-500">{notification.time}</span>
+                  <span className="text-xs text-gray-500">{n.time}</span>
                 </div>
                 <div className="mt-3 flex gap-2 flex-wrap">
-                  {!notification.isRead && (
+                  {!n.isRead && (
                     <button
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => markAsRead(n.id)}
                       className="px-3 py-1 text-xs border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-100 transition"
                     >
-                      Mark As Read
+                      Mark as read
                     </button>
                   )}
                   <button
-                    onClick={() => viewNotification(notification.id)}
+                    onClick={() => { markAsRead(n.id); setSelected(n); }}
                     className="px-3 py-1 text-xs border border-gray-300 text-gray-700 rounded hover:bg-gray-100 transition"
                   >
                     View
@@ -122,6 +140,14 @@ const NotificationsPage = () => {
           </div>
         ))}
       </div>
+
+      {/* view modal */}
+      {selected && (
+        <ViewModal
+          notification={selected}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 };

@@ -29,7 +29,7 @@ const SystemAdminDashboard = () => {
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [chartView, setChartView] = useState('monthly'); // 'monthly' or 'revenue'
 
-  const stats = [
+  const stats = [ 
     { 
       label: 'Total Hotels', 
       value: 240, 
