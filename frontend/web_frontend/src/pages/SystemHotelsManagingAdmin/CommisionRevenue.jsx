@@ -13,6 +13,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const CommisionRevenue = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [chartView, setChartView] = useState('time'); // 'time' or 'hotel'
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
 
   const monthlyRevenueData = [
     { month: 'Jan', revenue: 24500 },
@@ -47,7 +50,34 @@ const CommisionRevenue = () => {
     { year: '2024', revenue: 344000 }
   ];
 
+  // New data for hotel-wise commission
+  const hotelWiseRevenueData = [
+    { hotel: 'Shangri-La Hotel', revenue: 58500 },
+    { hotel: 'Cinnamon Grand', revenue: 45200 },
+    { hotel: 'Hilton Colombo', revenue: 52800 },
+    { hotel: 'Jetwing Blue', revenue: 38700 },
+    { hotel: 'Heritance Kandalama', revenue: 42300 },
+    { hotel: 'Taj Samudra', revenue: 36500 },
+    { hotel: 'Amari Galle', revenue: 29800 }
+  ].sort((a, b) => b.revenue - a.revenue); // Sort by revenue in descending order
+
   const chartData = useMemo(() => {
+    // If hotel view is selected
+    if (chartView === 'hotel') {
+      return {
+        labels: hotelWiseRevenueData.map(item => item.hotel),
+        datasets: [
+          {
+            label: 'Commission Revenue (LKR)',
+            data: hotelWiseRevenueData.map(item => item.revenue),
+            backgroundColor: '#facc15',
+            borderRadius: 6
+          }
+        ]
+      };
+    }
+    
+    // If time-based view is selected
     let labels = [];
     let data = [];
 
@@ -73,7 +103,7 @@ const CommisionRevenue = () => {
         }
       ]
     };
-  }, [selectedPeriod]);
+  }, [selectedPeriod, chartView]);
 
   const chartOptions = {
     responsive: true,
@@ -138,6 +168,35 @@ const CommisionRevenue = () => {
   const totalRevenue = monthlyRevenueData.reduce((sum, item) => sum + item.revenue, 0);
   const averageRevenue = totalRevenue / monthlyRevenueData.length;
 
+  // Handle view transaction
+  const handleViewTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowTransactionModal(true);
+  };
+
+  // Handle close modal
+  const handleCloseModal = () => {
+    setShowTransactionModal(false);
+  };
+
+  // Extended transaction data (simulating additional details we might fetch)
+  const getTransactionDetails = (transaction) => {
+    // In a real app, you would fetch this data from an API
+    return {
+      ...transaction,
+      transactionType: 'Booking Commission',
+      bookingReference: `BK-${Math.floor(100000 + Math.random() * 900000)}`,
+      paymentMethod: 'Credit Card',
+      commissionRate: '3.5%',
+      baseAmount: Math.floor(transaction.amount / 0.035),
+      customerName: 'John Doe',
+      customerEmail: 'john.doe@example.com',
+      processedBy: 'System',
+      notes: 'Standard commission for hotel booking',
+      receipt: 'https://example.com/receipt'
+    };
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Commission Revenue</h1>
@@ -167,26 +226,64 @@ const CommisionRevenue = () => {
 
       {/* Revenue Chart */}
       <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <h2 className="text-lg font-medium">Revenue Overview</h2>
-          <div className="flex space-x-2">
-            {['week', 'month', 'year'].map(period => (
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* View toggle buttons */}
+            <div className="flex space-x-2 items-center">
               <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`px-3 py-1 rounded-md text-sm capitalize ${
-                  selectedPeriod === period
+                onClick={() => setChartView('time')}
+                className={`px-3 py-1 rounded-md text-sm ${
+                  chartView === 'time'
                     ? 'bg-yellow-400 text-black'
                     : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {period}
+                Time-based
               </button>
-            ))}
+
+              {/* Period selector (only show if time-based view) */}
+              {chartView === 'time' && (
+                <div className="flex space-x-2 mx-2">
+                  {['week', 'month', 'year'].map(period => (
+                    <button
+                      key={period}
+                      onClick={() => setSelectedPeriod(period)}
+                      className={`px-3 py-1 rounded-md text-sm capitalize ${
+                        selectedPeriod === period
+                          ? 'bg-yellow-300 text-black'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {period}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              <button
+                onClick={() => setChartView('hotel')}
+                className={`px-3 py-1 rounded-md text-sm ${
+                  chartView === 'hotel'
+                    ? 'bg-yellow-400 text-black'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                Hotel-wise
+              </button>
+            </div>
           </div>
         </div>
 
         <Bar data={chartData} options={chartOptions} height={100} />
+        
+        {/* Chart description */}
+        <div className="mt-4 text-sm text-gray-500">
+          {chartView === 'hotel' 
+            ? 'Commission revenue breakdown by hotel, sorted by highest to lowest amount.' 
+            : `Commission revenue over ${selectedPeriod === 'week' ? 'the last week' : selectedPeriod === 'year' ? 'the last 5 years' : 'the last 12 months'}.`}
+        </div>
       </div>
 
       {/* Recent Transactions Table */}
@@ -246,8 +343,11 @@ const CommisionRevenue = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-yellow-500 hover:text-yellow-600">
-                      <span className="material-icons text-sm">visibility</span>
+                    <button 
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded-md text-xs"
+                      onClick={() => handleViewTransaction(transaction)}
+                    >
+                      View
                     </button>
                   </td>
                 </tr>
@@ -263,6 +363,137 @@ const CommisionRevenue = () => {
           </button>
         </div>
       </div>
+
+      {/* Transaction Details Modal */}
+      {showTransactionModal && selectedTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4 py-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            {/* Modal Header */}
+            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-800">
+                Transaction #{selectedTransaction.id}
+              </h2>
+              <button 
+                onClick={handleCloseModal}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            {/* Transaction Details - More compact layout */}
+            <div className="p-4">
+              {(() => {
+                const details = getTransactionDetails(selectedTransaction);
+                return (
+                  <>
+                    {/* Status Badge - At the top to save space */}
+                    <div className="mb-4 flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-700">Status:</span>
+                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                          details.status === 'Completed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {details.status}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {details.date}
+                      </div>
+                    </div>
+                    
+                    {/* Main Details */}
+                    <div className="mb-3 border-b border-gray-200 pb-3">
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">{details.hotelName}</p>
+                          <p className="text-sm text-gray-500">{details.transactionType}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-green-600">LKR {details.amount.toLocaleString()}</p>
+                          <p className="text-xs text-gray-500">Commission Amount</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Payment Details - Essential info in compact rows */}
+                    <div className="mb-3 text-sm space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-gray-500">Booking Ref</p>
+                          <p className="font-medium">{details.bookingReference}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Base Amount</p>
+                          <p className="font-medium">LKR {details.baseAmount.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Commission</p>
+                          <p className="font-medium">{details.commissionRate}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500">Payment Method</p>
+                          <p className="font-medium">{details.paymentMethod}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Customer Info - Toggle section */}
+                    <div className="mb-3 border-t border-gray-200 pt-3">
+                      <details>
+                        <summary className="font-medium text-gray-700 cursor-pointer">Customer Information</summary>
+                        <div className="mt-2 pl-2 text-sm grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-gray-500">Name</p>
+                            <p className="font-medium">{details.customerName}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Email</p>
+                            <p className="font-medium text-xs md:text-sm">{details.customerEmail}</p>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                    
+                    {/* Notes - Toggle section */}
+                    <div className="border-t border-gray-200 pt-3">
+                      <details>
+                        <summary className="font-medium text-gray-700 cursor-pointer">Additional Notes</summary>
+                        <div className="mt-2 pl-2 text-sm">
+                          <p>{details.notes}</p>
+                          <p className="mt-1 text-xs text-gray-500">Processed by: {details.processedBy}</p>
+                        </div>
+                      </details>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end">
+              <button 
+                onClick={handleCloseModal}
+                className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm mr-2"
+              >
+                Close
+              </button>
+              <button 
+                className="px-3 py-1 bg-yellow-400 text-black rounded hover:bg-yellow-500 text-sm flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
