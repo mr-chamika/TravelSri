@@ -16,8 +16,9 @@ export default function MerchantTabLayout() {
           paddingBottom: 10,
           paddingTop: 10,
         },
-      }}>
-
+      }}
+    >
+      {/* Only show this page in the tab bar */}
       <Tabs.Screen
         name="index"
         options={{
@@ -57,6 +58,10 @@ export default function MerchantTabLayout() {
           ),
         }}
       />
+
+      {/* Hide extra pages from tab bar */}
+      <Tabs.Screen name="AddItem" options={{ href: null }} />
+      <Tabs.Screen name="ChangeItem" options={{ href: null }} />
 
     </Tabs>
   );
