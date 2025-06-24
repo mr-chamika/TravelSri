@@ -7,7 +7,7 @@ export default function App() {
 
         <View className='flex-1 justify-center items-center bg'>
 
-            <Text>This is trip planner</Text>
+            <Text>This is bookings</Text>
 
         </View>
 
