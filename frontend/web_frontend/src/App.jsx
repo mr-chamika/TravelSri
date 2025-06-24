@@ -13,12 +13,65 @@ const NotificationsPage = lazy(() => import('./pages/HotelAdmin/NotificationsPag
 const EarningsPage = lazy(() => import('./pages/HotelAdmin/EarningsPage/EarningsPage'));
 const ProfilePage = lazy(() => import('./pages/HotelAdmin/ProfilePage/ProfilePage'));
 
+// System Hotels Managing Admin components
+const SystemAdmin = lazy(() => import('./pages/SystemHotelsManagingAdmin/SystemAdmin'));
+const SystemAdminDashboard = lazy(() => import('./pages/SystemHotelsManagingAdmin/SystemAdminDashboard'));
+const Properties = lazy(() => import('./pages/SystemHotelsManagingAdmin/Properties'));
+const RegistrationRequests = lazy(() => import('./pages/SystemHotelsManagingAdmin/RegistrationRequests'));
+const QuatationRequests = lazy(() => import('./pages/SystemHotelsManagingAdmin/QuatationRequests'));
+const CommisionRevenue = lazy(() => import('./pages/SystemHotelsManagingAdmin/CommisionRevenue'));
+const AdminProfile = lazy(() => import('./pages/SystemHotelsManagingAdmin/AdminProfile'));
+
 function App() {
   return (
-    <BrowserRouter>      <div className="app">
+    <BrowserRouter>      
+      <div className="app">
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* System Hotels Managing Admin Routes */}
+          <Route path="/system-admin" element={
+            <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+              <SystemAdmin />
+            </Suspense>
+          }>
+            <Route index element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <SystemAdminDashboard />
+              </Suspense>
+            } />
+            <Route path="dashboard" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <SystemAdminDashboard />
+              </Suspense>
+            } />
+            <Route path="properties" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <Properties />
+              </Suspense>
+            } />
+            <Route path="registration-requests" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <RegistrationRequests />
+              </Suspense>
+            } />
+            <Route path="quatation-requests" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <QuatationRequests />
+              </Suspense>
+            } />
+            <Route path="commision-revenue" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <CommisionRevenue />
+              </Suspense>
+            } />
+            <Route path="admin-profile" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <AdminProfile />
+              </Suspense>
+            } />
+          </Route>
           
           {/* Hotel Admin Routes */}
           <Route path="/hotel" element={
