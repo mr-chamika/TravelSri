@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
 import ChangeItem from './ChangeItem'; // Import the ChangeItem component
+import AddItem from './AddItem'; // Import the AddItem component
 
 type ListingItem = {
   id: number;
@@ -125,6 +126,7 @@ const Listings: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
   const [showChangeItem, setShowChangeItem] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
 
   const handleSearch = (text: string) => {
     setSearchText(text);
@@ -168,6 +170,35 @@ const Listings: React.FC = () => {
     setSelectedItem(null);
   };
 
+  const handleAddItem = () => {
+    setShowAddItem(true);
+  };
+
+  const handleSaveNewItem = (newItem: Omit<ListingItem, 'id'>) => {
+    const newId = Math.max(...listings.map(item => item.id)) + 1;
+    const itemWithId: ListingItem = { ...newItem, id: newId };
+
+    const updatedListings = [...listings, itemWithId];
+    setListings(updatedListings);
+    setFilteredListings(updatedListings.filter(item =>
+      item.title.toLowerCase().includes(searchText.toLowerCase())
+    ));
+    setShowAddItem(false);
+  };
+
+  const handleBackFromAdd = () => {
+    setShowAddItem(false);
+  };
+
+  if (showAddItem) {
+    return (
+      <AddItem
+        onSave={handleSaveNewItem}
+        onBack={handleBackFromAdd}
+      />
+    );
+  }
+
   if (showChangeItem && selectedItem) {
     return (
       <ChangeItem
@@ -205,7 +236,7 @@ const Listings: React.FC = () => {
       {/* Listings Header */}
       <View style={styles.listingsHeader}>
         <Text style={styles.listingsTitle}>Listings</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleAddItem}>
           <AntDesign name="plus" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -275,7 +306,21 @@ const Listings: React.FC = () => {
         </View>
       </Modal>
 
-
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <AntDesign name="home" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Feather name="message-square" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Feather name="credit-card" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Feather name="user" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
