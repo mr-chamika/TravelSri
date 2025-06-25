@@ -59,7 +59,7 @@ export default function Translator() {
                 <View className={`w-[90%] border-2 h-[60%] justify-between rounded-md ${topInputStyle}`}>
                     <TextInput
                         editable={isRotated}
-                        className='p-3'
+                        className='p-3 text-black'
                         placeholder={isRotated ? 'Enter text...' : 'Translation...'}
                         placeholderTextColor="#8E8E8E"
                     />
@@ -84,7 +84,7 @@ export default function Translator() {
                 <View className={`w-[90%] border-2 h-[40%] justify-between rounded-md ${bottomInputStyle}`}>
                     <TextInput
                         editable={!isRotated}
-                        className='p-3'
+                        className='p-3 text-black'
                         placeholder={isRotated ? 'Translation...' : 'Enter text...'}
                         placeholderTextColor="#8E8E8E"
                     />

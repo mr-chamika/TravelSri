@@ -187,9 +187,9 @@ export default function Group() {
                         <Text className="text-[22px] font-semibold mt-5 m-3">Request</Text>
                         <View className='items-center mb-5 gap-5'>
 
-                            <TextInput className='rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Name' placeholderTextColor="#8E8E8E" onChangeText={setName} />
-                            <TextInput className='rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Email' placeholderTextColor="#8E8E8E" onChangeText={setEmail} />
-                            <TextInput multiline={true} className='rounded-xl w-[300px] h-[200px] border-2 border-gray-200 p-4' placeholderTextColor="#8E8E8E" placeholder='Enter Your Name' style={{ textAlignVertical: 'top' }} onChangeText={setDes} />
+                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Name' placeholderTextColor="#8E8E8E" onChangeText={setName} />
+                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Email' placeholderTextColor="#8E8E8E" onChangeText={setEmail} />
+                            <TextInput multiline={true} className='text-black rounded-xl w-[300px] h-[200px] border-2 border-gray-200 p-4' placeholderTextColor="#8E8E8E" placeholder='Enter Your Name' style={{ textAlignVertical: 'top' }} onChangeText={setDes} />
 
 
                             <TouchableOpacity onPress={handleSubmit} className='w-[76%] h-10 bg-[#FEFA17] rounded-lg justify-center'>

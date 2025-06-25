@@ -187,7 +187,7 @@ export default function HotelsBookingScreen() {
                                                 setAdults(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                         <TextInput
                                             placeholder="# Children"
@@ -198,7 +198,7 @@ export default function HotelsBookingScreen() {
                                                 setChildren(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                         <TextInput
                                             placeholder="# Nights"
@@ -209,7 +209,7 @@ export default function HotelsBookingScreen() {
                                                 setNights(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                     </View>
 

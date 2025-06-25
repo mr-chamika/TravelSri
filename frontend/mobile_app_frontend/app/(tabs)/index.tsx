@@ -12,24 +12,23 @@ cssInterop(Image, { className: "style" });
 const pic = require('../../assets/images/tabbar/towert.png')
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
-const t = require('../../assets/images/tabbar/tower.jpg')
 
 const placesCollection = [
   { id: '1', image: pic, title: 'Lotus Tower' },
   { id: '2', image: bg, title: 'Another Place' },
-  { id: '3', image: t, title: 'Another Place' },
+  { id: '3', image: pic, title: 'Another Place' },
   { id: '4', image: pic, title: 'Lotus Tower' },
   { id: '5', image: bg, title: 'Another Place' },
-  { id: '6', image: t, title: 'Another Place' },
+  { id: '6', image: pic, title: 'Another Place' },
 
 ];
 const groupCollection = [
   { id: '1', image: pic, title: 'Matara to Colombo', duration: 2, date: '04 june 2020', stats: 'Confirm', price: 5000, max: 20, current: 3 },
   { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13 },
-  { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10 },
+  { id: '3', image: pic, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10 },
   { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4 },
   { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10 },
-  { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24 },
+  { id: '6', image: pic, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24 },
 
 ];
 
@@ -138,7 +137,7 @@ export default function Index() {
                       <Text className="mt-1 text-[15px] text-center pl-1">
                         {item.date} |
                       </Text>
-                      <Text className={`mt-1 text-[15px] text-center pl-1 ${item.stats == 'Confirm' ? 'text-green-400' : item.stats == 'Pending' ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <Text className={`mt-1 text-[15px] text-center font-extrabold pl-1 ${item.stats == 'Confirm' ? 'text-green-500' : item.stats == 'Pending' ? 'text-yellow-500' : 'text-red-500'}`}>
                         {item.stats}
                       </Text>
                     </View>

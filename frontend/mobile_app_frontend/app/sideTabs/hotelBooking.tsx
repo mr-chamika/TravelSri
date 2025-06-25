@@ -171,6 +171,7 @@ export default function HotelsWithNativeWindStyles() {
                                 <View className="w-full gap-4 justify-between h-full">
                                     <View className='flex-row justify-between gap-3'>
                                         <TextInput
+
                                             placeholder="# Adults"
                                             placeholderTextColor="#8E8E8E"
                                             value={adults}
@@ -179,7 +180,7 @@ export default function HotelsWithNativeWindStyles() {
                                                 setAdults(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="border text-black border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                         <TextInput
                                             placeholder="# Children"
@@ -190,7 +191,7 @@ export default function HotelsWithNativeWindStyles() {
                                                 setChildren(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="border text-black border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                         <TextInput
                                             placeholder="# Nights"
@@ -201,7 +202,7 @@ export default function HotelsWithNativeWindStyles() {
                                                 setNights(numericText);
                                             }}
                                             keyboardType="numeric"
-                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            className="border text-black border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
                                         />
                                     </View>
 
