@@ -88,7 +88,7 @@ const RoomManagement = () => {
       <header className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Room Inventory</h2>
         <button
-          className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded flex items-center"
+          className="bg-yellow-300 hover:bg-yellow-400 text-black px-4 py-2 rounded flex items-center"
           onClick={()=>setShowAddModal(true)}
         >
           <span className="material-icons mr-2">add</span> Add New Room
@@ -99,7 +99,7 @@ const RoomManagement = () => {
       <div className="flex mb-6">
         {['All','Available','Occupied','Maintenance'].map(s=>(
           <button key={s}
-            className={`mr-4 px-4 py-2 rounded ${filterStatus===s?'bg-yellow-500 text-black':'bg-gray-200'}`}
+            className={`mr-4 px-4 py-2 rounded ${filterStatus===s?'bg-yellow-300 text-black':'bg-gray-200'}`}
             onClick={()=>setFilterStatus(s)}
           >{s}</button>
         ))}
@@ -117,8 +117,8 @@ const RoomManagement = () => {
               <StatusPill status={room.status}/>
             </div>
 
-            <InfoRow icon="person" label={`Capacity: ${room.capacity} guests`} />
-            <InfoRow icon="attach_money" label={`$${room.price}/night`} />
+            <InfoRow icon="person" label={`Capacity: ${room.capacity} Guests`} />
+            <InfoRow icon="attach_money" label={`$${room.price}/Night`} />
 
             {/* Amenities Chips */}
             {room.amenities?.length>0 && (
@@ -135,10 +135,10 @@ const RoomManagement = () => {
             )}
 
             <div className="flex space-x-2 mt-4">
-              <button className="flex-1 bg-yellow-50 text-yellow-700 py-2 rounded hover:bg-yellow-100"
+              <button className="flex-1 bg-yellow-100 text-yellow-700 py-2 rounded hover:bg-yellow-200"
                 onClick={()=>openEdit(room)}
               >Edit</button>
-              <button className="flex-1 bg-gray-50 text-gray-600 py-2 rounded hover:bg-gray-100"
+              <button className="flex-1 bg-gray-100 text-gray-600 py-2 rounded hover:bg-gray-200"
                 onClick={()=>openView(room)}
               >Details</button>
             </div>
@@ -185,7 +185,7 @@ const RoomManagement = () => {
             <Detail label="Room Type" value={selectedRoom.type}/>
             <Detail label="Status" status value={selectedRoom.status}/>
             <Detail label="Price / Night" value={`$${selectedRoom.price}`}/>
-            <Detail label="Capacity" value={`${selectedRoom.capacity} guests`}/>
+            <Detail label="Capacity" value={`${selectedRoom.capacity} Guests`}/>
             {selectedRoom.description && (
               <div className="col-span-2"><Detail label="Description" value={selectedRoom.description}/></div>
             )}
@@ -290,7 +290,7 @@ const Modal = ({title,onClose,children})=>(
 const ModalActions = ({onCancel,confirmLabel})=>(
   <div className="flex justify-end space-x-3 pt-4 border-t">
     <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">Cancel</button>
-    <button type="submit" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded text-sm font-medium">{confirmLabel}</button>
+    <button type="submit" className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded text-sm font-medium">{confirmLabel}</button>
   </div>
 );
 

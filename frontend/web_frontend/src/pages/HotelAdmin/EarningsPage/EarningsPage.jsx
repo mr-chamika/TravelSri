@@ -263,7 +263,7 @@ const EarningsPage = () => {
                 key={range}
                 className={`px-4 py-1.5 text-sm ${
                   timeRange === range
-                    ? 'bg-yellow-400 text-black'
+                    ? 'bg-yellow-300 text-black'
                     : 'bg-white text-gray-700'
                 }`}
                 onClick={() => setTimeRange(range)}

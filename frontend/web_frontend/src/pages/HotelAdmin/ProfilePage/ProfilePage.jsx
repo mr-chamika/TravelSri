@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    hotelName: 'Shangrila Hotel',
+    hotelName: 'Shangri-La Hotel',
     address: '123 Beach Road, Colombo, Sri Lanka',
     email: 'info@shangrilahotel.com',
     phone: '+94 11 234 5678',
     website: 'www.shangrilahotel.com',
     description: 'Luxury beachfront hotel offering premium amenities, world-class dining, and exceptional service. Located in the heart of Colombo with easy access to attractions.',
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
+    checkInTime: '16:00',
+    checkOutTime: '08:00',
     starRating: 5,
     facilities: [
       'Wi-Fi', 'Swimming Pool', 'Restaurant', 'Bar', 'Spa', 
@@ -124,7 +124,7 @@ const ProfilePage = () => {
         {!isEditing && (
           <button 
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-md flex items-center"
+            className="px-4 py-2 bg-yellow-300 hover:bg-yellow-6400 text-black rounded-md flex items-center"
           >
             <span className="material-icons text-sm mr-1">edit</span>
             Edit Profile
@@ -404,7 +404,7 @@ const ProfilePage = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-md"
+              className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md"
             >
               Save Changes
             </button>

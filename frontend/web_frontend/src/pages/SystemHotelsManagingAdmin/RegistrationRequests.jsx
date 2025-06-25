@@ -13,58 +13,58 @@ const RegistrationRequests = () => {
     {
       id: '#001',
       name: 'Shangri-La',
-      address: 'Galiface Road, Colombo 7',
+      address: 'Gallface Road, Colombo 7, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '36 Single Rooms | 32 Double Rooms\n24 Delux Room | 19 Family Rooms'
     },
     {
       id: '#002',
-      name: 'Cinnamon',
-      address: 'Galiface Road, Colombo 7',
+      name: 'Cinnamon Gardens',
+      address: 'Park Avenue, Kandy, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '21 Single Rooms | 15 Double Rooms\n12 Delux Room | 6 Family Rooms'
     },
     {
       id: '#003',
-      name: 'Hilton',
-      address: 'Galiface Road, Colombo 7',
+      name: 'Hilton Grand ',
+      address: '142, New South Road, Colombo, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '28 Single Rooms | 21 Double Rooms\n16 Delux Room | 14 Family Rooms'
     },
     {
       id: '#004',
       name: 'Jetwings',
-      address: 'Galiface Road, Colombo 7',
+      address: '74/A, Ocean Avenue, Matara, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '24 Single Rooms | 18 Double Rooms\n12 Delux Room | 10 Family Rooms'
     },
     {
       id: '#005',
-      name: 'Maroons',
-      address: 'Galiface Road, Colombo 7',
+      name: 'Dream Maroons',
+      address: '124, Fransis Road, Negemobo',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '29 Single Rooms | 15 Double Rooms\n19 Delux Room | 12 Family Rooms'
     },
     {
       id: '#006',
       name: 'Ocena Beach',
-      address: 'Galiface Road, Colombo 7',
+      address: 'Resthouse Cross Road, Tricomalee, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '13 Single Rooms | 19 Double Rooms\n14 Delux Room | 5 Family Rooms'
     },
     {
       id: '#007',
       name: 'Blue Sky',
-      address: 'Galiface Road, Colombo 7',
+      address: 'Matara Road, Galle, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '16 Single Rooms | 29 Double Rooms\n11 Delux Room | 7 Family Rooms'
     },
     {
       id: '#008',
       name: 'Lakeside View',
-      address: 'Galiface Road, Colombo 7',
+      address: 'New Townhall Avenue, Matara, Sri Lanka',
       contactNumber: '+94112365894',
-      description: '14 Single Rooms | 23 Double Rooms\n10 Delux Room | 8 Family Rooms'
+      description: '15 Single Rooms | 13 Double Rooms\n12 Delux Room | 6 Family Rooms'
     }
   ];
   

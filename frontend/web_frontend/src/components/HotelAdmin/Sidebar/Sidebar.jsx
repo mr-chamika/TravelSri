@@ -33,7 +33,7 @@ const Sidebar = ({ unreadCount = 0 }) => {
             to={path}
             className={({ isActive }) =>
               `flex items-center p-4 relative transition
-               ${isActive ? 'bg-yellow-400 text-black' : 'text-gray-700 hover:bg-gray-100'}`
+               ${isActive ? 'bg-yellow-300 text-black' : 'text-gray-700 hover:bg-gray-100'}`
             }
           >
             <span className="material-icons mr-3">{icon}</span>

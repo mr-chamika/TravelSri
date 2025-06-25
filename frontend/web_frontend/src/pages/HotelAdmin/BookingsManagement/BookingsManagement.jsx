@@ -11,9 +11,9 @@ const BookingsManagement = () => {
   const [bookings, setBookings] = useState([
     {
       id: 1,
-      guestName: 'John Smith',
-      guestEmail: 'john@example.com',
-      guestPhone: '555-0101',
+      guestName: 'Theekshana Thathsara',
+      guestEmail: 'thathsara@example.com',
+      guestPhone: '+9471-555-0101',
       roomType: 'Deluxe Room',
       roomNumber: '101',
       adults: 2,
@@ -28,9 +28,9 @@ const BookingsManagement = () => {
     },
     {
       id: 2,
-      guestName: 'Sarah Johnson',
-      guestEmail: 'sarah@example.com',
-      guestPhone: '555-0102',
+      guestName: 'Tharusha Samarawickrama',
+      guestEmail: 'tharusha@example.com',
+      guestPhone: '+9477-585-0162',
       roomType: 'Suite',
       roomNumber: '103',
       adults: 2,
@@ -45,9 +45,9 @@ const BookingsManagement = () => {
     },
     {
       id: 3,
-      guestName: 'Michael Brown',
-      guestEmail: 'mike@example.com',
-      guestPhone: '555-0103',
+      guestName: 'Hasith Chamika',
+      guestEmail: 'chamika@example.com',
+      guestPhone: '+9478-958-0175',
       roomType: 'Standard Room',
       roomNumber: '105',
       adults: 1,
@@ -62,9 +62,9 @@ const BookingsManagement = () => {
     },
     {
       id: 4,
-      guestName: 'Emily Davis',
-      guestEmail: 'emily@example.com',
-      guestPhone: '555-0104',
+      guestName: 'Charitha Sudewa',
+      guestEmail: 'charitha@example.com',
+      guestPhone: '+9475-963-4583',
       roomType: 'Deluxe Room',
       roomNumber: '201',
       adults: 2,
@@ -79,11 +79,28 @@ const BookingsManagement = () => {
     },
     {
       id: 5,
-      guestName: 'James Wilson',
-      guestEmail: 'james@example.com',
-      guestPhone: '555-0105',
+      guestName: 'Bimsara Imash',
+      guestEmail: 'bimsara@example.com',
+      guestPhone: '+9472-852-4635',
       roomType: 'Suite',
       roomNumber: '202',
+      adults: 2,
+      children: 0,
+      checkIn: '2025-06-20',
+      checkOut: '2025-06-22',
+      status: 'Confirmed',
+      paymentStatus: 'Paid',
+      totalAmount: 1250,
+      specialRequests: 'Late check-out requested',
+      paymentMethod: 'Credit Card',
+    },
+    {
+      id: 6,
+      guestName: 'Teshini Sawidya',
+      guestEmail: 'teshini@example.com',
+      guestPhone: '+9476-450-6395',
+      roomType: 'Standard Room',
+      roomNumber: '203',
       adults: 2,
       children: 0,
       checkIn: '2025-06-20',
@@ -258,7 +275,7 @@ const BookingsManagement = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Bookings Management</h2>
         <button
-          className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-md flex items-center"
+          className="bg-yellow-300 hover:bg-yellow-400 text-black px-4 py-2 rounded-md flex items-center"
           onClick={() => setShowBookingModal(true)}
         >
           <span className="material-icons mr-2">add</span> New Booking
@@ -272,7 +289,7 @@ const BookingsManagement = () => {
             key={status}
             className={`mr-4 px-4 py-2 rounded-md ${
               filterStatus === status
-                ? 'bg-yellow-500 text-black'
+                ? 'bg-yellow-300 text-black'
                 : 'bg-gray-200'
             }`}
             onClick={() => setFilterStatus(status)}
@@ -374,7 +391,7 @@ const BookingsManagement = () => {
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-2">
                     <button 
-                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-3 py-1 rounded-md text-xs font-medium"
+                      className="bg-yellow-300 hover:bg-yellow-400 text-black px-3 py-1 rounded-md text-xs font-medium"
                       onClick={() => handleEdit(b)}
                     >
                     Edit
@@ -545,7 +562,7 @@ const BookingsManagement = () => {
                   rows="3"
                   value={newBooking.specialRequests}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   placeholder="Enter any special requirements..."
                 />
               </section>
@@ -573,7 +590,7 @@ const BookingsManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-md text-sm font-medium"
+                  className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium"
                 >
                   Create Booking
                 </button>
@@ -741,7 +758,7 @@ const BookingsManagement = () => {
                   rows="3"
                   value={editBooking.specialRequests}
                   onChange={handleEditInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   placeholder="Enter any special requirements..."
                 />
               </section>
@@ -769,7 +786,7 @@ const BookingsManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-md text-sm font-medium"
+                  className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium"
                 >
                   Save Changes
                 </button>

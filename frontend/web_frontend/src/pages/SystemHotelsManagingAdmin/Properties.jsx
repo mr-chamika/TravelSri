@@ -11,8 +11,8 @@ const Properties = () => {
   const properties = [
     {
       id: 1,
-      name: "Well Furnished Apartment",
-      address: "100 Smart Street, LA, USA",
+      name: "Cinamond Lakeside",
+      address: "100 New Street, Colombo, Sri Lanka",
       image: "/images/property1.jpg",
       category: "Apartments",
       details: {
@@ -24,8 +24,8 @@ const Properties = () => {
     },
     {
       id: 2,
-      name: "Grand Hotel",
-      address: "45 Park Avenue, NY, USA",
+      name: "OceanWave Hotel",
+      address: "45 Park Avenue, Colombo 2, Sri Lanka",
       image: "/images/property2.jpg",
       category: "Hotels",
       details: {
@@ -38,7 +38,7 @@ const Properties = () => {
     {
       id: 3,
       name: "Seaside Villa",
-      address: "12 Ocean Drive, Miami, USA",
+      address: "12 Ocean Drive, Matara, Sri Lanka",
       image: "/images/property3.jpg",
       category: "Villas",
       details: {
@@ -51,7 +51,7 @@ const Properties = () => {
     {
       id: 4,
       name: "City Center Hotel",
-      address: "78 Main Street, Chicago, USA",
+      address: "78 Main Street, Kandy, Sri Lanka",
       image: "/images/property4.jpg",
       category: "Hotels",
       details: {
@@ -64,7 +64,7 @@ const Properties = () => {
     {
       id: 5,
       name: "Mountain View Villa",
-      address: "25 Highland Road, Denver, USA",
+      address: "25 Highland Road, Nuwaraeliya, Sri Lanka",
       image: "/images/property5.jpg",
       category: "Villas",
       details: {
@@ -76,8 +76,8 @@ const Properties = () => {
     },
     {
       id: 6,
-      name: "Urban Loft Apartments",
-      address: "92 Downtown Blvd, San Francisco, USA",
+      name: "Avendra Gardens Apartments",
+      address: "92 Downtown Blvd, Negombo, Sri Lanka",
       image: "/images/property6.jpg",
       category: "Apartments",
       details: {

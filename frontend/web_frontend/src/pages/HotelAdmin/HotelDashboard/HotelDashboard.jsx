@@ -184,9 +184,10 @@ const HotelDashboard = () => {
       Icon: MdBookOnline,
     },
     {
-      label: 'EARNINGS',
+      label: 'TOTAL EARNINGS',
       value: `LKR ${dashboardData.earnings.toLocaleString()}`,
       Icon: MdAttachMoney,
+
     },
     {
       label: 'CHECK-INS TODAY',
@@ -305,9 +306,9 @@ const HotelDashboard = () => {
           </thead>
           <tbody className="divide-y divide-gray-200 text-sm">
             {[
-              { name: 'John Smith', room: 'Deluxe Room', in: 'Oct 12, 2024', out: 'Oct 15, 2024', status: 'Confirmed' },
-              { name: 'Sarah Johnson', room: 'Suite',       in: 'Oct 13, 2024', out: 'Oct 16, 2024', status: 'Pending'   },
-              { name: 'Michael Brown', room: 'Standard',    in: 'Oct 17, 2024', out: 'Oct 19, 2024', status: 'Confirmed' },
+              { name: 'Theekshana Thathsara', room: 'Deluxe Room', in: 'Jun 12, 2025', out: 'Jun 15, 2024', status: 'Confirmed' },
+              { name: 'Tharusha Samarawickrama', room: 'Suite',       in: 'Jun 23, 2025', out: 'Jun 26, 2024', status: 'Pending'   },
+              { name: 'Hasith Chamika', room: 'Standard',    in: 'Oct 17, 2024', out: 'Oct 19, 2024', status: 'Confirmed' },
             ].map((b) => (
               <tr key={b.name}>
                 <td className="py-3 px-4">{b.name}</td>

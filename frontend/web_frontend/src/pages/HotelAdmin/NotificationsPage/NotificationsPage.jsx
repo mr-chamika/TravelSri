@@ -68,7 +68,7 @@ const NotificationsPage = () => {
   /* ---------------- style helper ---------------- */
   const tabBtn = (tab) =>
     `px-4 py-2 text-sm font-medium border border-gray-300 first:rounded-l-lg last:rounded-r-lg
-     transition ${activeTab === tab ? 'bg-yellow-400 text-black' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
+     transition ${activeTab === tab ? 'bg-yellow-300 text-black' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
 
   /* ---------------- render ---------------- */
   return (
@@ -91,7 +91,7 @@ const NotificationsPage = () => {
         {unread.length > 0 && (
           <button
             onClick={markAllRead}
-            className="flex items-center px-3 py-1 text-xs border border-yellow-400 text-yellow-700 rounded hover:bg-yellow-50 transition"
+            className="flex items-center px-3 py-1 text-xs border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-50 transition"
           >
             <span className="material-icons text-sm mr-1">done_all</span>
             Mark all as read
@@ -105,7 +105,7 @@ const NotificationsPage = () => {
           <div
             key={n.id}
             className={`p-4 rounded-lg border transition
-              ${n.isRead ? 'bg-gray-100 border-gray-200' : 'bg-white border-yellow-400 shadow-md'}`}
+              ${n.isRead ? 'bg-gray-100 border-gray-200' : 'bg-white border-yellow-300 shadow-md'}`}
           >
             <div className="flex items-start">
               <div className="mr-4 mt-1 w-8 h-8 flex items-center justify-center">

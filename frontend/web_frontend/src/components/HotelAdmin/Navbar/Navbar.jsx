@@ -23,7 +23,7 @@ const Navbar = ({ hotelName, notifications = [] }) => {
   return (
     <div className="flex justify-between items-center p-4 bg-white shadow-sm relative">
       <h1 className="text-2xl text-gray-500 font-light">
-        Welcome {hotelName || 'Shangrila Hotel'}
+        Welcome {hotelName || 'Shangri-La Hotel'}
       </h1>
 
       <div className="flex items-center">
