@@ -20,10 +20,10 @@ import {
   getGradient
 } from '../../../utils/chartUtils';
 import {
-  MdAttachMoney, // Total Earnings
-  MdTrendingUp,  // Monthly Earnings
-  MdPending,     // Pending Payouts
-  MdPercent      // Platform Commission
+  MdAttachMoney, // total earnings
+  MdTrendingUp,  // monthly earnings
+  MdPending,     // pending payouts
+  MdPercent      // platform commission
 } from 'react-icons/md';
 
 ChartJS.register(
@@ -240,6 +240,7 @@ const EarningsPage = () => {
     }
   });
 
+  // Stat cards data and component (matching HotelDashboard style)
   const statCards = [
     {
       label: 'TOTAL EARNINGS',
@@ -282,6 +283,7 @@ const EarningsPage = () => {
         <p className="text-gray-500">{currentDate}</p>
       </div>
 
+      {/* ---- Stats Cards ---- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {statCards.map((s) => (
           <StatsIconCard key={s.label} {...s} />
