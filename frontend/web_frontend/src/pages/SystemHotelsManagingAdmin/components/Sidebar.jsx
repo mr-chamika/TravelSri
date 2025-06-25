@@ -8,7 +8,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { name: 'Dashboard', icon: 'dashboard', path: '/system-admin/dashboard' },
     { name: 'Properties', icon: 'apartment', path: '/system-admin/properties' },
     { name: 'Registration Requests', icon: 'how_to_reg', path: '/system-admin/registration-requests' },
-    { name: 'Quatation Requests', icon: 'request_quote', path: '/system-admin/quatation-requests' },
+    //{ name: 'Quatation Requests', icon: 'request_quote', path: '/system-admin/quatation-requests' },
     { name: 'Commision Revenue', icon: 'payments', path: '/system-admin/commision-revenue' },
     { name: 'Admin Profile', icon: 'person', path: '/system-admin/admin-profile' },
   ];
