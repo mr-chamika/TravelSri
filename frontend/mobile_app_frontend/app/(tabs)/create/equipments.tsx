@@ -27,18 +27,18 @@ export default function Equipments() {
             </View>
             <View>
 
-                <Text className="text-[22px] font-semibold mx-3">Items</Text>
+                <Text className="text-[22px] font-semibold mx-3 mb-4">Items</Text>
 
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    className="px-5 h-[190px]"
+                    className="px-5 h-[27%]"
                     contentContainerStyle={{ paddingRight: 40 }}
                 >
                     <View className=" flex-row gap-10 h-full">
-                        <TouchableOpacity className="w-[83px]">
+                        <TouchableOpacity className="w-[83px] items-center">
                             <Image
-                                className="w-[83px] h-[150px] rounded-[23px] shadow-gray-400  "
+                                className="w-[60px] h-[120px] rounded-[23px] shadow-gray-400"
                                 source={pic}
                             />
                             <Text className="mt-2 text-[10px] italic text-center">
@@ -49,9 +49,9 @@ export default function Equipments() {
                             </Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="w-[83px]">
+                        <TouchableOpacity className="w-[83px] items-center">
                             <Image
-                                className="w-[83px] h-[150px] rounded-[23px] shadow-gray-400  "
+                                className="w-[60px] h-[120px] rounded-[23px] shadow-gray-400"
                                 source={pic}
                             />
                             <Text className="mt-2 text-[10px] italic text-center">
@@ -61,9 +61,9 @@ export default function Equipments() {
                                 5000.00 LKR
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="w-[83px]">
+                        <TouchableOpacity className="w-[83px] items-center">
                             <Image
-                                className="w-[83px] h-[150px] rounded-[23px] shadow-gray-400  "
+                                className="w-[60px] h-[120px] rounded-[23px] shadow-gray-400"
                                 source={pic}
                             />
                             <Text className="mt-2 text-[10px] italic text-center">
@@ -73,9 +73,9 @@ export default function Equipments() {
                                 90 000.00 LKR
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="w-[83px]">
+                        <TouchableOpacity className="w-[83px] items-center">
                             <Image
-                                className="w-[83px] h-[150px] rounded-[23px] shadow-gray-400  "
+                                className="w-[60px] h-[120px] rounded-[23px] shadow-gray-400"
                                 source={pic}
                             />
                             <Text className="mt-2 text-[10px] italic text-center">
@@ -91,7 +91,7 @@ export default function Equipments() {
             </View>
             <View className="mt-5">
 
-                <Text className="text-[22px] font-semibold my-2 mx-3">Top Stores</Text>
+                <Text className="text-[22px] font-semibold mb-2 mx-3">Top Stores</Text>
 
                 <ScrollView
                     horizontal

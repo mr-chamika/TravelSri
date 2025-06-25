@@ -23,7 +23,7 @@ export default function Equipments() {
             <View className="w-[80%] items-center mx-10 flex-row justify-center bg-[#d9d9d976] rounded-2xl my-10">
 
                 <Image className="w-7 h-7" source={search}></Image>
-                <TextInput className=" h-[40px] w-[230px] pl-5" placeholder="Search...." />
+                <TextInput className=" h-[40px] w-[230px] pl-5" placeholder="Search...." placeholderTextColor="#8E8E8E" />
 
             </View>
             <View>

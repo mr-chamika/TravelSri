@@ -46,7 +46,7 @@ export default function Dropdown() {
 
     return (
         <View className="bg-[#F2F5FA] relative gap-y-8 h-full">
-            <View>
+            <View className="h-full">
                 {/* Location selector button */}
                 {selected && (
                     <View className="w-full px-4 mt-6">
@@ -98,44 +98,51 @@ export default function Dropdown() {
                 {/* Only show main content if a location is selected */}
                 {selected && (
                     <>
-                        {/* Scrollable cards */}
-                        <ScrollView className="z-10 h-[480px] mt-10">
-                            <View className="items-center gap-5">
-                                {[0, 1, 2, 3].map((_, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        className="bg-gray-200 w-[350px] h-[165px] items-center rounded-[20px] ml-3"
-                                    >
-                                        <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
-                                            <Text className="bg-gray-100 rounded-md px-2">Travel #{index + 1}</Text>
-                                            <TouchableOpacity
-                                                onPress={() => toggleCardSelection(index)}
-                                                className="bg-gray-100 w-5 h-5 rounded-full justify-center items-center"
-                                            >
-                                                {selectedCardIndex === index && (
-                                                    <Image className="w-4 h-4" source={mark} />
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
-                                        <Image
-                                            className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
-                                            source={pic}
-                                        />
-                                        <View>
-                                            <Text className="mt-1 text-[20px] text-center">
-                                                Matara to Colombo
-                                            </Text>
-                                            <Text className="mt-1 text-[15px] text-center">
-                                                1 day
-                                            </Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </ScrollView>
-
                         <View>
-                            <Text className="text-center mt-3">Total:1000 LKR</Text>
+                            {/* Scrollable cards */}
+                            <ScrollView
+                                className="w-full h-[80%]"
+                                contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 pt-5 pb-5"
+                                showsVerticalScrollIndicator={false}
+
+                            >
+                                <View className="items-center gap-5">
+                                    {[0, 1, 2, 3].map((_, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            className="bg-gray-200 w-[350px] h-[165px] items-center rounded-[20px] ml-3"
+                                        >
+                                            <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
+                                                <Text className="bg-gray-100 rounded-md px-2">Travel #{index + 1}</Text>
+                                                <TouchableOpacity
+                                                    onPress={() => toggleCardSelection(index)}
+                                                    className="bg-gray-100 w-5 h-5 rounded-full justify-center items-center"
+                                                >
+                                                    {selectedCardIndex === index && (
+                                                        <Image className="w-4 h-4" source={mark} />
+                                                    )}
+                                                </TouchableOpacity>
+                                            </View>
+                                            <Image
+                                                className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
+                                                source={pic}
+                                            />
+                                            <View>
+                                                <Text className="mt-1 text-[20px] text-center">
+                                                    Matara to Colombo
+                                                </Text>
+                                                <Text className="mt-1 text-[15px] text-center">
+                                                    1 day
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </ScrollView>
+
+                        </View>
+                        <View className="p-4 border-t border-gray-200 bg-white justify-center">
+                            <Text className="text-center font-bold text-lg">Total: 1000 LKR</Text>
                         </View>
                     </>
                 )}

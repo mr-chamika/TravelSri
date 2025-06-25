@@ -85,14 +85,14 @@ export default function Guide() {
                     }}
                 >
                     <View className="h-full justify-center items-center bg-black/50">
-                        <View className="w-[90%] h-[96%] bg-white my-4 p-2 rounded-2xl   items-center">
+                        <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl   items-center">
                             <View className='w-full'>
                                 <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
                                     {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
                                 </TouchableOpacity>
-                                <Text className="text-xl font-bold mb-8 text-center">Enter Travel Details</Text>
+                                <Text className="text-xl font-bold mb-8 text-center">Guide Booking</Text>
                             </View>
-                            <View className='w-full gap-8 h-full'>
+                            <View className='w-full flex-1'>
                                 <Calendar
                                     style={{ width: 320, maxWidth: '100%' }}
                                     onDayPress={onDayPress}
@@ -103,70 +103,72 @@ export default function Guide() {
                                         arrowColor: '#007BFF',
                                     }}
                                 />
-
-                                <View className="w-full h-[35%] relative z-20 mt-4 gap-16">
-                                    <TouchableOpacity
-                                        onPress={() => { setShowDropdown(!showDropdown); if (show) setShow(false) }}
-                                        className="border border-gray-300 rounded-xl px-4 py-3 bg-white w-full"
-                                    >
-                                        <Text className={`text-base ${location ? 'text-black' : 'text-gray-400'}`}>
-                                            {location || 'Select Location'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    {showDropdown && (
-                                        <View className="absolute top-[52px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
-                                            <ScrollView>
-                                                {locations.map((loc, index) => (
-                                                    <TouchableOpacity
-                                                        key={index}
-                                                        onPress={() => {
-                                                            setLocation(loc);
-                                                            setShowDropdown(false);
-                                                        }}
-                                                        className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}
-                                                    >
-                                                        <Text className="text-base">{loc}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </ScrollView>
+                                <View className="w-full p-2 bg-white h-[30%] ">
+                                    <View className='justify-between'>
+                                        <View className="w-full h-[80%] relative z-20 mt-4 gap-6">
+                                            <TouchableOpacity
+                                                onPress={() => { setShowDropdown(!showDropdown); if (show) setShow(false) }}
+                                                className="border border-gray-300 rounded-xl px-4 py-3 bg-white w-full"
+                                            >
+                                                <Text className={`text-base ${location ? 'text-black' : 'text-gray-400'}`}>
+                                                    {location || 'Select Location'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            {showDropdown && (
+                                                <View className="absolute top-[52px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
+                                                    <ScrollView>
+                                                        {locations.map((loc, index) => (
+                                                            <TouchableOpacity
+                                                                key={index}
+                                                                onPress={() => {
+                                                                    setLocation(loc);
+                                                                    setShowDropdown(false);
+                                                                }}
+                                                                className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}
+                                                            >
+                                                                <Text className="text-base">{loc}</Text>
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
+                                            <TouchableOpacity
+                                                onPress={() => { setShow(!show) }}
+                                                className="border border-gray-300 rounded-xl px-4 py-3 bg-white"
+                                            >
+                                                <Text className={`text-base ${lan ? 'text-black' : 'text-gray-400'}`}>
+                                                    {lan || 'Select Language'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            {show && (
+                                                <View className="absolute top-[130px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
+                                                    <ScrollView>
+                                                        {languages.map((l, index) => (
+                                                            <TouchableOpacity
+                                                                key={index}
+                                                                onPress={() => {
+                                                                    setLan(l);
+                                                                    setShow(false);
+                                                                }}
+                                                                className={`px-4 py-2 ${lan === l ? 'bg-blue-100' : ''}`}
+                                                            >
+                                                                <Text className="text-base">{l}</Text>
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </ScrollView>
+                                                </View>
+                                            )}
                                         </View>
-                                    )}
-                                    <TouchableOpacity
-                                        onPress={() => { setShow(!show) }}
-                                        className="border border-gray-300 rounded-xl px-4 py-3 bg-white"
-                                    >
-                                        <Text className={`text-base ${lan ? 'text-black' : 'text-gray-400'}`}>
-                                            {lan || 'Select Language'}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    {show && (
-                                        <View className="absolute top-[152px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
-                                            <ScrollView>
-                                                {languages.map((l, index) => (
-                                                    <TouchableOpacity
-                                                        key={index}
-                                                        onPress={() => {
-                                                            setLan(l);
-                                                            setShow(false);
-                                                        }}
-                                                        className={`px-4 py-2 ${lan === l ? 'bg-blue-100' : ''}`}
-                                                    >
-                                                        <Text className="text-base">{l}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </ScrollView>
+                                        <View className="w-full h-full bottom-0">
+
+                                            <TouchableOpacity
+                                                onPress={handleSubmit}
+                                                className="bg-[#FEFA17] py-3 rounded-xl"
+                                            >
+                                                <Text className="text-black text-center font-semibold">Submit</Text>
+                                            </TouchableOpacity>
                                         </View>
-                                    )}
-                                </View>
-
-                                <View className="w-full space-y-8 justify-evenly">
-
-                                    <TouchableOpacity
-                                        onPress={handleSubmit}
-                                        className="bg-blue-600 py-3 rounded-xl"
-                                    >
-                                        <Text className="text-white text-center font-semibold">Submit</Text>
-                                    </TouchableOpacity>
+                                    </View>
                                 </View>
                             </View>
                         </View>
@@ -191,22 +193,22 @@ export default function Guide() {
 
                         <View>
                             <ScrollView
-                                className="w-full h-[500px]"
-                                contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 pt-5"
+                                className="w-full h-[81%]"
+                                contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
                                 showsVerticalScrollIndicator={false}
                             >
                                 {starCounts.map((starCount, index) => (
-                                    <View key={index} className="bg-[#fbfbfb] w-[170px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300">
-                                        {/* <View className="w-full flex-row absolute justify-end px-3 pt-1 z-10">
+                                    <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300">
+                                        <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
                                             <TouchableOpacity
-                                            className="w-6 h-6 rounded-full justify-center items-center border-2 bg-gray-200"
-                                            onPress={() => toggleCardSelection(index)}
+                                                className="w-6 h-6 rounded-full justify-center items-center bg-gray-200"
+                                                onPress={() => toggleCardSelection(index)}
                                             >
-                                            {selectedCardIndex === index && (
+                                                {selectedCardIndex === index && (
                                                     <Image className='w-4 h-4' source={mark} />
-                                                    )}
-                                                    </TouchableOpacity>
-                                                    </View> */}
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
                                         <View className='flex-row mt-2 gap-2'>
                                             <Image
                                                 className='w-[50px] h-[50px] rounded-full'
@@ -246,12 +248,12 @@ export default function Guide() {
                                 }
                             </ScrollView>
                         </View>
+                        <View className="p-4 border-t border-gray-200 bg-white">
+                            <Text className="text-center font-bold text-lg">Total: 1000 LKR</Text>
+                        </View>
                     </>
                 )}
 
-                <View>
-                    <Text className="text-center mt-9">Total: 1000 LKR</Text>
-                </View>
             </View>
         </View>
     );

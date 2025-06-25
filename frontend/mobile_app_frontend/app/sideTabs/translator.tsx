@@ -28,7 +28,7 @@ export default function Translator() {
 
             <Text className="font-extrabold text-3xl text-center my-4">Translator</Text>
 
-            <View className='w-full h-[45%] items-center'>
+            <View className='w-full h-[40%] items-center'>
                 <TouchableOpacity
                     onPress={() => { setShowDropdown(!showDropdown) }}
                     className="border border-gray-300 rounded-xl px-4 py-3 my-4 bg-white w-[95%]"
@@ -61,6 +61,7 @@ export default function Translator() {
                         editable={isRotated}
                         className='p-3'
                         placeholder={isRotated ? 'Enter text...' : 'Translation...'}
+                        placeholderTextColor="#8E8E8E"
                     />
                     <TouchableOpacity className='w-full items-end' onPress={() => alert('mic eka')}><Image className='w-5 h-5 m-2' source={mic} /></TouchableOpacity>
                 </View>
@@ -73,7 +74,7 @@ export default function Translator() {
                 />
             </TouchableOpacity>
 
-            <View className='w-full h-[70%] items-center'>
+            <View className='w-full h-[60%] items-center'>
                 <View className="border border-gray-300 rounded-xl px-4 py-3 my-4 bg-white w-[95%]">
                     <Text className={`text-base text-black`}>
                         {'Sinhala'}
@@ -85,10 +86,17 @@ export default function Translator() {
                         editable={!isRotated}
                         className='p-3'
                         placeholder={isRotated ? 'Translation...' : 'Enter text...'}
+                        placeholderTextColor="#8E8E8E"
                     />
                     <TouchableOpacity className='w-full items-end' onPress={() => alert('mic eka')}><Image className='w-5 h-5 m-2' source={mic} /></TouchableOpacity>
                 </View>
+
+                <TouchableOpacity onPress={() => alert('Translating...')} className='rounded-xl justify-center bg-[#FEFA17] w-[95%] h-10 mt-10'>
+                    <Text className='text-center font-extrabold'>Translate</Text>
+                </TouchableOpacity>
             </View>
+
+
         </View>
     )
 }

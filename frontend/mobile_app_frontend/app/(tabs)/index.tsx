@@ -12,6 +12,26 @@ cssInterop(Image, { className: "style" });
 const pic = require('../../assets/images/tabbar/towert.png')
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
+const t = require('../../assets/images/tabbar/tower.jpg')
+
+const placesCollection = [
+  { id: '1', image: pic, title: 'Lotus Tower' },
+  { id: '2', image: bg, title: 'Another Place' },
+  { id: '3', image: t, title: 'Another Place' },
+  { id: '4', image: pic, title: 'Lotus Tower' },
+  { id: '5', image: bg, title: 'Another Place' },
+  { id: '6', image: t, title: 'Another Place' },
+
+];
+const groupCollection = [
+  { id: '1', image: pic, title: 'Matara to Colombo', duration: 2, date: '04 june 2020', stats: 'Confirm', price: 5000, max: 20, current: 3 },
+  { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13 },
+  { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10 },
+  { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4 },
+  { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10 },
+  { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24 },
+
+];
 
 
 export default function Index() {
@@ -39,7 +59,7 @@ export default function Index() {
   }
 
   return (
-    <View className="bg-[#F2F5FA] flex flex-col gap-5 h-full">
+    <View className="bg-[#F2F5FA] justify-between h-full py-3">
       <View className="w-full items-center mt-1 ">
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Morning Nirdha !</Text>
@@ -56,43 +76,27 @@ export default function Index() {
           contentContainerStyle={{ paddingRight: 40 }}
         >
           <View className=" flex-row gap-10">
-            <TouchableOpacity className="w-[83px]">
-              <Image
-                className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <Text className="mt-2 text-[10px] italic text-center">
-                Lotus Tower
-              </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity className="w-[83px]">
-              <Image
-                className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <Text className="mt-2 text-[10px] italic text-center">
-                Lotus Tower
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="w-[83px]">
-              <Image
-                className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <Text className="mt-2 text-[10px] italic text-center">
-                Lotus Tower
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="w-[83px]">
-              <Image
-                className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <Text className="mt-2 text-[10px] italic text-center">
-                Lotus Tower
-              </Text>
-            </TouchableOpacity>
+            {placesCollection.map((item) => {
+
+              return (
+                <TouchableOpacity onPress={() => router.push(`/views/plan/${item.id}`)} className="w-[83px]" key={item.id}>
+                  <Image
+                    className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
+                    source={item.image}
+                  />
+                  <Text className="mt-2 text-[10px] italic text-center">
+                    {item.title}
+                  </Text>
+                </TouchableOpacity>
+              )
+
+            })
+
+
+
+            }
+
 
           </View>
         </ScrollView>
@@ -107,69 +111,55 @@ export default function Index() {
           className="px-2"
           contentContainerStyle={{ paddingRight: 20 }}
         >
-          <View className="flex-row gap-10">
-            <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
-              <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
-                <Text className="bg-gray-100 rounded-md px-2">Travel #1</Text>
-                <Text className="bg-gray-100 rounded-md px-2">18/20</Text>
-              </View>
-              <Image
-                className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <View>
-                <Text className="mt-1 text-[20px] text-center">
-                  Matara to Colombo
-                </Text>
-                <Text className="mt-1 text-[15px] text-center">
-                  20 Members|1 day|25 nov 2025|Confirmed
-                </Text>
-              </View>
-              <View className="w-full flex flex-row justify-between px-3 mt-3">
-                <Text className="mt-1 text-[20px] text-start font-bold">
-                  5000.00 LKR
-                </Text>
+          {groupCollection.map((item, index) => {
 
-                <TouchableOpacity className="rounded-md bg-black justify-center w-16 items-center" onPress={() => alert('menna ebuwa')}>
-                  <Text className=" text-white font-semibold">JOIN</Text>
-                </TouchableOpacity>
+            return (
+              <View className="flex-row gap-10" key={index}>
+                <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
+                  <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
+                    <Text className="bg-gray-100 rounded-md px-2">Travel #{index}</Text>
+                    <Text className="bg-gray-100 rounded-md px-2">{item.current}/{item.max}</Text>
+                  </View>
+                  <Image
+                    className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
+                    source={item.image}
+                  />
+                  <View className="w-full">
+                    <Text className="mt-1 text-[20px] text-center">
+                      {item.title}
+                    </Text>
+                    <View className=" flex-row justify-center">
+                      <Text className="mt-1 text-[15px] text-center pl-1">
+                        {item.max} Members |
+                      </Text>
+                      <Text className="mt-1 text-[15px] text-center pl-1">
+                        {item.duration} day |
+                      </Text>
+                      <Text className="mt-1 text-[15px] text-center pl-1">
+                        {item.date} |
+                      </Text>
+                      <Text className={`mt-1 text-[15px] text-center pl-1 ${item.stats == 'Confirm' ? 'text-green-400' : item.stats == 'Pending' ? 'text-yellow-400' : 'text-red-400'}`}>
+                        {item.stats}
+                      </Text>
+                    </View>
 
-              </View>
-            </View>
-            <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
-              <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
-                <Text className="bg-gray-100 rounded-md px-2">Travel #1</Text>
-                <Text className="bg-gray-100 rounded-md px-2">18/20</Text>
-              </View>
-              <Image
-                className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
-                source={pic}
-              />
-              <View>
-                <Text className="mt-1 text-[20px] text-center">
-                  Matara to Colombo
-                </Text>
-                <Text className="mt-1 text-[15px] text-center">
-                  20 Members|1 day|25 nov 2025|Confirmed
-                </Text>
-              </View>
-              <View className="w-full flex flex-row justify-between px-3 mt-3">
-                <Text className="mt-1 text-[20px] text-start font-bold">
-                  5000.00 LKR
-                </Text>
+                    <View className="w-full flex flex-row justify-between px-3 mt-3">
+                      <Text className="mt-1 text-[20px] text-start font-bold">
+                        {item.price}.00 LKR
+                      </Text>
+                      <TouchableOpacity className="rounded-md bg-black justify-center w-16 items-center" onPress={() => router.push(`/views/group/${item.id}`)}>
+                        <Text className=" text-white font-semibold">JOIN</Text>
+                      </TouchableOpacity>
+                    </View>
 
-                <TouchableOpacity className="rounded-md bg-black justify-center w-16 items-center" onPress={() => alert('menna ebuwa')}>
-                  <Text className=" text-white font-semibold">JOIN</Text>
-                </TouchableOpacity>
-
-              </View>
-            </View>
-
-
-          </View>
+                  </View>
+                </View>
+              </View>)
+          })
+          }
         </ScrollView>
       </View>
 
-    </View>
-  );
+    </View>)
 }
+

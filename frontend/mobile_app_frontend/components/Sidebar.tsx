@@ -2,6 +2,7 @@ import { Text, View, TouchableOpacity } from 'react-native'
 import { Href, useRouter } from 'expo-router'
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 cssInterop(Image, { className: "style" });
 
@@ -32,7 +33,7 @@ export default function Sidebar({ close }: TopbarProps) {
 
     return (
 
-        <View className='h-full'>
+        <View className='flex-1 h-full'>
 
             <View className='items-center'>
                 <View className='w-[250px] h-[250px] mt-5'>
@@ -43,7 +44,7 @@ export default function Sidebar({ close }: TopbarProps) {
 
             </View>
 
-            <View>
+            <View className='flex-1 justify-center'>
                 <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/groupTravel') }}>
                     <Image source={group} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Group Travel</Text>
@@ -71,7 +72,7 @@ export default function Sidebar({ close }: TopbarProps) {
 
             </View>
 
-            <View className='items-center'>
+            <View className='items-center p-1'>
 
                 <Text className='text-[14px]'>Tuesday, 01 January 2001</Text>
                 <Text className='text-[14px]'>12 : 00 AM</Text>

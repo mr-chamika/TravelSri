@@ -17,6 +17,12 @@ export default function RootLayout() {
         options={{ headerShown: false }}
 
       />
+      <Stack.Screen
+
+        name="views"
+        options={{ headerShown: false }}
+
+      />
 
     </Stack>
   );

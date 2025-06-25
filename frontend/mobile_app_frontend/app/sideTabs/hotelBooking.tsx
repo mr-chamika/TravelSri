@@ -1,5 +1,5 @@
-import { Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
-import { useState, useCallback } from 'react';
+import { Text, View, ScrollView, TouchableOpacity, Modal, TextInput, FlatList } from 'react-native';
+import { useState, useCallback, useMemo } from 'react';
 import { Calendar } from 'react-native-calendars';
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
@@ -14,7 +14,7 @@ const pic = require('../../assets/images/tabbar/create/location/h.png');
 const star = require('../../assets/images/tabbar/create/hotel/stars.png');
 
 export default function HotelsWithNativeWindStyles() {
-    const [confirmedDate, setConfirmedDate] = useState<string | null>(null);
+    const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
     const [isModalVisible, setModalVisible] = useState(true);
     const [fine, setFine] = useState(false);
@@ -24,40 +24,56 @@ export default function HotelsWithNativeWindStyles() {
     const [nights, setNights] = useState('');
     const [location, setLocation] = useState('');
 
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [showDropdown, setShowDropdown] = useState<boolean>(false);
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
 
-    const starCounts = [1, 1, 1, 2, 5, 1, 0, 3];
+    const starCounts = [1, 1, 1, 2, 5, 1, 0, 3, 1, 1, 2, 5, 1, 0, 3];
+
+    const sortedLocations = useMemo(() => {
+        if (!location) return locations;
+        return [location, ...locations.filter((loc) => loc !== location)];
+    }, [location]);
 
     const toggleCardSelection = (index: number) => {
         setSelectedCardIndex(prev => (prev === index ? null : index));
     };
 
     const onDayPress = (day: { dateString: string }) => {
-        setConfirmedDate(day.dateString);
+        setSelectedDates((prev) => {
+            const date = day.dateString;
+            const updated = { ...prev };
+            if (updated[date]) {
+                delete updated[date];
+            } else {
+                updated[date] = { selected: true, selectedColor: '#007BFF' };
+            }
+            return updated;
+        });
     };
 
     const handleSubmit = () => {
-        if (!confirmedDate || !location || !adults || !children || !nights) {
+        if (Object.keys(selectedDates).length === 0 || !location || !adults || !children || !nights) {
             alert('Please fill in all fields.');
             return;
         }
         setModalVisible(false);
         setFine(true)
+        alert(`location is ${location} for ${adults} adults,${children} children to ${nights} nights`)
     };
 
-    const displayDate = confirmedDate ? new Date(confirmedDate).toDateString() : 'Not Set';
+    const displayDates = Object.keys(selectedDates).sort().map(date => new Date(date).toDateString()).join(', ');
 
+    const handleLocationSelect = (selectedLocation: string) => {
+        setLocation(selectedLocation);
+        setShowDropdown(false);
+    };
 
-    useFocusEffect(
-        useCallback(() => {
-            // We re-open the modal ONLY if the user hasn't successfully submitted the form yet.
-            // `confirmedDate` is a good proxy for submission status.
-            if (!confirmedDate) {
-                setModalVisible(true);
-            }
-        }, [confirmedDate])
-    );
+    useFocusEffect(useCallback(() => {
+        if (Object.keys(selectedDates).length === 0) {
+            setModalVisible(true);
+        }
+    }, [selectedDates]));
+
 
 
     return (
@@ -65,39 +81,57 @@ export default function HotelsWithNativeWindStyles() {
             <View>
                 {/* Modal */}
                 <Modal
-                    animationType="fade"
-                    transparent={true}
                     visible={isModalVisible}
+                    transparent={true}
+                    animationType="fade"
                     onRequestClose={() => {
-                        if (!confirmedDate) return;
-                        setModalVisible(false);
+                        if (fine) {
+                            setModalVisible(false);
+                        }
                     }}
                 >
-                    <View className="h-full justify-center items-center bg-black/50">
-                        <View className="w-[95%] h-[95%] bg-white p-2 rounded-2xl   items-center" >
-                            <ScrollView className='w-full h-full'>
-                                <View className='w-full'>
-                                    <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || !confirmedDate) router.back() }}>
-                                        {(fine && confirmedDate) ? <Text> Cancel</Text> : <Text> Back</Text>}
-                                    </TouchableOpacity>
-                                    <Text className="text-xl font-bold mb-8 text-center">Enter Travel Details</Text>
-                                </View>
-                                <View className='w-full gap-6 h-full'>
-                                    <Calendar
-                                        className=' border-2 w-full'
-                                        onDayPress={onDayPress}
-                                        markedDates={{
-                                            [confirmedDate || '']: { selected: true, marked: true, selectedColor: '#007BFF' }
-                                        }}
-                                        minDate={new Date().toISOString().split('T')[0]}
-                                        theme={{
-                                            todayTextColor: '#007BFF',
-                                            arrowColor: '#007BFF',
-                                        }}
-                                    />
+                    <View className="h-full  bg-black/50 justify-center items-center">
+                        <View className="w-[93%] h-[97%] bg-white rounded-2xl overflow-hidden">
+                            {/* Header */}
+                            <View className='w-full p-6 pb-4'>
+                                <TouchableOpacity
+                                    className="self-start mb-2"
+                                    onPress={() => {
+                                        if (fine) {
+                                            setModalVisible(false);
+                                        } else {
+                                            router.back();
+                                        }
+                                    }}
+                                >
+                                    <Text className="text-black text-base">
+                                        {!fine ? "Back" : "Cancel"}
+                                    </Text>
+                                </TouchableOpacity>
+                                <Text className="text-xl font-bold text-center">Hotel Booking</Text>
+                            </View>
 
-                                    {/* Dropdown for Location */}
-                                    <View className="w-full relative z-20 h-48">
+                            {/* Scrollable Content */}
+                            <View className="flex-1 px-6">
+                                <View className='w-full'>
+                                    {/* Calendar */}
+                                    <View className="w-full">
+                                        <Calendar
+                                            className='border-2 w-full rounded-lg'
+                                            onDayPress={onDayPress}
+                                            markedDates={selectedDates}
+                                            minDate={new Date().toISOString().split('T')[0]}
+                                            theme={{
+                                                todayTextColor: '#007BFF',
+                                                arrowColor: '#007BFF',
+                                                calendarBackground: '#ffffff',
+                                            }}
+                                            style={{ paddingBottom: 10 }}
+                                        />
+                                    </View>
+
+                                    {/* Location Selection */}
+                                    <View className="w-full">
                                         <TouchableOpacity
                                             onPress={() => setShowDropdown(!showDropdown)}
                                             className="border border-gray-300 rounded-xl px-4 py-3 bg-white"
@@ -106,91 +140,93 @@ export default function HotelsWithNativeWindStyles() {
                                                 {location || 'Select Location'}
                                             </Text>
                                         </TouchableOpacity>
-
-                                        <View className="absolute top-[52px] left-0 right-0 bg-white rounded-xl z-30">
-                                            {showDropdown && (
-                                                <ScrollView className=' max-h-40 border border-gray-300'>
-                                                    {locations.map((loc, index) => (
-                                                        <TouchableOpacity
-                                                            key={index}
-                                                            onPress={() => {
-                                                                setLocation(loc);
-                                                                setShowDropdown(false);
-                                                            }}
-                                                            className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}
-                                                        >
-                                                            <Text className="text-base">{loc}</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
-                                                </ScrollView>
-                                            )}
-                                        </View>
                                     </View>
 
-                                    {/* Other inputs */}
-                                    <View className="w-full justify-evenly h-[25%]">
-                                        <View className='flex-row gap-4 justify-center w-full'>
-                                            <TextInput
-                                                placeholder="# Adults"
-                                                value={adults}
-                                                onChangeText={(text) => {
-
-                                                    const numericText = text.replace(/[^0-9]/g, '');
-                                                    setAdults(numericText);
-
-                                                }
-                                                }
-                                                keyboardType="numeric"
-                                                className="border border-gray-300 rounded-xl px-4 py-2 text-base w-28"
-                                            />
-                                            <TextInput
-                                                placeholder="# Children"
-                                                value={children}
-                                                onChangeText={(text) => {
-
-                                                    const numericText = text.replace(/[^0-9]/g, '');
-                                                    setChildren(numericText);
-                                                }
-                                                }
-                                                keyboardType="numeric"
-                                                className="border border-gray-300 rounded-xl px-4 py-2 text-base w-28"
-                                            />
-                                            <TextInput
-                                                placeholder="# Nights"
-                                                value={nights}
-                                                onChangeText={(text) => {
-
-                                                    const numericText = text.replace(/[^0-9]/g, '');
-                                                    setNights(numericText);
-                                                }
-                                                }
-                                                keyboardType="numeric"
-                                                className="border border-gray-300 rounded-xl px-4 py-2 text-base w-28"
+                                    {/* Location Dropdown */}
+                                    {showDropdown && (
+                                        <View className="w-full bg-white rounded-xl border border-gray-200 mt-1">
+                                            <FlatList
+                                                data={sortedLocations}
+                                                keyExtractor={(item) => item}
+                                                style={{ maxHeight: 90 }}
+                                                showsVerticalScrollIndicator={true}
+                                                keyboardShouldPersistTaps="handled"
+                                                nestedScrollEnabled={true}
+                                                renderItem={({ item, index }) => (
+                                                    <TouchableOpacity
+                                                        onPress={() => handleLocationSelect(item)}
+                                                        className={`px-4 py-3 ${location === item ? 'bg-blue-100' : ''} ${index < sortedLocations.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                    >
+                                                        <Text className="text-gray-700 text-center text-base">{item}</Text>
+                                                    </TouchableOpacity>
+                                                )}
                                             />
                                         </View>
-                                        <TouchableOpacity
-                                            onPress={handleSubmit}
-                                            className="bg-blue-600 py-3 rounded-xl mt-14"
-                                        >
-                                            <Text className="text-white text-center font-semibold">Submit</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                                    )}
                                 </View>
-                            </ScrollView>
+                            </View>
+
+                            {/* Fixed Bottom Section - Text Inputs and Button */}
+                            <View className="w-full p-6 bg-white h-[25%]">
+                                <View className="w-full gap-4 justify-between h-full">
+                                    <View className='flex-row justify-between gap-3'>
+                                        <TextInput
+                                            placeholder="# Adults"
+                                            placeholderTextColor="#8E8E8E"
+                                            value={adults}
+                                            onChangeText={(text) => {
+                                                const numericText = text.replace(/[^0-9]/g, '');
+                                                setAdults(numericText);
+                                            }}
+                                            keyboardType="numeric"
+                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                        />
+                                        <TextInput
+                                            placeholder="# Children"
+                                            placeholderTextColor="#8E8E8E"
+                                            value={children}
+                                            onChangeText={(text) => {
+                                                const numericText = text.replace(/[^0-9]/g, '');
+                                                setChildren(numericText);
+                                            }}
+                                            keyboardType="numeric"
+                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                        />
+                                        <TextInput
+                                            placeholder="# Nights"
+                                            placeholderTextColor="#8E8E8E"
+                                            value={nights}
+                                            onChangeText={(text) => {
+                                                const numericText = text.replace(/[^0-9]/g, '');
+                                                setNights(numericText);
+                                            }}
+                                            keyboardType="numeric"
+                                            className="border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                        />
+                                    </View>
+
+                                    <TouchableOpacity
+                                        onPress={handleSubmit}
+                                        className="bg-[#FEFA17] py-3 rounded-xl bottom-0"
+                                    >
+                                        <Text className="text-black text-center font-semibold text-base">Submit</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
                     </View>
                 </Modal>
 
                 {/* Main Content */}
-                {confirmedDate && (
+                {Object.keys(selectedDates).length > 0 && (
                     <>
                         <View className="flex-row justify-between items-center p-4">
-                            <Text className="text-lg font-medium">{displayDate}</Text>
+                            <Text className="text-lg font-medium">{displayDates}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
                                 <Text className="font-semibold text-blue-600">Change</Text>
                             </TouchableOpacity>
                         </View>
-                        <Text className="font-extrabold text-3xl text-center my-5">Hotel Booking</Text>
+
                         {/* <View className="px-4 space-y-1">
                             <Text className="text-sm">📍 Location: {location}</Text>
                             <Text className="text-sm">👤 Adults: {adults}</Text>
@@ -201,7 +237,7 @@ export default function HotelsWithNativeWindStyles() {
                         {/* Hotel Cards */}
                         <View >
                             <ScrollView
-                                className="w-full h-[80%]"
+                                className="w-full h-[90%]"
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 pt-5"
                                 showsVerticalScrollIndicator={false}
                             >
@@ -213,7 +249,7 @@ export default function HotelsWithNativeWindStyles() {
                                     >
                                         <View className="w-full flex-row absolute justify-end px-3 pt-1 z-10">
                                             <TouchableOpacity
-                                                className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 mt-1"
+                                                className="w-6 h-6 rounded-full justify-center items-center border-2 bg-gray-200"
                                                 onPress={() => toggleCardSelection(index)}
                                             >
                                                 {selectedCardIndex === index && (
@@ -240,7 +276,6 @@ export default function HotelsWithNativeWindStyles() {
                         </View>
                     </>
                 )}
-
             </View>
         </View>
     );

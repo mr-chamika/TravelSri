@@ -85,14 +85,14 @@ export default function Guide() {
                     }}
                 >
                     <View className="h-full justify-center items-center bg-black/50">
-                        <View className="w-[90%] h-[96%] bg-white my-4 p-2 rounded-2xl   items-center">
+                        <View className="w-[93%] h-[97%] bg-white my-4 p-2 rounded-2xl   items-center">
                             <View className='w-full'>
                                 <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
                                     {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
                                 </TouchableOpacity>
-                                <Text className="text-xl font-bold mb-8 text-center">Enter Travel Details</Text>
+                                <Text className="text-xl font-bold mb-8 text-center">Guide Hiring</Text>
                             </View>
-                            <View className='w-full gap-8 h-full'>
+                            <View className='w-full gap-5 h-full'>
                                 <Calendar
                                     style={{ width: 320, maxWidth: '100%' }}
                                     onDayPress={onDayPress}
@@ -159,13 +159,13 @@ export default function Guide() {
                                     )}
                                 </View>
 
-                                <View className="w-full space-y-8 justify-evenly">
+                                <View className="w-full">
 
                                     <TouchableOpacity
                                         onPress={handleSubmit}
-                                        className="bg-blue-600 py-3 rounded-xl"
+                                        className="bg-[#FEFA17] py-3 rounded-xl"
                                     >
-                                        <Text className="text-white text-center font-semibold">Submit</Text>
+                                        <Text className="text-black text-center font-semibold">Submit</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -190,10 +190,10 @@ export default function Guide() {
                             <Text className="text-sm">🌙 Nights: {nights}</Text>
                         </View> */}
 
-                        <View>
+                        <View className="h-full flex-1">
                             <ScrollView
-                                className="w-full h-[70%]"
-                                contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 pt-5"
+
+                                contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 py-3"
                                 showsVerticalScrollIndicator={false}
                             >
                                 {starCounts.map((starCount, index) => (

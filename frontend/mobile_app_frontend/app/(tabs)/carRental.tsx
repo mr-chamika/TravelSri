@@ -20,6 +20,7 @@ import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
+import SimpleTimePicker from '@/components/TimeSelector';
 
 
 cssInterop(Image, { className: "style" });
@@ -40,13 +41,17 @@ export default function App() {
     const [isModalVisible, setModalVisible] = useState(true);
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [location, setLocation] = useState('');
+    const [locationx, setLocationx] = useState('');
     const [lan, setLan] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showDropdowns, setShowDropdowns] = useState(false);
     const [show, setShow] = useState(false);
     const [fine, setFine] = useState(false);
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
+
+    const [selectedTime, setSelectedTime] = useState({ hour: 12, minute: 30 });
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -62,12 +67,13 @@ export default function App() {
     };
 
     const handleSubmit = () => {
-        if (!lan || !selectedDates || !location) {
+        if (!lan || !selectedDates || !location || !locationx || (selectedTime.hour == 0 && selectedTime.minute == 0)) {
             alert('Please fill in all fields.');
             return;
         }
         setModalVisible(false);
         setFine(true)
+        alert(`${Object.keys(selectedDates)},${locationx} to ${location}, ${lan}, and time (${selectedTime.hour}:${selectedTime.minute}) have been submitted!`);
     };
 
     const displayDates = Object.keys(selectedDates)
@@ -187,94 +193,83 @@ export default function App() {
                 }}
             >
                 <View className="h-full justify-center items-center bg-black/50">
-                    <View className="w-[90%] h-[96%] bg-white my-4 p-2 rounded-2xl   items-center">
-                        <View className='w-full'>
-                            <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
-                                {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
-                            </TouchableOpacity>
-                            <Text className="text-xl font-bold mb-8 text-center">Enter Travel Details</Text>
-                        </View>
-                        <View className='w-full gap-8 h-full'>
-                            <Calendar
-                                style={{ width: 320, maxWidth: '100%' }}
-                                onDayPress={onDayPress}
-                                markedDates={selectedDates}
-                                minDate={new Date().toISOString().split('T')[0]}
-                                theme={{
-                                    todayTextColor: '#007BFF',
-                                    arrowColor: '#007BFF',
-                                }}
-                            />
+                    <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl shadow-lg items-center">
+                        <TouchableOpacity className="self-start" onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
+                            {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
+                        </TouchableOpacity>
+                        <Text className="text-xl font-bold mb-4 text-center">Vehicle Booking</Text>
 
-                            <View className="w-full h-[35%] relative z-20 mt-4 gap-16">
-                                <TouchableOpacity
-                                    onPress={() => { setShowDropdown(!showDropdown); if (show) setShow(false) }}
-                                    className="border border-gray-300 rounded-xl px-4 py-3 bg-white w-full"
-                                >
-                                    <Text className={`text-base ${location ? 'text-black' : 'text-gray-400'}`}>
-                                        {location || 'Select Location'}
-                                    </Text>
-                                </TouchableOpacity>
-                                {showDropdown && (
-                                    <View className="absolute top-[52px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
-                                        <ScrollView>
-                                            {locations.map((loc, index) => (
-                                                <TouchableOpacity
-                                                    key={index}
-                                                    onPress={() => {
-                                                        setLocation(loc);
-                                                        setShowDropdown(false);
-                                                    }}
-                                                    className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}
-                                                >
-                                                    <Text className="text-base">{loc}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
+                        {/* 3. Wrap modal content in a ScrollView */}
+                        {/* <ScrollView className="w-full h-full" contentContainerStyle={{ paddingBottom: 20 }}> */}
+                        <View className="w-full h-[93%] justify-between pb-3">
+                            <View className='h-[73%]'>
+                                <Calendar
+                                    onDayPress={onDayPress}
+                                    markedDates={selectedDates}
+                                    minDate={new Date().toISOString().split('T')[0]}
+                                    theme={{ todayTextColor: '#007BFF', arrowColor: '#007BFF' }}
+                                />
+
+
+                                <View className="w-full z-20 pb-32 gap-1 mt-2">
+                                    <View className='flex-row justify-between'>
+                                        <View className=' w-[47%]'>
+                                            <TouchableOpacity onPress={() => { setShowDropdowns(!showDropdowns); if (show) setShow(false); if (showDropdown) setShowDropdown(false) }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                                <Text className={`text-sm ${locationx ? 'text-black' : 'text-gray-400'}`}>{locationx || 'Select Start Location'}</Text>
+                                            </TouchableOpacity>
+                                            {showDropdowns && (
+                                                <View className="absolute top-[42px] bg-white border border-gray-300 rounded-xl z-30 max-h-40 w-full">
+                                                    <ScrollView>{locations.map((loc, index) => (
+                                                        <TouchableOpacity key={index} onPress={() => { setLocationx(loc); setShowDropdowns(false); }} className={`px-4 py-2 ${locationx === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
+                                                    ))}</ScrollView>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View className=' w-[47%]'>
+
+                                            <TouchableOpacity onPress={() => { setShowDropdown(!showDropdown); if (show) setShow(false); if (showDropdowns) setShowDropdowns(false) }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                                <Text className={`text-sm ${location ? 'text-black' : 'text-gray-400'}`}>{location || 'Select End Location'}</Text>
+                                            </TouchableOpacity>
+                                            {showDropdown && (
+                                                <View className="absolute top-[42px]  bg-white border border-gray-300 rounded-xl z-30 max-h-40 w-full">
+                                                    <ScrollView>{locations.map((loc, index) => (
+                                                        <TouchableOpacity key={index} onPress={() => { setLocation(loc); setShowDropdown(false); }} className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
+                                                    ))}</ScrollView>
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
-                                )}
-                                <TouchableOpacity
-                                    onPress={() => { setShow(!show) }}
-                                    className="border border-gray-300 rounded-xl px-4 py-3 bg-white"
-                                >
-                                    <Text className={`text-base ${lan ? 'text-black' : 'text-gray-400'}`}>
-                                        {lan || 'Select Language'}
-                                    </Text>
-                                </TouchableOpacity>
-                                {show && (
-                                    <View className="absolute top-[152px] left-0 right-0 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
-                                        <ScrollView>
-                                            {languages.map((l, index) => (
-                                                <TouchableOpacity
-                                                    key={index}
-                                                    onPress={() => {
-                                                        setLan(l);
-                                                        setShow(false);
-                                                    }}
-                                                    className={`px-4 py-2 ${lan === l ? 'bg-blue-100' : ''}`}
-                                                >
-                                                    <Text className="text-base">{l}</Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    </View>
-                                )}
+                                    <TouchableOpacity onPress={() => { setShow(!show); if (showDropdown) setShowDropdown(false); if (showDropdowns) setShowDropdowns(false); }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                        <Text className={`text-base ${lan ? 'text-black' : 'text-gray-400'}`}>{lan || 'Select Language'}</Text>
+                                    </TouchableOpacity>
+                                    {show && (
+                                        <View className="absolute top-[90px] left-4 right-4 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
+                                            <ScrollView>{languages.map((l, index) => (
+                                                <TouchableOpacity key={index} onPress={() => { setLan(l); setShow(false); }} className={`px-4 py-2 ${lan === l ? 'bg-blue-100' : ''}`}><Text className="text-base">{l}</Text></TouchableOpacity>
+                                            ))}</ScrollView>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
-
-                            <View className="w-full space-y-8 justify-evenly">
-
-                                <TouchableOpacity
-                                    onPress={handleSubmit}
-                                    className="bg-blue-600 py-3 rounded-xl"
-                                >
-                                    <Text className="text-white text-center font-semibold">Submit</Text>
-                                </TouchableOpacity>
+                            {/* 4. Add the SimpleTimePicker component */}
+                            <View className='h-[25%] justify-between'>
+                                <View>
+                                    <SimpleTimePicker onTimeChange={setSelectedTime} />
+                                </View>
+                                <View className="w-full">
+                                    <TouchableOpacity
+                                        onPress={handleSubmit}
+                                        className="bg-[#FEFA17] py-3 rounded-xl"
+                                    >
+                                        <Text className="text-black text-center font-semibold">Submit</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
+                            {/* </ScrollView> */}
                         </View>
                     </View>
                 </View>
             </Modal>
-
             <View className="flex-row justify-between items-center p-4">
                 <Text className="text-lg font-medium">{displayDates}</Text>
                 <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
@@ -284,7 +279,7 @@ export default function App() {
 
             <Text className='text-[24px] font-semibold mx-5 my-2'>Category</Text>
 
-            <View className='w-full gap-5 items-center'>
+            <View className='w-full gap-3 items-center pb-5'>
                 <View className='flex-row gap-7 px-4 '>
                     <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
                         <Image
