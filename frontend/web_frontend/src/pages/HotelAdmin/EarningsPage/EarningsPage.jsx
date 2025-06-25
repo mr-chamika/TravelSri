@@ -19,6 +19,12 @@ import {
   lineChartOptions,
   getGradient
 } from '../../../utils/chartUtils';
+import {
+  MdAttachMoney, // Total Earnings
+  MdTrendingUp,  // Monthly Earnings
+  MdPending,     // Pending Payouts
+  MdPercent      // Platform Commission
+} from 'react-icons/md';
 
 ChartJS.register(
   CategoryScale,
@@ -234,6 +240,41 @@ const EarningsPage = () => {
     }
   });
 
+  const statCards = [
+    {
+      label: 'TOTAL EARNINGS',
+      value: `LKR ${earningsData.totalEarnings.toLocaleString()}`,
+      Icon: MdAttachMoney,
+    },
+    {
+      label: 'MONTHLY EARNINGS',
+      value: `LKR ${earningsData.monthlyEarnings.toLocaleString()}`,
+      Icon: MdTrendingUp,
+    },
+    {
+      label: 'PENDING PAYOUTS',
+      value: `LKR ${earningsData.pendingPayouts.toLocaleString()}`,
+      Icon: MdPending,
+    },
+    {
+      label: 'PLATFORM COMMISSION',
+      value: `LKR ${earningsData.platformCommission.toLocaleString()}`,
+      Icon: MdPercent,
+    },
+  ];
+
+  const StatsIconCard = ({ label, value, Icon }) => (
+    <div className="flex items-center gap-4 p-5 rounded-lg shadow bg-gradient-to-br from-yellow-50 to-yellow-100 hover:shadow-md transition">
+      <div className="w-12 h-12 flex items-center justify-center rounded-full bg-white/70">
+        <Icon className="text-3xl text-yellow-500" />
+      </div>
+      <div>
+        <h3 className="text-gray-500 text-xs font-medium tracking-wider">{label}</h3>
+        <p className="text-2xl font-bold">{value}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -241,16 +282,9 @@ const EarningsPage = () => {
         <p className="text-gray-500">{currentDate}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {Object.entries(earningsData).map(([key, value]) => (
-          <div key={key} className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-gray-500 font-medium mb-2">
-              {key
-                .replace(/([A-Z])/g, ' $1')
-                .replace(/^./, str => str.toUpperCase())}
-            </h3>
-            <p className="text-3xl font-bold">LKR {value.toLocaleString()}</p>
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {statCards.map((s) => (
+          <StatsIconCard key={s.label} {...s} />
         ))}
       </div>
 
