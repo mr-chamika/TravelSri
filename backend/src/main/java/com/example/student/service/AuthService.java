@@ -1,11 +1,11 @@
-package com.example.travelsri.service;
+package com.example.student.service;
 
-import com.example.travelsri.model.User;
-import com.example.travelsri.repo.UserRepository;
-import com.example.travelsri.dto.LoginRequest;
-import com.example.travelsri.dto.SignUpRequest;
-import com.example.travelsri.dto.AuthResponse;
-import com.example.travelsri.security.JwtUtils;
+import com.example.student.model.User;
+import com.example.student.repo.UserRepository;
+import com.example.student.dto.LoginRequest;
+import com.example.student.dto.SignUpRequest;
+import com.example.student.dto.AuthResponse;
+import com.example.student.security.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,7 +43,7 @@ public class AuthService {
                         user.getPhone()
                 );
 
-                return new AuthResponse(jwt, userInfo);
+                return new AuthResponse("Success", jwt, userInfo);
             }
         }
         return null;
@@ -77,7 +77,7 @@ public class AuthService {
                 user.getPhone()
         );
 
-        return new AuthResponse(jwt, userInfo);
+        return new AuthResponse("Success", jwt, userInfo);
     }
 
     public User getUserByEmail(String email) {

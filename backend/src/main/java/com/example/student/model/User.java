@@ -1,52 +1,23 @@
-package com.example.travelsri.model;
+package com.example.student.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.index.Indexed;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.Set;
 
 @Document(collection = "users")
 public class User {
     @Id
     private String id;
-
-    @NotBlank
-    @Size(max = 50)
-    private String name;
-
-    @NotBlank
-    @Size(max = 50)
-    @Email
-    @Indexed(unique = true)
     private String email;
-
-    @NotBlank
-    @Size(max = 120)
-    @JsonIgnore
     private String password;
-
-    private String role = "customer"; // merchant, customer, admin
-
+    private String name;
+    private String role;
     private String phone;
     private String address;
-    private boolean isActive = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private java.time.LocalDateTime createdAt;
+    private java.time.LocalDateTime updatedAt;
+    private boolean isActive;
 
-    // Constructors
     public User() {}
-
-    public User(String name, String email, String password) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-    }
 
     public User(String name, String email, String password, String role) {
         this.name = name;
@@ -55,21 +26,12 @@ public class User {
         this.role = role;
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getEmail() {
@@ -86,6 +48,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getRole() {
@@ -112,27 +82,27 @@ public class User {
         this.address = address;
     }
 
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public java.time.LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     public boolean isActive() {
         return isActive;
     }
 
-    public void setActive(boolean active) {
-        isActive = active;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
     }
 }

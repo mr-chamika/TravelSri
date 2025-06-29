@@ -1,4 +1,4 @@
-package com.example.travelsri.security;
+package com.example.student.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -41,6 +41,10 @@ public class JwtUtils {
     public String getEmailFromJwtToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key()).build()
                 .parseClaimsJws(token).getBody().getSubject();
+    }
+
+    public Claims extractClaims(String token) {
+        return Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token).getBody();
     }
 
     public boolean validateJwtToken(String authToken) {

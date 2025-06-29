@@ -2,6 +2,7 @@ package com.example.student.security;
 
 import com.example.student.repo.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +21,7 @@ import java.io.IOException;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired private JwtUtil jwtUtil;
+    @Autowired private JwtUtils jwtUtils;
     @Autowired private UserRepository userRepo;
 
     @Override
@@ -34,8 +35,8 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            if (jwtUtil.isTokenValid(token)) {
-                Claims claims = jwtUtil.extractClaims(token);
+            if (jwtUtils.validateJwtToken(token)) {
+                Claims claims = jwtUtils.extractClaims(token);
                 String email = claims.getSubject();
                 String role = claims.get("role", String.class);
 

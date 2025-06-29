@@ -1,73 +1,43 @@
-package com.example.travelsri.controller;
+package com.example.student.controller;
 
-import com.example.travelsri.dto.AuthResponse;
-import com.example.travelsri.dto.LoginRequest;
-import com.example.travelsri.dto.SignUpRequest;
-import com.example.travelsri.service.AuthService;
+import com.example.student.model.User;
+import com.example.student.repo.UserRepository;
+import com.example.student.dto.LoginRequest;
+import com.example.student.dto.AuthResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import java.util.Optional;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AuthController {
 
     @Autowired
-    AuthService authService;
+    private UserRepository userRepository;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            AuthResponse authResponse = authService.authenticateUser(loginRequest);
-
-            if (authResponse != null) {
-                return ResponseEntity.ok(authResponse);
-            } else {
-                return ResponseEntity.badRequest()
-                        .body(new MessageResponse("Error: Invalid email or password!"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: " + e.getMessage()));
-        }
-    }
+    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        try {
-            AuthResponse authResponse = authService.registerUser(signUpRequest);
-            return ResponseEntity.ok(authResponse);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: Registration failed!"));
+    public AuthResponse signup(@RequestBody User user) {
+        Optional<User> existing = userRepository.findByEmail(user.getEmail());
+        if (existing.isPresent()) {
+            return new AuthResponse("Email already exists", null);
         }
+        user.setPassword(encoder.encode(user.getPassword()));
+        userRepository.save(user);
+        return new AuthResponse("Signup successful", null);
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<?> testEndpoint() {
-        return ResponseEntity.ok(new MessageResponse("Auth endpoint is working!"));
-    }
-
-    // Helper class for error messages
-    public static class MessageResponse {
-        private String message;
-
-        public MessageResponse(String message) {
-            this.message = message;
+    @PostMapping("/login")
+    public AuthResponse login(@RequestBody LoginRequest loginRequest) {
+        Optional<User> found = userRepository.findByEmail(loginRequest.getEmail());
+        if (found.isPresent() && encoder.matches(loginRequest.getPassword(), found.get().getPassword())) {
+            // You can generate a JWT token here if needed
+            return new AuthResponse("Login successful", null);
         }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
+        return new AuthResponse("Invalid credentials", null);
     }
 }
