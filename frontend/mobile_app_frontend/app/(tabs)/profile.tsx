@@ -57,7 +57,7 @@ export default function Profile() {
             <View className='items-center'>
                 <View className='w-[250px] h-[250px] mb-4'>
                     <Image className="w-full h-full rounded-full border-4 border-gray-200" source={profile} />
-                    <Text className='text-center font-bold text-[18px]'>Nirdha Uyanhewa</Text>
+                    <Text className='text-center font-bold text-[18px]'>John Doe</Text>
                 </View>
             </View>
             <View className='h-full gap-8'>
@@ -69,7 +69,7 @@ export default function Profile() {
                     <View className='w-[85%] h-auto'>
                         <View className='mt-2 rounded-[10px] bg-[rgba(217,217,217,0.44)] h-12 flex flex-row w-full justify-between px-2 items-center'>
                             <Text className='font-bold'>Email</Text>
-                            <Text className='font-normal'>uyanhewa@gmail.com</Text>
+                            <Text className='font-normal'>doe1234@gmail.com</Text>
                         </View>
                         <View className='mt-2 rounded-[10px] bg-[rgba(217,217,217,0.44)] h-12 flex flex-row w-full justify-between px-2 items-center'>
                             <Text className='font-bold'>Phone</Text>
@@ -77,7 +77,7 @@ export default function Profile() {
                         </View>
                         <View className='mt-2 rounded-[10px] bg-[rgba(217,217,217,0.44)] h-12 flex flex-row w-full justify-between px-2 items-center'>
                             <Text className='font-bold'>Username</Text>
-                            <Text className='font-normal'>Nirdha Uyanhewa</Text>
+                            <Text className='font-normal'>john</Text>
                         </View>
 
                     </View>

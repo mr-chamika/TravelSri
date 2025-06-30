@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 cssInterop(Image, { className: "style" });
 
@@ -14,10 +15,18 @@ const but = require('../../../assets/images/tabbar/create/location/drop.png');
 const mark = require('../../../assets/images/tabbar/create/location/mark.png');
 const pic = require('../../../assets/images/tabbar/towert.png');
 
+const routes = [
+    { id: '1', from: 'Matara', to: 'Colombo', duration: 1, thumbnail: pic },
+    { id: '2', from: 'Uthuwankanda', to: 'Kurunegala', duration: 1, thumbnail: pic },
+    { id: '3', from: 'Colombo', to: 'Hanthana', duration: 1, thumbnail: pic },
+    { id: '4', from: 'Galle', to: 'Jaffna', duration: 3, thumbnail: pic }
+];
+
 export default function Dropdown() {
     const [selected, setSelected] = useState<string | null>(null);
     const [modalVisible, setModalVisible] = useState(true);
     const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+    const [hasMadeInitialSelection, setHasMadeInitialSelection] = useState(false);
 
     // Put selected location at top of list if selected
     const sortedOptions = useMemo(() => {
@@ -25,27 +34,86 @@ export default function Dropdown() {
         return [selected, ...OPTIONS.filter((opt) => opt !== selected)];
     }, [selected]);
 
-    const handleSelect = (option: string) => {
+    const handleSelect = useCallback(async (option: string) => {
         setSelected(option);
+        setHasMadeInitialSelection(true);
         setModalVisible(false);
-    };
+        try {
+            await AsyncStorage.setItem('selectedLocation', option);
+            await AsyncStorage.setItem('hasMadeInitialSelection', 'true');
+        } catch (error) {
+            console.error('Error saving selection to AsyncStorage:', error);
+        }
+    }, []);
 
-    const toggleCardSelection = (index: number) => {
-        setSelectedCardIndex(prev => (prev === index ? null : index));
-    };
+    const toggleCardSelection = useCallback(async (index: number) => {
+        setSelectedCardIndex(prev => {
+            if (prev === index) {
+                AsyncStorage.setItem('selectedRouteId', '').catch(error => {
+                    console.error('Error clearing selectedRouteId in AsyncStorage:', error);
+                });
+                return null;
+            } else {
+                return index;
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        const loadSelection = async () => {
+            try {
+                const savedSelection = await AsyncStorage.getItem('selectedLocation');
+                const initialSelection = await AsyncStorage.getItem('hasMadeInitialSelection');
+                if (savedSelection) {
+                    setSelected(savedSelection);
+                }
+                if (initialSelection === 'true') {
+                    setHasMadeInitialSelection(true);
+                    setModalVisible(false);
+                } else {
+
+                    setModalVisible(true)
+                }
+            } catch (error) {
+                console.error('Error loading selection from AsyncStorage:', error);
+            }
+        };
+        loadSelection();
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
-            // We re-open the modal ONLY if the user hasn't successfully submitted the form yet.
-            // `confirmedDate` is a good proxy for submission status.
-            if (!selected) {
+            const getSelectedRoute = async () => {
+                await AsyncStorage.setItem('total', '0');
+                const routeId = await AsyncStorage.getItem('route');
+                if (routeId) {
+                    const index = routes.findIndex(route => route.id === routeId);
+                    if (index !== -1) {
+                        setSelectedCardIndex(index);
+                    }
+                }
+            };
+            getSelectedRoute();
+            if (!hasMadeInitialSelection) {
                 setModalVisible(true);
             }
-        }, [selected])
+        }, [hasMadeInitialSelection])
     );
 
     return (
-        <View className="bg-[#F2F5FA] relative gap-y-8 h-full">
+        <View className="bg-[#F2F5FA] relative gap-y-0 h-full">
+            {/* <TouchableOpacity onPress={
+
+                async () => {
+                    try {
+                        const keys = await AsyncStorage.getAllKeys();
+                        await AsyncStorage.multiRemove(keys);
+                        alert(keys);
+                    } catch (e) {
+                        alert(`Error clearing AsyncStorage:, ${e}`);
+                    }
+
+                }}><View className="bg-black m-3 px-5 py-2 w-24 h-10 rounded-lg"><Text className="text-white text-center">Reset</Text></View></TouchableOpacity> */}
             <View className="h-full">
                 {/* Location selector button */}
                 {selected && (
@@ -66,9 +134,8 @@ export default function Dropdown() {
                     transparent={true}
                     visible={modalVisible}
                     onRequestClose={() => {
-                        if (!selected) return; // prevent closing modal without selection
-                        setModalVisible(false);
-
+                        if (!selected) // prevent closing modal without selection
+                            setModalVisible(false);
                     }}
                 >
                     <View className="flex-1 justify-center items-center bg-black/50 px-6">
@@ -104,12 +171,13 @@ export default function Dropdown() {
                                 className="w-full h-[80%]"
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 pt-5 pb-5"
                                 showsVerticalScrollIndicator={false}
-
                             >
                                 <View className="items-center gap-5">
-                                    {[0, 1, 2, 3].map((_, index) => (
+                                    {routes.map((route, index) => (
+                                        (route.from == selected || route.to == selected) &&
                                         <TouchableOpacity
                                             key={index}
+                                            onPress={() => router.push(`/views/route/${route.id}`)}
                                             className="bg-gray-200 w-[350px] h-[165px] items-center rounded-[20px] ml-3"
                                         >
                                             <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
@@ -125,24 +193,20 @@ export default function Dropdown() {
                                             </View>
                                             <Image
                                                 className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
-                                                source={pic}
+                                                source={route.thumbnail}
                                             />
                                             <View>
                                                 <Text className="mt-1 text-[20px] text-center">
-                                                    Matara to Colombo
+                                                    {route.from} to {route.to}
                                                 </Text>
                                                 <Text className="mt-1 text-[15px] text-center">
-                                                    1 day
+                                                    {route.duration} day
                                                 </Text>
                                             </View>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
                             </ScrollView>
-
-                        </View>
-                        <View className="p-4 border-t border-gray-200 bg-white justify-center">
-                            <Text className="text-center font-bold text-lg">Total: 1000 LKR</Text>
                         </View>
                     </>
                 )}

@@ -58,10 +58,12 @@ export default function Translator() {
                 {/* --- TOP TEXT INPUT --- */}
                 <View className={`w-[90%] border-2 h-[60%] justify-between rounded-md ${topInputStyle}`}>
                     <TextInput
+                        multiline={true}
                         editable={isRotated}
-                        className='p-3 text-black'
+                        className='p-3 text-black focus:outline-none h-full'
                         placeholder={isRotated ? 'Enter text...' : 'Translation...'}
                         placeholderTextColor="#8E8E8E"
+                        style={{ textAlignVertical: 'top' }}
                     />
                     <TouchableOpacity className='w-full items-end' onPress={() => alert('mic eka')}><Image className='w-5 h-5 m-2' source={mic} /></TouchableOpacity>
                 </View>
@@ -83,10 +85,13 @@ export default function Translator() {
                 {/* --- BOTTOM TEXT INPUT --- */}
                 <View className={`w-[90%] border-2 h-[40%] justify-between rounded-md ${bottomInputStyle}`}>
                     <TextInput
+                        multiline={true}
                         editable={!isRotated}
-                        className='p-3 text-black'
+                        className='p-3 text-black h-full  focus:outline-none'
                         placeholder={isRotated ? 'Translation...' : 'Enter text...'}
                         placeholderTextColor="#8E8E8E"
+                        style={{ textAlignVertical: 'top' }}
+
                     />
                     <TouchableOpacity className='w-full items-end' onPress={() => alert('mic eka')}><Image className='w-5 h-5 m-2' source={mic} /></TouchableOpacity>
                 </View>

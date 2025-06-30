@@ -1,26 +1,166 @@
 import { Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar } from 'react-native-calendars';
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 cssInterop(Image, { className: "style" });
 
-const router = useRouter();
-
+const cross = require('../../../assets/images/cross.png');
 const mark = require('../../../assets/images/tabbar/create/location/mark.png');
 const pic = require('../../../assets/images/tabbar/create/location/h.png');
 const star = require('../../../assets/images/tabbar/create/hotel/stars.png');
 const tele = require('../../../assets/images/tabbar/create/guide/telephones.png')
 
+interface Book {
+    dates: string[];
+    loc: string;
+    lan: string;
+}
+
+interface Guide {
+    id: string;
+    image: any;
+    title: string;
+    stars: number;
+    verified: boolean;
+    identified: boolean;
+    price: number
+}
+
+const guides: Guide[] = [
+    {
+        id: '1',
+        image: pic,
+        title: 'Theekshana',
+        stars: 3,
+        verified: true,
+        identified: true,
+        price: 1000
+    },
+    {
+        id: '2',
+        image: pic,
+        title: 'Teshini',
+        stars: 1,
+        verified: true,
+        identified: true,
+        price: 2000
+    },
+    {
+        id: '3',
+        image: pic,
+        title: 'Sudewa',
+        stars: 2,
+        verified: true,
+        identified: true,
+        price: 3000
+    },
+    {
+        id: '4',
+        image: pic,
+        title: 'Bimsara',
+        stars: 5,
+        verified: true,
+        identified: true,
+        price: 4000
+    },
+    {
+        id: '5',
+        image: pic,
+        title: 'Tharusha',
+        stars: 3,
+        verified: true,
+        identified: true,
+        price: 5000
+    },
+    {
+        id: '6',
+        image: pic,
+        title: 'Viduranga',
+        stars: 1,
+        verified: true,
+        identified: true,
+        price: 6000
+    },
+    {
+        id: '7',
+        image: pic,
+        title: 'Chamika',
+        stars: 2,
+        verified: true,
+        identified: true,
+        price: 7000
+    },
+    {
+        id: '8',
+        image: pic,
+        title: 'Thathsara',
+        stars: 5,
+        verified: true,
+        identified: true,
+        price: 8000
+    },
+];
+
 export default function Guide() {
+
+    const hotels = [
+        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000 },
+        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 1000 },
+        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 1000 },
+        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 1000 },
+    ];
+
+    const categories = [
+        {
+            id: '1',
+            members: 2,
+            title: 'Tuk',
+            price: 100
+        },
+        {
+            id: '2',
+            members: 3,
+            title: 'Mini',
+            price: 200
+        },
+        {
+            id: '3',
+            members: 4,
+            title: 'Seddan',
+            price: 250
+        },
+        {
+            id: '4',
+            members: 5,
+            title: 'Van',
+            price: 350
+        },
+        {
+            id: '5',
+            members: 54,
+            title: 'Non A/C',
+            price: 5000
+        },
+        {
+            id: '6',
+            members: 35,
+            title: 'A/C',
+            price: 15000
+        }
+    ]
+
+
+    const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
-    const [isModalVisible, setModalVisible] = useState(true);
+    const [isModalVisible, setModalVisible] = useState(false);
     const [fine, setFine] = useState(false);
-
+    const [book, setBook] = useState<Book[] | null>([]);
 
     const [location, setLocation] = useState('');
     const [lan, setLan] = useState('');
@@ -29,12 +169,25 @@ export default function Guide() {
     const [show, setShow] = useState(false);
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
+    const [total, setTotal] = useState('');
 
-    const starCounts = [2, 2, 2, 5, 1, 0, 3];
 
-    const toggleCardSelection = (index: number) => {
-        setSelectedCardIndex(prev => (prev === index ? null : index));
-    };
+    const toggleCardSelection = useCallback((index: number) => {
+        let newIndex: number | null = null;
+        setSelectedCardIndex(prev => {
+            newIndex = prev === index ? null : index;
+            return newIndex;
+        });
+        // Update AsyncStorage after state change
+        const updateStorage = async () => {
+            try {
+                await AsyncStorage.setItem('guide', newIndex !== null ? (newIndex + 1).toString() : '');
+            } catch (error) {
+                console.error('Error saving selectedCardIndex to AsyncStorage:', error);
+            }
+        };
+        updateStorage();
+    }, []);
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -49,14 +202,24 @@ export default function Guide() {
         });
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (Object.keys(selectedDates).length === 0 || !location || !lan) {
             alert('Please fill in all fields.');
             return;
         }
+        const newBooking = [{ dates: Object.keys(selectedDates), loc: location, lan: lan }];
+        setBook(newBooking);
+        setFine(true);
         setModalVisible(false);
-        setFine(true)
 
+        try {
+            await AsyncStorage.setItem('gbookings', JSON.stringify(newBooking));
+            await AsyncStorage.setItem('gbookingComplete', 'true');
+            await AsyncStorage.setItem('gbookingSession', Date.now().toString());
+            //alert('Booking saved to AsyncStorage');
+        } catch (error) {
+            alert(`Error saving booking to AsyncStorage: ${error}`);
+        }
     };
 
     const displayDates = Object.keys(selectedDates)
@@ -64,13 +227,109 @@ export default function Guide() {
         .map(date => new Date(date).toDateString())
         .join(', ');
 
-    useFocusEffect(
-        useCallback(() => {
-            if (Object.keys(selectedDates).length === 0) {
+    const loadBookingData = async () => {
+        try {
+            const sessionExists = await AsyncStorage.getItem('gbookingSession');
+            const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
+            const savedIndex = await AsyncStorage.getItem('guide');
+
+            if (savedIndex) {
+                setSelectedCardIndex(Number(savedIndex) - 1); // Persist selected guide
+            }
+
+            if (!sessionExists) {
+                // No session exists, create a new one and show modal
+                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
+                setModalVisible(true);
+            } else if (bookingComplete === 'true') {
+                // Booking is complete, load saved data and hide modal
+                setModalVisible(false);
+                setFine(true);
+                const savedBookings = await AsyncStorage.getItem('gbookings');
+                if (savedBookings) {
+                    const bookingData = JSON.parse(savedBookings);
+                    setBook(bookingData);
+                    if (bookingData.length > 0) {
+                        const booking = bookingData[0];
+                        // Reconstruct selectedDates object from saved dates array
+                        const dates = booking.dates.reduce((acc: any, date: string) => {
+                            acc[date] = { selected: true, selectedColor: '#007BFF' };
+                            return acc;
+                        }, {});
+                        setSelectedDates(dates);
+                        setLocation(booking.loc);
+                        setLan(booking.lan);
+                    }
+                }
+            } else {
+                // Session exists but booking not complete, show modal
                 setModalVisible(true);
             }
-        }, [selectedDates])
+        } catch (error) {
+            console.error('Error loading data from AsyncStorage:', error);
+            setModalVisible(true); // Default to showing modal on error
+        }
+    };
+
+    useEffect(() => {
+        loadBookingData();
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadBookingData();
+        }, [])
     );
+
+    const count = async () => {
+
+        try {
+            let total = 0;
+
+            // Car Booking Price
+            const carIndex = await AsyncStorage.getItem('car');
+            if (carIndex) {
+                const category = categories.find(cat => cat.id === (Number(carIndex) - 1).toString());
+                if (category) {
+                    total += category.price;
+                }
+            }
+
+            // Guide Booking Price
+            const guideIndex = await AsyncStorage.getItem('guide');
+            if (guideIndex !== null && guideIndex >= '0') {
+                const guide = guides.find(guide => guide.id === (Number(guideIndex) - 1).toString());
+                if (guide) {
+                    total += guide.price;
+                }
+            }
+
+            // Hotel Booking Price
+            const hotelIndex = await AsyncStorage.getItem('hotel');
+            if (hotelIndex) {
+                const hotel = hotels.find(hotel => hotel.id === (Number(hotelIndex) - 1).toString());
+                if (hotel) {
+                    total += hotel.price;
+                }
+            }
+
+            setTotal(total.toString());
+        } catch (error) {
+            console.error('Error calculating total price from AsyncStorage:', error);
+            setTotal('0');
+        }
+
+    }
+
+
+    useFocusEffect(
+        useCallback(() => {
+
+            count()
+
+        }, [selectedCardIndex, total])
+    )
+
 
     return (
         <View className='bg-[#F2F5FA] h-full'>
@@ -80,12 +339,11 @@ export default function Guide() {
                     transparent={true}
                     visible={isModalVisible}
                     onRequestClose={() => {
-                        if (Object.keys(selectedDates).length === 0) return;
                         setModalVisible(false);
                     }}
                 >
                     <View className="h-full justify-center items-center bg-black/50">
-                        <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl   items-center">
+                        <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl items-center">
                             <View className='w-full'>
                                 <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
                                     {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
@@ -160,7 +418,6 @@ export default function Guide() {
                                             )}
                                         </View>
                                         <View className="w-full h-full bottom-0">
-
                                             <TouchableOpacity
                                                 onPress={handleSubmit}
                                                 className="bg-[#FEFA17] py-3 rounded-xl"
@@ -175,7 +432,7 @@ export default function Guide() {
                     </View>
                 </Modal>
 
-                {Object.keys(selectedDates).length > 0 && (
+                {fine && (
                     <>
                         <View className="flex-row justify-between items-center p-4">
                             <Text className="text-lg font-medium">{displayDates}</Text>
@@ -184,76 +441,66 @@ export default function Guide() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* <View className="px-4 space-y-1">
-                            <Text className="text-sm">📍 Location: {location}</Text>
-                            <Text className="text-sm">👤 Adults: {adults}</Text>
-                            <Text className="text-sm">🧒 Children: {children}</Text>
-                            <Text className="text-sm">🌙 Nights: {nights}</Text>
-                        </View> */}
-
                         <View>
                             <ScrollView
                                 className="w-full h-[81%]"
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
                                 showsVerticalScrollIndicator={false}
                             >
-                                {starCounts.map((starCount, index) => (
-                                    <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300">
-                                        <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
-                                            <TouchableOpacity
-                                                className="w-6 h-6 rounded-full justify-center items-center bg-gray-200"
-                                                onPress={() => toggleCardSelection(index)}
-                                            >
-                                                {selectedCardIndex === index && (
-                                                    <Image className='w-4 h-4' source={mark} />
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
-                                        <View className='flex-row mt-2 gap-2'>
-                                            <Image
-                                                className='w-[50px] h-[50px] rounded-full'
-                                                source={pic}
-                                                contentFit="cover"
-                                            />
-                                            <View>
-                                                <Text className="text-lg font-semibold text-center">Guide #{index + 1}</Text>
-                                                <View className="flex-row justify-start mt-1">
-                                                    {[...Array(starCount)].map((_, i) => (
-                                                        <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
-                                                    ))}
+                                {guides.map((x, index) => (
+                                    <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] py-1 rounded-2xl border-2 border-gray-300">
+                                        <TouchableOpacity onPress={() => router.push(`/views/guide/group/${Number(x.id) + 1}`)}>
+                                            <View className='h-full py-3 justify-between'>
+                                                <View className="w-full absolute items-end pr-1 z-10">
+                                                    <TouchableOpacity
+                                                        className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
+                                                        onPress={() => toggleCardSelection(index + 1)}
+                                                    >
+                                                        {Number(selectedCardIndex) - 1 === index && (
+                                                            <Image className='w-4 h-4' source={mark} />
+                                                        )}
+                                                    </TouchableOpacity>
+                                                </View>
+                                                <View className='flex-row gap-5 px-3 w-44'>
+                                                    <Image
+                                                        className='w-[50px] h-[50px] rounded-full'
+                                                        source={x.image}
+                                                        contentFit="cover"
+                                                    />
+                                                    <View className=''>
+                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.title}</Text>
+                                                        <View className="flex-row justify-start mt-1">
+                                                            {[...Array(x.stars)].map((_, i) => (
+                                                                <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
+                                                            ))}
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                                <View className='w-full mt-4 gap-2'>
+                                                    <View className='gap-6 flex-row w-full pl-5'>
+                                                        <Image className='w-5 h-5' source={tele}></Image>
+                                                        <Text className="text-md">Phone Verified</Text>
+                                                    </View>
+                                                    <View className='gap-6 flex-row w-full pl-5'>
+                                                        <Image className='w-5 h-5' source={mark}></Image>
+                                                        <Text className="text-md">Identify Verified</Text>
+                                                    </View>
                                                 </View>
                                             </View>
-                                        </View>
-                                        <View className='w-full mt-4 gap-2'>
-                                            <View className='gap-6 flex-row w-full  pl-10'>
-                                                <Image className='w-[14px] h-[14px]' source={tele}></Image>
-                                                <Text className="text-[10px]">Phone Verified</Text>
-                                            </View>
-                                            <View className='gap-6 flex-row w-full pl-10'>
-                                                <Image className='w-[14px] h-[14px]' source={mark}></Image>
-                                                <Text className="text-[10px]">Identify Verified</Text>
-                                            </View>
-
-                                        </View>
-                                        <TouchableOpacity
-                                            className='mt-3 rounded-lg w-[90%] h-6 bg-[#FEFA17]'
-                                            onPress={() => alert('mn guide')}
-                                        >
-                                            <Text className='text-center font-semibold'>View</Text>
-
                                         </TouchableOpacity>
                                     </View>
-                                )
-                                )
-                                }
+                                ))}
                             </ScrollView>
                         </View>
                         <View className="p-4 border-t border-gray-200 bg-white">
-                            <Text className="text-center font-bold text-lg">Total: 1000 LKR</Text>
+                            {
+
+                                <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
+
+                            }
                         </View>
                     </>
                 )}
-
             </View>
         </View>
     );

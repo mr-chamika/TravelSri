@@ -38,6 +38,66 @@ export default function App() {
 
     const router = useRouter();
 
+    const categories = [
+
+        {
+
+            id: '1',
+            image: pic,
+            members: 2,
+            title: 'Tuk',
+            price: 100
+
+        },
+        {
+
+            id: '2',
+            image: mini,
+            members: 3,
+            title: 'Mini',
+            price: 200
+
+        },
+        {
+
+            id: '3',
+            image: sport,
+            members: 4,
+            title: 'Seddan',
+            price: 250
+
+        },
+        {
+
+            id: '4',
+            image: car,
+            members: 5,
+            title: 'Van',
+            price: 350
+
+        },
+        {
+
+            id: '5',
+            image: bus,
+            members: 54,
+            title: 'Non A/C',
+            price: 5000
+
+        },
+        {
+
+            id: '6',
+            image: ac,
+            members: 35,
+            title: 'A/C',
+            price: 15000
+
+        }
+
+    ]
+
+
     const [isModalVisible, setModalVisible] = useState(true);
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [location, setLocation] = useState('');
@@ -183,7 +243,7 @@ export default function App() {
 
         <View className='bg-[#F2F5FA] w-full h-full'>
 
-            <Modal
+            {/* <Modal
                 animationType="fade"
                 transparent={true}
                 visible={isModalVisible}
@@ -199,8 +259,8 @@ export default function App() {
                         </TouchableOpacity>
                         <Text className="text-xl font-bold mb-4 text-center">Vehicle Booking</Text>
 
-                        {/* 3. Wrap modal content in a ScrollView */}
-                        {/* <ScrollView className="w-full h-full" contentContainerStyle={{ paddingBottom: 20 }}> */}
+                        
+                         //<ScrollView className="w-full h-full" contentContainerStyle={{ paddingBottom: 20 }}>
                         <View className="w-full h-[93%] justify-between pb-3">
                             <View className='h-[73%]'>
                                 <Calendar
@@ -251,7 +311,7 @@ export default function App() {
                                     )}
                                 </View>
                             </View>
-                            {/* 4. Add the SimpleTimePicker component */}
+                            
                             <View className='h-[25%] justify-between'>
                                 <View>
                                     <SimpleTimePicker onTimeChange={setSelectedTime} />
@@ -265,207 +325,85 @@ export default function App() {
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                            {/* </ScrollView> */}
+                            // </ScrollView>
                         </View>
                     </View>
                 </View>
-            </Modal>
-            <View className="flex-row justify-between items-center p-4">
-                <Text className="text-lg font-medium">{displayDates}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
-                    <Text className="font-semibold text-blue-600">Change</Text>
-                </TouchableOpacity>
-            </View>
-
-            <Text className='text-[24px] font-semibold mx-5 my-2'>Category</Text>
-
-            <View className='w-full gap-3 items-center pb-5'>
-                <View className='flex-row gap-7 px-4 '>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={pic}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    2 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    Tuk
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">100.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={mini}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    3 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    Mini
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">150.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-
+            </Modal> */}
+            {/* {Object.keys(selectedDates).length > 0 && ( */}
+            <>
+                <View className="flex-row justify-between items-center p-4">
+                    {/* <Text className="text-lg font-medium">{displayDates}</Text> */}
+                    <Text className="text-2xl font-semibold">Category</Text>
+                    {/*<TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
+                             <Text className="font-semibold text-blue-600">Change</Text> 
+                        </TouchableOpacity>*/}
                 </View>
 
-                <View className='flex-row gap-7 px-4'>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={sport}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    4 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    Seddan
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">200.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={car}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    5 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    Van
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">250.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
+                {/* <View className="px-4 space-y-1">
+                            <Text className="text-sm">📍 Location: {location}</Text>
+                            <Text className="text-sm">👤 Adults: {adults}</Text>
+                            <Text className="text-sm">🧒 Children: {children}</Text>
+                            <Text className="text-sm">🌙 Nights: {nights}</Text>
+                        </View> */}
 
-                </View>
-                <View className='flex-row gap-7 px-4'>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={bus}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    54 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    Non A/C
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">1000.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                    <TouchableOpacity className="bg-[#d9d9d98e] w-[160px] h-[170px] items-center gap-2  py-2 rounded-2xl">
-                        <Image
-                            className="w-[70px] h-[70px]"
-                            source={ac}
-                        />
-                        <View>
-                            <View className='flex-row items-center gap-4'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={p}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    35 Members
-                                </Text>
-                            </View>
-                            <View className='flex-row items-center gap-4 my-1'>
-                                <Image
-                                    className="w-[11px] h-[11px]"
-                                    source={t}
-                                />
-                                <Text className=" text-[13px] italic text-center">
-                                    A/C
-                                </Text>
-                            </View>
-                        </View>
-                        <TouchableOpacity className="rounded-md bg-black justify-center w-32 h-5 items-center" onPress={() => alert('menna ebuwa')}>
-                            <Text className=" text-white font-semibold text-[12px]">2500.00 LKR/1km</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
+                <View>
 
+                    <ScrollView
+                        className="w-full h-[86%]"
+                        contentContainerClassName="flex-row flex-wrap justify-center items-start gap-4 py-5"
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {categories.map((x, i) => {
+
+                            return (
+                                <View key={i}>
+
+                                    <View className="bg-[#d9d9d98e] w-[170px] h-[190px] items-center  py-3 rounded-2xl justify-between">
+                                        <View>
+                                            <Image
+                                                className="w-[90px] h-[90px]"
+                                                source={x.image}
+                                            />
+                                            <View>
+                                                <View className='flex-row items-center gap-4'>
+                                                    <Image
+                                                        className="w-[11px] h-[11px]"
+                                                        source={p}
+                                                    />
+                                                    <Text className=" text-[13px] italic text-center">
+                                                        {x.members} Members
+                                                    </Text>
+                                                </View>
+                                                <View className='flex-row items-center gap-4 my-1'>
+                                                    <Image
+                                                        className="w-[11px] h-[11px]"
+                                                        source={t}
+                                                    />
+                                                    <Text className=" text-[13px] italic text-center">
+                                                        {x.title}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View>
+                                            <TouchableOpacity onPress={() => router.push(`/views/car/solo/list/${x.id}`)}>
+                                                <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
+                                                    <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>)
+                        })
+                        }
+
+                    </ScrollView>
                 </View>
 
-            </View>
+            </>
+            {/* )} */}
+
         </View>
 
     )

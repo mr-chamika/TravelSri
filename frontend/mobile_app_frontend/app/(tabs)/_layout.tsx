@@ -60,7 +60,7 @@ export default function _Layout() {
                     paddingBottom: insets.bottom,
                 }}
             >
-                <Topbar pressing={toggleMenu} notifying={toggling} />
+                <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
 
                 <Tabs
                     screenOptions={{
@@ -164,28 +164,6 @@ export default function _Layout() {
                 </View>
             </Animated.View>
 
-            {notify &&
-                <View className='bg-[#F2F5FA] h-full'>
-                    <Modal
-                        animationType="fade"
-                        transparent={true}
-                        visible={notify}
-                        onRequestClose={() => {
-                            setNotify(false);
-                        }}
-                    >
-                        <View className="h-full w-full justify-center items-center bg-black/50">
-                            <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl">
-                                <TouchableOpacity onPress={() => setNotify(false)}><Text className="text-black">Cancel</Text></TouchableOpacity>
-                                <View className="h-full w-full justify-center items-center">
-                                    <Text className="text-gray-300">No notifications yet</Text>
-                                </View>
-                            </View>
-
-                        </View>
-                    </Modal>
-
-                </View>}
         </View>
     );
 }
