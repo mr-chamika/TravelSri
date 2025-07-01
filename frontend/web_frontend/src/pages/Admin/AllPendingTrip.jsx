@@ -36,9 +36,11 @@ const AllPendingTrip = () => {
                   <span className="text-xs text-gray-500">{trip.date}</span>
                 </div>
               </div>
-              <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-4 md:px-6 py-1 mt-3 md:mt-0 md:ml-6 transition-colors duration-200 cursor-pointer w-full md:w-auto">
-                View
-              </button>
+              <a href="/pendingtripdetails" className="w-full sm:w-auto">
+                <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-4 md:px-6 py-1 mt-3 md:mt-0 md:ml-6 transition-colors duration-200 cursor-pointer w-full md:w-auto">
+                  View
+                </button>
+              </a>
             </div>
           ))}
         </div>
