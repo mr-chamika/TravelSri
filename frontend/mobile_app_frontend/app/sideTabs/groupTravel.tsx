@@ -3,6 +3,7 @@ import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import emailjs from '@emailjs/react-native'
 
 
 cssInterop(Image, { className: "style" });
@@ -38,19 +39,65 @@ export default function Group() {
 
     ];
 
+    const validateEmail = (text: string) => {
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(text);
+    };
+
     const handleSubmit = () => {
 
-        if (!name || !email || !des) {
+        if (!name || validateEmail(email) == false || !des) {
 
-            alert("Fill all fields");
+            alert("Fill all fields with valid format");
+
 
         } else {
 
-            alert(`You are ${name}. Your email is ${email} and saying ${des}`)
+            //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
+            alert('success')
+            sendEmail()
 
         }
 
     }
+
+    const sendEmail = () => {
+
+        var emailTemplate = {
+
+            to_name: 'Admin',
+            email: email,
+            message: des,
+            mobile: 'N/A',
+            from_name: name,
+            to_email: 'hasithchamika2001@gmail.com'
+
+        }
+
+        emailjs
+            .send(
+                'service_i1aiqin',
+                'template_q9u99ms',
+                emailTemplate,
+                {
+                    publicKey: "Yec_iAk1ts2gSV3gU"
+                }
+            )
+            .then(
+                (response) => {
+
+                    setName('');
+                    setEmail('');
+                    setDes('');
+                },
+                (err) => {
+
+                    alert('Error in sending email. Check logs')
+                    console.log("EMAILJS FAILED:", JSON.stringify(err, null, 2));
+                }
+            );
+    };
 
     return (
         <View className='w-full h-full bg-[#F2F5FA]'>
@@ -189,9 +236,9 @@ export default function Group() {
                         <Text className="text-[22px] font-semibold mt-5 m-3">Request</Text>
                         <View className='items-center mb-5 gap-5'>
 
-                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Name' placeholderTextColor="#8E8E8E" onChangeText={setName} />
-                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Email' placeholderTextColor="#8E8E8E" onChangeText={setEmail} />
-                            <TextInput multiline={true} className='text-black rounded-xl w-[300px] h-[200px] border-2 border-gray-200 p-4' placeholderTextColor="#8E8E8E" placeholder='Enter Your Name' style={{ textAlignVertical: 'top' }} onChangeText={setDes} />
+                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Name' placeholderTextColor="#8E8E8E" onChangeText={setName} value={name} />
+                            <TextInput className='text-black rounded-xl w-[300px] border-2 border-gray-200 p-4' placeholder='Enter Your Email' placeholderTextColor="#8E8E8E" onChangeText={setEmail} value={email} />
+                            <TextInput multiline={true} className='text-black rounded-xl w-[300px] h-[200px] border-2 border-gray-200 p-4' placeholderTextColor="#8E8E8E" placeholder='Enter Your Description' style={{ textAlignVertical: 'top' }} onChangeText={setDes} value={des} />
 
 
                             <TouchableOpacity onPress={handleSubmit} className='w-[76%] h-10 bg-[#FEFA17] rounded-lg justify-center'>

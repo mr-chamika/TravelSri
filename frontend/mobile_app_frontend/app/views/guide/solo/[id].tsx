@@ -14,7 +14,7 @@ const star = require('../../../../assets/images/tabbar/create/hotel/stars.png')
 const back = require('../../../../assets/images/back.png')
 const profile = require('../../../../assets/images/sideTabs/profile.jpg')
 const tele = require('../../../../assets/images/tabbar/create/guide/telephones.png')
-const global = require('../../../../assets/images/tabbar/create/guide/global.png')
+const globl = require('../../../../assets/images/tabbar/create/guide/global.png')
 const mark = require('../../../../assets/images/mark.png')
 
 export default function Views() {
@@ -144,7 +144,7 @@ export default function Views() {
 
                             </View>
                             <View className='w-[90%] gap-2 flex-row my-3 items-center'>
-                                <Image className='w-5 h-5' source={global}></Image>
+                                <Image className='w-5 h-5' source={globl}></Image>
                                 <View className="flex-row gap-3 px-4">
                                     {
 
