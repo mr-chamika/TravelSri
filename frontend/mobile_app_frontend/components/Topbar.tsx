@@ -1,25 +1,36 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, Modal } from 'react-native'
+import NotifyModal from './Notifi'
+import { useState } from 'react'
 
-import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
+import { cssInterop } from 'nativewind'
 
 const Menu = require('../assets/images/top bar/menu.png')
 const Notify = require('../assets/images/top bar/notify1.png')
+cssInterop(Image, { className: "style" });
 
 interface TopbarProps {
     pressing: () => void;
+    notifying: () => void;
+    on: boolean
 }
 
-cssInterop(Image, { className: "style" });
-export default function Topbar({ pressing }: TopbarProps) {
+
+export default function Topbar({ pressing, notifying, on }: TopbarProps) {
+
+    //const [notify, setNotify] = useState(false);
+
+    // const toggling = () => {
+    //     setNotify(!notify);
+    // };
 
     return (
 
-        <View className=' h-[64px] items-center justify-center px-2'>
+        <View className='bg-[#F2F5FA] h-[64px] items-center justify-center px-2'>
 
-            <View className='justify-between flex flex-row w-full px-2'>
+            <View className='justify-between flex-row w-full px-1'>
                 <TouchableOpacity onPress={pressing}>
-                    <View className='absolute w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg shadow-[#538EBB66] z-60' >
+                    <View className='absolute w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg z-60' >
 
                         <Image className='w-[20px] h-[20px]' source={Menu} />
 
@@ -30,14 +41,24 @@ export default function Topbar({ pressing }: TopbarProps) {
                     <Text className='text-lg font-bold'>TravelSri</Text>
 
                 </View>
-                <View className='w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg shadow-[#538EBB66]' >
+                <TouchableOpacity onPress={notifying}>
+                    <View className='w-10 h-10 bg-[#FEFA17] rounded-full items-center justify-center shadow-lg ' >
 
-                    <Image className='w-[19px] h-[20px]' source={Notify} />
+                        <Image className='w-[19px] h-[20px]' source={Notify} />
 
-                </View>
+                    </View>
+                </TouchableOpacity>
             </View>
+            <NotifyModal
 
+                isVisible={on}
+                onClose={notifying}
+
+            />
         </View>
+
+
+
 
     );
 
