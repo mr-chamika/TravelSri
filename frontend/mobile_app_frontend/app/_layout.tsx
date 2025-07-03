@@ -1,29 +1,44 @@
 import { Stack } from "expo-router";
 import './global.css';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from 'react-native';
+
 
 export default function RootLayout() {
   return (
-    <Stack>
 
-      <Stack.Screen
+    <SafeAreaView className="flex-1 bg-gray-100" edges={["bottom", "top"]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F2F0EF" />
 
-        name="(tabs)"
-        options={{ headerShown: false }}
+      <Stack screenOptions={{ headerShown: false }}>
 
-      />
-      <Stack.Screen
+        <Stack.Screen
 
-        name="sideTabs"
-        options={{ headerShown: false }}
+          name="(auth)"
+          options={{ headerShown: false }}
 
-      />
-      <Stack.Screen
+        />
+        <Stack.Screen
 
-        name="views"
-        options={{ headerShown: false }}
+          name="(tabs)"
+          options={{ headerShown: false }}
 
-      />
+        />
+        <Stack.Screen
 
-    </Stack>
+          name="sideTabs"
+          options={{ headerShown: false }}
+
+        />
+        <Stack.Screen
+
+          name="views"
+          options={{ headerShown: false }}
+
+        />
+
+      </Stack>
+
+    </SafeAreaView>
   );
 }
