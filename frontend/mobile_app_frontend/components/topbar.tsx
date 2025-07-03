@@ -1,5 +1,4 @@
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, Platform } from 'react-native';
-import { cssInterop } from 'nativewind';
+import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 
 const Menu = require('../assets/images/top bar/menu.png');
@@ -10,38 +9,108 @@ interface TopbarProps {
   pressing: () => void;
 }
 
-cssInterop(Image, { className: 'style' });
-
 const Topbar = ({ pressing }: TopbarProps) => {
   return (
-    <SafeAreaView className='' style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 , paddingBottom: 10,}}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#FEFA17" barStyle="dark-content" />
 
-      <View className='h-[50px] flex-row justify-between items-center px-2 '>
+      <View style={styles.container}>
         {/* Menu Button */}
-        <View className='w-[40px]'>
-          <TouchableOpacity onPress={pressing}>
-            <View className='w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg shadow-[#538EBB66] z-60'>
-              <Image className='w-[30px] h-[30px]' source={Menu} />
+        <View style={styles.menuContainer}>
+          <TouchableOpacity /* onPress={pressing} */>
+            <View style={styles.menuButton}>
+              <Image style={styles.menuIcon} source={Menu} />
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Center Logo + Text */}
-        <View className='flex-1 flex-row items-center justify-center'>
-          <Image className='w-[40px] h-[40px] mr-2' source={logo} />
-          <Text className='text-lg font-bold text-black'>TravelSri</Text>
+        <View style={styles.centerContainer}>
+          <Image style={styles.logo} source={logo} />
+          <Text style={styles.appName}>TravelSri</Text>
         </View>
 
         {/* Notification Icon */}
         <TouchableOpacity onPress={pressing}>
-          <View className='w-[40px] h-[40px] items-center justify-center shadow-lg shadow-[#538EBB66]'>
-            <Image className='w-[40px] h-[40px]' source={Notify} />
+          <View style={styles.notificationContainer}>
+            <Image style={styles.notificationIcon} source={Notify} />
           </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    paddingTop: 40,
+    paddingBottom: 10,
+  },
+  container: {
+    height: 50,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  menuContainer: {
+    width: 40,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#FEFA17',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#538EBB66',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 60,
+  },
+  menuIcon: {
+    width: 30,
+    height: 30,
+  },
+  centerContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: 8,
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  notificationContainer: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#538EBB66',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  notificationIcon: {
+    width: 40,
+    height: 40,
+  },
+});
 
 export default Topbar;

@@ -7,16 +7,25 @@ import {
 } from 'react-native';
 
 // Import individual components
-import StatsCard from '../../../components/ui/starCard';
-import MenuItem from '../../../components/ui/menuItem';
-import Header from '../../../components/ui/header';
-import Topbar from '../../../components/topbar';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, } from "react-native-reanimated";
+import StatsCard from '../../components/ui/starCard';
+import MenuItem from '../../components/ui/menuItem';
+import Header from '../../components/ui/header';
+import Topbar from '../../components/topbar';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  Easing 
+} from "react-native-reanimated";
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import BookingScreen from './bookings';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Import your screen components
+import BookingScreen from './bookings';
+import AvailabilityScreen from './availability';
+import TravelFeedScreen from '../views/travelFeed'; // Make sure this has default export
 
 // Type definitions
 interface Stats {
@@ -30,8 +39,8 @@ export type GuideStackParamList = {
   Home: undefined;
   bookings: undefined;
   Profile: undefined;
-  Availability: undefined;
-  Packages: undefined;
+  availability: undefined;
+  travelFeed: undefined;
   Earnings: undefined;
 };
 
@@ -124,15 +133,15 @@ const TravelMateGuideHome = () => {
       id: 'availability'
     },
     {
-      icon: '⭐',
-      title: 'My Tour Packages',
+      icon: '⛰️',
+      title: 'Travel Feed',
       subtitle: 'Create and manage tours',
-      id: 'packages'
+      id: 'travelFeed' // Fixed: changed from 'packages' to 'travelFeed'
     },
     {
-      icon: '💰',
-      title: 'Earnings',
-      subtitle: 'View payment history',
+      icon: '😊',
+      title: 'Rating & Reviews',
+      subtitle: 'View Rating and Review',
       id: 'earnings'
     }
   ];
@@ -151,11 +160,11 @@ const TravelMateGuideHome = () => {
         break;
       case 'availability':
         console.log('Navigating to availability screen...');
-        // navigation.navigate('Availability');
+        navigation.navigate('availability');
         break;
-      case 'packages':
-        console.log('Navigating to packages screen...');
-        // navigation.navigate('Packages');
+      case 'travelFeed': // Fixed: changed from 'feed' to 'travelFeed'
+        console.log('Navigating to travel feed screen...');
+        navigation.navigate('travelFeed');
         break;
       case 'earnings':
         console.log('Navigating to earnings screen...');
@@ -228,15 +237,16 @@ const TravelMateGuide = () => {
     >
       <Stack.Screen name="Home" component={TravelMateGuideHome} />
       <Stack.Screen name="bookings" component={BookingScreen} />
+      <Stack.Screen name="availability" component={AvailabilityScreen} />
+      <Stack.Screen name="travelFeed" component={TravelFeedScreen} />
       {/* Add other screens here when ready */}
       {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
-      {/* <Stack.Screen name="Availability" component={AvailabilityScreen} /> */}
-      {/* <Stack.Screen name="Packages" component={PackagesScreen} /> */}
       {/* <Stack.Screen name="Earnings" component={EarningsScreen} /> */}
     </Stack.Navigator>
   );
 };
 
+// Fixed StyleSheet usage
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -266,4 +276,5 @@ const styles = StyleSheet.create({
   },
 });
 
+// Export the Navigator component as default
 export default TravelMateGuide;
