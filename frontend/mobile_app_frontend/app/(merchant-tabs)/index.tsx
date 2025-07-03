@@ -213,7 +213,7 @@ const Listings: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
+      {/* Header
       <View style={styles.header}>
         <View style={styles.menuIcon}>
           <View style={styles.menuLine} />
@@ -231,7 +231,7 @@ const Listings: React.FC = () => {
         <TouchableOpacity>
           <Feather name="bell" size={24} color="#000" />
         </TouchableOpacity>
-      </View>
+      </View>*/}
 
       {/* Listings Header */}
       <View style={styles.listingsHeader}>

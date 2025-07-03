@@ -65,20 +65,6 @@ const ShopProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={handleMenuPress}>
-          <Ionicons name="menu" size={24} color="#000" />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Ionicons name="airplane" size={20} color="#FFD700" />
-          <Text style={styles.headerTitle}>TravelSri</Text>
-        </View>
-        <TouchableOpacity style={styles.notificationButton} onPress={handleNotificationPress}>
-          <Ionicons name="notifications" size={24} color="#FFD700" />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>

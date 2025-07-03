@@ -80,13 +80,6 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
 
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <Text style={styles.logoText}>🏝️</Text>
-          </View>
-          <Text style={styles.logoTitle}>TravelSri</Text>
-        </View>
-
         <TouchableOpacity>
           <Feather name="bell" size={24} color="#000" />
         </TouchableOpacity>
