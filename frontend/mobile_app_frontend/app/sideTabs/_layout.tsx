@@ -18,8 +18,8 @@ export default function _Layout() {
     };
 
     return (
-
-        <SafeAreaView className="flex-1 bg-[#F2F5FA]" edges={["bottom", "top"]}>
+        <>
+            {/* <SafeAreaView className="flex-1 bg-[#F2F5FA]" edges={["bottom", "top"]}> */}
             <View className="flex-1 bg-[#F2F5FA]">
                 <StatusBar barStyle="dark-content" backgroundColor="#F2F0EF" />
                 <View className='flex flex-row justify-between py-3 px-3'>
@@ -56,6 +56,8 @@ export default function _Layout() {
 
                 />
             </View>
-        </SafeAreaView>
+            {/* </SafeAreaView> */}
+        </>
+
     );
 }

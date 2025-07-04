@@ -6,8 +6,7 @@ import { StatusBar } from 'react-native';
 
 export default function RootLayout() {
   return (
-
-    <SafeAreaView className="flex-1 bg-gray-100" edges={["bottom", "top"]}>
+    <>
       <StatusBar barStyle="dark-content" backgroundColor="#F2F0EF" />
 
       <Stack screenOptions={{ headerShown: false }}>
@@ -38,7 +37,6 @@ export default function RootLayout() {
         />
 
       </Stack>
-
-    </SafeAreaView>
+    </>
   );
 }

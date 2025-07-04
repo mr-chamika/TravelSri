@@ -16,11 +16,11 @@ export default function Profile() {
 
 import React, { useState, useCallback } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View, TouchableOpacity, Modal } from 'react-native';
-import { cssInterop } from 'nativewind'
-import { Image } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Calendar } from 'react-native-calendars';
 import SimpleTimePicker from '@/components/TimeSelector';
+import { cssInterop } from 'nativewind'
+import { Image } from 'expo-image'
 
 
 cssInterop(Image, { className: "style" });
@@ -350,14 +350,15 @@ export default function App() {
                 <View>
 
                     <ScrollView
-                        className="w-full h-[86%]"
-                        contentContainerClassName="flex-row flex-wrap justify-center items-start gap-4 py-5"
+                        className="w-full h-[98%]"
+                        contentContainerClassName="flex-row flex-wrap justify-center items-start gap-4"
                         showsVerticalScrollIndicator={false}
                     >
                         {categories.map((x, i) => {
 
                             return (
-                                <View key={i}>
+                                <TouchableOpacity key={i} onPress={() => router.push(`/views/car/solo/list/${x.id}`)}>
+
 
                                     <View className="bg-[#d9d9d98e] w-[170px] h-[190px] items-center  py-3 rounded-2xl justify-between">
                                         <View>
@@ -394,7 +395,9 @@ export default function App() {
                                             </TouchableOpacity>
                                         </View>
                                     </View>
-                                </View>)
+                                </TouchableOpacity>
+
+                            )
                         })
                         }
 

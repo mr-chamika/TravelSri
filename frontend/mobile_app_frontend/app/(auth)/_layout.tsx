@@ -5,6 +5,7 @@ export default function AuthLayout() {
 
     return (
 
+
         <Stack screenOptions={{ headerShown: false }}>
 
             <Stack.Screen name='index' />
@@ -12,6 +13,7 @@ export default function AuthLayout() {
             <Stack.Screen name='forgotpassword' />
 
         </Stack>
+
 
     )
 }
