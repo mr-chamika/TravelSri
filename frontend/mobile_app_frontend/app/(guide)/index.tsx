@@ -25,7 +25,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // Import your screen components
 import BookingScreen from './bookings';
 import AvailabilityScreen from './availability';
-import TravelFeedScreen from '../views/travelFeed'; // Make sure this has default export
+import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
 
 // Type definitions
 interface Stats {

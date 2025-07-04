@@ -17,12 +17,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { Input } from '../../components/ui/input';
-import { Button } from '../../components/ui/buttons';
-import { ImageUpload } from '../../components/ui/imageUpload';
+import { Input } from '../../../components/ui/input';
+import { Button } from '../../../components/ui/buttons';
+import { ImageUpload } from '../../../components/ui/imageUpload';
 import DropDownPicker from 'react-native-dropdown-picker';
 import MultiSelect from 'react-native-multiple-select';
-import Topbar from "../../components/topbar";
+import Topbar from "../../../components/topbar";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, } from "react-native-reanimated";
 
 
@@ -363,7 +363,7 @@ export default function GuideRegistrationScreen() {
           }
       };
 
-  const logo = require('../../assets/images/top bar/logo.png')
+  const logo = require('../../../assets/images/top bar/logo.png')
 
 
   return (

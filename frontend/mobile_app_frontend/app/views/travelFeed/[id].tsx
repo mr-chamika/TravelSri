@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 
-import Topbar from '../../components/topbar';
+import Topbar from '../../../components/topbar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Define a type for a single post object
@@ -104,11 +104,11 @@ export default function TravelFeedScreen() {
         <Text style={styles.headerTitle}>Where did you travel?</Text>
         <View style={styles.headerIcons}>
           <Image
-            source={require('../../assets/images/share.png')} // Make sure this path is correct
+            source={require('../../../assets/images/share.png')} // Make sure this path is correct
             style={styles.icon}
           />
           <Image
-            source={require('../../assets/images/more.png')} // Make sure this path is correct
+            source={require('../../../assets/images/more.png')} // Make sure this path is correct
             style={styles.icon}
           />
         </View>
