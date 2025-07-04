@@ -30,27 +30,50 @@ export default function LoginScreen() {
         if (!password || !validateEmail(email)) {
             alert("Fill all fields with valid format");
         } else {
-            fetch('http://localhost:8080/traveler/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            })
-                .then(res => res.text())
-                .then(data => {
-                    if (data === "wrong password") {
-                        setInvalidE(false);
-                        alert(data);
-                    } else if (data === "true") {
-                        setInvalidE(false);
-                        router.replace('/(tabs)');
-                    } else if (data === "invalid email") {
-                        setInvalidE(true);
-                    }
-                })
-                .catch(err => {
-                    alert("An error occurred. Please try again.");
-                    console.error(err);
-                });
+
+            //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
+            //alert(`Email is ${email} and password is ${password}`)
+
+            // fetch('http://localhost:8080/traveler/login', {
+
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ email, password })
+
+            // })
+            //     .then(res => res.text())
+            //     .then(data => {
+
+            //         if (data == "wrong password") {
+
+            //             setInvalidE(false)
+            //             alert(data)
+
+            //         } else if (data == "true") {
+
+            //             setInvalidE(false)
+            //             router.replace('/(tabs)')
+
+            //         } else if (data == "invalid email") {
+
+            //             setInvalidE(true)
+
+            //         }
+
+            //     })
+            //     .catch(err => { alert(err); console.log(err) })
+
+            if (email == 'merchant@gmail.com' && password == '1234') {
+
+                router.replace('/(merchant-tabs)')
+
+            } else if (email == 'traveler@gmail.com' && password == '1234') {
+
+                router.replace('/(tabs)')
+
+            }
+
+
         }
     };
 
@@ -94,7 +117,7 @@ export default function LoginScreen() {
                                     <Text className="text-base font-medium text-gray-700 mb-1">Email Address</Text>
                                     <TextInput
                                         className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                                        placeholder="you@example.com"
+                                        placeholder="role@gmail.com"
                                         placeholderTextColor="#9CA3AF"
                                         keyboardType="email-address"
                                         autoCapitalize="none"
@@ -127,8 +150,8 @@ export default function LoginScreen() {
                                     <TouchableOpacity
 
                                         className="w-full bg-[#FEFA17] py-3 rounded-lg shadow-sm"
-                                        /* onPress={handleLogin} */
-                                        onPress={() => router.push('/(tabs)')}
+                                        onPress={handleLogin}
+                                    /* onPress={() => router.push('/(tabs)')} */
                                     >
                                         <Text className="text-center text-black font-bold text-lg">
                                             Sign In

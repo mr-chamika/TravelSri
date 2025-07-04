@@ -29,7 +29,9 @@ export default function RootLayout() {
           options={{ headerShown: false }}
 
         />
+        <Stack.Screen name="(merchant-tabs)" />
         <Stack.Screen
+
 
           name="views"
           options={{ headerShown: false }}

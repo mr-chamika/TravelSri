@@ -1,5 +1,6 @@
 // app/_Layout.tsx
 import { Tabs } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image, View, Text, StatusBar, TouchableOpacity, Modal } from "react-native";
@@ -50,6 +51,7 @@ export default function _Layout() {
     };
 
     return (
+
         <View className="flex-1 bg-[#F2F0EF]">
             <StatusBar barStyle="dark-content" backgroundColor="#F2F0EF" />
 
@@ -165,5 +167,6 @@ export default function _Layout() {
             </Animated.View>
 
         </View>
+
     );
 }

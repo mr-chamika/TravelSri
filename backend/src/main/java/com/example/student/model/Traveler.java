@@ -13,14 +13,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Traveler {
 
     @Id String _id;
-    //String fullName;
+    String fullName;
     String email;
-    //    String phone;
-//    String address;
-//    String role;
-//    String gender;
+        String phone;
+    String address;
+    String role;
+    String gender;
     String password;
-    //String username;
+    String username;
 
     public String getEmail() {
         return email;
