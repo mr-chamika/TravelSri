@@ -4,7 +4,7 @@ import { BookingRequestsList } from '../../components/ui/bookingReqList';
 import { BookingCalendar } from '../../components/ui/bookingCalender';
 import { RequestDetailsModal } from '../../components/ui/requestDetailModal';
 import { TabNavigation } from '../../components/ui/tabNavigation';
-import Topbar from '../../components/topbar';
+import Topbar from '../../components/Topbar';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 
 // Types
@@ -142,21 +142,18 @@ export const GuideBookingScreen = () => {
     translateX.value = withTiming(show ? -1000 : 0, { duration: 300 });
     opacity.value = withTiming(show ? 0 : 1, { duration: 300 });
   };
+    const [notify, setNotify] = useState(false);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Topbar pressing={toggleMenu} />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const toggling = () => {
+        setNotify(!notify);
+    };
+
+  
 
   return (
     <SafeAreaView style={styles.container}>
-      <Topbar pressing={toggleMenu} />
+                      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Booking Requests</Text>

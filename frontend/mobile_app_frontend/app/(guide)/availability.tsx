@@ -15,7 +15,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import Topbar from '../../components/topbar';
+import Topbar from '../../components/Topbar';
 
 // A placeholder for your Topbar component to make the code runnable.
 
@@ -94,9 +94,16 @@ export default function AvailabilityScreen() {
     }
   };
 
+  const [notify, setNotify] = useState(false);
+  
+    const toggling = () => {
+          setNotify(!notify);
+      };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Topbar pressing={toggleMenu} />
+                            <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Calendar Section */}
         <View style={styles.calendarSection}>

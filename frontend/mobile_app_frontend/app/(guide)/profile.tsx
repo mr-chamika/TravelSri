@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import Topbar from '../../components/topbar';
+import Topbar from '../../components/Topbar';
 
 const profile = require('../../assets/images/profile/image.png')
 const edit = require('../../assets/images/profile/edit.png')
@@ -79,9 +79,16 @@ export default function Profile() {
         }
     };
 
+    const [notify, setNotify] = useState(false);
+      
+        const toggling = () => {
+              setNotify(!notify);
+          };
+
     return (
         <SafeAreaView style={styles.safeArea}>
-            <Topbar pressing={toggleMenu} />
+                                       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+           
             <View style={styles.container}>
                 {/* --- Profile and Personal Details Sections --- */}
                 <View style={styles.profileSection}>

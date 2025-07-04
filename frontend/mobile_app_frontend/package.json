@@ -12,7 +12,11 @@
   },
   "dependencies": {
     "@expo/config-plugins": "~10.0.0",
+    "@emailjs/react-native": "^5.1.0",
     "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-navigation/bottom-tabs": "^7.3.10",
+    "@react-navigation/elements": "^2.3.8",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native-picker/picker": "2.11.1",
@@ -56,7 +60,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "expo-secure-store": "~14.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,33 +1,16 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function GuideLayout() {
-  return (
-    <Stack screenOptions={{ 
-      headerShown: true,
-      headerStyle: { backgroundColor: '#10b981' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: 'bold' },
-    }}>
-      <Stack.Screen 
-        name="index" 
-        options={{ title: 'Guide & Tutorials' }} 
-      />
-      <Stack.Screen 
-        name="registration" 
-        options={{ title: 'Registration Guide' }} 
-      />
-      <Stack.Screen 
-        name="review" 
-        options={{ title: 'Reviews' }} 
-      />
-      <Stack.Screen 
-        name="travelFeed" 
-        options={{ title: 'Travel Feed' }} 
-      />
-      <Stack.Screen 
-        name="notifications" 
-        options={{ title: 'Notifications' }} 
-      />
-    </Stack>
-  );
+export default function ViewLayout() {
+
+    return (
+        <SafeAreaView className="flex-1 bg-[#F2F5FA]" edges={["bottom", "top"]}>
+            <Stack screenOptions={{ headerShown: false }}>
+
+
+
+            </Stack>
+        </SafeAreaView>
+    )
+
 }

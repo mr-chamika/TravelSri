@@ -10,7 +10,7 @@ import {
 import StatsCard from '../../components/ui/starCard';
 import MenuItem from '../../components/ui/menuItem';
 import Header from '../../components/ui/header';
-import Topbar from '../../components/topbar';
+import Topbar from '../../components/Topbar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -181,7 +181,11 @@ const TravelMateGuideHome = () => {
   
   const translateX = useSharedValue(-1000);
   const opacity = useSharedValue(0);
+ const [notify, setNotify] = useState(false);
 
+  const toggling = () => {
+        setNotify(!notify);
+    };
   const menuStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
     opacity: opacity.value,
@@ -206,7 +210,8 @@ const TravelMateGuideHome = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Topbar pressing={toggleMenu} />
+                            <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      
       <ScrollView showsVerticalScrollIndicator={false}>
         <Header 
           userName="Sunil"

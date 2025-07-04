@@ -16,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/mr-chamika/TravelSri/issues"
   },
-  "homepage": "https://github.com/mr-chamika/TravelSri#readme"
+  "homepage": "https://github.com/mr-chamika/TravelSri#readme",
+  "dependencies": {
+    "@react-navigation/native-stack": "^7.3.21",
+    "react-native-safe-area-context": "^5.5.1",
+    "react-native-screens": "^4.11.1"
+  }
 }

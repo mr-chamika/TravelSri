@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 
-import Topbar from '../../../components/topbar';
+import Topbar from '../../../components/Topbar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Define a type for a single post object
@@ -92,12 +92,19 @@ const PostItem = ({ item }: { item: Post }) => {
   );
 };
 
+const [notify, setNotify] = useState(false);
+  
+    const toggling = () => {
+          setNotify(!notify);
+      };
+
 // Main Screen Component
 export default function TravelFeedScreen() {
   
   return (
     <SafeAreaView>
-      <Topbar pressing={toggleMenu} />
+                                  <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
