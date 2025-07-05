@@ -1,8 +1,12 @@
 import { Text, View, Image, TouchableOpacity, ScrollView } from 'react-native'
+import { useRouter } from 'expo-router';
 
 const ProfilePic = require("../../assets/images/profile-pic.jpeg"); // Add this line
 
 export default function Profile() {
+
+    const router = useRouter()
+
     const ToggleSwitch = ({ isEnabled }: { isEnabled: boolean }) => (
         <View className={`w-12 h-6 rounded-full p-1 ${isEnabled ? 'bg-[#FEFA17]' : 'bg-gray-300'}`}>
             <View
@@ -15,13 +19,17 @@ export default function Profile() {
 
     return (
         <ScrollView className="flex-1 bg-[#F2F0EF]">
+            <View className="w-full px-6 pt-5 pb-2 justify-between flex-row ">
+                                <TouchableOpacity className='bg-black py-1 px-3 rounded-lg pb-2' onPress={()=>router.back()}><Text className='text-white text-center'>Back</Text></TouchableOpacity>
+                              
+                            </View>
             <View className="px-6 pt-6 pb-24">
                 {/* Profile Picture and Name */}
                 <View className="items-center mb-8">
                     <View className="w-24 h-24 rounded-full mb-4 overflow-hidden">
                         <Image 
                             source={ProfilePic}
-                            className="w-full h-full"
+                            className="w-16 h-16"
                             resizeMode="cover"
                         />
                     </View>

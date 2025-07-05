@@ -598,7 +598,7 @@ export default function MultiStepForm() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Header */}
+              
                 <View className="w-full px-6 pt-5 pb-2 justify-between flex-row ">
                     <TouchableOpacity className='bg-black py-1 px-3 rounded-lg pb-2' onPress={()=>router.back()}><Text className='text-white text-center'>Back</Text></TouchableOpacity>
                   <Text className="text-sm font-medium text-gray-500 text-center">
@@ -606,7 +606,7 @@ export default function MultiStepForm() {
                   </Text>
                 </View>
 
-                {/* Profile Section */}
+                
                 <View className="items-center py-8">
                   <View className="w-20 h-20 rounded-full bg-yellow-500 justify-center items-center mb-4 shadow-md">
                     <User size={40} color="#FFFFFF" />
@@ -614,7 +614,6 @@ export default function MultiStepForm() {
                   <Text className="text-lg font-semibold text-gray-900">Driver Details</Text>
                 </View>
 
-                {/* Form */}
                 <View className="px-6 pb-5">
                   <View className="flex-row justify-between mb-0">
                     <View className="w-[48%]">
@@ -628,7 +627,6 @@ export default function MultiStepForm() {
                   {renderInput('nicNumber', 'NIC Number', true)}
                   {renderInput('driverDateOfBirth', 'Date of Birth (DD/MM/YYYY)', true)}
 
-                  {/* Gender Dropdown */}
                   <View className="mb-5">
                     <Text className="text-sm font-medium text-gray-700 mb-2">
                       Gender <Text className="text-red-500">*</Text>
@@ -689,14 +687,14 @@ export default function MultiStepForm() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Header */}
+                
                 <View className="px-6 pt-5 pb-2 items-center">
                   <Text className="text-sm font-medium text-gray-500 text-center">
                     Section 2 of 3 - Vehicle Details
                   </Text>
                 </View>
 
-                {/* Profile Section */}
+                
                 <View className="items-center py-8">
                   <View className="w-20 h-20 rounded-full bg-yellow-400 justify-center items-center mb-4 shadow-md">
                     <Car size={40} color="#FFFFFF" />
@@ -704,7 +702,7 @@ export default function MultiStepForm() {
                   <Text className="text-lg font-semibold text-gray-900">Vehicle Details</Text>
                 </View>
 
-                {/* Form */}
+                
                 <View className="px-6 pb-5">
                   {renderInput('vehicleOwner', 'Vehicle Owner', true)}
 
@@ -730,7 +728,7 @@ export default function MultiStepForm() {
                   {renderInput('memberPlate', 'Member Plate', true)}
                   {renderInput('numberPlate', 'Number Plate', true)}
 
-                  {/* Image Uploads */}
+                  
                   {renderImageUpload('vehicleImage', 'Vehicle Image', 'Tap to upload vehicle photo')}
                   {renderImageUpload('vehicleLicenseCopy', 'Vehicle License Copy', 'Tap to upload license document')}
                   {renderImageUpload('insuranceDocument', 'Insurance Document', 'Tap to upload insurance document')}
@@ -751,14 +749,14 @@ export default function MultiStepForm() {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* Header */}
+                
                 <View className="px-6 pt-5 pb-2 items-center">
                   <Text className="text-sm font-medium text-gray-500 text-center">
                     Section 3 of 3 - License & Experience
                   </Text>
                 </View>
 
-                {/* Profile Section */}
+                
                 <View className="items-center py-8">
                   <View className="w-20 h-20 rounded-full bg-yellow-400 justify-center items-center mb-4 shadow-md">
                     <Award size={40} color="#FFFFFF" />
@@ -766,7 +764,7 @@ export default function MultiStepForm() {
                   <Text className="text-lg font-semibold text-gray-900">License & Experience</Text>
                 </View>
 
-                {/* Form */}
+                
                 <View className="px-6 pb-5">
                   {renderInput('drivingLicenseNumber', 'Driving License Number', true)}
                   {renderInput('licenseExpiryDate', 'License Expiry Date (DD/MM/YYYY)', true)}
@@ -774,8 +772,8 @@ export default function MultiStepForm() {
                   <View className="flex-row justify-between mb-0">
                     <View className="w-[48%]">
                       {renderDropdown(
-                        'vehicleYearOfManufacture', // Using vehicle's year field
-                        'Vehicle Year of Manufacture', // Clarified label
+                        'vehicleYearOfManufacture', 
+                        'Vehicle Year of Manufacture',
                         yearOptions,
                         showYearPicker,
                         setShowYearPicker
@@ -783,8 +781,8 @@ export default function MultiStepForm() {
                     </View>
                     <View className="w-[48%]">
                       {renderDropdown(
-                        'vehicleSeatingCapacity', // Using vehicle's seating capacity field
-                        'Vehicle Seating Capacity', // Clarified label
+                        'vehicleSeatingCapacity', 
+                        'Vehicle Seating Capacity', 
                         seatingCapacityOptions,
                         showSeatingCapacityPicker,
                         setShowSeatingCapacityPicker
@@ -792,7 +790,7 @@ export default function MultiStepForm() {
                     </View>
                   </View>
 
-                  {/* License Photo Upload */}
+                  
                   {renderImageUpload('licensePhoto', 'License Photo', 'Upload the driving license photo')}
 
                   {renderInput('licenseYearsOfExperience', 'Years of Experience', true, 'numeric')}
@@ -809,14 +807,14 @@ export default function MultiStepForm() {
   };
 
   return (
-    <View className="flex-1 bg-white"> {/* Use flex-1 to fill screen */}
+    <View className="flex-1 bg-white"> 
       {renderStep()}
 
-      {/* Navigation Buttons for Multi-Step Form */}
+     
       <View className="flex-row px-6 pb-8 pt-4 gap-3 justify-between items-center">
         {step > 1 && (
           <TouchableOpacity
-            className="flex-1 bg-gray-100 rounded-lg py-4 items-center shadow-md"
+            className="w-[50%] bg-gray-100 rounded-lg py-4 items-center shadow-md"
             onPress={handlePrevious}
             activeOpacity={0.8}
           >
@@ -825,8 +823,8 @@ export default function MultiStepForm() {
         )}
         <TouchableOpacity
           className={`rounded-lg py-4 items-center shadow-md ${
-            step === 1 ? 'w-full' : 'flex-1' // Full width if only one button
-          } ${step < 3 ? 'bg-yellow-500' : 'bg-green-500'}`} // Green for submit
+            step === 1 ? 'w-full' : 'flex-1'
+          } ${step < 3 ? 'bg-yellow-500' : 'bg-green-500'}`} 
           onPress={handleNext}
           activeOpacity={0.8}
         >

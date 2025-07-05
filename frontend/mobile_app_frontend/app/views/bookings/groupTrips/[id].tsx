@@ -1,7 +1,6 @@
 import { useLocalSearchParams, router } from 'expo-router'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native'
+import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar, TextInput } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { TextInput } from 'react-native-gesture-handler'
 
 export default function Bookings() {
     const { id } = useLocalSearchParams()
@@ -9,18 +8,18 @@ export default function Bookings() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFEB3B" />
-            
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
-                {/* </TouchableOpacity>
+                </TouchableOpacity>
                 <Text style={styles.headerTitle}>TravelSri</Text>
                 <View style={styles.headerRight}>
                     <TouchableOpacity style={styles.notificationButton}>
                         <Ionicons name="notifications-outline" size={24} color="#000" />
-                        </View> */}
-                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -112,32 +111,13 @@ export default function Bookings() {
                     </View>
                 </View>
 
-                {/* Financial Details 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Financial Details</Text>
-                    <View style={styles.financialDetails}>
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Total Amount:</Text>
-                            <Text style={styles.financialValue}>Rs.15,000</Text>
-                        </View>
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Your Commission:</Text>
-                            <Text style={styles.financialValue}>Rs.4,500</Text>
-                        </View>
-                        <View style={styles.financialRow}>
-                            <Text style={styles.financialLabel}>Fuel Allowance:</Text>
-                            <Text style={styles.financialValue}>Rs.3,000</Text>
-                        </View>
-                    </View>
-                </View>*/}
-
                 {/* Important Notes */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Important Notes</Text>
                     <View style={styles.notesContainer}>
                         <Text style={styles.notesText}>
-                            Please arrive at the hotel at least 30 minutes before your check-in time. 
-                            Valid ID is required for check-in. Cancellation policy applies as per 
+                            Please arrive at the hotel at least 30 minutes before your check-in time.
+                            Valid ID is required for check-in. Cancellation policy applies as per
                             the terms and conditions.
                         </Text>
                     </View>
@@ -146,16 +126,25 @@ export default function Bookings() {
 
             {/* Bottom Actions */}
             <View style={styles.bottomActions}>
-                <TextInput className='border-2 w-full px-4 border-gray-200 rounded-xl'  placeholder='Enter your price' />
+                <TextInput
+                    style={{
+                        borderWidth: 2,
+                        borderColor: '#DDD',
+                        borderRadius: 12,
+                        paddingHorizontal: 12,
+                        flex: 1,
+                        marginRight: 8,
+                    }}
+                    placeholder="Enter your price"
+                    placeholderTextColor='black'
+                />
                 <TouchableOpacity style={styles.cancelButton}>
                     <Text style={styles.cancelButtonText}>Send quotation</Text>
                 </TouchableOpacity>
-                
             </View>
         </View>
     )
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,

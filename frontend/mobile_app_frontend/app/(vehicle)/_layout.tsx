@@ -10,11 +10,11 @@ import Animated, {
     Easing,
 } from "react-native-reanimated";
 
-import Topbar from "../../components/Topbar";
+import Topbar from "../../components/TopbarX";
 
 
 const HomeA = require("../../assets/images/home2.png");
-const UserA = require("../../assets/images/user2.png");
+const UserA = require("../../assets/images/tabbar/feedback.png");
 const Car = require("../../assets/images/tabbar/car_r.png");
 const Locat = require("../../assets/images/tabbar/book.png");
 const MenuX = require("../../assets/images/top bar/menu x.png");
@@ -60,7 +60,7 @@ export default function _Layout() {
                     paddingBottom: insets.bottom,
                 }}
             >
-                <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+                <Topbar notifying={toggling} on={notify} />
 
 
             <Tabs
@@ -113,7 +113,7 @@ export default function _Layout() {
                     }}
                 />
                 <Tabs.Screen
-                    name="profile"
+                    name="feedback"
                     options={{
                         tabBarIcon: ({ focused }) => (
                             <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
