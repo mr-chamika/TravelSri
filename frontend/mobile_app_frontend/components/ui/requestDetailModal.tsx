@@ -71,14 +71,9 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
 
         <ScrollView style={styles.scrollView}>
           {/* <ClientInfo client={request} /> */}
-          <TourDetails tour={request} />
+          <TourDetails  />
           {request.hasConflict && <ConflictWarning conflict={request} />}
-          {request.specialRequests && (
-            <SpecialRequests requests={request.specialRequests} />
-          )}
-          {request.status === 'pending' && (
-            <ActionButtons onResponse={handleResponse} />
-          )}
+          
         </ScrollView>
       </View>
     </Modal>
