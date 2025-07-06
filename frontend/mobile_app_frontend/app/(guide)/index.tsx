@@ -10,7 +10,7 @@ import {
 import StatsCard from '../../components/ui/starCard';
 import MenuItem from '../../components/ui/menuItem';
 import Header from '../../components/ui/header';
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/ui/guideTopbar';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 30,
+    marginTop:-5
   },
   menuList: {
     backgroundColor: 'white',
@@ -278,6 +279,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    marginTop:-25
   },
 });
 

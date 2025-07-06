@@ -4,7 +4,7 @@ import { BookingRequestsList } from '../../components/ui/bookingReqList';
 import { BookingCalendar } from '../../components/ui/bookingCalender';
 import { RequestDetailsModal } from '../../components/ui/requestDetailModal';
 import { TabNavigation } from '../../components/ui/tabNavigation';
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/ui/guideTopbar';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 
 // Types
@@ -91,7 +91,7 @@ export const GuideBookingScreen = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleRequestResponse = async (requestId: string, action: 'accept' | 'reject') => {
+  const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
     try {
       const request = bookingRequests.find(r => r.id === requestId);
       if (!request) return false;
@@ -111,7 +111,7 @@ export const GuideBookingScreen = () => {
       setBookingRequests(prev =>
         prev.map(request =>
           request.id === requestId
-            ? { ...request, status: action === 'accept' ? 'accepted' : 'rejected' }
+            ? { ...request, status: action === 'accept' ? 'accepted' : 'declined' }
             : request
         )
       );
@@ -142,17 +142,15 @@ export const GuideBookingScreen = () => {
     translateX.value = withTiming(show ? -1000 : 0, { duration: 300 });
     opacity.value = withTiming(show ? 0 : 1, { duration: 300 });
   };
-    const [notify, setNotify] = useState(false);
-
-  const toggling = () => {
-        setNotify(!notify);
-    };
-
   
+  const [notify, setNotify] = useState(false);
+  const toggling = () => {
+    setNotify(!notify);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-                      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
       
       <View style={styles.content}>
         <View style={styles.header}>
@@ -177,12 +175,12 @@ export const GuideBookingScreen = () => {
           />
         )}
 
-        {/* <RequestDetailsModal
+        <RequestDetailsModal
           visible={showDetails}
           request={selectedRequest}
           onClose={() => setShowDetails(false)}
           onResponse={handleRequestResponse}
-        /> */}
+        />
       </View>
     </SafeAreaView>
   );
@@ -197,12 +195,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    // backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    paddingBottom : 15
+    paddingBottom: 15
   },
   headerTitle: {
     fontSize: 24,

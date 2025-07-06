@@ -15,12 +15,21 @@ import { ConflictWarning } from '../ui/conflictWarnig'; // fixed typo
 import { SpecialRequests } from '../ui/specialRequset'; // fixed typo
 import { ActionButtons } from '../ui/actionButtons';
 
-// Define the shape of the request prop (extend as needed)
+// Updated Request interface to match BookingRequest from your main screen
 interface Request {
   id: string;
-  hasConflict?: boolean;
-  specialRequests?: string;
+  destination: string;
+  date: string;
+  time: string;
+  duration: string;
+  groupSize: number;
   status: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  specialRequests: string;
+  price: number;
+  hasConflict?: boolean;
   // add other properties your subcomponents expect
 }
 
@@ -61,7 +70,7 @@ export const RequestDetailsModal: React.FC<RequestDetailsModalProps> = ({
         </View>
 
         <ScrollView style={styles.scrollView}>
-          <ClientInfo client={request} />
+          {/* <ClientInfo client={request} /> */}
           <TourDetails tour={request} />
           {request.hasConflict && <ConflictWarning conflict={request} />}
           {request.specialRequests && (

@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/ui/guideTopbar';
 
 const profile = require('../../assets/images/profile/image.png')
 const edit = require('../../assets/images/profile/edit.png')

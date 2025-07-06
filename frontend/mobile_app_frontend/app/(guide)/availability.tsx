@@ -15,7 +15,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/ui/guideTopbar';
 
 // A placeholder for your Topbar component to make the code runnable.
 
