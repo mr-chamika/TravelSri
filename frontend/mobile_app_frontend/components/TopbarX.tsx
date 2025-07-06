@@ -14,7 +14,7 @@ interface TopbarProps {
     on: boolean;
 }
 
-export default function Topbar({notifying, on }: TopbarProps) {
+export default function TopbarX({notifying, on }: TopbarProps) {
     return (
         <View className='bg-[#F2F5FA] h-[64px] items-center justify-center px-2'>
             <View className='justify-between flex-row w-full px-1'>

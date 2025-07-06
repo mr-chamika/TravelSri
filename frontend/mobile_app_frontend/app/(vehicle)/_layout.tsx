@@ -15,7 +15,7 @@ import Topbar from "../../components/TopbarX";
 
 const HomeA = require("../../assets/images/home2.png");
 const UserA = require("../../assets/images/tabbar/feedback.png");
-const Car = require("../../assets/images/tabbar/car_r.png");
+const Car = require("../../assets/images/tabbar/carr.png");
 const Locat = require("../../assets/images/tabbar/book.png");
 const MenuX = require("../../assets/images/top bar/menu x.png");
 
