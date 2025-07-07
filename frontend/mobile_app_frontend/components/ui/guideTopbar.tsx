@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import NotifyModal from '../../app/views/notifications/[id]';
+import Sidebar from '../../components/ui/guideSideBar'; // Import your Sidebar component
 import { useState } from 'react';
 
 const Menu = require('../../assets/images/top bar/menu.png');
@@ -14,6 +15,17 @@ interface TopbarProps {
 }
 
 const Topbar = ({ pressing, notifying, on }: TopbarProps) => {
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+
+  const handleMenuPress = () => {
+    setSidebarVisible(true);
+    pressing(); // Keep the original functionality if needed
+  };
+
+  const closeSidebar = () => {
+    setSidebarVisible(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#FEFA17" barStyle="dark-content" />
@@ -21,7 +33,7 @@ const Topbar = ({ pressing, notifying, on }: TopbarProps) => {
       <View style={styles.container}>
         {/* Menu Button */}
         <View style={styles.menuContainer}>
-          <TouchableOpacity onPress={pressing}>
+          <TouchableOpacity onPress={handleMenuPress}>
             <View style={styles.menuButton}>
               <Image style={styles.menuIcon} source={Menu} />
             </View>
@@ -42,10 +54,27 @@ const Topbar = ({ pressing, notifying, on }: TopbarProps) => {
         </TouchableOpacity>
       </View>
 
+      {/* Notification Modal */}
       <NotifyModal
         isVisible={on}
         onClose={notifying}
       />
+
+      {/* Sidebar Modal - FIXED: Removed animationType and simplified overlay */}
+      <Modal
+        transparent={true}
+        visible={sidebarVisible}
+        onRequestClose={closeSidebar}
+      >
+        <View style={styles.modalOverlay}>
+          <Sidebar close={closeSidebar} />
+          <TouchableOpacity 
+            style={styles.modalBackground} 
+            onPress={closeSidebar}
+            activeOpacity={1}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -119,6 +148,13 @@ const styles = StyleSheet.create({
   notificationIcon: {
     width: 40,
     height: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalBackground: {
+    flex: 1,
   },
 });
 

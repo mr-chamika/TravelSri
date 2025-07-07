@@ -26,6 +26,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BookingScreen from './bookings';
 import AvailabilityScreen from './availability';
 import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
+import ProfileScreen from '../(guide)/profile';
 
 // Type definitions
 interface Stats {
@@ -156,7 +157,7 @@ const TravelMateGuideHome = () => {
         break;
       case 'profile':
         console.log('Navigating to profile screen...');
-        // navigation.navigate('Profile');
+        navigation.navigate('Profile');
         break;
       case 'availability':
         console.log('Navigating to availability screen...');
@@ -245,7 +246,7 @@ const TravelMateGuide = () => {
       <Stack.Screen name="availability" component={AvailabilityScreen} />
       <Stack.Screen name="travelFeed" component={TravelFeedScreen} />
       {/* Add other screens here when ready */}
-      {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
+      <Stack.Screen name="Profile" component={ProfileScreen} />
       {/* <Stack.Screen name="Earnings" component={EarningsScreen} /> */}
     </Stack.Navigator>
   );
