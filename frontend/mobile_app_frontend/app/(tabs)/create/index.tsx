@@ -59,27 +59,79 @@ export default function Dropdown() {
         });
     }, []);
 
-    useEffect(() => {
-        const loadSelection = async () => {
-            try {
-                const savedSelection = await AsyncStorage.getItem('selectedLocation');
-                const initialSelection = await AsyncStorage.getItem('hasMadeInitialSelection');
-                if (savedSelection) {
-                    setSelected(savedSelection);
-                }
-                if (initialSelection === 'true') {
-                    setHasMadeInitialSelection(true);
-                    setModalVisible(false);
-                } else {
+    useFocusEffect(
+        useCallback(() => {
+            const loadSelection = async () => {
+                try {
+                    const savedSelection = await AsyncStorage.getItem('selectedLocation');
+                    const initialSelection = await AsyncStorage.getItem('hasMadeInitialSelection');
+                    const savedRouteId = await AsyncStorage.getItem('route');
+                    // --- Explicitly reset local state before attempting to load from storage ---
+                    setSelected(null);
+                    setHasMadeInitialSelection(false);
+                    setModalVisible(true); // Default to showing modal
+                    setSelectedCardIndex(null); // Reset selected route card
 
-                    setModalVisible(true)
+                    if (savedSelection && initialSelection === 'true') {
+                        setSelected(savedSelection);
+                        setHasMadeInitialSelection(true);
+                        setModalVisible(false);
+                    }
+
+                    if (savedRouteId) {
+                        const index = routes.findIndex(route => route.id === savedRouteId);
+                        if (index !== -1) {
+                            setSelectedCardIndex(index);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading selection from AsyncStorage (index):', error);
+                    // On error, also ensure a full reset
+                    setSelected(null);
+                    setHasMadeInitialSelection(false);
+                    setModalVisible(true);
+                    setSelectedCardIndex(null);
                 }
-            } catch (error) {
-                console.error('Error loading selection from AsyncStorage:', error);
-            }
-        };
-        loadSelection();
-    }, []);
+            };
+            loadSelection();
+        }, [])
+    );
+
+    // useEffect(() => {
+    //     const loadSelection = async () => {
+    //         try {
+    //             const savedSelection = await AsyncStorage.getItem('selectedLocation');
+    //             const initialSelection = await AsyncStorage.getItem('hasMadeInitialSelection');
+    //             const savedRouteId = await AsyncStorage.getItem('route');
+    //             // --- Explicitly reset local state before attempting to load from storage ---
+    //             setSelected(null);
+    //             setHasMadeInitialSelection(false);
+    //             setModalVisible(true); // Default to showing modal
+    //             setSelectedCardIndex(null); // Reset selected route card
+
+    //             if (savedSelection && initialSelection === 'true') {
+    //                 setSelected(savedSelection);
+    //                 setHasMadeInitialSelection(true);
+    //                 setModalVisible(false);
+    //             }
+
+    //             if (savedRouteId) {
+    //                 const index = routes.findIndex(route => route.id === savedRouteId);
+    //                 if (index !== -1) {
+    //                     setSelectedCardIndex(index);
+    //                 }
+    //             }
+    //         } catch (error) {
+    //             console.error('Error loading selection from AsyncStorage (index):', error);
+    //             // On error, also ensure a full reset
+    //             setSelected(null);
+    //             setHasMadeInitialSelection(false);
+    //             setModalVisible(true);
+    //             setSelectedCardIndex(null);
+    //         }
+    //     };
+    //     loadSelection();
+    // }, []);
 
     useFocusEffect(
         useCallback(() => {

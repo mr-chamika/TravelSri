@@ -20,9 +20,8 @@ export default function Views() {
     const { id } = useLocalSearchParams();
 
     useEffect(() => {
-
-        getItem((Number(id) - 1).toString())
-
+        // Ensure id is treated as a string for getItem, or convert it if necessary
+        getItem((Number(id) - 1).toString());
 
     }, [id])
 
@@ -133,15 +132,9 @@ export default function Views() {
                 }
             ]
         },
-        // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-
     ];
 
-    const getItem = (Id: string | string[]) => {
+    const getItem = (Id: string) => { // Changed type to string as id from useLocalSearchParams is string
         groupCollection.map((collection, i) => {
             if (collection.id == Id) {
                 setItem(collection)
@@ -287,13 +280,34 @@ export default function Views() {
                     <Text className="px-3 font-extrabold text-xl">{item.price}.00 LKR/day</Text>
 
                     <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={
-
                         async () => {
+                            // Use the consistent key 'selectedHotelBooking'
+                            const existingHotelBooking = await AsyncStorage.getItem('selectedHotelBooking');
+                            let hotelDataToSave = {
+                                id: (Number(id) - 1).toString(), // Store the actual ID from route params
+                                s: '',
+                                d: ''
+                            };
 
-                            await AsyncStorage.setItem('hotel', id.toString())
-                            //await AsyncStorage.setItem('hotel', item.id)
-                            router.back()
+                            if (existingHotelBooking) {
+                                const parsedExisting = JSON.parse(existingHotelBooking);
+                                // Preserve s and d from the existing booking if they exist
+                                hotelDataToSave.s = parsedExisting.s || '';
+                                hotelDataToSave.d = parsedExisting.d || '';
+                            } else {
+                                // Fallback to hbookings if selectedHotelBooking doesn't exist to get s and d
+                                const hbookings = await AsyncStorage.getItem('hbookings');
+                                if (hbookings) {
+                                    const parsedHbookings = JSON.parse(hbookings);
+                                    if (parsedHbookings.length > 0) {
+                                        hotelDataToSave.s = parsedHbookings[0].s || '';
+                                        hotelDataToSave.d = parsedHbookings[0].d || '';
+                                    }
+                                }
+                            }
 
+                            await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelDataToSave));
+                            router.back();
                         }}>
                         <View className="py-2 px-3 flex-row justify-between items-center w-full">
                             <Text>Book Now</Text>

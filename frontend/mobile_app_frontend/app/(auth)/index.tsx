@@ -31,37 +31,6 @@ export default function LoginScreen() {
             alert("Fill all fields with valid format");
         } else {
 
-            //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
-            //alert(`Email is ${email} and password is ${password}`)
-
-            // fetch('http://localhost:8080/traveler/login', {
-
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ email, password })
-
-            // })
-            //     .then(res => res.text())
-            //     .then(data => {
-
-            //         if (data == "wrong password") {
-
-            //             setInvalidE(false)
-            //             alert(data)
-
-            //         } else if (data == "true") {
-
-            //             setInvalidE(false)
-            //             router.replace('/(tabs)')
-
-            //         } else if (data == "invalid email") {
-
-            //             setInvalidE(true)
-
-            //         }
-
-            //     })
-            //     .catch(err => { alert(err); console.log(err) })
 
             if (email == 'merchant@gmail.com' && password == '1234') {
 
@@ -70,6 +39,41 @@ export default function LoginScreen() {
             } else if (email == 'traveler@gmail.com' && password == '1234') {
 
                 router.replace('/(tabs)')
+
+            } else {
+
+                //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
+                //alert(`Email is ${email} and password is ${password}`)
+
+                fetch('http://localhost:8080/traveler/login', {
+
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+
+                })
+                    .then(res => res.text())
+                    .then(data => {
+
+                        if (data == "wrong password") {
+
+                            setInvalidE(false)
+                            alert(data)
+
+                        } else if (data == "true") {
+
+                            setInvalidE(false)
+                            router.replace('/(tabs)')
+
+                        } else if (data == "invalid email") {
+
+                            setInvalidE(true)
+
+                        }
+
+                    })
+                    .catch(err => { alert(err); console.log(err) })
+
 
             }
 

@@ -7,26 +7,35 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SimpleTimePicker from '../../../components/TimeSelector';
 
+
 cssInterop(Image, { className: "style" });
 
-const pic = require('../../../assets/images/tabbar/tuktuk.png')
-const bus = require('../../../assets/images/tabbar/bus.png')
-const ac = require('../../../assets/images/tabbar/ac.png')
-const car = require('../../../assets/images/tabbar/car.png')
-const mini = require('../../../assets/images/tabbar/mini.png')
-const sport = require('../../../assets/images/tabbar/sport.png')
-const p = require('../../../assets/images/user2.png')
-const t = require('../../../assets/images/tag.png')
-const mark = require('../../../assets/images/mark.png')
+const pic = require('../../../assets/images/tabbar/tuktuk.png');
+const bus = require('../../../assets/images/tabbar/bus.png');
+const ac = require('../../../assets/images/tabbar/ac.png');
+const car = require('../../../assets/images/tabbar/car.png');
+const mini = require('../../../assets/images/tabbar/mini.png');
+const sport = require('../../../assets/images/tabbar/sport.png');
+const p = require('../../../assets/images/user2.png');
+const t = require('../../../assets/images/tag.png');
+const mark = require('../../../assets/images/mark.png');
 
 export default function App() {
     const router = useRouter();
 
+    interface Book {
+        dates: string[];
+        start: string;
+        end: string;
+        language: string;
+        time: { hour: number; minute: number };
+    }
+
     const hotels = [
-        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000 },
-        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 1000 },
-        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 1000 },
-        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 1000 },
+        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 4000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     ];
 
     const guides = [
@@ -147,20 +156,21 @@ export default function App() {
             title: 'A/C',
             price: 15000
         }
-    ]
+    ];
 
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+    const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
-    const [locationx, setLocationx] = useState('');
-    const [location, setLocation] = useState('');
-    const [lan, setLan] = useState('');
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [showDropdowns, setShowDropdowns] = useState(false);
-    const [show, setShow] = useState(false);
-    const [fine, setFine] = useState(false);
+    const [startLocation, setStartLocation] = useState('');
+    const [endLocation, setEndLocation] = useState('');
+    const [language, setLanguage] = useState('');
+    const [showStartDropdown, setShowStartDropdown] = useState(false);
+    const [showEndDropdown, setShowEndDropdown] = useState(false);
+    const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+    const [isBookingComplete, setIsBookingComplete] = useState(false);
     const [selectedTime, setSelectedTime] = useState({ hour: 12, minute: 30 });
-    const [total, setTotal] = useState('')
+    const [bookingData, setBookingData] = useState<Book | null>(null);
+    const [total, setTotal] = useState('');
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
@@ -179,26 +189,18 @@ export default function App() {
     };
 
     const handleSubmit = async () => {
-        if (Object.keys(selectedDates).length === 0 || !location || !locationx || !lan || !selectedTime) {
+        if (Object.keys(selectedDates).length === 0 || !startLocation || !endLocation || !language || !selectedTime) {
             alert('Please fill in all fields.');
             return;
         }
-        const newBooking = [{ dates: Object.keys(selectedDates), start: location, end: locationx, language: lan, time: selectedTime }];
+        const newBooking: Book = { dates: Object.keys(selectedDates), start: startLocation, end: endLocation, language: language, time: selectedTime };
+        setBookingData(newBooking);
+        setModalVisible(false);
+        setIsBookingComplete(true);
         try {
-            const bookingString = JSON.stringify(newBooking);
-            await AsyncStorage.setItem('cbookings', bookingString);
+            await AsyncStorage.setItem('cbookings', JSON.stringify(newBooking));
             await AsyncStorage.setItem('cbookingComplete', 'true');
-            await AsyncStorage.setItem('bookingSession', Date.now().toString());
-
-            const savedBookings = await AsyncStorage.getItem('cbookings');
-            if (savedBookings) {
-                console.log('Successfully saved bookings:', savedBookings);
-                setModalVisible(false);
-                setFine(true);
-                // alert('Booking saved successfully!');
-            } else {
-                alert('Failed to confirm booking save. Please try again.');
-            }
+            await AsyncStorage.setItem('cbookingSession', Date.now().toString());
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -207,16 +209,15 @@ export default function App() {
     const handleCategoryNavigation = async (categoryId: string) => {
         try {
             await AsyncStorage.setItem('car', categoryId);
-            router.push(`/views/car/list/${Number(categoryId)}`);
+            router.push(`/views/car/list/${categoryId}`);
         } catch (error) {
             console.error('Error setting car category:', error);
-
         }
     };
 
     const toggleCardSelection = useCallback((index: number) => {
         let newIndex: number | null = null;
-        setSelectedCardIndex(prev => {
+        setSelectedCardId(prev => {
             newIndex = prev === index ? null : index;
             return newIndex;
         });
@@ -236,69 +237,81 @@ export default function App() {
         .map(date => new Date(date).toDateString())
         .join(', ');
 
-    const loadBookingData = async () => {
+    const loadBookingData = useCallback(async () => {
         try {
-            const sessionExists = await AsyncStorage.getItem('bookingSession');
-            const bookingComplete = await AsyncStorage.getItem('cbookingComplete');
-            const savedIndex = await AsyncStorage.getItem('car');
+            const sessionExists = await AsyncStorage.getItem('cbookingSession');
+            const bookingCompleteStatus = await AsyncStorage.getItem('cbookingComplete');
+            const savedSelectedCarId = await AsyncStorage.getItem('car');
 
-            if (savedIndex) {
-                setSelectedCardIndex(Number(savedIndex) - 1); // Persist selected category
+            setSelectedCardId(null);
+            setSelectedDates({});
+            setIsBookingComplete(false);
+            setBookingData(null);
+            setLanguage('');
+            setStartLocation('');
+            setEndLocation('');
+            setShowLanguageDropdown(false);
+            setShowStartDropdown(false);
+            setShowEndDropdown(false);
+
+            if (savedSelectedCarId) {
+                setSelectedCardId(Number(savedSelectedCarId) - 1);
             }
 
-            if (!sessionExists) {
-                // No session exists, create a new one and show modal
-                await AsyncStorage.setItem('bookingSession', Date.now().toString());
-                setModalVisible(true);
-            } else if (bookingComplete === 'true') {
-                // Booking is complete, load saved data and hide modal
+            if (sessionExists && bookingCompleteStatus === 'true') {
                 setModalVisible(false);
-                setFine(true);
-                const savedBookings = await AsyncStorage.getItem('cbookings');
-                if (savedBookings) {
-                    const bookingData = JSON.parse(savedBookings)[0];
-                    if (bookingData) {
-                        // Reconstruct selectedDates object from saved dates array
-                        const dates = bookingData.dates.reduce((acc: any, date: string) => {
-                            acc[date] = { selected: true, selectedColor: '#007BFF' };
-                            return acc;
-                        }, {});
-                        setSelectedDates(dates);
-                        setLocation(bookingData.start);
-                        setLocationx(bookingData.end);
-                        setLan(bookingData.language);
-                        setSelectedTime(bookingData.time);
-                    }
+                setIsBookingComplete(true);
+                const savedBooking = await AsyncStorage.getItem('cbookings');
+                if (savedBooking) {
+                    const parsedBooking: Book = JSON.parse(savedBooking);
+                    setBookingData(parsedBooking);
+                    const dates = parsedBooking.dates.reduce((acc: any, date: string) => {
+                        acc[date] = { selected: true, selectedColor: '#007BFF' };
+                        return acc;
+                    }, {});
+                    setSelectedDates(dates);
+                    setStartLocation(parsedBooking.start);
+                    setEndLocation(parsedBooking.end);
+                    setLanguage(parsedBooking.language);
+                    setSelectedTime(parsedBooking.time);
                 }
+
             } else {
-                // Session exists but booking not complete, show modal
+                await AsyncStorage.setItem('cbookingSession', Date.now().toString());
                 setModalVisible(true);
+                setIsBookingComplete(false);
             }
         } catch (error) {
             console.error('Error loading data from AsyncStorage:', error);
-            setModalVisible(true); // Default to showing modal on error
-        }
-    };
 
-    useEffect(() => {
-        loadBookingData();
+            setSelectedCardId(null);
+            setSelectedDates({});
+            setModalVisible(true);
+            setIsBookingComplete(false);
+            setBookingData(null);
+            setLanguage('');
+            setStartLocation('');
+            setEndLocation('');
+            setShowLanguageDropdown(false);
+            setShowStartDropdown(false);
+            setShowEndDropdown(false);
+        }
     }, []);
 
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
-        }, [])
+        }, [loadBookingData])
     );
 
     const count = async () => {
-
         try {
             let total = 0;
 
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex) - 1).toString());
+                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
                 if (category) {
                     total += category.price;
                 }
@@ -306,19 +319,27 @@ export default function App() {
 
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex !== null && guideIndex >= '0') {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex) - 1).toString());
+            if (guideIndex) {
+                const guide = guides.find(guide => guide.id === (Number(guideIndex)).toString());
                 if (guide) {
                     total += guide.price;
                 }
             }
 
             // Hotel Booking Price
-            const hotelIndex = await AsyncStorage.getItem('hotel');
-            if (hotelIndex) {
-                const hotel = hotels.find(hotel => hotel.id === (Number(hotelIndex) - 1).toString());
-                if (hotel) {
-                    total += hotel.price;
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
+            if (savedHotelBooking) {
+                const hotelBookingData = JSON.parse(savedHotelBooking);
+                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
+
+                if (selectedHotel) { // Null check for selectedHotel
+                    if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
+                        const singleBedPrice = selectedHotel.beds.find(bed => bed.type === 'single')?.price || 0;
+                        const doubleBedPrice = selectedHotel.beds.find(bed => bed.type === 'double')?.price || 0;
+                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    }
                 }
             }
 
@@ -327,17 +348,58 @@ export default function App() {
             console.error('Error calculating total price from AsyncStorage:', error);
             setTotal('0');
         }
-
-    }
+    };
 
 
     useFocusEffect(
         useCallback(() => {
+            count();
+        }, [selectedCardId, total])
+    );
 
-            count()
+    const handleCreatePlan = async () => {
+        try {
+            await AsyncStorage.multiRemove([
+                'selectedLocation',
+                'hasMadeInitialSelection',
+                'hotel',
+                'guide',
+                'car',
+                'hbookings',
+                'hbookingComplete',
+                'hbookingSession',
+                'bookingSession',
+                'gbookings',
+                'gbookingComplete',
+                'gbookingSession',
+                'cbookings',
+                'cbookingComplete',
+                'cbookingSession',
+                'total',
+                'route',
+                'selectedHotelBooking'
 
-        }, [selectedCardIndex, total])
-    )
+
+            ]);
+
+            setSelectedDates({});
+            setIsBookingComplete(false);
+            setLanguage('');
+            setStartLocation('');
+            setEndLocation('');
+            setModalVisible(true);
+            setSelectedCardId(null);
+            setTotal('0');
+            setBookingData(null);
+
+            // alert('Plan created and session reset!');
+            router.push('/(tabs)/create');
+            router.replace('/(tabs)');
+        } catch (e) {
+            alert(`Error creating plan and resetting session: ${e}`);
+            console.error('Error creating plan and resetting session:', e);
+        }
+    };
 
     return (
         <View className='bg-[#F2F5FA] h-full'>
@@ -346,17 +408,25 @@ export default function App() {
                 transparent={true}
                 visible={isModalVisible}
                 onRequestClose={() => {
-                    if (fine) {
+                    if (isBookingComplete) {
                         setModalVisible(false);
+                    } else {
+                        setModalVisible(false);
+                        router.back();
                     }
                 }}
             >
                 <View className="h-full justify-center items-center bg-black/50">
                     <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl shadow-lg items-center">
                         <View className='w-full'>
-
-                            <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
-                                {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
+                            <TouchableOpacity onPress={() => {
+                                if (isBookingComplete) {
+                                    setModalVisible(false);
+                                } else {
+                                    router.back();
+                                }
+                            }}>
+                                {isBookingComplete ? <Text> Cancel</Text> : <Text> Back</Text>}
                             </TouchableOpacity>
                             <Text className="text-xl font-bold mb-8 text-center">Vehicle Booking</Text>
                         </View>
@@ -371,37 +441,49 @@ export default function App() {
                                 <View className="w-full z-20 pb-32 gap-1 mt-2">
                                     <View className='flex-row justify-between'>
                                         <View className='w-[47%]'>
-                                            <TouchableOpacity onPress={() => { setShowDropdowns(!showDropdowns); if (show) setShow(false); if (showDropdown) setShowDropdown(false) }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
-                                                <Text className={`text-sm ${locationx ? 'text-black' : 'text-gray-400'}`}>{locationx || 'Select Start Location'}</Text>
+                                            <TouchableOpacity onPress={() => {
+                                                setShowStartDropdown(!showStartDropdown);
+                                                setShowEndDropdown(false);
+                                                setShowLanguageDropdown(false);
+                                            }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                                <Text className={`text-sm ${startLocation ? 'text-black' : 'text-gray-400'}`}>{startLocation || 'Select Start Location'}</Text>
                                             </TouchableOpacity>
-                                            {showDropdowns && (
+                                            {showStartDropdown && (
                                                 <View className="absolute top-[42px] bg-white border border-gray-300 rounded-xl z-30 max-h-40 w-full">
-                                                    <ScrollView>{locations.map((loc, index) => (loc != location &&
-                                                        <TouchableOpacity key={index} onPress={() => { setLocationx(loc); setShowDropdowns(false); }} className={`px-4 py-2 ${locationx === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
+                                                    <ScrollView>{locations.map((loc, index) => (loc !== endLocation &&
+                                                        <TouchableOpacity key={index} onPress={() => { setStartLocation(loc); setShowStartDropdown(false); }} className={`px-4 py-2 ${startLocation === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
                                                     ))}</ScrollView>
                                                 </View>
                                             )}
                                         </View>
                                         <View className='w-[47%]'>
-                                            <TouchableOpacity onPress={() => { setShowDropdown(!showDropdown); if (show) setShow(false); if (showDropdowns) setShowDropdowns(false) }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
-                                                <Text className={`text-sm ${location ? 'text-black' : 'text-gray-400'}`}>{location || 'Select End Location'}</Text>
+                                            <TouchableOpacity onPress={() => {
+                                                setShowEndDropdown(!showEndDropdown);
+                                                setShowStartDropdown(false);
+                                                setShowLanguageDropdown(false);
+                                            }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                                <Text className={`text-sm ${endLocation ? 'text-black' : 'text-gray-400'}`}>{endLocation || 'Select End Location'}</Text>
                                             </TouchableOpacity>
-                                            {showDropdown && (
+                                            {showEndDropdown && (
                                                 <View className="absolute top-[42px] bg-white border border-gray-300 rounded-xl z-30 max-h-40 w-full">
-                                                    <ScrollView>{locations.map((loc, index) => (loc != locationx &&
-                                                        <TouchableOpacity key={index} onPress={() => { setLocation(loc); setShowDropdown(false); }} className={`px-4 py-2 ${location === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
+                                                    <ScrollView>{locations.map((loc, index) => (loc !== startLocation &&
+                                                        <TouchableOpacity key={index} onPress={() => { setEndLocation(loc); setShowEndDropdown(false); }} className={`px-4 py-2 ${endLocation === loc ? 'bg-blue-100' : ''}`}><Text className="text-base">{loc}</Text></TouchableOpacity>
                                                     ))}</ScrollView>
                                                 </View>
                                             )}
                                         </View>
                                     </View>
-                                    <TouchableOpacity onPress={() => { setShow(!show); if (showDropdown) setShowDropdown(false); if (showDropdowns) setShowDropdowns(false); }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
-                                        <Text className={`text-base ${lan ? 'text-black' : 'text-gray-400'}`}>{lan || 'Select Language'}</Text>
+                                    <TouchableOpacity onPress={() => {
+                                        setShowLanguageDropdown(!showLanguageDropdown);
+                                        setShowStartDropdown(false);
+                                        setShowEndDropdown(false);
+                                    }} className="border border-gray-300 rounded-xl px-4 py-3 bg-white">
+                                        <Text className={`text-base ${language ? 'text-black' : 'text-gray-400'}`}>{language || 'Select Language'}</Text>
                                     </TouchableOpacity>
-                                    {show && (
+                                    {showLanguageDropdown && (
                                         <View className="absolute top-[90px] left-4 right-4 bg-white border border-gray-300 rounded-xl z-30 max-h-40">
                                             <ScrollView>{languages.map((l, index) => (
-                                                <TouchableOpacity key={index} onPress={() => { setLan(l); setShow(false); }} className={`px-4 py-2 ${lan === l ? 'bg-blue-100' : ''}`}><Text className="text-base">{l}</Text></TouchableOpacity>
+                                                <TouchableOpacity key={index} onPress={() => { setLanguage(l); setShowLanguageDropdown(false); }} className={`px-4 py-2 ${language === l ? 'bg-blue-100' : ''}`}><Text className="text-base">{l}</Text></TouchableOpacity>
                                             ))}</ScrollView>
                                         </View>
                                     )}
@@ -426,80 +508,77 @@ export default function App() {
                 </View>
             </Modal>
 
-            {/* <View className='bg-[#F2F5FA] h-full'> */}
-            {fine && (
+            {isBookingComplete && (
+                <>
+                    <View className="flex-row justify-between items-center p-4 mb-1.5">
+                        <Text className="text-lg font-medium">{displayDates}</Text>
+                        <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
+                            <Text className="font-semibold text-blue-600">Change</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                <View className="flex-row justify-between items-center p-5">
-                    <Text className="text-lg font-medium">{displayDates}</Text>
-                    <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
-                        <Text className="font-semibold text-blue-600">Change</Text>
-                    </TouchableOpacity>
-                </View>
+
+                    <View>
+                        <ScrollView
+                            className="w-full h-[80%]"
+                            contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 py-6"
+                            showsVerticalScrollIndicator={false}
+                        >
+                            {categories.map((x, i) => {
+                                return (
+                                    <TouchableOpacity onPress={() => handleCategoryNavigation(x.id)} key={x.id}>
+                                        <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
+                                            <TouchableOpacity
+                                                className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
+                                                onPress={() => toggleCardSelection(i)}
+                                            >
+                                                {selectedCardId === i && (
+                                                    <Image className='w-4 h-4' source={mark} />
+                                                )}
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View className="bg-[#d9d9d98e] w-[150px] h-[140px] items-center py-2 rounded-2xl">
+                                            <Image
+                                                className="w-[70px] h-[60px]"
+                                                source={x.image}
+                                            />
+                                            <View>
+                                                <View className='flex-row items-center gap-4'>
+                                                    <Image
+                                                        className="w-[11px] h-[11px]"
+                                                        source={p}
+                                                    />
+                                                    <Text className=" text-[13px] italic text-center">
+                                                        {x.members} Members
+                                                    </Text>
+                                                </View>
+                                                <View className='flex-row items-center gap-4 my-1'>
+                                                    <Image
+                                                        className="w-[11px] h-[11px]"
+                                                        source={t}
+                                                    />
+                                                    <Text className=" text-[13px] italic text-center">
+                                                        {x.title}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity onPress={() => handleCategoryNavigation(x.id)}>
+                                                <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
+                                                    <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableOpacity>)
+                            })}
+                        </ScrollView>
+                    </View>
+                    <View className=" border-t border-gray-200 bg-white py-4 h-[30%] pl-32 flex-row justify-center">
+                        <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
+                        <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
+                    </View>
+                </>
+
             )}
-
-            <View>
-                <ScrollView
-                    className="w-full h-[80%]"
-                    contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 py-6"
-                    showsVerticalScrollIndicator={false}
-                >
-                    {categories.map((x, i) => {
-                        return (
-                            <View key={i}>
-                                <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
-                                    <TouchableOpacity
-                                        className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
-                                        onPress={() => toggleCardSelection(i + 1)}
-                                    >
-                                        {Number(selectedCardIndex) - 1 === i && (
-                                            <Image className='w-4 h-4' source={mark} />
-                                        )}
-                                    </TouchableOpacity>
-                                </View>
-                                <View className="bg-[#d9d9d98e] w-[150px] h-[140px] items-center py-2 rounded-2xl">
-                                    <Image
-                                        className="w-[70px] h-[60px]"
-                                        source={x.image}
-                                    />
-                                    <View>
-                                        <View className='flex-row items-center gap-4'>
-                                            <Image
-                                                className="w-[11px] h-[11px]"
-                                                source={p}
-                                            />
-                                            <Text className=" text-[13px] italic text-center">
-                                                {x.members} Members
-                                            </Text>
-                                        </View>
-                                        <View className='flex-row items-center gap-4 my-1'>
-                                            <Image
-                                                className="w-[11px] h-[11px]"
-                                                source={t}
-                                            />
-                                            <Text className=" text-[13px] italic text-center">
-                                                {x.title}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity onPress={() => handleCategoryNavigation((Number(x.id) + 1).toString())}>
-                                        <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
-                                            <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>)
-                    })
-                    }
-                </ScrollView>
-            </View>
-            <View className=" border-t border-gray-200 bg-white py-4 h-[30%] pl-32 flex-row justify-center">
-                {
-
-                    <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
-
-                }{/* </View> */}
-                <TouchableOpacity onPress={() => { alert('plan created'); router.replace('/(tabs)') }}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
-            </View>
         </View>
     );
 }

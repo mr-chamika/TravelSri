@@ -60,10 +60,16 @@ export default function Index() {
   }
 
 
-
   /* useFocusEffect(
     useCallback(() => {
-
+      
+        const getAll = async () => {
+      
+          const keys = await AsyncStorage.getAllKeys();
+          alert(keys)
+      
+        }
+        getAll()
       const clear = async () => {
 
         try {
