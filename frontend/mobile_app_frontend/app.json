@@ -4,7 +4,7 @@
     "slug": "new",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logop.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "new",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -29,7 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logop.png",
+          "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
