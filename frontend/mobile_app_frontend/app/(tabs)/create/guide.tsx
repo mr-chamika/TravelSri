@@ -487,7 +487,7 @@ export default function Guide() {
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
                                                         onPress={() => toggleCardSelection(index)}
                                                     >
-                                                        {selectedCardIndex === index + 1 && (
+                                                        {selectedCardIndex === index && (
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
                                                     </TouchableOpacity>

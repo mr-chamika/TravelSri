@@ -375,9 +375,11 @@ export default function App() {
                 'cbookings',
                 'cbookingComplete',
                 'cbookingSession',
+                'bookingSession',
                 'total',
                 'route',
-                'selectedHotelBooking'
+                'selectedHotelBooking',
+                'selectedRouteId'
 
 
             ]);

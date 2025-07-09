@@ -28,7 +28,10 @@ export default function RootLayout() {
           'cbookingComplete',
           'bookingSession',
           'total', // Ensure total is cleared
-          'route' // Assuming 'route' might also need to be reset
+          'route', // Assuming 'route' might also need to be reset
+          'selectedHotelBooking',
+          'selectedRouteId'
+
         ]);
       } catch (e) {
         console.error('Error clearing AsyncStorage:', e);
@@ -63,6 +66,8 @@ export default function RootLayout() {
 
         />
         <Stack.Screen name="(merchant-tabs)" />
+        <Stack.Screen name="(guide)" />
+        <Stack.Screen name="(vehicle)" />
         <Stack.Screen
 
 

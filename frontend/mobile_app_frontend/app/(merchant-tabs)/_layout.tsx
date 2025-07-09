@@ -91,7 +91,7 @@ export default function MerchantTabLayout() {
           options={{
             tabBarIcon: ({ focused }) => (
               <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
-                <Image cla source={Car} />
+                <Image source={Car} />
               </View>
             ),
           }}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,6 +39,14 @@ export default function LoginScreen() {
             } else if (email == 'traveler@gmail.com' && password == '1234') {
 
                 router.replace('/(tabs)')
+
+            } else if (email == 'vehicle@gmail.com' && password == '1234') {
+
+                router.replace('/(vehicle)')
+
+            } else if (email == 'guide@gmail.com' && password == '1234') {
+
+                router.replace('/(guide)')
 
             } else {
 
@@ -135,7 +143,7 @@ export default function LoginScreen() {
                                 <View>
                                     <Text className="text-base font-medium text-gray-700 mb-1">Password</Text>
                                     <TextInput
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black"
                                         placeholder="••••••••"
                                         placeholderTextColor="#9CA3AF"
                                         secureTextEntry

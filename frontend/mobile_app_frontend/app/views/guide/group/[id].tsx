@@ -255,7 +255,7 @@ export default function Views() {
 
                             async () => {
 
-                                await AsyncStorage.setItem('guide', id.toString())
+                                await AsyncStorage.setItem('guide', (Number(id) - 1).toString())
                                 //await AsyncStorage.setItem('guide', item.id)
                                 router.back()
 
