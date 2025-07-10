@@ -2,9 +2,20 @@ package com.example.student.controller;
 
 import com.example.student.model.Traveler;
 import com.example.student.repo.TravelerRepo;
+import com.example.student.services.JwtUtil;
+import com.example.student.services.TravelerSignup;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -14,6 +25,12 @@ public class TravelerController {
 
     @Autowired
     TravelerRepo repo;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @PostMapping("/login")
 
@@ -28,7 +45,7 @@ public class TravelerController {
 //            return false;
 //    }
 
-    public String login(@RequestBody Traveler traveler) {
+    public ResponseEntity<?> login(@RequestBody Traveler traveler) {
 
 
        Optional<Traveler> exists = repo.findByEmail(traveler.getEmail());
@@ -37,19 +54,54 @@ public class TravelerController {
 
            Traveler t = exists.get();
 
-           if (t.getPassword().equals(traveler.getPassword())) {
-               return "true";
+           if (passwordEncoder.matches(traveler.getPassword(),t.getPassword())) {
+
+               UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                       t.getEmail(),
+                       t.getPassword(), // Must be the HASHED password from your DB
+                       Collections.singletonList(new SimpleGrantedAuthority("ROLE_"+t.getRole()))
+               );
+
+               String token = jwtUtil.generateToken(userDetails);
+
+               Map<String, String> responseBody = new HashMap<>();
+               responseBody.put("token", token);
+               return ResponseEntity.ok(responseBody);
+
            }else {
-               return "wrong password";//password not match
+
+               Map<String, String> errorBody = new HashMap<>();
+               errorBody.put("error","wrong password");
+               return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
            }
 
        }else{//user does not exist
 
-           return "invalid email";
+           Map<String, String> errorBody = new HashMap<>();
+           errorBody.put("error","invalid email");
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
        }
 
 
 
+    }
+
+    @Autowired
+    private TravelerSignup travelerSignup;
+
+    @PostMapping("/signup")
+
+    public String signup(@RequestBody Traveler traveler) {
+
+       Traveler x =  travelerSignup.registerNewUser(traveler);
+
+       if(x.getEmail().equals(traveler.getEmail())) {
+
+           return "Success";
+
+       }
+
+       return "Signup failed";
     }
 
 }

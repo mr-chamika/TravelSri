@@ -7,7 +7,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 cssInterop(Image, { className: "style" });
 
-// It's good practice to define constants and router outside the component
 const router = useRouter();
 const OPTIONS = ["Colombo", "Kandy", "Galle", "Matara", "Nuwara Eliya", "Anuradhapura", "Polonnaruwa", "Jaffna", "Trincomalee"];
 const but = require('../../../assets/images/tabbar/create/location/drop.png');
@@ -23,7 +22,7 @@ const routes = [
 
 export default function Dropdown() {
     const [selected, setSelected] = useState<string | null>(null);
-    const [modalVisible, setModalVisible] = useState(false); // Default to false
+    const [modalVisible, setModalVisible] = useState(false);
     const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
     const [hasMadeInitialSelection, setHasMadeInitialSelection] = useState(false);
 
@@ -44,20 +43,18 @@ export default function Dropdown() {
         }
     }, []);
 
-    // ✅ Correctly handle toggling and saving the selection in one step
     const toggleCardSelection = useCallback(async (index: number) => {
         const newIndex = selectedCardIndex === index ? null : index;
         setSelectedCardIndex(newIndex);
         try {
-            // Save the route's stable ID, not its index.
+
             const routeIdToSave = newIndex !== null ? routes[index].id : '';
             await AsyncStorage.setItem('selectedRouteId', routeIdToSave);
         } catch (error) {
             console.error('Error saving selectedCardIndex to AsyncStorage:', error);
         }
-    }, [selectedCardIndex]); // Dependency ensures the function has the latest state
+    }, [selectedCardIndex]);
 
-    // ✅ Single, consolidated useFocusEffect to manage all "on focus" logic
     useFocusEffect(
         useCallback(() => {
             const loadStateFromStorage = async () => {
@@ -71,20 +68,19 @@ export default function Dropdown() {
                     if (savedLocation && initialSelection === 'true') {
                         setSelected(savedLocation);
                         setHasMadeInitialSelection(true);
-                        setModalVisible(false); // Don't show modal if already selected
+                        setModalVisible(false);
                     } else {
-                        setModalVisible(true); // Show modal on first visit
+                        setModalVisible(true);
                     }
 
                     if (savedRouteId) {
                         const index = routes.findIndex(route => route.id === savedRouteId);
                         setSelectedCardIndex(index !== -1 ? index : null);
                     } else {
-                        setSelectedCardIndex(null); // Explicitly clear if nothing is saved
+                        setSelectedCardIndex(null);
                     }
                 } catch (error) {
-                    console.error('Error loading state from AsyncStorage:', error);
-                    // On error, reset to a clean initial state
+
                     setSelected(null);
                     setHasMadeInitialSelection(false);
                     setModalVisible(true);
@@ -93,14 +89,13 @@ export default function Dropdown() {
             };
 
             loadStateFromStorage();
-        }, []) // Empty dependency array ensures this runs once when the screen is focused.
+        }, [])
     );
 
-    // Your JSX remains largely the same, but with corrected state variables and keys
     return (
         <View className="bg-[#F2F5FA] relative gap-y-0 h-full">
             <View className="h-full">
-                {/* Location selector button */}
+
                 {selected && (
                     <View className="w-full px-4 mt-6">
                         <TouchableOpacity
@@ -113,7 +108,6 @@ export default function Dropdown() {
                     </View>
                 )}
 
-                {/* Modal for location selection */}
                 <Modal
                     animationType="fade"
                     transparent={true}
@@ -162,7 +156,7 @@ export default function Dropdown() {
                                 (route.from === selected || route.to === selected) &&
 
                                 <TouchableOpacity
-                                    // ✅ Use a stable, unique ID for the key
+
                                     key={route.id}
                                     onPress={() => router.push(`/views/route/${route.id}`)}
                                     className="bg-gray-200 w-[350px] h-[165px] items-center rounded-[20px] ml-3"
@@ -171,7 +165,7 @@ export default function Dropdown() {
                                     <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
                                         <Text className="bg-gray-100 rounded-md px-2">Travel #{index + 1}</Text>
                                         <TouchableOpacity
-                                            // Call the corrected toggle function
+
                                             onPress={() => toggleCardSelection(index)}
                                             className="bg-gray-100 w-5 h-5 rounded-full justify-center items-center"
                                         >

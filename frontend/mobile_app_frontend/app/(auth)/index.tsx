@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store'
 
 const logo = require('../../assets/images/logo.png');
 
-// Get the full window height to help with flexible sizing
 const windowHeight = Dimensions.get('window').height;
 
 export default function LoginScreen() {
@@ -17,7 +17,10 @@ export default function LoginScreen() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [credentE, setCredentE] = useState(false)
     const [invalidE, setInvalidE] = useState(false);
+    const [wrongP, setWrongP] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
     const router = useRouter();
 
@@ -26,11 +29,14 @@ export default function LoginScreen() {
         return emailRegex.test(text);
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (!password || !validateEmail(email)) {
-            alert("Fill all fields with valid format");
-        } else {
 
+            setCredentE(true)
+            setInvalidE(false)
+            setWrongP(false)
+
+        } else {
 
             if (email == 'merchant@gmail.com' && password == '1234') {
 
@@ -50,35 +56,50 @@ export default function LoginScreen() {
 
             } else {
 
-                //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
-                //alert(`Email is ${email} and password is ${password}`)
 
-                fetch('http://localhost:8080/traveler/login', {
+                await fetch('http://localhost:8080/traveler/login', {
 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
 
                 })
-                    .then(res => res.text())
-                    .then(data => {
+                    .then(res => res.json())
+                    .then(async (data) => {
 
-                        if (data == "wrong password") {
-
-                            setInvalidE(false)
-                            alert(data)
-
-                        } else if (data == "true") {
-
-                            setInvalidE(false)
-                            router.replace('/(tabs)')
-
-                        } else if (data == "invalid email") {
+                        if (data.error == "invalid email") {
 
                             setInvalidE(true)
+                            setCredentE(false)
+                            setWrongP(false)
 
+                        } else {
+
+                            if (data) {
+
+                                console.log(data)
+                                setWrongP(false)
+                                setInvalidE(false)
+                                setCredentE(false)
+
+                                const token = data.token;
+                                if (data && token) {
+
+                                    await SecureStore.setItemAsync("token", token)
+
+                                }
+
+                                // router.replace('/(tabs)')
+
+                            } else {
+
+                                setWrongP(true)
+                                setInvalidE(false)
+                                setCredentE(false)
+
+
+                            }
                         }
-
                     })
                     .catch(err => { alert(err); console.log(err) })
 
@@ -142,14 +163,26 @@ export default function LoginScreen() {
 
                                 <View>
                                     <Text className="text-base font-medium text-gray-700 mb-1">Password</Text>
-                                    <TextInput
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black"
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#9CA3AF"
-                                        secureTextEntry
-                                        value={password}
-                                        onChangeText={setPassword}
-                                    />
+
+                                    <View className="w-full flex-row items-center border border-gray-300 rounded-lg">
+                                        <TextInput
+
+                                            className="flex-1 pl-4 py-3 text-black text-base"
+                                            placeholder="••••••••"
+                                            placeholderTextColor="#9CA3AF"
+                                            secureTextEntry={!isPasswordVisible}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                        />
+
+                                        <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
+                                            <Text className="font-semibold text-blue-600 text-center px-3">
+                                                {isPasswordVisible ? 'Hide' : 'Show'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <Text className={`text-red-500 text-sm ${wrongP ? 'opacity-100' : 'opacity-0'}`}>Wrong Password</Text>
+                                    <Text className={`text-red-500 ${credentE ? 'opacity-100' : 'opacity-0'}`} >Fill all fields with valid format</Text>
                                 </View>
 
 
@@ -163,7 +196,6 @@ export default function LoginScreen() {
 
                                         className="w-full bg-[#FEFA17] py-3 rounded-lg shadow-sm"
                                         onPress={handleLogin}
-                                    /* onPress={() => router.push('/(tabs)')} */
                                     >
                                         <Text className="text-center text-black font-bold text-lg">
                                             Sign In
