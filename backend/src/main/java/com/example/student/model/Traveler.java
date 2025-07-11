@@ -43,6 +43,8 @@ public class Traveler {
         return password;
     }
 
+    public String getUsername() {return username;}
+
     public String getId(){
         return _id;
     }

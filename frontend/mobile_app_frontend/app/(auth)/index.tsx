@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import * as SecureStore from 'expo-secure-store';
 
 const logo = require('../../assets/images/logo.png');
 
@@ -30,84 +31,89 @@ export default function LoginScreen() {
     };
 
     const handleLogin = async () => {
+        setCredentE(false);
+        setInvalidE(false);
+        setWrongP(false);
+
         if (!password || !validateEmail(email)) {
+            setCredentE(true);
+            return;
+        }
 
-            setCredentE(true)
-            setInvalidE(false)
-            setWrongP(false)
+        if (email == 'merchant@gmail.com' && password == '1234') {
 
-        } else {
+            return router.replace('/(merchant-tabs)')
 
-            if (email == 'merchant@gmail.com' && password == '1234') {
+        } else if (email == 'traveler@gmail.com' && password == '1234') {
 
-                router.replace('/(merchant-tabs)')
+            return router.replace('/(tabs)')
 
-            } else if (email == 'traveler@gmail.com' && password == '1234') {
+        } else if (email == 'vehicle@gmail.com' && password == '1234') {
 
-                router.replace('/(tabs)')
+            return router.replace('/(vehicle)')
 
-            } else if (email == 'vehicle@gmail.com' && password == '1234') {
+        } else if (email == 'guide@gmail.com' && password == '1234') {
 
-                router.replace('/(vehicle)')
+            return router.replace('/(guide)')
 
-            } else if (email == 'guide@gmail.com' && password == '1234') {
+        }
 
-                router.replace('/(guide)')
+        try {
+            const res = await fetch('http://localhost:8080/traveler/login', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+
+            });
+
+            if (res.ok) {
+                const data = await res.json()
+
+                if (data && data.token) {
+
+                    setWrongP(false)
+                    setInvalidE(false)
+                    setCredentE(false)
+
+                    //await SecureStore.setItemAsync("token", data.token)
+                    await AsyncStorage.setItem("token", data.token)
+
+                    return router.replace('/(tabs)')
+                } else {
+
+                    alert('No token')
+
+                }
+
 
             } else {
 
+                const data = await res.json();
+                if (data.error == "invalid email") {
 
-                await fetch('http://localhost:8080/traveler/login', {
+                    setInvalidE(true)
+                    setCredentE(false)
+                    setWrongP(false)
 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                } else {
 
-                })
-                    .then(res => res.json())
-                    .then(async (data) => {
-
-                        if (data.error == "invalid email") {
-
-                            setInvalidE(true)
-                            setCredentE(false)
-                            setWrongP(false)
-
-                        } else {
-
-                            if (data) {
-
-                                console.log(data)
-                                setWrongP(false)
-                                setInvalidE(false)
-                                setCredentE(false)
-
-                                const token = data.token;
-                                if (data && token) {
-
-                                    await SecureStore.setItemAsync("token", token)
-
-                                }
-
-                                // router.replace('/(tabs)')
-
-                            } else {
-
-                                setWrongP(true)
-                                setInvalidE(false)
-                                setCredentE(false)
+                    setWrongP(true)
+                    setInvalidE(false)
+                    setCredentE(false)
 
 
-                            }
-                        }
-                    })
-                    .catch(err => { alert(err); console.log(err) })
-
+                }
 
             }
+        } catch (err) {
 
+            alert(`Network error : ${err}`)
 
         }
+
+
+
     };
 
     return (

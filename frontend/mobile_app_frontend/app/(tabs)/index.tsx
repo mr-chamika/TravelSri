@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from 'jwt-decode';
 
 
 cssInterop(Image, { className: "style" });
@@ -34,11 +35,18 @@ const groupCollection = [
 
 ];
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string
+}
 
 export default function Index() {
 
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [username, setUsername] = useState('')
 
   const handler = () => {
 
@@ -60,6 +68,26 @@ export default function Index() {
   }
 
 
+  useFocusEffect(
+    useCallback(() => {
+
+      const getAll = async () => {
+
+        const keys = await AsyncStorage.getItem("token");
+        if (keys) {
+
+          const x: MyToken = jwtDecode(keys)
+          console.log(x)
+          setUsername(x.sub)
+
+        }
+
+      }
+      getAll()
+    }, [])
+  );
+
+
   /* useFocusEffect(
     useCallback(() => {
       
@@ -68,8 +96,7 @@ export default function Index() {
           const keys = await AsyncStorage.getAllKeys();
           alert(keys)
       
-        }
-        getAll()
+        }        getAll()
       const clear = async () => {
 
         try {
@@ -124,7 +151,7 @@ export default function Index() {
 
       <View className="w-full items-center mt-1 ">
 
-        <Text className="text-[22px] font-semibold text-gray-400">Good Morning John !</Text>
+        <Text className="text-[22px] font-semibold text-gray-400">Good Morning {username} !</Text>
 
       </View>
       <View>

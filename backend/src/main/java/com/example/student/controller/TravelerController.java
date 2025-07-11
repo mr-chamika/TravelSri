@@ -57,12 +57,12 @@ public class TravelerController {
            if (passwordEncoder.matches(traveler.getPassword(),t.getPassword())) {
 
                UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                       t.getEmail(),
-                       t.getPassword(), // Must be the HASHED password from your DB
-                       Collections.singletonList(new SimpleGrantedAuthority("ROLE_"+t.getRole()))
+                       t.getUsername(),
+                       t.getPassword(),
+                       Collections.singletonList(new SimpleGrantedAuthority(t.getRole()))
                );
 
-               String token = jwtUtil.generateToken(userDetails);
+               String token = jwtUtil.generateToken(userDetails,t);
 
                Map<String, String> responseBody = new HashMap<>();
                responseBody.put("token", token);
