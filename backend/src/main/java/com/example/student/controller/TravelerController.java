@@ -2,6 +2,7 @@ package com.example.student.controller;
 
 import com.example.student.model.Traveler;
 import com.example.student.repo.TravelerRepo;
+import com.example.student.services.Emailtaken;
 import com.example.student.services.JwtUtil;
 import com.example.student.services.TravelerSignup;
 import org.apache.coyote.Response;
@@ -20,7 +21,7 @@ import java.util.Optional;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/traveler")
+@RequestMapping("/user")
 public class TravelerController {
 
     @Autowired
@@ -93,6 +94,8 @@ public class TravelerController {
 
     public String signup(@RequestBody Traveler traveler) {
 
+
+
        Traveler x =  travelerSignup.registerNewUser(traveler);
 
        if(x.getEmail().equals(traveler.getEmail())) {
@@ -102,6 +105,18 @@ public class TravelerController {
        }
 
        return "Signup failed";
+    }
+
+    @Autowired
+    private Emailtaken emailtaken;
+
+    @GetMapping("/check-email")
+    public ResponseEntity<String> checkEmailAvailability(@RequestParam String email) {
+        if (emailtaken.isEmailRegistered(email)) {
+            return ResponseEntity.ok("Exists");
+        } else {
+            return ResponseEntity.ok("Available");
+        }
     }
 
 }

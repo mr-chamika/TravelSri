@@ -23,7 +23,7 @@ public class Hashingpw {
                 .cors(withDefaults()) // Apply the global CORS configuration
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/traveler/signup","/traveler/login").permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
+                        .requestMatchers("/user/signup","/user/login","/user/check-email").permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
                 .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
