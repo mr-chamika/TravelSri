@@ -25,8 +25,10 @@ import {
   Edit3, 
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
@@ -76,6 +78,7 @@ interface SubmittedQuotation {
 }
 
 const QuotationsScreen = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'requests' | 'submitted'>('requests');
   const [requests, setRequests] = useState<QuotationRequest[]>([]);
   const [submittedQuotations, setSubmittedQuotations] = useState<SubmittedQuotation[]>([]);
@@ -264,6 +267,10 @@ const QuotationsScreen = () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleGoBack = () => {
+    router.back();
   };
 
   const formatDate = (dateString: string) => {
@@ -494,7 +501,15 @@ const QuotationsScreen = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Quotations</Text>
+        <View style={styles.headerTop}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={handleGoBack}
+          >
+            <ArrowLeft size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quotations</Text>
+        </View>
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
@@ -695,11 +710,22 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
     elevation: 3,
   },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 16,
+    flex: 1,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -885,131 +911,148 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    flex: 1,
-    marginHorizontal: 4,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   primaryButton: {
     backgroundColor: '#111827',
     borderColor: '#111827',
   },
-  actionText: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 4,
-  },
   primaryButtonText: {
     color: '#FFFFFF',
   },
   emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  // Modal styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
   },
-      emptyStateText: {
-      fontSize: 16,
-      color: '#9CA3AF',
-      textAlign: 'center',
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalContainer: {
-      backgroundColor: '#FFFFFF',
-      width: width * 0.9,
-      maxHeight: '90%',
-      borderRadius: 16,
-      padding: 16,
-    },
-    modalHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    modalTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#111827',
-    },
-    modalContent: {
-      maxHeight: 400,
-    },
-    requestSummary: {
-      marginBottom: 12,
-    },
-    requestSummaryTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#374151',
-      marginBottom: 4,
-    },
-    requestSummaryText: {
-      fontSize: 14,
-      color: '#6B7280',
-    },
-    formGroup: {
-      marginBottom: 12,
-    },
-    formLabel: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: '#374151',
-      marginBottom: 4,
-    },
-    formInput: {
-      borderWidth: 1,
-      borderColor: '#D1D5DB',
-      borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      fontSize: 14,
-      color: '#111827',
-      backgroundColor: '#FFFFFF',
-    },
-    textArea: {
-      minHeight: 80,
-      textAlignVertical: 'top',
-    },
-    breakdownTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#111827',
-      marginTop: 8,
-      marginBottom: 4,
-    },
-    modalActions: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 16,
-    },
-    cancelButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      backgroundColor: '#E5E7EB',
-      borderRadius: 8,
-      marginRight: 8,
-    },
-    cancelButtonText: {
-      color: '#374151',
-      fontWeight: '500',
-      fontSize: 14,
-    },
-    submitButton: {
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      backgroundColor: '#111827',
-      borderRadius: 8,
-    },
-    submitButtonText: {
-      color: '#FFFFFF',
-      fontWeight: '600',
-      fontSize: 14,
-    },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: width * 0.9,
+    maxHeight: '80%',
+    paddingVertical: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  requestSummary: {
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  requestSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  requestSummaryText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  breakdownTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#111827',
+    marginLeft: 8,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
 });
 
 export default QuotationsScreen;

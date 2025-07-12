@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import NotifyModal from '../../app/views/notifications/[id]';
-import Sidebar from '../../components/ui/guideSideBar'; // Import your Sidebar component
+import Sidebar from '../guideSideBar'; // Import your Sidebar component
 import { useState } from 'react';
 
 const Menu = require('../../assets/images/top bar/menu.png');

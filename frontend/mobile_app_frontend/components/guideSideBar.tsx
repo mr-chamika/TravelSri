@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, TouchableOpacity, Animated, Easing, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import { Calendar, FileText, Activity, User } from 'lucide-react-native';
 
 cssInterop(Image, { className: "style" });
 
-const Profile = require('../../assets/images/profile/image.png');
+const Profile = require('../assets/images/profile/image.png');
 const { width } = Dimensions.get('window');
 
 interface SidebarProps {
@@ -30,9 +30,14 @@ export default function Sidebar({ close }: SidebarProps) {
     }).start();
   }, []);
 
-  const handleNavigation = (path: string) => {
-    router.push(path as any); // Type assertion to handle the routing
-    close(); // Close the sidebar after navigation
+  const handleNavigation = (path: Href) => {
+    console.log('Navigating to:', path);
+    try {
+      router.push(path);
+      close(); // Close the sidebar after navigation
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   const handleClose = () => {
@@ -81,7 +86,7 @@ export default function Sidebar({ close }: SidebarProps) {
         <View className="flex-1 justify-center px-8">
           <TouchableOpacity
             className="my-6 flex-row items-center gap-4"
-            onPress={() => handleNavigation('/pastBookings')}
+            onPress={() => handleNavigation('/sideTabsG/pastBookings')}
           >
             <Calendar size={24} color="#374151" />
             <Text className="text-[18px] font-medium text-gray-800">Past Bookings</Text>
@@ -89,7 +94,7 @@ export default function Sidebar({ close }: SidebarProps) {
 
           <TouchableOpacity
             className="my-6 flex-row items-center gap-4"
-            onPress={() => handleNavigation('/quotations')}
+            onPress={() => handleNavigation('/sideTabsG/quotations')}
           >
             <FileText size={24} color="#374151" />
             <Text className="text-[18px] font-medium text-gray-800">Quotations</Text>
@@ -97,7 +102,7 @@ export default function Sidebar({ close }: SidebarProps) {
 
           <TouchableOpacity
             className="my-6 flex-row items-center gap-4"
-            onPress={() => handleNavigation('/guideActivity')}
+            onPress={() => handleNavigation('/sideTabsG/guideActivity')}
           >
             <Activity size={24} color="#374151" />
             <Text className="text-[18px] font-medium text-gray-800">Activity Log</Text>

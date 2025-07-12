@@ -1,5 +1,4 @@
 import { View, Text, TouchableOpacity, Modal } from 'react-native'
-import NotifyModal from '../app/views/notifications/[id]'
 import { useState } from 'react'
 
 import { Image } from 'expo-image'
