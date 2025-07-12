@@ -1,11 +1,10 @@
 package com.example.student.controller;
 
 import com.example.student.model.Traveler;
-import com.example.student.repo.TravelerRepo;
+import com.example.student.repo.TravelSriRepo;
 import com.example.student.services.Emailtaken;
 import com.example.student.services.JwtUtil;
 import com.example.student.services.TravelerSignup;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,7 @@ import java.util.Optional;
 public class TravelerController {
 
     @Autowired
-    TravelerRepo repo;
+    TravelSriRepo repo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -33,7 +32,7 @@ public class TravelerController {
     @Autowired
     private JwtUtil jwtUtil;
     @Autowired
-    private TravelerRepo travelerRepo;
+    private TravelSriRepo travelSriRepo;
 
     @PostMapping("/login")
 
@@ -122,13 +121,13 @@ public class TravelerController {
     }
 
     @Autowired
-    private TravelerRepo travelerReporepo;
+    private TravelSriRepo travelSriReporepo;
 
     @GetMapping("/profile")
 
     public ResponseEntity<Map<String, String>> proPic(@RequestParam String email) {
 
-        Optional<Traveler> x = travelerRepo.findByEmail(email);
+        Optional<Traveler> x = travelSriRepo.findByEmail(email);
 
         Map<String, String> j = new HashMap<>();
         j.put("pp", x.get().getPp());
@@ -138,7 +137,7 @@ public class TravelerController {
     }
 
     @Autowired
-    private TravelerRepo repo1;
+    private TravelSriRepo repo1;
 
     @PostMapping("/reset-password")
 

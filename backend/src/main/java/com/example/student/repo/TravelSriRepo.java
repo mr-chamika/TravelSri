@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface TravelerRepo extends MongoRepository<Traveler,String> {
+public interface TravelSriRepo extends MongoRepository<Traveler,String> {
     Optional<Traveler> findByEmail(String email);
 }

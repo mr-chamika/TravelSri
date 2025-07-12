@@ -1,7 +1,7 @@
 package com.example.student.services;
 
 import com.example.student.model.Traveler;
-import com.example.student.repo.TravelerRepo;
+import com.example.student.repo.TravelSriRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 public class TravelerSignup {
 
     @Autowired
-    private TravelerRepo travelerRepo;
+    private TravelSriRepo travelSriRepo;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -23,6 +23,6 @@ public class TravelerSignup {
 
         traveler.setPassword(hashedPassword);
 
-        return travelerRepo.save(traveler);
+        return travelSriRepo.save(traveler);
     }
 }
