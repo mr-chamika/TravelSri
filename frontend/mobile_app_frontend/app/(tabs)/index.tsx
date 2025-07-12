@@ -35,12 +35,14 @@ const groupCollection = [
 
 ];
 
-interface MyToken {
+/* interface MyToken {
   sub: string;
   roles: string[];
   username: string;
   email: string
-}
+  exp:number,
+  iat:number
+} */
 
 export default function Index() {
 
@@ -68,6 +70,17 @@ export default function Index() {
   }
 
 
+  const loggingout = async (reason = null) => {
+
+    await AsyncStorage.removeItem('token')
+
+    router.replace({
+      pathname: '/(auth)', // 👈 Your login route path (e.g., the file at app/login.tsx)
+      params: { reason: 'TOKEN_EXPIRED' }
+    });
+
+  }
+
   useFocusEffect(
     useCallback(() => {
 
@@ -76,9 +89,16 @@ export default function Index() {
         const keys = await AsyncStorage.getItem("token");
         if (keys) {
 
-          const x: MyToken = jwtDecode(keys)
-          console.log(x)
-          setUsername(x.sub)
+          const x = jwtDecode(keys)
+          if (x && x.exp && x.sub) {
+            if (x.exp * 1000 < Date.now()) {
+
+              loggingout()
+
+            } else {
+              setUsername(x.sub)
+            }
+          }
 
         }
 

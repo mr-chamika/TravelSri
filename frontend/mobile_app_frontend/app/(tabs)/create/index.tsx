@@ -123,6 +123,7 @@ export default function Dropdown() {
                                     setModalVisible(false);
                                 } else {
                                     router.back();
+                                    setModalVisible(false);
                                 }
                             }}>
                                 <Text>{hasMadeInitialSelection ? "Cancel" : "Back"}</Text>

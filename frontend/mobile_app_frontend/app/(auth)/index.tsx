@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import * as SecureStore from 'expo-secure-store';
-
+import { AuthScreenProps } from '../../lib/navigation.types';
 const logo = require('../../assets/images/logo.png');
 
 const windowHeight = Dimensions.get('window').height;
 
-export default function LoginScreen() {
+export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
     interface User {
         email: string,
@@ -22,8 +22,17 @@ export default function LoginScreen() {
     const [invalidE, setInvalidE] = useState(false);
     const [wrongP, setWrongP] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+    const [tokenE, setTokenE] = useState<string | string[]>('')
 
     const router = useRouter();
+
+    const { reason } = useLocalSearchParams()
+
+    useEffect(() => {
+        if (reason) {
+            setTokenE(reason)
+        }
+    }, [route]);
 
     const validateEmail = (text: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -189,6 +198,7 @@ export default function LoginScreen() {
                                     </View>
                                     <Text className={`text-red-500 text-sm ${wrongP ? 'opacity-100' : 'opacity-0'}`}>Wrong Password</Text>
                                     <Text className={`text-red-500 ${credentE ? 'opacity-100' : 'opacity-0'}`} >Fill all fields with valid format</Text>
+                                    <Text className={`text-red-500 ${tokenE ? 'opacity-100' : 'opacity-0'}`} >Token Expired !!! Login Again.</Text>
                                 </View>
 
 

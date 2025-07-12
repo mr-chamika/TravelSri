@@ -32,6 +32,8 @@ public class TravelerController {
 
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private TravelerRepo travelerRepo;
 
     @PostMapping("/login")
 
@@ -117,6 +119,44 @@ public class TravelerController {
         } else {
             return ResponseEntity.ok("Available");
         }
+    }
+
+    @Autowired
+    private TravelerRepo travelerReporepo;
+
+    @GetMapping("/profile")
+
+    public ResponseEntity<Map<String, String>> proPic(@RequestParam String email) {
+
+        Optional<Traveler> x = travelerRepo.findByEmail(email);
+
+        Map<String, String> j = new HashMap<>();
+        j.put("pp", x.get().getPp());
+
+        return ResponseEntity.ok(j);
+
+    }
+
+    @Autowired
+    private TravelerRepo repo1;
+
+    @PostMapping("/reset-password")
+
+    public String resetPassword(@RequestBody Traveler traveler) {
+
+        Optional<Traveler> y = repo1.findByEmail(traveler.getEmail());
+
+        String newPassword = passwordEncoder.encode(traveler.getPassword());
+
+        if(y.isPresent()) {
+
+            y.get().setPassword(newPassword);
+            repo1.save(y.get());
+
+            return "Success";
+        }
+
+        return "Password change failed";
     }
 
 }

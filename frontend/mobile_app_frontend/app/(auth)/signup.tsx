@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     SafeAreaView,
     View,
@@ -11,15 +11,22 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { ImagePickerAsset } from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system'
+import emailjs from '@emailjs/browser'
 
 // Make sure this path is correct in your project
 const plusIcon = require('../../assets/images/plus (1).png');
+const otpIcon = require('../../assets/images/otp.png');
+
 
 const steps = [
     { id: 1, title: 'Personal Details' },
     { id: 2, title: 'Business Info' },
     { id: 3, title: 'Availability & Documents' },
     { id: 4, title: 'Confirmation' },
+    { id: 5, title: 'Authentication' },
 ];
 
 const countries = [
@@ -44,26 +51,68 @@ const timeOptions = [
     '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM'
 ];
 
+interface FormData {
+    // Step 1
+    fullName: string;
+    mobileNumber: string;
+    whatsappNumber: string;
+    email: string;
+    username: string;
+    address: string;
+    nicPassport: string;
+    dob: string;
+    gender: string;
+    country: string;
+    password: string;
+    confirmPassword: string;
+    role: string;
+    pp: ImagePickerAsset | null; // Profile Picture
+
+    // Step 2
+    businessName: string;
+    registrationNumber: string;
+    businessType: string;
+    description: string;
+    businessAddress: string;
+    bp: ImagePickerAsset | null; // Business Photo
+
+    // Step 3
+    daysPerWeek: string;
+    startTime: string;
+    endTime: string;
+    businessRegPic: ImagePickerAsset | null;
+    cancellationPolicyPic: ImagePickerAsset | null;
+
+    // Step 4 & Others
+    nicpic: ImagePickerAsset | null;
+    locpic: ImagePickerAsset | null;
+    agreeTerms: boolean;
+    confirmCondition: boolean;
+    status: string;
+}
+
 export default function SignupForm() {
     const [step, setStep] = useState(1);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-    const [formData, setFormData] = useState({
+    const [otp, setOtp] = useState('');
+    const [generatedOtp, setGeneratedOtp] = useState({ code: '', timestamp: 0 });
+    const [formData, setFormData] = useState<FormData>({
         // Step 1
-        fullName: '',//
-        mobileNumber: '',//
-        whatsappNumber: '',//
-        email: '',//
-        username: '',//
-        address: '',//
-        nicPassport: '',//
-        dob: '',//
-        gender: '',//
-        country: '',//
-        password: '',//
-        confirmPassword: '',
-        role: '',//
-        pp: '', // Profile Picture
+        fullName: 'W.K. Hasith Chamika Wijesinghe',//
+        mobileNumber: '771161615',//
+        whatsappNumber: '0786715765',//
+        email: 'chamikauni2001@gmail.com',//
+        username: 'chami',//
+        address: '"WIJAYAWASA",HATHTHAKA,PITIGALA.',//
+        nicPassport: '200124102989',//
+        dob: '2001-08-28',//
+        gender: 'male',//
+        country: 'SL',//
+        password: '123456789',//
+        confirmPassword: '123456789',
+        role: 'user',//
+        pp: null, // Profile Picture
 
         // Step 2
         businessName: '',//
@@ -71,18 +120,18 @@ export default function SignupForm() {
         businessType: '',//
         description: '',//
         businessAddress: '',//
-        bp: '', // Business Photo
+        bp: null, // Business Photo
 
         // Step 3
         daysPerWeek: '',//
         startTime: '',//
         endTime: '',//
-        businessRegPic: '',//
-        cancellationPolicyPic: '',//
+        businessRegPic: null,//
+        cancellationPolicyPic: null,//
 
         // Step 4 & Others
-        nicpic: '',//
-        locpic: '',//
+        nicpic: null,//
+        locpic: null,//
         agreeTerms: false,//
         confirmCondition: false,//
         status: '',//
@@ -90,7 +139,54 @@ export default function SignupForm() {
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [emailCheckStatus, setEmailCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [selectedImage, setSelectedImage] = useState(null)
 
+    const handleChoosePhoto = async (field: keyof FormData) => {
+        // 1. Request permission
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to make this work!');
+            return;
+        }
+
+        // 2. Launch the image library
+        try {
+            let result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true, // Optional: for simple cropping
+                quality: 1,
+                base64: true, // Ask for the Base64 string directly
+            });
+
+            if (!result.canceled) {
+                // The 'Asset' from expo-image-picker is compatible
+                const selectedAsset = result.assets[0];
+
+                setFormData(prevState => ({
+                    ...prevState,
+                    [field]: selectedAsset,
+                }));
+
+                if (errors[field]) {
+                    setErrors(prevErrors => {
+                        const newErrors = { ...prevErrors };
+                        delete newErrors[field];
+                        return newErrors;
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Image picker error:", error);
+            Alert.alert("Error", "An error occurred while picking the image.");
+        }
+    };
+
+    const handleUploadPhoto = async () => {
+        if (!selectedImage) {
+            alert('No Image Selected Please select an image to upload.');
+            return;
+        }
+    }
 
     const validateField = (field: string, value: string | boolean) => {
         let error = '';
@@ -195,9 +291,19 @@ export default function SignupForm() {
             'email', 'username', 'address', 'nicPassport', 'password', 'confirmPassword', 'role'
         ];
         fieldsToValidate.forEach(field => {
-            const error = validateField(field, formData[field]);
-            if (error) step1Errors[field] = error;
+
+            const value = formData[field as keyof FormData];
+            if (typeof value === 'string' || typeof value === 'boolean') {
+                const error = validateField(field, value);
+                if (error) {
+                    step1Errors[field as keyof typeof step1Errors] = error;
+                }
+            }
         });
+
+        if (!formData.pp) {
+            step1Errors.pp = 'Owner photo is required.';
+        }
 
         // Add email availability check to validation
         if (emailCheckStatus === 'taken') {
@@ -214,9 +320,20 @@ export default function SignupForm() {
             'bp', 'businessName', 'registrationNumber', 'businessType', 'description', 'businessAddress'
         ];
         fieldsToValidate.forEach(field => {
-            const error = validateField(field, formData[field]);
-            if (error) step2Errors[field] = error;
+
+            const value = formData[field as keyof FormData];
+            if (typeof value === 'string' || typeof value === 'boolean') {
+                const error = validateField(field, value);
+                if (error) {
+                    step2Errors[field as keyof typeof step2Errors] = error;
+                }
+            }
         });
+
+        if (!formData.bp) {
+            step2Errors.bp = 'Business photo is required.';
+        }
+
         setErrors(step2Errors);
         return Object.keys(step2Errors).length === 0;
     };
@@ -227,8 +344,14 @@ export default function SignupForm() {
             'daysPerWeek', 'startTime', 'endTime', 'businessRegPic', 'cancellationPolicyPic'
         ];
         fieldsToValidate.forEach(field => {
-            const error = validateField(field, formData[field]);
-            if (error) step3Errors[field] = error;
+
+            const value = formData[field as keyof FormData];
+            if (typeof value === 'string' || typeof value === 'boolean') {
+                const error = validateField(field, value);
+                if (error) {
+                    step3Errors[field as keyof typeof step3Errors] = error;
+                }
+            }
         });
 
         const startIndex = timeOptions.indexOf(formData.startTime);
@@ -236,6 +359,13 @@ export default function SignupForm() {
 
         if (startIndex !== -1 && endIndex !== -1 && endIndex <= startIndex) {
             step3Errors['endTime'] = 'End time must be after start time.';
+        }
+
+        if (!formData.businessRegPic) {
+            step3Errors.businessRegPic = 'This photo is required.';
+        }
+        if (!formData.cancellationPolicyPic) {
+            step3Errors.cancellationPolicyPic = 'This photo is required.';
         }
 
         setErrors(step3Errors);
@@ -251,9 +381,23 @@ export default function SignupForm() {
             fieldsToValidate.push('confirmCondition');
         }
         fieldsToValidate.forEach(field => {
-            const error = validateField(field, formData[field]);
-            if (error) step4Errors[field] = error;
+
+            const value = formData[field as keyof FormData];
+            if (typeof value === 'string' || typeof value === 'boolean') {
+                const error = validateField(field, value);
+                if (error) {
+                    step4Errors[field as keyof typeof step4Errors] = error;
+                }
+            }
         });
+
+        if (!formData.nicpic) {
+            step4Errors.nicpic = 'NIC photo is required.';
+        }
+        if (!formData.locpic) {
+            step4Errors.locpic = 'Location is required.';
+        }
+
         setErrors(step4Errors);
         return Object.keys(step4Errors).length === 0;
     };
@@ -264,6 +408,7 @@ export default function SignupForm() {
             case 1: isStepValid = validateStep1(); break;
             case 2: isStepValid = formData.role === 'other' ? validateStep2() : true; break;
             case 3: isStepValid = formData.role === 'other' ? validateStep3() : true; break;
+            case 4: isStepValid = validateStep4(); break;
             default: isStepValid = true; break;
         }
 
@@ -277,7 +422,7 @@ export default function SignupForm() {
 
         if (step === 1 && formData.role === 'user') {
             setStep(4);
-        } else if (step < steps.length) {
+        } else if ((step === 4 && formData.role === 'user') || step < steps.length) {
             setStep(step + 1);
         }
     };
@@ -290,7 +435,62 @@ export default function SignupForm() {
         }
     };
 
+    const handleSendOtp = async () => {
+        // First, validate the current step to ensure all data is present
+        if (!validateStep4()) return;
+
+        // 1. Generate a 4-digit OTP
+        const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        setGeneratedOtp({ code: newOtp, timestamp: Date.now() });
+        // 2. Prepare the template parameters
+        const templateParams = {
+            to_name: formData.fullName,
+            email: formData.email, // Make sure you collect the email
+            otp_code: newOtp,
+        };
+
+        // 3. Send the email using EmailJS
+        try {
+            await emailjs.send(
+                'service_ug7b6t5',      // 👈 Replace with your Service ID
+                'template_ozobnan',     // 👈 Replace with your Template ID
+                templateParams,
+                'l0b_m5wGJi-b4JhDW'       // 👈 Replace with your Public Key
+            );
+            alert(`A verification code has been sent to ${formData.email}.`);
+            setStep(5); // Move to the OTP verification screen
+        } catch (error) {
+            console.error('EmailJS Error:', error);
+            Alert.alert('Error', 'Failed to send OTP. Please try again.');
+        }
+    };
+
+    useEffect(() => {
+
+        if (step === 5) {
+            handleSendOtp();
+        }
+    }, [step]);
+
     const handleSubmit = async () => {
+
+        const dur = 5 * 60 * 1000;
+        const timeElapsed = Date.now() - generatedOtp.timestamp;
+
+        if (timeElapsed > dur) {
+
+            alert('OTP has expired')
+            return;
+
+        }
+
+        if (otp !== generatedOtp.code) {
+
+            alert('otp is wrong')
+            return;
+
+        }
+
         const isStep1Valid = validateStep1();
         const isStep2Valid = formData.role === 'other' ? validateStep2() : true;
         const isStep3Valid = formData.role === 'other' ? validateStep3() : true;
@@ -302,34 +502,75 @@ export default function SignupForm() {
         }
 
 
+
+        //console.log(submit)
         if (formData.role == 'user' && isStep1Valid && isStep4Valid) {
 
-            const {
-                confirmCondition,
-                bp,
-                businessAddress,
-                businessName,
-                businessRegPic,
-                businessType,
-                cancellationPolicyPic,
-                confirmPassword,
-                daysPerWeek,
-                description,
-                endTime,
-                registrationNumber,
-                startTime,
-                ...payload
-            } = formData;
-
-            const submit = { ...payload, status: 'active' }
-
-            //console.log(submit)
             try {
+                //to mobile
+                /* var submit = {}
+                const {
+                    confirmCondition,
+                    bp,
+                    businessAddress,
+                    businessName,
+                    businessRegPic,
+                    businessType,
+                    cancellationPolicyPic,
+                    confirmPassword,
+                    daysPerWeek,
+                    description,
+                    endTime,
+                    registrationNumber,
+                    startTime,
+                    ...payload
+                } = formData;
+                if (formData.pp && formData.pp.uri) { 
+                    //console.log(formData.pp)
+
+                     const pps = await FileSystem.readAsStringAsync(formData.pp.uri, {
+                        encoding: FileSystem.EncodingType.Base64,
+                    });
+                    submit = { ...payload, status: 'active', pp: pps }
+                }*/
+
+                const dataToSend: any = { ...formData, status: 'active' };
+                const imageFields: (keyof FormData)[] = ['pp'/* , 'bp', 'businessRegPic', 'cancellationPolicyPic'*/, 'nicpic', 'locpic'];
+
+                for (const field of imageFields) {
+                    const imageAsset = formData[field] as ImagePickerAsset | null;
+
+                    // USE THIS LOGIC
+                    // The 'base64' property is provided by the picker on all platforms
+                    if (imageAsset && imageAsset.base64) {
+                        dataToSend[field] = imageAsset.base64;
+                    } else {
+                        // Handle case where image might be in state but base64 is missing
+                        dataToSend[field] = null;
+                    }
+                }
+
+                const {
+                    confirmCondition,
+                    bp,
+                    businessAddress,
+                    businessName,
+                    businessRegPic,
+                    businessType,
+                    cancellationPolicyPic,
+                    confirmPassword,
+                    daysPerWeek,
+                    description,
+                    endTime,
+                    registrationNumber,
+                    startTime,
+                    ...payload
+                } = dataToSend;
 
                 await fetch('http://localhost:8080/user/signup', {
 
                     method: 'POST',
-                    body: JSON.stringify(submit),
+                    body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'application/json' }
 
                 })
@@ -347,26 +588,37 @@ export default function SignupForm() {
             }
         }
         if (formData.role != 'user' && isStep1Valid && isStep2Valid && isStep3Valid && isStep4Valid) {
-            const {
-                businessType,
-                confirmPassword,
-                ...rest
-            } = formData;
 
-            const submit = { ...rest, role: businessType, status: "pending" }
-
-            //console.log(submit)
             try {
+
+
+                const dataToSend: any = { ...formData, status: 'pending', role: formData.businessType };
+                const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic', 'cancellationPolicyPic', 'nicpic', 'locpic'];
+
+                for (const field of imageFields) {
+                    const imageAsset = formData[field] as ImagePickerAsset | null;
+
+                    // USE THIS LOGIC
+                    // The 'base64' property is provided by the picker on all platforms
+                    if (imageAsset && imageAsset.base64) {
+                        dataToSend[field] = imageAsset.base64;
+                    } else {
+                        // Handle case where image might be in state but base64 is missing
+                        dataToSend[field] = null;
+                    }
+                }
+
+                const { businessType, confirmPassword, ...payload } = dataToSend
 
                 await fetch('http://localhost:8080/user/signup', {
 
                     method: 'POST',
-                    body: JSON.stringify(submit),
+                    body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'application/json' }
 
                 })
                     .then(res => res.text())
-                    .then(data => { if (data == "Success") { router.replace('/(auth)');/* alert(data)*/ } else { alert('An error occurs, Try again later..') } })
+                    .then(data => { if (data == "Success") { router.replace('/(auth)'); } else { alert('An error occurs, Try again later..') } })
                     .catch(err => alert(`${err}`))
 
 
@@ -386,13 +638,32 @@ export default function SignupForm() {
             <View>
                 {step === 1 && (
                     <View>
-                        <TouchableOpacity onPress={() => router.back()} className='bg-black w-11 py-1 px-1 justify-center rounded-lg'>
+                        <TouchableOpacity onPress={() => router.back()} className='bg-black border-2 w-14 py-1 px-1  rounded-lg'>
                             <Text className='text-white'> Back</Text>
                         </TouchableOpacity>
                         <View className="items-center w-full my-10">
-                            <TextInput placeholder="URL for owner photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.pp} onChangeText={v => handleChange('pp', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.pp ? 'opacity-100' : 'opacity-0'}`}>{errors.pp || ' '}</Text>
+                            {/* <TextInput placeholder="URL for owner photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.pp} onChangeText={v => handleChange('pp', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('pp') }}
+                                className={`w-56 h-56 rounded-full bg-gray-100 justify-center items-center ${formData.pp == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.pp ? (
+                                    <Image
+                                        source={{ uri: formData.pp.uri }}
+                                        className="w-full h-full rounded-full border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
                             <Text className="text-base text-gray-600 mt-2">Add Owner's Photo</Text>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.pp ? 'opacity-100' : 'opacity-0'}`}>{errors.pp || ' '}</Text>
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Full Name</Text>
@@ -507,9 +778,28 @@ export default function SignupForm() {
                 {step === 2 && (
                     <View>
                         <View className="items-center w-full my-7">
-                            <TextInput placeholder="URL for business item photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.bp} onChangeText={v => handleChange('bp', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 self-start ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
-                            <Text className="text-base text-gray-600 mt-2">Business Item Photo</Text>
+                            {/* <TextInput placeholder="URL for business item photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.bp} onChangeText={v => handleChange('bp', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('bp') }}
+                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.bp == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.bp ? (
+                                    <Image
+                                        source={{ uri: formData.bp.uri }}
+                                        className="w-full h-full rounded-lg border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
+                            <Text className="text-base text-gray-600 mt-2">Business Photo</Text>
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Business Name</Text>
@@ -587,12 +877,50 @@ export default function SignupForm() {
                         </View>
                         <View className="items-center w-full my-8">
                             <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate</Text>
-                            <TextInput placeholder="URL for registration certificate" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic} onChangeText={v => handleChange('businessRegPic', v)} />
+                            {/* <TextInput placeholder="URL for registration certificate" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic} onChangeText={v => handleChange('businessRegPic', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('businessRegPic') }}
+                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.businessRegPic ? (
+                                    <Image
+                                        source={{ uri: formData.businessRegPic.uri }}
+                                        className="w-full h-full rounded-lg border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
                             <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic || ' '}</Text>
                         </View>
                         <View className="items-center w-full my-8">
                             <Text className="w-full mb-1 font-semibold text-base">Cancellation Policy</Text>
-                            <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.cancellationPolicyPic} onChangeText={v => handleChange('cancellationPolicyPic', v)} />
+                            {/* <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.cancellationPolicyPic} onChangeText={v => handleChange('cancellationPolicyPic', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('cancellationPolicyPic') }}
+                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.cancellationPolicyPic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.cancellationPolicyPic ? (
+                                    <Image
+                                        source={{ uri: formData.cancellationPolicyPic.uri }}
+                                        className="w-full h-full rounded-lg border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
                             <Text className={`text-red-500 text-sm mt-1 w-full ${errors.cancellationPolicyPic ? 'opacity-100' : 'opacity-0'}`}>{errors.cancellationPolicyPic || ' '}</Text>
                         </View>
                     </View>
@@ -601,13 +929,51 @@ export default function SignupForm() {
                 {step === 4 && (
                     <View>
                         <View className="items-center w-full my-10">
-                            <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicpic} onChangeText={v => handleChange('nicpic', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 self-start ${errors.nicpic ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic || ' '}</Text>
+                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicpic} onChangeText={v => handleChange('nicpic', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('nicpic') }}
+                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.nicpic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.nicpic ? (
+                                    <Image
+                                        source={{ uri: formData.nicpic.uri }}
+                                        className="w-full h-full border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.nicpic ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">National Identity Card</Text>
                         </View>
                         <View className="items-center w-full my-8">
-                            <TextInput placeholder="URL for map location" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.locpic} onChangeText={v => handleChange('locpic', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 self-start ${errors.locpic ? 'opacity-100' : 'opacity-0'}`}>{errors.locpic || ' '}</Text>
+                            {/* <TextInput placeholder="URL for map location" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.locpic} onChangeText={v => handleChange('locpic', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('locpic') }}
+                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.locpic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.locpic ? (
+                                    <Image
+                                        source={{ uri: formData.locpic.uri }}
+                                        className="w-full h-full border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.locpic ? 'opacity-100' : 'opacity-0'}`}>{errors.locpic || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2 mb-8">Location On Map</Text>
                         </View>
                         <View className="my-10">
@@ -636,6 +1002,54 @@ export default function SignupForm() {
                         <Text className={`text-red-500 text-sm -mt-4 mb-4 ${errors.confirmCondition && formData.role != 'user' ? 'opacity-100' : 'opacity-0'}`}>{errors.confirmCondition || ' '}</Text>
                     </View>
                 )}
+                {step === 5 && (
+                    <View className='flex-1'>
+                        <View className="flex-1 justify-between items-center my-10 w-full">
+                            <View className="items-center mb-20">
+                                <View className="w-48 h-48 rounded-full my-5 bg-gray-100 justify-center items-center border-2 border-gray-200">
+                                    <Image
+                                        source={otpIcon}
+                                        className="w-24 h-24"
+                                        resizeMode="contain"
+                                        tintColor="#333"
+                                    />
+                                </View>
+                                <Text className="text-3xl font-bold mt-4 text-gray-800">Enter OTP</Text>
+                                <Text className="text-base text-gray-500 mt-2 text-center px-4">
+                                    A 4-digit code was sent to {'\n'}
+                                    <Text className="font-bold text-gray-700">{formData.email}</Text>
+                                </Text>
+                            </View>
+                            <View className="w-full my-10">
+                                <Text className="mb-1 font-semibold text-base text-gray-700">Verification Code</Text>
+                                <TextInput
+                                    className="text-black border border-gray-300 rounded-lg p-4 text-2xl text-center tracking-widest"
+                                    value={otp}
+                                    onChangeText={setOtp}
+                                    keyboardType="numeric"
+                                    maxLength={4}
+                                />
+                                <TouchableOpacity
+                                    className="bg-[#FEFA17] py-4 px-6 rounded-lg mt-6 items-center"
+                                    onPress={handleSubmit}
+                                >
+                                    <Text className="font-bold text-lg text-gray-800">Verify Code</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View className="mt-14 flex-row justify-center items-center">
+                                <Text className="text-base text-gray-500">Didn't receive the code?</Text>
+                                <TouchableOpacity onPress={() => Alert.alert("Resending OTP...")} className="py-2 ml-1">
+                                    <Text className="font-semibold text-blue-500 text-base">Resend</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {/* <TouchableOpacity onPress={() => setStep(1)} className="py-2 mt-2">
+                                <Text className="text-center font-semibold text-gray-500 text-base">
+                                    ← Back to enter email
+                                </Text>
+                            </TouchableOpacity> */}
+                        </View>
+                    </View>
+                )}
             </View>
         );
     };
@@ -645,25 +1059,29 @@ export default function SignupForm() {
             <View className="flex-row items-center justify-between">
                 <Text className="text-2xl font-bold">{steps[step - 1].title}</Text>
             </View>
-            <ScrollView className="flex-1 mt-5" showsVerticalScrollIndicator={false}>
+            <ScrollView
+                className="flex-1 mt-5"
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
                 {renderStepContent()}
-                <View className="flex-row justify-between mt-6 mb-4">
+                {step != 5 && <View className="flex-row justify-between mt-6 mb-4">
                     {step > 1 ? (
                         <TouchableOpacity className="bg-gray-300 py-3 px-8 rounded-lg" onPress={prevStep}>
                             <Text className="font-semibold text-gray-800">Previous</Text>
                         </TouchableOpacity>
                     ) : <View />}
 
-                    {step < steps.length ? (
+                    {step < steps.length - 1 ? (
                         <TouchableOpacity className="bg-[#FEFA17] py-3 px-8 rounded-lg" onPress={nextStep}>
                             <Text className="font-semibold text-gray-800">Next</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity className="bg-blue-500 py-3 px-8 rounded-lg" onPress={handleSubmit}>
+                        <TouchableOpacity className="bg-blue-500 py-3 px-8 rounded-lg" onPress={nextStep}>
                             <Text className="font-semibold text-white">Submit</Text>
                         </TouchableOpacity>
                     )}
-                </View>
+                </View>}
             </ScrollView>
         </SafeAreaView>
     );
