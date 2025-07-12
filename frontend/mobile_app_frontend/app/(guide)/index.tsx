@@ -10,7 +10,7 @@ import {
 import StatsCard from '../../components/ui/starCard';
 import MenuItem from '../../components/ui/menuItem';
 import Header from '../../components/ui/header';
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/ui/guideTopbar';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -26,6 +26,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BookingScreen from './bookings';
 import AvailabilityScreen from './availability';
 import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
+import ProfileScreen from '../(guide)/profile';
 
 // Type definitions
 interface Stats {
@@ -162,7 +163,7 @@ const TravelMateGuideHome = () => {
         break;
       case 'profile':
         console.log('Navigating to profile screen...');
-        // navigation.navigate('Profile');
+        navigation.navigate('Profile');
         break;
       case 'availability':
         console.log('Navigating to availability screen...');
@@ -245,7 +246,7 @@ const TravelMateGuide = () => {
       <Stack.Screen name="availability" component={AvailabilityScreen} />
       <Stack.Screen name="travelFeed" component={TravelFeedScreen} />
       {/* Add other screens here when ready */}
-      {/* <Stack.Screen name="Profile" component={ProfileScreen} /> */}
+      <Stack.Screen name="Profile" component={ProfileScreen} />
       {/* <Stack.Screen name="Earnings" component={EarningsScreen} /> */}
     </Stack.Navigator>
   );
@@ -265,6 +266,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 30,
+    marginTop: -5
   },
   menuList: {
     backgroundColor: 'white',
@@ -278,6 +280,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    marginTop: -25
   },
 });
 

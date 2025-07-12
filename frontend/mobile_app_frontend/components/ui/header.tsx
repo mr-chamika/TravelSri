@@ -37,8 +37,8 @@ const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 30,
-    paddingBottom: 30,
+    paddingTop: 15,
+    paddingBottom: 15,
     paddingHorizontal: 20,
   },
   content: {

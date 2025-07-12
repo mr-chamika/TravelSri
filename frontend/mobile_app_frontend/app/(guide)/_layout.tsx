@@ -1,51 +1,80 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
 export default function TabsLayout() {
   return (
-    <SafeAreaView className='flex-1' edges={["bottom", "top"]}>
-      <Tabs screenOptions={{
+    <Tabs
+      screenOptions={{
+        tabBarShowLabel: false,
         headerShown: false,
-        tabBarActiveTintColor: '#3b82f6',
-      }}>
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Dashboard',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="bookings"
-          options={{
-            title: 'Bookings',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="calendar" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="availability"
-          options={{
-            title: 'Availability',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="time" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="person" size={size} color={color} />
-            ),
-          }}
-        />
-      </Tabs>
-    </SafeAreaView>
+        tabBarStyle: {
+          backgroundColor: "#FEFA17",
+          height: 65,
+          paddingTop: 13,
+          borderColor: "#FEFA17",
+        },
+        tabBarItemStyle: {
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          height: 40,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <View
+              className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
+                }`}
+            >
+              <Ionicons name="home" size={24} color="#000000" />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="bookings"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <View
+              className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
+                }`}
+            >
+              <Ionicons name="calendar" size={24} color="#000000" />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="availability"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <View
+              className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
+                }`}
+            >
+              <Ionicons name="time" size={24} color="#000000" />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <View
+              className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
+                }`}
+            >
+              <Ionicons name="person" size={24} color="#000000" />
+            </View>
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
