@@ -50,7 +50,7 @@ export default function _Layout() {
     };
 
     return (
-                <View className="flex-1 bg-[#F2F0EF]">
+        <View className="flex-1 bg-[#F2F0EF]">
             <StatusBar barStyle="dark-content" backgroundColor="#F2F0EF" />
 
             <View
@@ -63,8 +63,8 @@ export default function _Layout() {
                 <Topbar notifying={toggling} on={notify} />
 
 
-            <Tabs
-                screenOptions={{
+                <Tabs
+                    screenOptions={{
                         tabBarShowLabel: false,
                         headerShown: false,
                         tabBarStyle: {
@@ -81,49 +81,49 @@ export default function _Layout() {
                             height: 40,
                         },
                     }}
-            >
-                <Tabs.Screen
-                    name="index"
-                    options={{
-                        tabBarIcon: ({ focused }) => (
-                            <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
-                                <Image source={HomeA} />
-                            </View>
-                        ),
-                    }}
-                />
-                <Tabs.Screen
-                    name="carRental"
-                    options={{
-                        tabBarIcon: ({ focused }) => (
-                            <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
-                                <Image source={Car} />
-                        </View>
-                        ),
-                    }}
-                />
-                <Tabs.Screen
-                    name="bookings"
-                    options={{
-                        tabBarIcon: ({ focused }) => (
-                            <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
-                                <Image source={Locat} />
-                            </View>
-                        ),
-                    }}
-                />
-                <Tabs.Screen
-                    name="feedback"
-                    options={{
-                        tabBarIcon: ({ focused }) => (
-                            <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
-                                <Image source={UserA} />
-                            </View>
-                        ),
-                    }}
-                />
-            </Tabs>
-        </View>
+                >
+                    <Tabs.Screen
+                        name="index"
+                        options={{
+                            tabBarIcon: ({ focused }) => (
+                                <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
+                                    <Image source={HomeA} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="carRental"
+                        options={{
+                            tabBarIcon: ({ focused }) => (
+                                <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
+                                    <Image source={Car} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="bookings"
+                        options={{
+                            tabBarIcon: ({ focused }) => (
+                                <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
+                                    <Image source={Locat} />
+                                </View>
+                            ),
+                        }}
+                    />
+                    <Tabs.Screen
+                        name="feedback"
+                        options={{
+                            tabBarIcon: ({ focused }) => (
+                                <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
+                                    <Image source={UserA} />
+                                </View>
+                            ),
+                        }}
+                    />
+                </Tabs>
+            </View>
         </View>
     );
 }

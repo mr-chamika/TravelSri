@@ -14,7 +14,7 @@ interface TopbarProps {
     on: boolean;
 }
 
-export default function TopbarX({notifying, on }: TopbarProps) {
+export default function TopbarX({ notifying, on }: TopbarProps) {
     return (
         <View className='bg-[#F2F5FA] h-[64px] items-center justify-center px-2'>
             <View className='justify-between flex-row w-full px-1'>
@@ -23,18 +23,18 @@ export default function TopbarX({notifying, on }: TopbarProps) {
                         <Image className='w-[40px] h-[40px] rounded-full' source={Menu} />
                     </View>
                 </TouchableOpacity>
-                
+
                 <View className='w-[180px] h-[40px] justify-center items-center'>
                     <Text className='text-lg font-bold'>TravelSri</Text>
                 </View>
-                
+
                 <TouchableOpacity onPress={notifying}>
                     <View className='w-10 h-10 bg-[#FEFA17] rounded-full items-center justify-center shadow-lg'>
-                        <Image className='w-[19px] h-[20px]' source={Notify} />
+                        <Image className='w-[45px] h-[45px]' source={Notify} />
                     </View>
                 </TouchableOpacity>
             </View>
-            
+
             <NotifyModal
                 isVisible={on}
                 onClose={notifying}

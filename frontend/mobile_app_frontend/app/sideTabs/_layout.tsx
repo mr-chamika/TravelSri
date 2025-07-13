@@ -1,8 +1,12 @@
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar, Text, TouchableOpacity, View, Image } from 'react-native';
+import { StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { useState } from 'react';
 import NotifyModal from '../../components/Notifi';
+import { Image } from 'expo-image'
+import { cssInterop } from 'nativewind'
+cssInterop(Image, { className: "style" });
+
 
 const Arrow = require('../../assets/images/sideTabs/arrow.png')
 const Notify = require('../../assets/images/top bar/notify1.png')
@@ -36,7 +40,7 @@ export default function _Layout() {
                     <TouchableOpacity onPress={toggling}>
                         <View className='w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg ' >
 
-                            <Image className='w-[19px] h-[20px]' source={Notify} />
+                            <Image className='w-[45px] h-[45px]' source={Notify} />
 
                         </View>
                     </TouchableOpacity>
