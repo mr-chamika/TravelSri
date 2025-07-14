@@ -1,161 +1,116 @@
 package com.example.student.controller;
 
-import com.example.student.model.Traveler;
-import com.example.student.repo.TravelSriRepo;
-import com.example.student.services.Emailtaken;
-import com.example.student.services.JwtUtil;
-import com.example.student.services.TravelerSignup;
+import com.example.student.model.*;
+import com.example.student.model.dto.HotelViewdto;
+import com.example.student.model.dto.Hoteldto;
+import com.example.student.model.dto.Routedto;
+import com.example.student.repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/user")
+@RequestMapping("/traveler")
 public class TravelerController {
 
     @Autowired
-    TravelSriRepo repo;
+    private RoutesRepo repo;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @GetMapping("/routes-allshow")
 
-    @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
-    private TravelSriRepo travelSriRepo;
+    public ResponseEntity<List<Routedto>> RoutesAllshow() {
 
-    @PostMapping("/login")
+        List<Routedto> list = repo.findAllRoutedtos();
 
-//    public boolean login (@RequestBody Traveler traveler) {
-//
-//        if(traveler.getEmail() != null){
-//
-//            repo.save(traveler);
-//            return true;
-//
-//        }
-//            return false;
-//    }
-
-    public ResponseEntity<?> login(@RequestBody Traveler traveler) {
-
-
-       Optional<Traveler> exists = repo.findByEmail(traveler.getEmail());
-
-       if(exists.isPresent()) {//user exists
-
-           Traveler t = exists.get();
-
-           if (passwordEncoder.matches(traveler.getPassword(),t.getPassword())) {
-
-               UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                       t.getUsername(),
-                       t.getPassword(),
-                       Collections.singletonList(new SimpleGrantedAuthority(t.getRole()))
-               );
-
-               String token = jwtUtil.generateToken(userDetails,t);
-
-               Map<String, String> responseBody = new HashMap<>();
-               responseBody.put("token", token);
-               return ResponseEntity.ok(responseBody);
-
-           }else {
-
-               Map<String, String> errorBody = new HashMap<>();
-               errorBody.put("error","wrong password");
-               return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
-           }
-
-       }else{//user does not exist
-
-           Map<String, String> errorBody = new HashMap<>();
-           errorBody.put("error","invalid email");
-           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
-       }
-
-
+        return ResponseEntity.ok(list);
 
     }
 
     @Autowired
-    private TravelerSignup travelerSignup;
+    private LocationsRepo repo1;
 
-    @PostMapping("/signup")
+    @GetMapping("/routes-one")
 
-    public String signup(@RequestBody Traveler traveler) {
+    public ResponseEntity<List<Location>> RoutesOne(@RequestParam String id) {
 
+        List<Location> items = repo1.findByRouteIdContaining(id);
+        if (items.isEmpty()) {
 
+            return ResponseEntity.notFound().build();
 
-       Traveler x =  travelerSignup.registerNewUser(traveler);
-
-       if(x.getEmail().equals(traveler.getEmail())) {
-
-           return "Success";
-
-       }
-
-       return "Signup failed";
-    }
-
-    @Autowired
-    private Emailtaken emailtaken;
-
-    @GetMapping("/check-email")
-    public ResponseEntity<String> checkEmailAvailability(@RequestParam String email) {
-        if (emailtaken.isEmailRegistered(email)) {
-            return ResponseEntity.ok("Exists");
-        } else {
-            return ResponseEntity.ok("Available");
-        }
-    }
-
-    @Autowired
-    private TravelSriRepo travelSriReporepo;
-
-    @GetMapping("/profile")
-
-    public ResponseEntity<Map<String, String>> proPic(@RequestParam String email) {
-
-        Optional<Traveler> x = travelSriRepo.findByEmail(email);
-
-        Map<String, String> j = new HashMap<>();
-        j.put("pp", x.get().getPp());
-
-        return ResponseEntity.ok(j);
-
-    }
-
-    @Autowired
-    private TravelSriRepo repo1;
-
-    @PostMapping("/reset-password")
-
-    public String resetPassword(@RequestBody Traveler traveler) {
-
-        Optional<Traveler> y = repo1.findByEmail(traveler.getEmail());
-
-        String newPassword = passwordEncoder.encode(traveler.getPassword());
-
-        if(y.isPresent()) {
-
-            y.get().setPassword(newPassword);
-            repo1.save(y.get());
-
-            return "Success";
         }
 
-        return "Password change failed";
+        return ResponseEntity.ok(items);
+
     }
 
+    @Autowired
+    private HotelsRepo repo2;
+
+    @GetMapping("/hotels-all")
+    public ResponseEntity<List<Hoteldto>> HotelsAll() {
+
+        List<Hoteldto> list = repo2.findAllHoteldtos();
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/hotels-view")
+    public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
+
+        Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
+
+        if (list.isEmpty()) {
+            return ResponseEntity.notFound().build();
+
+
+        }
+
+        return ResponseEntity.ok(list.get());
+
+    }
+
+    @Autowired
+    private ReviewRepo repo3;
+
+    @GetMapping("/reviews-view")
+    public ResponseEntity<List<Review>> HotelReview(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private FaciRepo repo4;
+
+    @GetMapping("/facis-view")
+    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
+
+        List<Faci> list = repo4.findByHotelIdContaining(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
 }

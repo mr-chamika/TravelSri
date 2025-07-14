@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Document(collection = "users")
-public class Traveler {
+public class User {
 
     @Id
     private String _id;

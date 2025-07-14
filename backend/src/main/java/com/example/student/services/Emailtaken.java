@@ -1,7 +1,7 @@
 package com.example.student.services;
 
 
-import com.example.student.repo.TravelSriRepo;
+import com.example.student.repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 public class Emailtaken {
 
     @Autowired
-    private TravelSriRepo travelSriRepo;
+    private UserRepo userRepo;
 
     public boolean isEmailRegistered(String email) {
-        return travelSriRepo.findByEmail(email).isPresent();
+        return userRepo.findByEmail(email).isPresent();
     }
 }

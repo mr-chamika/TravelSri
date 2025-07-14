@@ -33,12 +33,25 @@ interface Hotel {
     beds: { type: string; price: number }[]
 }
 
-const hotels: Hotel[] = [
+interface x {
+
+    availableDouble: number;
+    availableSingle: number;
+    doublePrice: number;
+    name: string;
+    singlePrice: number;
+    stars: number;
+    thumbnail: string;
+    _id: string
+
+}
+
+/* const hotels: Hotel[] = [
     { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     { id: '4', image: pic, title: 'Raheema', stars: 5, price: 4000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
-];
+]; */
 
 export default function HotelsBookingScreen() {
 
@@ -161,7 +174,7 @@ export default function HotelsBookingScreen() {
     const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null); // Stores the array index (0-based) of the selected hotel
+    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null); // Stores the array index (0-based) of the selected hotel
     const [modalVisible, setModalVisible] = useState(false);
     const [bookingComplete, setBookingComplete] = useState(false);
     const [book, setBook] = useState<Book[] | null>(null);
@@ -173,6 +186,12 @@ export default function HotelsBookingScreen() {
     const [location, setLocation] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
     const [total, setTotal] = useState('');
+    const [hotes, setHotels] = useState<x[] | null>(null)
+    const [input, setInput] = useState({
+        id: '',
+        s: '',
+        d: ''
+    })
 
     const sortedLocations = useMemo(() => {
         if (!location) return LOCATIONS;
@@ -183,24 +202,26 @@ export default function HotelsBookingScreen() {
         return Object.keys(selectedDates).sort().map(date => new Date(date).toDateString()).join(', ');
     }, [selectedDates]);
 
-    const toggleCardSelection = useCallback((index: number) => {
+    const toggleCardSelection = useCallback((index: string) => {
         setSelectedCardIndex(prev => {
             const newIndex = prev === index ? null : index; // Toggle logic for 0-based index
 
             // Async function to update AsyncStorage based on the resolved newIndex
-            const updateStorage = async (selectedIndex: number | null) => {
+            const updateStorage = async (selectedIndex: string | null) => {
                 try {
-                    const selectedHotel = selectedIndex !== null ? hotels[selectedIndex] : null;
+                    if (hotes) {
+                        const selectedHotel = selectedIndex !== null ? hotes.find(hotel => hotel._id == selectedIndex) : null;
 
-                    if (selectedHotel) {
-                        const hotelData = {
-                            id: selectedHotel.id, // Store the actual hotel ID (e.g., '1', '2')
-                            s: s,
-                            d: d
-                        };
-                        await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
-                    } else {
-                        await AsyncStorage.removeItem('selectedHotelBooking'); // Remove if no hotel is selected
+                        if (selectedHotel) {
+                            const hotelData = {
+                                id: selectedHotel._id, // Store the actual hotel ID (e.g., '1', '2')
+                                s: s,
+                                d: d
+                            };
+                            await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
+                        } else {
+                            await AsyncStorage.removeItem('selectedHotelBooking'); // Remove if no hotel is selected
+                        }
                     }
                 } catch (error) {
                     console.error('Error saving selectedHotelBooking to AsyncStorage:', error);
@@ -209,7 +230,7 @@ export default function HotelsBookingScreen() {
             updateStorage(newIndex); // Call with the resolved newIndex
             return newIndex;
         });
-    }, [s, d, hotels]); // Dependencies for useCallback to prevent stale closures of s, d, hotels
+    }, [s, d, hotes, selectedCardIndex]); // Dependencies for useCallback to prevent stale closures of s, d, hotels
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -244,19 +265,22 @@ export default function HotelsBookingScreen() {
             await AsyncStorage.setItem('hbookingSession', Date.now().toString());
 
             // Also ensure selected hotel data (s, d) is updated in storage
-            const selectedHotel = selectedCardIndex !== null ? hotels[selectedCardIndex] : null;
-            if (selectedHotel) {
-                const hotelData = {
-                    id: selectedHotel.id,
-                    s: s,
-                    d: d
-                };
-                await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
-            } else {
-                await AsyncStorage.removeItem('selectedHotelBooking');
+            if (hotes) {
+                const selectedHotel = selectedCardIndex !== null ? hotes.find(hotel => hotel._id == selectedCardIndex) : null;
+                if (selectedHotel) {
+                    const hotelData = {
+                        id: selectedHotel._id,
+                        s: s,
+                        d: d
+                    };
+                    setInput(hotelData)
+                    await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
+                } else {
+                    await AsyncStorage.removeItem('selectedHotelBooking');
+                }
+                count()
+                console.log(`Boooked : ${input}`)
             }
-            count()
-
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -284,11 +308,13 @@ export default function HotelsBookingScreen() {
             if (savedHotelBooking) {
                 const hotelData = JSON.parse(savedHotelBooking);
                 // Find the array index of the hotel based on its 'id'
-                const hotelIndex = hotels.findIndex(h => h.id === hotelData.id);
-                if (hotelIndex !== -1) {
-                    setSelectedCardIndex(hotelIndex); // Set the array index (0-based)
-                    setS(hotelData.s || ''); // Load s from stored data
-                    setD(hotelData.d || ''); // Load d from stored data
+                if (hotes) {
+                    const hotelIndex = hotes.find(h => h._id === hotelData.id);
+                    if (hotelIndex) {
+                        setSelectedCardIndex(hotelData.id); // Set the array index (0-based)
+                        setS(hotelData.s || ''); // Load s from stored data
+                        setD(hotelData.d || ''); // Load d from stored data
+                    }
                 }
             }
 
@@ -339,6 +365,32 @@ export default function HotelsBookingScreen() {
         }
     };
 
+    useEffect(() => {
+
+        const getRoutes = async () => {
+
+            try {
+
+                const res = await fetch('http://localhost:8080/traveler/hotels-all')
+
+                if (res) {
+
+                    const data = await res.json()
+                    console.log(data)
+                    setHotels(data)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error from hotel getting : ${err}`)
+
+            }
+
+        }
+        getRoutes();
+    }, [])
+
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
@@ -370,18 +422,18 @@ export default function HotelsBookingScreen() {
 
             // Hotel Booking Price
             const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
-            if (savedHotelBooking) {
+            if (savedHotelBooking && hotes) {
                 const hotelBookingData = JSON.parse(savedHotelBooking);
-                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
+                const selectedHotel = hotes.find(hotel => hotel._id === hotelBookingData.id); // Find hotel by its ID
 
                 if (selectedHotel) { // Null check for selectedHotel
-                    if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
-                        const singleBedPrice = selectedHotel.beds.find(bed => bed.type === 'single')?.price || 0;
-                        const doubleBedPrice = selectedHotel.beds.find(bed => bed.type === 'double')?.price || 0;
-                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
-                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
-                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
-                    }
+                    //if (selectedHotel.availableDouble > 0 && selectedHotel.availableSingle> 0) {
+                    const singleBedPrice = selectedHotel.singlePrice || 0;
+                    const doubleBedPrice = selectedHotel.doublePrice || 0;
+                    const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                    const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                    total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    //}
                 }
             }
 
@@ -581,33 +633,33 @@ export default function HotelsBookingScreen() {
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
                                 showsVerticalScrollIndicator={false}
                             >
-                                {hotels.map((hotel, index) => (
-                                    <View key={index} className={`bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300`}>
+                                {hotes ? hotes.map((hotel, index) => (
+                                    ((Number(adults) + Number(children)) < (hotel.availableDouble + hotel.availableSingle) && Number(input.s) < hotel.availableSingle && Number(input.d) < hotel.availableDouble) && <View key={index} className={`bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300`}>
                                         <TouchableOpacity
-                                            onPress={() => router.push(`/views/hotel/group/${Number(hotel.id) + 1}`)} // Pass actual hotel.id (e.g., '1', '2')
+                                            onPress={() => router.push(`/views/hotel/group/${hotel._id}`)} // Pass actual hotel.id (e.g., '1', '2')
                                             className="w-full"
                                         >
                                             <View className="h-[75%] ">
                                                 <View className="w-full absolute items-end pr-2 pt-1 z-10">
                                                     <TouchableOpacity
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                        onPress={() => toggleCardSelection(index)} // Pass array index (0-based)
+                                                        onPress={() => toggleCardSelection(hotel._id)} // Pass array index (0-based)
                                                     >
-                                                        {selectedCardIndex === index && ( // Compare with array index (0-based)
+                                                        {selectedCardIndex === hotel._id && ( // Compare with array index (0-based)
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
                                                     </TouchableOpacity>
                                                 </View>
                                                 <Image
                                                     className='w-[95%] h-full rounded-xl self-center'
-                                                    source={pic}
+                                                    source={{ uri: `data:image/jpeg;base64,${hotel.thumbnail}` }}
                                                     contentFit="cover"
                                                 />
                                             </View>
 
                                             <View>
                                                 <Text className="text-sm font-semibold text-center" numberOfLines={1}>
-                                                    {hotel.title}
+                                                    {hotel.name}
                                                 </Text>
                                                 <View className="flex-row justify-center mt-1">
                                                     {[...Array(hotel.stars)].map((_, i) => (
@@ -617,7 +669,7 @@ export default function HotelsBookingScreen() {
                                             </View>
                                         </TouchableOpacity>
                                     </View>
-                                ))}
+                                )) : <View><Text className="text-gray-200 italic">No hotels available</Text></View>}
                             </ScrollView>
                         </View>
 

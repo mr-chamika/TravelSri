@@ -1,12 +1,12 @@
 package com.example.student.repo;
 
-import com.example.student.model.Traveler;
+import com.example.student.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface TravelSriRepo extends MongoRepository<Traveler,String> {
-    Optional<Traveler> findByEmail(String email);
+public interface UserRepo extends MongoRepository<User,String> {
+    Optional<User> findByEmail(String email);
 }

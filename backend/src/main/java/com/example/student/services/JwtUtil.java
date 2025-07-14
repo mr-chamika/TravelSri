@@ -1,6 +1,6 @@
 package com.example.student.services; // Adjust to your project's package structure
 
-import com.example.student.model.Traveler;
+import com.example.student.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -43,7 +43,7 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails, Traveler t) {
+    public String generateToken(UserDetails userDetails, User t) {
 
         Map<String, Object> claims = new HashMap<>();
 
