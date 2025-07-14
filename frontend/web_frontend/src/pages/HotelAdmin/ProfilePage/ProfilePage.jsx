@@ -417,7 +417,7 @@ const ProfilePage = () => {
             <div className="flex items-start">
               <div className="w-32 h-32 bg-gray-200 rounded-lg overflow-hidden">
                 <img 
-                  src="/hotel-logo.svg" 
+                  src="/hotel-logo.png" 
                   alt={formData.hotelName} 
                   className="w-full h-full object-cover"
                   onError={(e) => {

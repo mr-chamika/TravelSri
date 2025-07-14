@@ -11,6 +11,7 @@ const RoomManagement = lazy(() => import('./pages/HotelAdmin/RoomManagement/Room
 const BookingsManagement = lazy(() => import('./pages/HotelAdmin/BookingsManagement/BookingsManagement'));
 const NotificationsPage = lazy(() => import('./pages/HotelAdmin/NotificationsPage/NotificationsPage'));
 const EarningsPage = lazy(() => import('./pages/HotelAdmin/EarningsPage/EarningsPage'));
+const FeedbackPage = lazy(() => import('./pages/HotelAdmin/FeedbackPage/FeedbackPage'));
 const ProfilePage = lazy(() => import('./pages/HotelAdmin/ProfilePage/ProfilePage'));
 
 // System Hotels Managing Admin components
@@ -104,6 +105,11 @@ function App() {
             } />            <Route path="earnings" element={
               <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
                 <EarningsPage />
+              </Suspense>
+            } />
+            <Route path="feedback" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <FeedbackPage />
               </Suspense>
             } />
             <Route path="profile" element={

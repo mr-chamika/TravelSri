@@ -8,7 +8,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         {/* Logo and title */}
         <div className="mb-6 text-center">
-          <img src="/logo.svg" alt="TravelSri Logo" className="w-12 h-12 mx-auto mb-2" />
+          <img src="/logo.png" alt="TravelSri Logo" className="w-12 h-12 mx-auto mb-2" />
           <h1 className="text-2xl font-bold text-gray-800">Welcome to TravelSri</h1>
           <p className="text-sm text-gray-500">Sign in to your account</p>
         </div>

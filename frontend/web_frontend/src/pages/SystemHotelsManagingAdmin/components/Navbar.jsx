@@ -16,7 +16,7 @@ const Navbar = ({ toggleSidebar }) => {
           <span className="material-icons">menu</span>
         </button>
         <img
-          src="/logo.svg" // ✅ Correct usage from public/ folder
+          src="/logo.png" // ✅ Correct usage from public/ folder
           alt="TravelSri Logo"
           className="h-8 w-8"
         />

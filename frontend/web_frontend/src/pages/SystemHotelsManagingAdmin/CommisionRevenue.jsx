@@ -8,6 +8,12 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import {
+  MdAttachMoney,   // Total Commission
+  MdTrendingUp,    // Average Monthly
+  MdPercent,       // Commission Rate
+  MdReceipt        // Total Transactions
+} from 'react-icons/md';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -197,31 +203,80 @@ const CommisionRevenue = () => {
     };
   };
 
+  // Stats data for the revenue cards
+  const statCards = [
+    {
+      label: 'TOTAL COMMISSION',
+      value: `LKR ${totalRevenue.toLocaleString()}`,
+      Icon: MdAttachMoney,
+    },
+    {
+      label: 'AVERAGE MONTHLY',
+      value: `LKR ${averageRevenue.toLocaleString()}`,
+      Icon: MdTrendingUp,
+    },
+    {
+      label: 'COMMISSION RATE',
+      value: '3.5%',
+      Icon: MdPercent,
+    },
+    {
+      label: 'TOTAL TRANSACTIONS',
+      value: '548',
+      Icon: MdReceipt,
+    },
+  ];
+  
+  // Stats cards data format matching SystemAdminDashboard style
+  const stats = [
+    { 
+      label: 'Total Commission', 
+      value: `LKR ${totalRevenue.toLocaleString()}`, 
+      icon: <MdAttachMoney className="text-3xl text-yellow-500" />,
+      bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100'
+    },
+    { 
+      label: 'Average Monthly', 
+      value: `LKR ${averageRevenue.toLocaleString()}`, 
+      icon: <MdTrendingUp className="text-3xl text-yellow-500" />,
+      bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100'
+    },
+    { 
+      label: 'Commission Rate', 
+      value: '3.5%', 
+      icon: <MdPercent className="text-3xl text-yellow-500" />,
+      bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100'
+    },
+    { 
+      label: 'Total Transactions', 
+      value: '548',
+      icon: <MdReceipt className="text-3xl text-yellow-500" />,
+      bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100'
+    }
+  ];
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Commission Revenue</h1>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-3xl font-bold">LKR {totalRevenue.toLocaleString()}</h2>
-          <p className="text-gray-500">Total Commission</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-3xl font-bold">LKR {averageRevenue.toLocaleString()}</h2>
-          <p className="text-gray-500">Average Monthly</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-3xl font-bold">3.5%</h2>
-          <p className="text-gray-500">Commission Rate</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-3xl font-bold">548</h2>
-          <p className="text-gray-500">Total Transactions</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        {stats.map((stat, idx) => (
+          <div key={idx} className={`rounded-lg shadow overflow-hidden ${stat.bgColor}`}>
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-gray-600 text-sm font-medium">{stat.label}</h2>
+                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                </div>
+                <div className="p-2 rounded-full bg-white bg-opacity-80 shadow-sm">
+                  {stat.icon}
+                </div>
+              </div>
+            </div>
+            <div className="h-1 w-full bg-yellow-400"></div>
+          </div>
+        ))}
       </div>
 
       {/* Revenue Chart */}

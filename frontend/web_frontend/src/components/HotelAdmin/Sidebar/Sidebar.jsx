@@ -14,6 +14,7 @@ const Sidebar = ({ unreadCount = 0 }) => {
       icon: 'notifications',
       badge: unreadCount },                                     // ⬅️ dynamic
     { path: '/hotel/earnings',   label: 'Earnings',      icon: 'attach_money'  },
+    { path: '/hotel/feedback',   label: 'Feedback',      icon: 'rate_review'   },
     { path: '/hotel/profile',    label: 'Profile',       icon: 'person'        },
   ];
 
@@ -21,7 +22,7 @@ const Sidebar = ({ unreadCount = 0 }) => {
     <div className="w-60 bg-white h-screen shadow-md flex flex-col">
       {/* logo / title */}
       <div className="flex items-center p-4">
-        <img src="/logo.svg" alt="TravelSri Logo" className="w-8 h-8 mr-2" />
+        <img src="/logo.png" alt="TravelSri Logo" className="w-8 h-8 mr-2" />
         <h1 className="text-xl font-bold">TravelSri</h1>
       </div>
 
