@@ -18,20 +18,49 @@ const tele = require('../../../../assets/images/tabbar/create/guide/telephones.p
 const globl = require('../../../../assets/images/tabbar/create/guide/global.png')
 const mark = require('../../../../assets/images/mark.png')
 
+interface Guide {
+
+    id: string;
+    pp: string;
+    stars: number;
+    username: string;
+    verified: string;
+    identified: string;
+    languages: string[];
+    location: string;
+    images: string[];
+    description: string;
+    price: number;
+
+}
+
+interface Review {
+
+    _id: string,
+    serviseId: string,
+    text: string,
+    country: string,
+    stars: number,
+    author: string,
+    dp: string,
+
+}
+
 export default function Views() {
 
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
-    useEffect(() => {
-
-        getItem((Number(id) - 1).toString())
-
-    }, [id])
+    /*     useEffect(() => {
+    
+            getItem((Number(id) - 1).toString())
+    
+        }, [id]) */
 
     const [item, setItem] = useState<{ id: string, image: any, title: string, stars: number, location: string, price: number, description: string, reviewers: any[], langs: string[], ys: any[] }>({ id: '1', image: pic, title: 'Matara to Colombo', stars: 0, location: "", price: 0, description: '', reviewers: [], langs: [], ys: [] })
-
-    const groupCollection = [
+    const [guideV, setGuidev] = useState<Guide | null>(null)
+    const [review, setReviewv] = useState<Review[]>([])
+    /* const groupCollection = [
         {
             id: '1',
             image: profile,
@@ -94,7 +123,7 @@ export default function Views() {
             ys: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail]
 
         },
-        // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
+         // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
         // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
         // { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
         // { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
@@ -111,11 +140,58 @@ export default function Views() {
     }
 
     const route = item.title.split(" ");
+*/useEffect(() => {
+
+        const getguide = async () => {
+
+            try {
+
+                const res1 = await fetch(`http://localhost:8080/traveler/guides-view?id=${id}`)
+
+                if (res1) {
+
+                    const data1 = await res1.json()
+                    //console.log(data1)
+                    setGuidev(data1)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error in guide data getting : ${err}`)
+
+            }
+
+        }
+        const getReviews = async () => {
+
+            try {
+
+                const res1 = await fetch(`http://localhost:8080/traveler/guides-reviews?id=${id}`)
+
+                if (res1) {
+
+                    const data1 = await res1.json()
+                    //console.log(data1)
+                    setReviewv(data1)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error in guide reviews getting : ${err}`)
+
+            }
+
+        }
+        getguide()
+        getReviews()
+
+    }, [])
 
     return (
 
         <View className="">
-
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
 
             <ScrollView
@@ -130,17 +206,16 @@ export default function Views() {
 
                         <View className=" items-center">
 
-                            <Image className="rounded-full w-[200px] h-[200px] mb-2" source={item.image} />
-                            <Text className="text-center font-semibold text-xl">Theekshana Doe</Text>
-
+                            <Image className="rounded-full w-[200px] h-[200px] mb-2" source={{ uri: `data:image/jpeg;base64,${guideV && guideV.pp}` }} />
+                            <Text className="text-center font-semibold text-xl">{guideV?.username}</Text>
                             <View className='w-[90%] justify-between mt-4 flex-row'>
                                 <View className='gap-6 flex-row'>
                                     <Image className='w-5 h-5' source={tele}></Image>
-                                    <Text className="text-md font-light">Phone Verified</Text>
+                                    <Text className="text-md font-light">{guideV?.verified ? "Phone Verified" : "Pending"}</Text>
                                 </View>
                                 <View className='gap-6 flex-row'>
                                     <Image className='w-5 h-5' source={mark}></Image>
-                                    <Text className="text-md font-light">Identify Verified</Text>
+                                    <Text className="text-md font-light">{guideV?.identified ? " Identify Verified" : "Pending"}</Text>
                                 </View>
 
                             </View>
@@ -149,7 +224,7 @@ export default function Views() {
                                 <View className="flex-row gap-3 px-4">
                                     {
 
-                                        item.langs.map((lan, i) => {
+                                        guideV && guideV.languages && guideV.languages.map((lan, i) => {
                                             return (
 
                                                 <Text key={i} className="text-sm font-light">{lan}</Text>
@@ -163,7 +238,7 @@ export default function Views() {
                             </View>
                             <View className='w-[90%] gap-6 flex-row'>
                                 <Image className='w-5 h-5' source={location} />
-                                <Text className="text-md font-light">{item.location}</Text>
+                                <Text className="text-md font-light">{guideV && guideV.location}</Text>
                             </View>
                         </View>
 
@@ -180,13 +255,13 @@ export default function Views() {
                                     nestedScrollEnabled={true}
 
                                 >
-                                    {item.ys.map((x, i) => {
+                                    {guideV?.images.map((x, i) => {
 
                                         return (
 
                                             <View key={i} className=" w-[310px] h-40">
 
-                                                <Image className=" w-[300px] h-full" source={x} />
+                                                <Image className=" w-[300px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
 
                                             </View>
                                         )
@@ -202,7 +277,7 @@ export default function Views() {
                         <View>
 
                             <Text className=" text-2xl font-semibold py-1">About</Text>
-                            <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{item.description}</Text>
+                            <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{guideV?.description}</Text>
                             <View className="w-[35%] flex-row justify-between">
                                 <Text className=" text-2xl font-semibold py-1">Reviews</Text>
                                 <View className="flex-row items-center">
@@ -219,20 +294,20 @@ export default function Views() {
                                     nestedScrollEnabled={true}
 
                                 >
-                                    {item.reviewers.map((x, i) => {
+                                    {review.map((x, i) => {
 
                                         return (
 
                                             <View key={i} className="bg-gray-200 px-3 rounded-2xl">
                                                 <View className="flex-row items-center">
-                                                    <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                                    <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.name} from {x.from}</Text>
+                                                    <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
+                                                    <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
                                                     <View className="flex-row items-center gap-1">
                                                         <Image className="w-5 h-5" source={star} />
                                                         <Text>{x.stars}/5</Text>
                                                     </View>
                                                 </View>
-                                                <Text className="text-lg mx-5 my-2">{x.review}</Text>
+                                                <Text className="text-lg mx-5 my-2">{x.text}</Text>
 
                                             </View>
                                         )
@@ -249,13 +324,13 @@ export default function Views() {
 
                     <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
 
-                        <Text className="px-3 font-extrabold text-xl">{item.price}.00 LKR/day</Text>
+                        <Text className="px-3 font-extrabold text-xl">{guideV?.price}.00 LKR/day</Text>
 
                         <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={
 
                             async () => {
 
-                                await AsyncStorage.setItem('guide', (Number(id) - 1).toString())
+                                await AsyncStorage.setItem('guide', id.toString())
                                 //await AsyncStorage.setItem('guide', item.id)
                                 router.back()
 

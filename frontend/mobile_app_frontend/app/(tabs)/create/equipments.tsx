@@ -16,9 +16,9 @@ const star = require('../../../assets/images/tabbar/create/hotel/stars.png')
 interface Item {
 
     id: string,
-    //shopid:string
-    image: any,
-    title: string,
+    shopid: string
+    image: string,
+    name: string,
     price: number
     contact: string
 
@@ -40,7 +40,7 @@ export default function Equipments() {
 
     const router = useRouter();
 
-    const items: Item[] = [
+    /* const items: Item[] = [
 
         {
 
@@ -118,7 +118,7 @@ export default function Equipments() {
         }
 
     ]
-
+ */
     const shops: Shop[] = [
 
         {
@@ -165,7 +165,7 @@ export default function Equipments() {
                     contentContainerStyle={{ paddingRight: 40 }}
                 >
                     <View className=" flex-row gap-3 h-full">
-                        {items.map((item, i) => {
+                        {/* {items.map((item, i) => {
                             return (
                                 <TouchableOpacity key={i} className="w-[83px] items-center " onPress={() => alert(`Contact us - ${item.contact}`)}>
                                     <Image
@@ -181,7 +181,7 @@ export default function Equipments() {
                                 </TouchableOpacity>
                             )
                         })
-                        }
+                        } */}
                     </View>
                 </ScrollView>
             </View>

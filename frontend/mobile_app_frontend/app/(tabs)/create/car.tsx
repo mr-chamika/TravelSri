@@ -189,7 +189,7 @@ export default function App() {
     };
 
     const handleSubmit = async () => {
-        if (Object.keys(selectedDates).length === 0 || !startLocation || !endLocation || !language || !selectedTime) {
+        if (Object.keys(selectedDates).length === 0 || !startLocation || !endLocation || !language /* || !selectedTime */) {
             alert('Please fill in all fields.');
             return;
         }
@@ -379,7 +379,9 @@ export default function App() {
                 'total',
                 'route',
                 'selectedHotelBooking',
-                'selectedRouteId'
+                'selectedRouteId',
+                'guides',
+                'hotels'
 
 
             ]);
@@ -410,12 +412,9 @@ export default function App() {
                 transparent={true}
                 visible={isModalVisible}
                 onRequestClose={() => {
-                    if (isBookingComplete) {
-                        setModalVisible(false);
-                    } else {
-                        setModalVisible(false);
-                        router.back();
-                    }
+
+                    setModalVisible(false);
+
                 }}
             >
                 <View className="h-full justify-center items-center bg-black/50">
@@ -425,6 +424,7 @@ export default function App() {
                                 if (isBookingComplete) {
                                     setModalVisible(false);
                                 } else {
+                                    setModalVisible(false);
                                     router.back();
                                 }
                             }}>
@@ -494,7 +494,7 @@ export default function App() {
                             <View className='h-[25%] justify-between'>
                                 <View>
                                     <Text>Choose a time</Text>
-                                    <SimpleTimePicker onTimeChange={setSelectedTime} />
+                                    {/* <SimpleTimePicker onTimeChange={setSelectedTime} /> */}
                                 </View>
                                 <View className="w-full">
                                     <TouchableOpacity

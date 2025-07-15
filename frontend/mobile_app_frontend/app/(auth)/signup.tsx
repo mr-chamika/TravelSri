@@ -89,6 +89,8 @@ interface FormData {
     agreeTerms: boolean;
     confirmCondition: boolean;
     status: string;
+    verified: string;
+    identified: string;
 }
 
 export default function SignupForm() {
@@ -135,6 +137,8 @@ export default function SignupForm() {
         agreeTerms: false,//
         confirmCondition: false,//
         status: '',//
+        verified: "pending",
+        identified: "pending"
     });
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -564,6 +568,8 @@ export default function SignupForm() {
                     endTime,
                     registrationNumber,
                     startTime,
+                    verified,
+                    identified,
                     ...payload
                 } = dataToSend;
 
@@ -819,6 +825,7 @@ export default function SignupForm() {
                                     <Picker.Item label="Guiding" value="guide" />
                                     <Picker.Item label="Vehicle Renting" value="vehicle renter" />
                                     <Picker.Item label="Equipment Renting" value="equipment rental" />
+                                    <Picker.Item label="Hotel Service" value="hotel service" />
                                 </Picker>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessType ? 'opacity-100' : 'opacity-0'}`}>{errors.businessType || ' '}</Text>

@@ -101,7 +101,20 @@ export default function Profile() {
         transform: [{ scale: scaleAnim }],
     };
 
+    const clear = async () => {
+
+        const keys = await AsyncStorage.getAllKeys();
+        try {
+
+            await AsyncStorage.multiRemove(keys);
+        } catch (e) {
+            alert(`Error clearing AsyncStorage:, ${e}`);
+        }
+    }
     const loggingout = async () => {
+
+
+        await clear();
 
         await AsyncStorage.removeItem('token')
         setUser(null)

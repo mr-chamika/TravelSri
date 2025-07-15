@@ -349,7 +349,7 @@ export default function Views() {
                                 <ScrollView
                                     horizontal
                                     className="w-full rounded-2xl px-1"
-                                    contentContainerClassName="flex-row w-full px-1 py-2 bg-gray-200 gap-4"
+                                    contentContainerClassName="flex-row w-full px-1 py-2 bg-gray-200 gap-4 items-center"
                                     showsHorizontalScrollIndicator={false}
                                     nestedScrollEnabled={true}
 

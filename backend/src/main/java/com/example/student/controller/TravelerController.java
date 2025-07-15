@@ -1,18 +1,14 @@
 package com.example.student.controller;
 
 import com.example.student.model.*;
-import com.example.student.model.dto.HotelViewdto;
-import com.example.student.model.dto.Hoteldto;
-import com.example.student.model.dto.Routedto;
+import com.example.student.model.dto.*;
 import com.example.student.repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -103,6 +99,49 @@ public class TravelerController {
     public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
 
         List<Faci> list = repo4.findByHotelIdContaining(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private GuidesRepo repo5;
+
+
+    @GetMapping("/guides-all")
+            public ResponseEntity<List<Guidedto>> GuidesAll(String location,String language) {
+        List<Guidedto> list = repo5.findAllGuidedtos(location,language);
+
+
+//        if (list.isEmpty()) {
+//            return ResponseEntity.notFound().build();
+//        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/guides-view")
+    public ResponseEntity<Optional<GuideViewdto>> Guide(@RequestParam String id) {
+        Optional<GuideViewdto> list = repo5.findData(id);
+
+
+        if (list.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/guides-reviews")
+    public ResponseEntity<List<Review>> GuideReview(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
 
         if (list.isEmpty()) {
 
