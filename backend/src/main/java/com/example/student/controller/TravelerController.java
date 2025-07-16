@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -152,4 +154,94 @@ public class TravelerController {
         return ResponseEntity.ok(list);
 
     }
+
+    @Autowired
+    private ItemsRepo itemrepo;
+
+    @GetMapping("/items-top")
+    public ResponseEntity<List<Item>> TopItems(@RequestParam int count) {
+
+        List<Item> list = itemrepo.findByBuyCountIsGreaterThanEqual(count);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private StoresRepo storesRepo;
+
+    @GetMapping("/shops-get")
+    public ResponseEntity<List<Store>> StoreGet() {
+
+        List<Store> list = storesRepo.findAll();
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/shop-items")
+    public ResponseEntity<List<Item>> StoreItemsGet(@RequestParam String id) {
+
+        List<Item> list = itemrepo.findByShopId(id);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/shop-reviews")
+    public ResponseEntity<List<Review>> StoreReviewsGet(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/shop-get")
+    public ResponseEntity<Optional<Store>> StoreGet(@RequestParam String id) {
+
+        Optional<Store> x = storesRepo.findById(id);
+
+        return ResponseEntity.ok(x);
+
+    }
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @PostMapping("/review-create")
+    public Review ReviewCreate(@RequestBody ReviewGetdto obj) {
+
+        String userId = obj.getAuthorId().toString();
+
+        Optional<User> newuser= userRepo.findById(userId);
+        String pp = newuser.get().getPp();
+        String country = newuser.get().getCountry();
+
+        Review newReview = new Review(
+                obj.getServiceId(),
+                obj.getText(),
+                newuser.get().getUsername(),
+                country,
+                pp,
+                obj.getStars()
+        );
+
+       return repo3.save(newReview);
+
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> search(@RequestParam String keyword) {
+        List<Store> matchingStores = storesRepo.findByNameContainingIgnoreCase(keyword);
+        List<Item> matchingItems = itemrepo.findByNameContainingIgnoreCase(keyword);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("stores", matchingStores);
+        response.put("items", matchingItems);
+
+        return ResponseEntity.ok(response);
+    }
+
+
 }

@@ -53,6 +53,8 @@ public class JwtUtil {
                 .collect(Collectors.toList());
         claims.put("roles", roles);
 claims.put("email", t.getEmail());
+claims.put("id", t.getId());
+
 
         return Jwts.builder()
                 .setClaims(claims)

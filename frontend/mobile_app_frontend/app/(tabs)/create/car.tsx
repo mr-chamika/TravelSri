@@ -5,6 +5,7 @@ import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
 import SimpleTimePicker from '../../../components/TimeSelector';
 
 
@@ -23,12 +24,24 @@ const mark = require('../../../assets/images/mark.png');
 export default function App() {
     const router = useRouter();
 
+    const timeOptions = [
+        '12:00 AM', '12:30 AM', '01:00 AM', '01:30 AM', '02:00 AM', '02:30 AM',
+        '03:00 AM', '03:30 AM', '04:00 AM', '04:30 AM', '05:00 AM', '05:30 AM',
+        '06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM',
+        '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+        '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
+        '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM',
+        '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
+        '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM'
+    ];
+
     interface Book {
         dates: string[];
         start: string;
         end: string;
         language: string;
-        time: { hour: number; minute: number };
+        /* time: { hour: number; minute: number }; */
+        time: string
     }
 
     const hotels = [
@@ -158,7 +171,7 @@ export default function App() {
         }
     ];
 
-    const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+    const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [startLocation, setStartLocation] = useState('');
@@ -171,6 +184,7 @@ export default function App() {
     const [selectedTime, setSelectedTime] = useState({ hour: 12, minute: 30 });
     const [bookingData, setBookingData] = useState<Book | null>(null);
     const [total, setTotal] = useState('');
+    const [time, setTime] = useState('')
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
@@ -193,7 +207,7 @@ export default function App() {
             alert('Please fill in all fields.');
             return;
         }
-        const newBooking: Book = { dates: Object.keys(selectedDates), start: startLocation, end: endLocation, language: language, time: selectedTime };
+        const newBooking: Book = { dates: Object.keys(selectedDates), start: startLocation, end: endLocation, language: language, time: time /* time: selectedTime */ };
         setBookingData(newBooking);
         setModalVisible(false);
         setIsBookingComplete(true);
@@ -215,8 +229,8 @@ export default function App() {
         }
     };
 
-    const toggleCardSelection = useCallback((index: number) => {
-        let newIndex: number | null = null;
+    const toggleCardSelection = useCallback((index: string) => {
+        let newIndex: string | null = null;
         setSelectedCardId(prev => {
             newIndex = prev === index ? null : index;
             return newIndex;
@@ -255,7 +269,7 @@ export default function App() {
             setShowEndDropdown(false);
 
             if (savedSelectedCarId) {
-                setSelectedCardId(Number(savedSelectedCarId) - 1);
+                setSelectedCardId(savedSelectedCarId);
             }
 
             if (sessionExists && bookingCompleteStatus === 'true') {
@@ -273,7 +287,8 @@ export default function App() {
                     setStartLocation(parsedBooking.start);
                     setEndLocation(parsedBooking.end);
                     setLanguage(parsedBooking.language);
-                    setSelectedTime(parsedBooking.time);
+                    //setSelectedTime(parsedBooking.time);
+                    setTime(parsedBooking.time)
                 }
 
             } else {
@@ -441,8 +456,8 @@ export default function App() {
                                     theme={{ todayTextColor: '#007BFF', arrowColor: '#007BFF' }}
                                 />
                                 <View className="w-full z-20 pb-32 gap-1 mt-2">
-                                    <View className='flex-row justify-between'>
-                                        <View className='w-[47%]'>
+                                    <View className='z-40 flex-row justify-between'>
+                                        <View className='w-[50%]'>
                                             <TouchableOpacity onPress={() => {
                                                 setShowStartDropdown(!showStartDropdown);
                                                 setShowEndDropdown(false);
@@ -495,6 +510,12 @@ export default function App() {
                                 <View>
                                     <Text>Choose a time</Text>
                                     {/* <SimpleTimePicker onTimeChange={setSelectedTime} /> */}
+                                    <View className="border border-gray-300 rounded-lg">
+                                        <Picker numberOfLines={5} selectedValue={time} onValueChange={(itemValue) => setTime(itemValue)}>
+                                            <Picker.Item label="Select..." value="" />
+                                            {timeOptions.map((time, index) => (<Picker.Item key={index} label={time} value={time} />))}
+                                        </Picker>
+                                    </View>
                                 </View>
                                 <View className="w-full">
                                     <TouchableOpacity
@@ -532,9 +553,9 @@ export default function App() {
                                         <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
                                             <TouchableOpacity
                                                 className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
-                                                onPress={() => toggleCardSelection(i)}
+                                                onPress={() => toggleCardSelection(x.id)}
                                             >
-                                                {selectedCardId === i && (
+                                                {selectedCardId === x.id && (
                                                     <Image className='w-4 h-4' source={mark} />
                                                 )}
                                             </TouchableOpacity>
