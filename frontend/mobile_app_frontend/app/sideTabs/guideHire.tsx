@@ -304,14 +304,14 @@ export default function Guide() {
                                             <View className='h-full py-3 justify-between'>
 
                                                 <View className="w-full absolute items-end pr-1 z-10">
-                                                    <TouchableOpacity
+                                                    {/* <TouchableOpacity
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
                                                         onPress={() => toggleCardSelection(index)}
                                                     >
                                                         {selectedCardIndex === index && (
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
-                                                    </TouchableOpacity>
+                                                    </TouchableOpacity> */}
                                                 </View>
                                                 <View className='flex-row gap-5 px-3  w-44'>
                                                     <Image

@@ -20,99 +20,23 @@ interface Book {
     lan: string;
 }
 
-interface Guide {
-    id: string;
-    image: any;
-    title: string;
+interface Guid {
+    _id: string;
+    pp: string;
+    username: string;
     stars: number;
-    verified: boolean;
-    identified: boolean;
+    verified: string;
+    identified: string;
     price: number
 }
 
-const guides: Guide[] = [
-    {
-        id: '1',
-        image: pic,
-        title: 'Theekshana',
-        stars: 3,
-        verified: true,
-        identified: true,
-        price: 1000
-    },
-    {
-        id: '2',
-        image: pic,
-        title: 'Teshini',
-        stars: 1,
-        verified: true,
-        identified: true,
-        price: 2000
-    },
-    {
-        id: '3',
-        image: pic,
-        title: 'Sudewa',
-        stars: 2,
-        verified: true,
-        identified: true,
-        price: 3000
-    },
-    {
-        id: '4',
-        image: pic,
-        title: 'Bimsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-        price: 4000
-    },
-    {
-        id: '5',
-        image: pic,
-        title: 'Tharusha',
-        stars: 3,
-        verified: true,
-        identified: true,
-        price: 5000
-    },
-    {
-        id: '6',
-        image: pic,
-        title: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified: true,
-        price: 6000
-    },
-    {
-        id: '7',
-        image: pic,
-        title: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified: true,
-        price: 7000
-    },
-    {
-        id: '8',
-        image: pic,
-        title: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-        price: 8000
-    },
-];
+interface H {
+    id: string,
+    singlePrice: number,
+    doublePrice: number,
+}
 
 export default function Guide() {
-
-    const hotels = [
-        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000 },
-        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 1000 },
-        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 1000 },
-        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 1000 },
-    ];
 
     const categories = [
         {
@@ -153,17 +77,18 @@ export default function Guide() {
         }
     ]
 
-
     const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [fine, setFine] = useState(false);
     const [book, setBook] = useState<Book[] | null>([]);
 
     const [location, setLocation] = useState('');
     const [lan, setLan] = useState('');
+    const [guides, setGuides] = useState<Guid[]>([])
+    const [hotels, setHotels] = useState<H[]>([])
 
     const [showDropdown, setShowDropdown] = useState(false);
     const [show, setShow] = useState(false);
@@ -172,8 +97,8 @@ export default function Guide() {
     const [total, setTotal] = useState('');
 
 
-    const toggleCardSelection = useCallback((index: number) => {
-        let newIndex: number | null = null;
+    const toggleCardSelection = useCallback((index: string) => {
+        let newIndex: string | null = null;
         setSelectedCardIndex(prev => {
             newIndex = prev === index ? null : index;
             return newIndex;
@@ -181,7 +106,7 @@ export default function Guide() {
         // Update AsyncStorage after state change
         const updateStorage = async () => {
             try {
-                await AsyncStorage.setItem('guide', newIndex !== null ? (newIndex + 1).toString() : '');
+                await AsyncStorage.setItem('guide', newIndex !== null ? newIndex : '');
             } catch (error) {
                 console.error('Error saving selectedCardIndex to AsyncStorage:', error);
             }
@@ -216,7 +141,8 @@ export default function Guide() {
             await AsyncStorage.setItem('gbookings', JSON.stringify(newBooking));
             await AsyncStorage.setItem('gbookingComplete', 'true');
             await AsyncStorage.setItem('gbookingSession', Date.now().toString());
-            //alert('Booking saved to AsyncStorage');
+            await getGuides()
+            loadBookingData()
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -232,17 +158,27 @@ export default function Guide() {
             const sessionExists = await AsyncStorage.getItem('gbookingSession');
             const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
             const savedIndex = await AsyncStorage.getItem('guide');
+            const hotelData = await AsyncStorage.getItem('hotels')
+
+            setHotels(hotelData ? JSON.parse(hotelData) : [])
+
+            // --- Reset local state before loading from storage ---
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setModalVisible(false);
+            setFine(false);
+            setBook([]);
+            setLocation('');
+            setLan('');
+            setShowDropdown(false);
+            setShow(false);
+            setTotal('0');
 
             if (savedIndex) {
-                setSelectedCardIndex(Number(savedIndex) - 1); // Persist selected guide
+                setSelectedCardIndex(savedIndex);
             }
 
-            if (!sessionExists) {
-                // No session exists, create a new one and show modal
-                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
-                setModalVisible(true);
-            } else if (bookingComplete === 'true') {
-                // Booking is complete, load saved data and hide modal
+            if (sessionExists && bookingComplete === 'true') {
                 setModalVisible(false);
                 setFine(true);
                 const savedBookings = await AsyncStorage.getItem('gbookings');
@@ -251,7 +187,6 @@ export default function Guide() {
                     setBook(bookingData);
                     if (bookingData.length > 0) {
                         const booking = bookingData[0];
-                        // Reconstruct selectedDates object from saved dates array
                         const dates = booking.dates.reduce((acc: any, date: string) => {
                             acc[date] = { selected: true, selectedColor: '#007BFF' };
                             return acc;
@@ -259,21 +194,72 @@ export default function Guide() {
                         setSelectedDates(dates);
                         setLocation(booking.loc);
                         setLan(booking.lan);
+                        // Fetch guides now that we have location and language
+                        await getGuides(booking.loc, booking.lan);
                     }
                 }
             } else {
-                // Session exists but booking not complete, show modal
+                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
                 setModalVisible(true);
+                setFine(false);
             }
-        } catch (error) {
-            console.error('Error loading data from AsyncStorage:', error);
-            setModalVisible(true); // Default to showing modal on error
-        }
-    };
 
-    useEffect(() => {
-        loadBookingData();
-    }, []);
+        } catch (error) {
+            console.error('Error loading data from AsyncStorage (guide):', error);
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setModalVisible(true);
+            setFine(false);
+            setBook([]);
+            setLocation('');
+            setLan('');
+            setShowDropdown(false);
+            setShow(false);
+            setTotal('0');
+        }
+    }
+
+    // UPDATED: Now accepts optional parameters to be called after loading booking data.
+    const getGuides = async (loc?: string, language?: string) => {
+        const guideLocation = loc || location;
+        const guideLanguage = language || lan;
+
+        // Prevent API call if essential data is missing
+        if (!guideLocation || !guideLanguage) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
+
+            if (res.ok) {
+                const data = await res.json()
+
+                if (data.length > 0) {
+
+
+                    const minimalGuides = data.map((guide: Guid) => ({
+                        id: guide._id,
+                        price: guide.price,
+                    }));
+
+                    await AsyncStorage.setItem('guides', JSON.stringify(minimalGuides) || '')
+                    setGuides(data)
+
+                }
+
+                else {
+
+                    setGuides([])
+                    await AsyncStorage.removeItem('guide')
+                    console.log('No guides found')
+
+                }
+            }
+        } catch (err) {
+            console.log(`Error from guide getting : ${err}`)
+        }
+    }
 
     useFocusEffect(
         useCallback(() => {
@@ -282,34 +268,36 @@ export default function Guide() {
     );
 
     const count = async () => {
-
         try {
             let total = 0;
 
-            // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex) - 1).toString());
+                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
                 if (category) {
                     total += category.price;
                 }
             }
 
-            // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex !== null && guideIndex >= '0') {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex) - 1).toString());
+            if (guideIndex && guides.length > 0) { // Ensure guides list is populated
+                const guide = guides.find(guide => guide._id === guideIndex);
                 if (guide) {
                     total += guide.price;
                 }
             }
 
-            // Hotel Booking Price
-            const hotelIndex = await AsyncStorage.getItem('hotel');
-            if (hotelIndex) {
-                const hotel = hotels.find(hotel => hotel.id === (Number(hotelIndex) - 1).toString());
-                if (hotel) {
-                    total += hotel.price;
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking');
+            if (savedHotelBooking && hotels.length > 0) { // Ensure hotels list is populated
+                const hotelBookingData = JSON.parse(savedHotelBooking);
+                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id);
+
+                if (selectedHotel && hotelBookingData) {
+                    const singleBedPrice = selectedHotel.singlePrice || 0;
+                    const doubleBedPrice = selectedHotel.doublePrice || 0;
+                    const numSingle = Number(hotelBookingData.s || 0);
+                    const numDouble = Number(hotelBookingData.d || 0);
+                    total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
                 }
             }
 
@@ -318,17 +306,14 @@ export default function Guide() {
             console.error('Error calculating total price from AsyncStorage:', error);
             setTotal('0');
         }
+    };
 
-    }
-
-
+    // UPDATED: Dependencies changed to fix calculation timing.
     useFocusEffect(
         useCallback(() => {
-
-            count()
-
-        }, [selectedCardIndex, total])
-    )
+            count();
+        }, [selectedCardIndex, guides, hotels]) // Runs when selection or data changes
+    );
 
 
     return (
@@ -345,7 +330,7 @@ export default function Guide() {
                     <View className="h-full justify-center items-center bg-black/50">
                         <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl items-center">
                             <View className='w-full'>
-                                <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
+                                <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) { setModalVisible(false); router.back() } }}>
                                     {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
                                 </TouchableOpacity>
                                 <Text className="text-xl font-bold mb-8 text-center">Guide Booking</Text>
@@ -449,26 +434,29 @@ export default function Guide() {
                             >
                                 {guides.map((x, index) => (
                                     <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] py-1 rounded-2xl border-2 border-gray-300">
-                                        <TouchableOpacity onPress={() => router.push(`/views/guide/group/${Number(x.id) + 1}`)}>
+
+                                        <TouchableOpacity onPress={() => router.push(`/views/guide/group/${x._id}`)}>
+
                                             <View className='h-full py-3 justify-between'>
                                                 <View className="w-full absolute items-end pr-1 z-10">
                                                     <TouchableOpacity
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                        onPress={() => toggleCardSelection(index + 1)}
+                                                        onPress={() => toggleCardSelection(x._id)}
                                                     >
-                                                        {Number(selectedCardIndex) - 1 === index && (
+                                                        {selectedCardIndex === x._id && (
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
                                                     </TouchableOpacity>
                                                 </View>
                                                 <View className='flex-row gap-5 px-3 w-44'>
+
                                                     <Image
                                                         className='w-[50px] h-[50px] rounded-full'
-                                                        source={x.image}
+                                                        source={{ uri: `data:image/jpeg;base64,${x.pp}` }}
                                                         contentFit="cover"
                                                     />
                                                     <View className=''>
-                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.title}</Text>
+                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.username}</Text>
                                                         <View className="flex-row justify-start mt-1">
                                                             {[...Array(x.stars)].map((_, i) => (
                                                                 <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
@@ -499,6 +487,7 @@ export default function Guide() {
 
                             }
                         </View>
+
                     </>
                 )}
             </View>

@@ -43,11 +43,12 @@ export default function AvailabilityScreen() {
     '2024-07-07': { selected: true, selectedColor: '#ff9800' },
     '2024-07-08': { marked: true },
   });
-  
+
   // State for the animated menu
   const [show, setShow] = useState(false);
   const translateX = useSharedValue(-1000);
   const opacity = useSharedValue(0);
+  const [notify, setNotify] = useState(false);
 
   // State for add unavailability modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -75,7 +76,7 @@ export default function AvailabilityScreen() {
   // Handle date selection in the add modal
   const handleModalDateSelection = (day: DateData) => {
     const dateString = day.dateString;
-    
+
     if (isSelectingStartDate) {
       setStartDate(dateString);
       setIsSelectingStartDate(false);
@@ -106,7 +107,7 @@ export default function AvailabilityScreen() {
   const formatDateRange = (start: string, end: string): string => {
     const startDate = new Date(start);
     const endDate = new Date(end);
-    
+
     const formatDate = (date: Date): string => {
       const year = date.getFullYear();
       const month = date.toLocaleString('default', { month: 'short' });
@@ -117,7 +118,7 @@ export default function AvailabilityScreen() {
     if (start === end) {
       return formatDate(startDate);
     }
-    
+
     return `${formatDate(startDate)} - ${formatDate(endDate)}`;
   };
 
@@ -150,23 +151,23 @@ export default function AvailabilityScreen() {
   // Create marked dates for the modal calendar
   const getModalMarkedDates = () => {
     const marked: { [key: string]: MarkingProps } = {};
-    
+
     if (startDate) {
-      marked[startDate] = { 
-        selected: true, 
+      marked[startDate] = {
+        selected: true,
         selectedColor: '#4CAF50',
         marked: true
       };
     }
-    
+
     if (endDate) {
-      marked[endDate] = { 
-        selected: true, 
+      marked[endDate] = {
+        selected: true,
         selectedColor: '#ff9800',
         marked: true
       };
     }
-    
+
     return marked;
   };
 
@@ -193,8 +194,7 @@ export default function AvailabilityScreen() {
     }
   };
 
-  const [notify, setNotify] = useState(false);
-  
+
   const toggling = () => {
     setNotify(!notify);
   };
@@ -202,7 +202,7 @@ export default function AvailabilityScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
-      
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Calendar Section */}
         <View style={styles.calendarSection}>
@@ -225,14 +225,14 @@ export default function AvailabilityScreen() {
         <View style={styles.unavailabilitySection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.title}>Current Unavailability</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addButton}
               onPress={() => setShowAddModal(true)}
             >
               <Text style={styles.addButtonText}>+ Add</Text>
             </TouchableOpacity>
           </View>
-          
+
           {currentUnavailability.map((unavailability: UnavailabilityItem, index: number) => (
             <View key={unavailability.id} style={styles.unavailabilityItem}>
               <Text style={styles.unavailabilityDate}>{unavailability.dateRange}</Text>
@@ -241,7 +241,7 @@ export default function AvailabilityScreen() {
                 <TouchableOpacity style={styles.updateButton}>
                   <Text style={styles.updateButtonText}>Update</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.removeButton}
                   onPress={() => handleRemoveUnavailability(unavailability.id)}
                 >
@@ -264,7 +264,7 @@ export default function AvailabilityScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Unavailability</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
                   setShowAddModal(false);
@@ -276,7 +276,7 @@ export default function AvailabilityScreen() {
                 <Text style={styles.closeButtonText}>×</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.dateSelectionInfo}>
               <Text style={styles.instructionText}>
                 {isSelectingStartDate ? 'Select start date' : 'Select end date (optional)'}
@@ -307,7 +307,7 @@ export default function AvailabilityScreen() {
             />
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
                   setShowAddModal(false);
@@ -318,7 +318,7 @@ export default function AvailabilityScreen() {
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.saveButton, !startDate && styles.saveButtonDisabled]}
                 onPress={handleAddUnavailability}
                 disabled={!startDate}

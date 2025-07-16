@@ -11,11 +11,11 @@ import StatsCard from '../../components/ui/starCard';
 import MenuItem from '../../components/ui/menuItem';
 import Header from '../../components/ui/header';
 import Topbar from '../../components/ui/guideTopbar';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
-  Easing 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing
 } from "react-native-reanimated";
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
@@ -52,24 +52,24 @@ const Stack = createNativeStackNavigator<GuideStackParamList>();
 // Stats Grid Component
 const StatsGrid = ({ stats }: { stats: Stats }) => (
   <View style={styles.statsGrid}>
-    <StatsCard 
-      value={stats.activeBookings} 
-      label="Active Bookings" 
+    <StatsCard
+      value={stats.activeBookings}
+      label="Active Bookings"
       backgroundColor="rgba(255, 196, 0, 0.8)"
     />
-    <StatsCard 
-      value={stats.rating} 
-      label="Rating" 
+    <StatsCard
+      value={stats.rating}
+      label="Rating"
       backgroundColor="rgba(255, 196, 0, 0.8)"
     />
-    <StatsCard 
-      value={stats.totalTours} 
-      label="Total Tours" 
+    <StatsCard
+      value={stats.totalTours}
+      label="Total Tours"
       backgroundColor="rgba(255, 196, 0, 0.8)"
     />
-    <StatsCard 
-      value={stats.earnings} 
-      label="This Month" 
+    <StatsCard
+      value={stats.earnings}
+      label="This Month"
       backgroundColor="rgba(255, 215, 0, 0.9)"
     />
   </View>
@@ -105,6 +105,12 @@ const MenuList = ({ menuItems, onMenuItemPress }: MenuListProps) => (
 
 // Main Dashboard Component (Home Screen)
 const TravelMateGuideHome = () => {
+
+  const [selectedDate, setSelectedDate] = useState(8);
+  const [show, setShow] = useState(false);
+
+  const opacity = useSharedValue(0);
+  const [notify, setNotify] = useState(false);
   const stats = {
     activeBookings: '12',
     rating: '4.9',
@@ -149,8 +155,8 @@ const TravelMateGuideHome = () => {
 
   const handleMenuItemPress = (item: MenuItemData) => {
     console.log(`Pressed: ${item.title}`);
-    
-    switch(item.id) {
+
+    switch (item.id) {
       case 'bookings':
         console.log('Navigating to bookings screen...');
         navigation.navigate('bookings');
@@ -176,17 +182,11 @@ const TravelMateGuideHome = () => {
         break;
     }
   };
-
-  const [selectedDate, setSelectedDate] = useState(8);
-  const [show, setShow] = useState(false);
-  
   const translateX = useSharedValue(-1000);
-  const opacity = useSharedValue(0);
- const [notify, setNotify] = useState(false);
 
   const toggling = () => {
-        setNotify(!notify);
-    };
+    setNotify(!notify);
+  };
   const menuStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
     opacity: opacity.value,
@@ -211,19 +211,19 @@ const TravelMateGuideHome = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-                            <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
-      
+      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Header 
+        <Header
           userName="Sunil"
           welcomeMessage="Ready to guide travelers today?"
-          gradientColors={['rgba(254, 250, 23, 1)', 'rgba(255, 215, 0, 0.9)','rgba(255, 196, 0, 0.8)']}
+          gradientColors={['rgba(254, 250, 23, 1)', 'rgba(255, 215, 0, 0.9)', 'rgba(255, 196, 0, 0.8)']}
         />
-        
+
         <View style={styles.content}>
           <StatsGrid stats={stats} />
-          <MenuList 
-            menuItems={menuItems} 
+          <MenuList
+            menuItems={menuItems}
             onMenuItemPress={handleMenuItemPress}
           />
         </View>
@@ -235,7 +235,7 @@ const TravelMateGuideHome = () => {
 // Navigator Component - This is what you should export and use in your main App
 const TravelMateGuide = () => {
   return (
-    <Stack.Navigator 
+    <Stack.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false // Hide default header since you have custom Topbar
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 30,
-    marginTop:-5
+    marginTop: -5
   },
   menuList: {
     backgroundColor: 'white',
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    marginTop:-25
+    marginTop: -25
   },
 });
 

@@ -81,6 +81,8 @@ export const GuideBookingScreen = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedTab, setSelectedTab] = useState<TabType>('requests');
   const [loading, setLoading] = useState(true);
+  const [notify, setNotify] = useState(false);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     // Simulate loading then set dummy bookings
@@ -136,14 +138,12 @@ export const GuideBookingScreen = () => {
     opacity: opacity.value,
   }));
 
-  const [show, setShow] = useState(false);
   const toggleMenu = () => {
     setShow(!show);
     translateX.value = withTiming(show ? -1000 : 0, { duration: 300 });
     opacity.value = withTiming(show ? 0 : 1, { duration: 300 });
   };
-  
-  const [notify, setNotify] = useState(false);
+
   const toggling = () => {
     setNotify(!notify);
   };
@@ -151,7 +151,7 @@ export const GuideBookingScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
-      
+
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Booking Requests</Text>

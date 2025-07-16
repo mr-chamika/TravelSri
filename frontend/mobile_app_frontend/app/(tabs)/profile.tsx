@@ -1,7 +1,11 @@
 import { Text, TouchableOpacity, View, Animated } from 'react-native' // 1. Import Animated
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
-import { useState, useRef } from 'react'; // 2. Import useRef
+import { useState, useRef, useEffect } from 'react'; // 2. Import useRef
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { useRouter } from 'expo-router';
+import { keys } from 'lodash';
 
 cssInterop(Image, { className: "style" });
 
@@ -9,9 +13,22 @@ const profile = require('../../assets/images/sideTabs/image.png')
 const edit = require('../../assets/images/tabbar/edit.png')
 const off = require('../../assets/images/tabbar/off.png')
 const on = require('../../assets/images/tabbar/on.png')
+const logout = require('../../assets/images/profile/logout.png')
+
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string
+}
+
 
 export default function Profile() {
+
+    const router = useRouter()
+
     const [settings, setSettings] = useState([{ dark: true }, { dark: true }, { dark: true }])
+    const [user, setUser] = useState(null)
 
     // 3. Create one animated value for the press interaction.
     // We can reuse this for all buttons.
@@ -35,6 +52,39 @@ export default function Profile() {
         }).start();
     };
 
+    useEffect(() => {
+
+        const getAll = async () => {
+
+            const keys = await AsyncStorage.getItem("token");
+
+            if (keys) {
+
+                const x: MyToken = jwtDecode(keys)
+                try {
+
+                    const res = await fetch(`http://localhost:8080/user/profile?email=${x.email}`)
+
+                    const data = await res.json()
+
+                    setUser(data.pp)
+
+
+                } catch (err) {
+
+                    console.log(err)
+
+                }
+
+
+            }
+
+        }
+        getAll()
+
+
+    }, [])
+
     const handleToggling = (index: number) => {
         const newSettings = settings.map((setting, i) => {
             if (i === index) {
@@ -51,12 +101,33 @@ export default function Profile() {
         transform: [{ scale: scaleAnim }],
     };
 
+    const clear = async () => {
+
+        const keys = await AsyncStorage.getAllKeys();
+        try {
+
+            await AsyncStorage.multiRemove(keys);
+        } catch (e) {
+            alert(`Error clearing AsyncStorage:, ${e}`);
+        }
+    }
+    const loggingout = async () => {
+
+
+        await clear();
+
+        await AsyncStorage.removeItem('token')
+        setUser(null)
+        router.replace('/(auth)');
+
+    }
+
     return (
         <View className='bg-[#F2F5FA] w-full h-full flex-1 flex-col gap-10'>
             {/* --- Profile and Personal Details Sections (Unchanged) --- */}
             <View className='items-center'>
-                <View className='w-[250px] h-[250px] mb-4'>
-                    <Image className="w-full h-full rounded-full border-4 border-gray-200" source={profile} />
+                <View className='w-[220px] h-[220px] mb-4'>
+                    <Image className="w-full h-full rounded-full border-4 border-gray-200" source={user ? { uri: `data:image/jpeg;base64,${user}` } : profile} />
                     <Text className='text-center font-bold text-[18px]'>John Doe</Text>
                 </View>
             </View>
@@ -133,6 +204,11 @@ export default function Profile() {
                                 </TouchableOpacity>
                             </Animated.View>
                         </View>
+
+                        <TouchableOpacity className="mt-2 rounded-[10px] h-12 flex-row w-full justify-between px-2 items-center" onPress={loggingout}>
+                            <Text className='font-bold'>Logout</Text>
+                            <Image className='w-8 h-8' source={logout} />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>

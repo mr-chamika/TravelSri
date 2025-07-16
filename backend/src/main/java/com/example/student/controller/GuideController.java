@@ -1,7 +1,7 @@
 package com.example.student.controller;
 
 import com.example.student.repo.GuideRepo;
-import com.example.student.model.Guide;
+import com.example.student.model.Tour;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,17 +27,14 @@ public class GuideController {
     }
 
     @GetMapping("/groupTours")
-    @Operation(
-            summary = "Get All Trips",
-            description = "Retrieves a list of all available trips/guides"
-    )
+    @Operation(summary = "Get All Trips", description = "Retrieves a list of all available trips/guides")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved list of trips")
-    public List<Guide> getAllTrips(){
+    public List<Tour> getAllTrips() {
         return guideRepo.findAll();
     }
 
     @PostMapping("/quotation")
-    public Guide addQuotation(@RequestBody Guide guide){
+    public Tour addQuotation(@RequestBody Tour guide) {
         return guideRepo.save(guide);
     }
 }

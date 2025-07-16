@@ -1,12 +1,12 @@
 import { Text, TouchableOpacity, View, StyleSheet, SafeAreaView } from 'react-native'
 import { Image } from 'expo-image'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    Easing,
 } from 'react-native-reanimated';
 
 import Topbar from '../../components/ui/guideTopbar';
@@ -17,7 +17,9 @@ const off = require('../../assets/images/profile/off.png')
 const on = require('../../assets/images/profile/on.png')
 
 export default function Profile() {
+    const [notify, setNotify] = useState(false);
     const [settings, setSettings] = useState([{ dark: true }, { dark: true }, { dark: true }])
+    const [show, setShow] = useState(false);
 
     // Create one animated value for the press interaction using react-native-reanimated
     const scaleAnim = useSharedValue(1);
@@ -53,7 +55,6 @@ export default function Profile() {
         transform: [{ scale: scaleAnim.value }],
     }));
 
-    const [show, setShow] = useState(false);
     const translateX = useSharedValue(-1000);
     const opacity = useSharedValue(0);
 
@@ -79,16 +80,15 @@ export default function Profile() {
         }
     };
 
-    const [notify, setNotify] = useState(false);
-      
-        const toggling = () => {
-              setNotify(!notify);
-          };
+
+    const toggling = () => {
+        setNotify(!notify);
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
-                                       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
-           
+            <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+
             <View style={styles.container}>
                 {/* --- Profile and Personal Details Sections --- */}
                 <View style={styles.profileSection}>
