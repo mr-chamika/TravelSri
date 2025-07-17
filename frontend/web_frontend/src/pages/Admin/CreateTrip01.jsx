@@ -114,6 +114,7 @@ const CreateTrip01 = () => {
                                 }}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
                                 required
+
                             >
                                 <option value="">Select the ending location</option>
                                 <option value="colombo">Colombo</option>
@@ -202,6 +203,7 @@ const CreateTrip01 = () => {
                                         </div>
                                         <span className="ml-2 text-sm font-medium text-gray-500">Trip Details</span>
                                     </div>
+
                                 </div>
                             </div>
                         </div>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
+
 const CreateTrip02 = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [tripTitle, setTripTitle] = useState("");
     const [numberOfSlots, setNumberOfSlots] = useState("");
+
     const [numberOfDates, setNumberOfDates] = useState("");
     const [pickupTime, setPickupTime] = useState("");
     const [selectedDate, setSelectedDate] = useState("");
@@ -66,6 +68,7 @@ const CreateTrip02 = () => {
             )
         }
     ];
+
 
     // Helper function to format date properly for backend (avoiding timezone issues)
     const formatDateForBackend = (dateString) => {
@@ -329,7 +332,7 @@ const CreateTrip02 = () => {
                                 />
                                 <div className="mt-2 text-sm text-gray-500">
                                     Select the pickup time for passengers
-                                </div>
+                                </div>  
                             </div>
 
                             {/* Available Resources */}
