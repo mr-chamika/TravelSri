@@ -21,6 +21,19 @@ const p = require('../../../assets/images/user2.png');
 const t = require('../../../assets/images/tag.png');
 const mark = require('../../../assets/images/mark.png');
 
+interface g {
+
+    id: string,
+    price: number
+
+}
+
+interface H {
+    id: string,
+    singlePrice: number,
+    doublePrice: number,
+}
+
 export default function App() {
     const router = useRouter();
 
@@ -44,7 +57,7 @@ export default function App() {
         time: string
     }
 
-    const hotels = [
+    /* const hotels = [
         { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
         { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
         { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
@@ -125,7 +138,7 @@ export default function App() {
             price: 8000
         },
     ];
-
+ */
     const categories = [
         {
             id: '1',
@@ -185,6 +198,8 @@ export default function App() {
     const [bookingData, setBookingData] = useState<Book | null>(null);
     const [total, setTotal] = useState('');
     const [time, setTime] = useState('')
+    const [guides, setGuides] = useState<g[]>([])
+    const [hotels, setHotels] = useState<H[]>([])
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
@@ -236,15 +251,24 @@ export default function App() {
             return newIndex;
         });
         // Update AsyncStorage after state change
-        const updateStorage = async () => {
+        const updateStorage = async (selectedIndex: string | null) => {
             try {
-                await AsyncStorage.setItem('car', newIndex !== null ? (newIndex + 1).toString() : '');
+                if (categories) {
+
+                    await AsyncStorage.setItem('car', newIndex !== null ? newIndex : '');
+
+                } else {
+
+                    await AsyncStorage.removeItem('car');
+
+                }
             } catch (error) {
                 console.error('Error saving selectedCardIndex to AsyncStorage:', error);
             }
         };
-        updateStorage();
-    }, []);
+        updateStorage(newIndex);
+        return newIndex;
+    }, [categories, selectedCardId]);
 
     const displayDates = Object.keys(selectedDates)
         .sort()
@@ -256,6 +280,12 @@ export default function App() {
             const sessionExists = await AsyncStorage.getItem('cbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('cbookingComplete');
             const savedSelectedCarId = await AsyncStorage.getItem('car');
+            const guideData = await AsyncStorage.getItem('guides')
+
+            setGuides(guideData ? JSON.parse(guideData) : [])
+
+            const hotelData = await AsyncStorage.getItem('hotels')
+            setHotels(hotelData ? JSON.parse(hotelData) : [])
 
             setSelectedCardId(null);
             setSelectedDates({});
@@ -318,7 +348,6 @@ export default function App() {
             loadBookingData();
         }, [loadBookingData])
     );
-
     const count = async () => {
         try {
             let total = 0;
@@ -334,8 +363,8 @@ export default function App() {
 
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex) {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex)).toString());
+            if (guideIndex && guides) {
+                const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
                     total += guide.price;
                 }
@@ -343,18 +372,18 @@ export default function App() {
 
             // Hotel Booking Price
             const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
-            if (savedHotelBooking) {
+            if (savedHotelBooking && hotels.length > 0) {
                 const hotelBookingData = JSON.parse(savedHotelBooking);
                 const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
 
-                if (selectedHotel) { // Null check for selectedHotel
-                    if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
-                        const singleBedPrice = selectedHotel.beds.find(bed => bed.type === 'single')?.price || 0;
-                        const doubleBedPrice = selectedHotel.beds.find(bed => bed.type === 'double')?.price || 0;
-                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
-                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
-                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
-                    }
+                if (selectedHotel && hotelBookingData) { // Null check for selectedHotel
+                    // if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
+                    const singleBedPrice = selectedHotel.singlePrice || 0;
+                    const doubleBedPrice = selectedHotel.doublePrice || 0;
+                    const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                    const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                    total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    //}
                 }
             }
 
@@ -369,7 +398,7 @@ export default function App() {
     useFocusEffect(
         useCallback(() => {
             count();
-        }, [selectedCardId, total])
+        }, [selectedCardId, guides, hotels])
     );
 
     const handleCreatePlan = async () => {
