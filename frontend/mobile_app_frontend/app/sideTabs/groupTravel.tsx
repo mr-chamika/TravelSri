@@ -69,19 +69,18 @@ export default function Group() {
             to_name: 'Admin',
             email: email,
             message: des,
-            mobile: 'N/A',
             from_name: name,
-            to_email: 'hasithchamika2001@gmail.com'
+            to_email: 'travelsriucsc@gmail.com'
 
         }
 
         emailjs
             .send(
-                'service_i1aiqin',
-                'template_q9u99ms',
+                'service_ug7b6t5',
+                'template_sayi62l',
                 emailTemplate,
                 {
-                    publicKey: "Yec_iAk1ts2gSV3gU"
+                    publicKey: "l0b_m5wGJi-b4JhDW"
                 }
             )
             .then(

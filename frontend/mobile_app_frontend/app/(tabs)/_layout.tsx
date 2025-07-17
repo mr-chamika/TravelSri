@@ -11,13 +11,13 @@ import Animated, {
     Easing,
 } from "react-native-reanimated";
 
-import Topbar from "../../components/Topbar";
+import Topbar from "../../components/Topbar"
 import Sidebar from "../../components/Sidebar";
 
 const HomeA = require("../../assets/images/home2.png");
 const UserA = require("../../assets/images/user2.png");
 const Car = require("../../assets/images/tabbar/carr.png");
-const Locat = require("../../assets/images/tabbar/create1.png");
+const Locat = require("../../assets/images/tabbar/route.png");
 const MenuX = require("../../assets/images/top bar/menu x.png");
 
 export default function _Layout() {

@@ -74,7 +74,7 @@ export default function Views() {
                         <ScrollView
                             horizontal
                             className=" h-50 border-black rounded-2xl w-[81%] border-2"
-                            contentContainerClassName=" py-3 pl-3 "
+                            contentContainerClassName=" py-3 pl-3"
                             showsHorizontalScrollIndicator={false}
                             nestedScrollEnabled={true}
 
@@ -85,7 +85,7 @@ export default function Views() {
 
                                     <View key={i} className=" w-[310px] h-40">
 
-                                        <Image className=" w-[300px] h-full" source={x} />
+                                        <Image className=" w-[270px] h-full" source={x} />
 
                                     </View>
                                 )

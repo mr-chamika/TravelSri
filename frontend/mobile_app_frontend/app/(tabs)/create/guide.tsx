@@ -108,10 +108,10 @@ const guides: Guide[] = [
 export default function Guide() {
 
     const hotels = [
-        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000 },
-        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 1000 },
-        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 1000 },
-        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 1000 },
+        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 4000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     ];
 
     const categories = [
@@ -233,16 +233,25 @@ export default function Guide() {
             const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
             const savedIndex = await AsyncStorage.getItem('guide');
 
+            // --- Explicitly reset local state before attempting to load from storage ---
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setModalVisible(false); // Default to not visible
+            setFine(false); // Assume not complete until proven otherwise
+            setBook([]);
+            setLocation('');
+            setLan('');
+            setShowDropdown(false);
+            setShow(false);
+            setTotal('0'); // Reset total for this component as well
+
             if (savedIndex) {
-                setSelectedCardIndex(Number(savedIndex) - 1); // Persist selected guide
+
+                setSelectedCardIndex(Number(savedIndex) - 1);
             }
 
-            if (!sessionExists) {
-                // No session exists, create a new one and show modal
-                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
-                setModalVisible(true);
-            } else if (bookingComplete === 'true') {
-                // Booking is complete, load saved data and hide modal
+            // Check if there's an active session AND booking is complete
+            if (sessionExists && bookingComplete === 'true') {
                 setModalVisible(false);
                 setFine(true);
                 const savedBookings = await AsyncStorage.getItem('gbookings');
@@ -251,7 +260,6 @@ export default function Guide() {
                     setBook(bookingData);
                     if (bookingData.length > 0) {
                         const booking = bookingData[0];
-                        // Reconstruct selectedDates object from saved dates array
                         const dates = booking.dates.reduce((acc: any, date: string) => {
                             acc[date] = { selected: true, selectedColor: '#007BFF' };
                             return acc;
@@ -261,15 +269,30 @@ export default function Guide() {
                         setLan(booking.lan);
                     }
                 }
+
             } else {
-                // Session exists but booking not complete, show modal
+                // If no session or booking is NOT complete, start fresh by showing modal
+                await AsyncStorage.setItem('gbookingSession', Date.now().toString()); // Start a new session
                 setModalVisible(true);
+                setFine(false); // Ensure false so modal is required
             }
+
+
         } catch (error) {
-            console.error('Error loading data from AsyncStorage:', error);
-            setModalVisible(true); // Default to showing modal on error
+            console.error('Error loading data from AsyncStorage (guide):', error);
+            // On error, also ensure a full reset and show modal
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setModalVisible(true);
+            setFine(false);
+            setBook([]);
+            setLocation('');
+            setLan('');
+            setShowDropdown(false);
+            setShow(false);
+            setTotal('0');
         }
-    };
+    }
 
     useEffect(() => {
         loadBookingData();
@@ -282,14 +305,13 @@ export default function Guide() {
     );
 
     const count = async () => {
-
         try {
             let total = 0;
 
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex) - 1).toString());
+                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
                 if (category) {
                     total += category.price;
                 }
@@ -297,19 +319,27 @@ export default function Guide() {
 
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex !== null && guideIndex >= '0') {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex) - 1).toString());
+            if (guideIndex) {
+                const guide = guides.find(guide => guide.id === (Number(guideIndex)).toString());
                 if (guide) {
                     total += guide.price;
                 }
             }
 
             // Hotel Booking Price
-            const hotelIndex = await AsyncStorage.getItem('hotel');
-            if (hotelIndex) {
-                const hotel = hotels.find(hotel => hotel.id === (Number(hotelIndex) - 1).toString());
-                if (hotel) {
-                    total += hotel.price;
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
+            if (savedHotelBooking) {
+                const hotelBookingData = JSON.parse(savedHotelBooking);
+                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
+
+                if (selectedHotel) { // Null check for selectedHotel
+                    if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
+                        const singleBedPrice = selectedHotel.beds.find(bed => bed.type === 'single')?.price || 0;
+                        const doubleBedPrice = selectedHotel.beds.find(bed => bed.type === 'double')?.price || 0;
+                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    }
                 }
             }
 
@@ -318,8 +348,7 @@ export default function Guide() {
             console.error('Error calculating total price from AsyncStorage:', error);
             setTotal('0');
         }
-
-    }
+    };
 
 
     useFocusEffect(
@@ -345,7 +374,7 @@ export default function Guide() {
                     <View className="h-full justify-center items-center bg-black/50">
                         <View className="w-[93%] h-[97%] bg-white my-4 p-6 rounded-2xl items-center">
                             <View className='w-full'>
-                                <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) router.back() }}>
+                                <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || Object.keys(selectedDates).length === 0) { setModalVisible(false); router.back() } }}>
                                     {(fine && Object.keys(selectedDates).length !== 0) ? <Text> Cancel</Text> : <Text> Back</Text>}
                                 </TouchableOpacity>
                                 <Text className="text-xl font-bold mb-8 text-center">Guide Booking</Text>
@@ -449,19 +478,22 @@ export default function Guide() {
                             >
                                 {guides.map((x, index) => (
                                     <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] py-1 rounded-2xl border-2 border-gray-300">
+
                                         <TouchableOpacity onPress={() => router.push(`/views/guide/group/${Number(x.id) + 1}`)}>
+
                                             <View className='h-full py-3 justify-between'>
                                                 <View className="w-full absolute items-end pr-1 z-10">
                                                     <TouchableOpacity
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                        onPress={() => toggleCardSelection(index + 1)}
+                                                        onPress={() => toggleCardSelection(index)}
                                                     >
-                                                        {Number(selectedCardIndex) - 1 === index && (
+                                                        {selectedCardIndex === index && (
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
                                                     </TouchableOpacity>
                                                 </View>
                                                 <View className='flex-row gap-5 px-3 w-44'>
+
                                                     <Image
                                                         className='w-[50px] h-[50px] rounded-full'
                                                         source={x.image}
@@ -499,6 +531,7 @@ export default function Guide() {
 
                             }
                         </View>
+
                     </>
                 )}
             </View>

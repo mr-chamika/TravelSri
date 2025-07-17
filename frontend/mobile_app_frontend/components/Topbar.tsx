@@ -32,7 +32,7 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
                 <TouchableOpacity onPress={pressing}>
                     <View className='absolute w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg z-60' >
 
-                        <Image className='w-[20px] h-[20px]' source={Menu} />
+                        <Image className='w-[35px] h-[35px]' source={Menu} />
 
                     </View>
                 </TouchableOpacity>
@@ -42,9 +42,9 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
                 </View>
                 <TouchableOpacity onPress={notifying}>
-                    <View className='w-10 h-10 bg-[#FEFA17] rounded-full items-center justify-center shadow-lg ' >
+                    <View className='w-[40px] h-[40px] bg-[#FEFA17] rounded-full items-center justify-center shadow-lg ' >
 
-                        <Image className='w-[19px] h-[20px]' source={Notify} />
+                        <Image className='w-[35px] h-[35px]' source={Notify} />
 
                     </View>
                 </TouchableOpacity>

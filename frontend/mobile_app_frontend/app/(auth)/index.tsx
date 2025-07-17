@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import * as SecureStore from 'expo-secure-store';
+import { AuthScreenProps } from '../../lib/navigation.types';
 const logo = require('../../assets/images/logo.png');
 
-// Get the full window height to help with flexible sizing
 const windowHeight = Dimensions.get('window').height;
 
-export default function LoginScreen() {
+export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
     interface User {
         email: string,
@@ -17,64 +18,111 @@ export default function LoginScreen() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [credentE, setCredentE] = useState(false)
     const [invalidE, setInvalidE] = useState(false);
+    const [wrongP, setWrongP] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+    const [tokenE, setTokenE] = useState<string | string[]>('')
 
     const router = useRouter();
+
+    const { reason } = useLocalSearchParams()
+
+    useEffect(() => {
+        if (reason) {
+            setTokenE(reason)
+        }
+    }, [route]);
 
     const validateEmail = (text: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(text);
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
+        setCredentE(false);
+        setInvalidE(false);
+        setWrongP(false);
+
         if (!password || !validateEmail(email)) {
-            alert("Fill all fields with valid format");
-        } else {
+            setCredentE(true);
+            return;
+        }
 
-            //alert(`You are ${name}. Your email is ${email} and saying ${des}`)
-            //alert(`Email is ${email} and password is ${password}`)
+        if (email == 'merchant@gmail.com' && password == '1234') {
 
-            // fetch('http://localhost:8080/traveler/login', {
+            return router.replace('/(merchant-tabs)')
 
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ email, password })
+        } else if (email == 'traveler@gmail.com' && password == '1234') {
 
-            // })
-            //     .then(res => res.text())
-            //     .then(data => {
+            return router.replace('/(tabs)')
 
-            //         if (data == "wrong password") {
+        } else if (email == 'vehicle@gmail.com' && password == '1234') {
 
-            //             setInvalidE(false)
-            //             alert(data)
+            return router.replace('/(vehicle)')
 
-            //         } else if (data == "true") {
+        } else if (email == 'guide@gmail.com' && password == '1234') {
 
-            //             setInvalidE(false)
-            //             router.replace('/(tabs)')
-
-            //         } else if (data == "invalid email") {
-
-            //             setInvalidE(true)
-
-            //         }
-
-            //     })
-            //     .catch(err => { alert(err); console.log(err) })
-
-            if (email == 'merchant@gmail.com' && password == '1234') {
-
-                router.replace('/(merchant-tabs)')
-
-            } else if (email == 'traveler@gmail.com' && password == '1234') {
-
-                router.replace('/(tabs)')
-
-            }
-
+            return router.replace('/(guide)')
 
         }
+
+        try {
+            const res = await fetch('http://localhost:8080/user/login', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+
+            });
+
+            if (res.ok) {
+                const data = await res.json()
+
+                if (data && data.token) {
+
+                    setWrongP(false)
+                    setInvalidE(false)
+                    setCredentE(false)
+
+                    //await SecureStore.setItemAsync("token", data.token)
+                    await AsyncStorage.setItem("token", data.token)
+
+                    return router.replace('/(tabs)')
+                } else {
+
+                    alert('No token')
+
+                }
+
+
+            } else {
+
+                const data = await res.json();
+                if (data.error == "invalid email") {
+
+                    setInvalidE(true)
+                    setCredentE(false)
+                    setWrongP(false)
+
+                } else {
+
+                    setWrongP(true)
+                    setInvalidE(false)
+                    setCredentE(false)
+
+
+                }
+
+            }
+        } catch (err) {
+
+            alert(`Network error : ${err}`)
+
+        }
+
+
+
     };
 
     return (
@@ -130,14 +178,27 @@ export default function LoginScreen() {
 
                                 <View>
                                     <Text className="text-base font-medium text-gray-700 mb-1">Password</Text>
-                                    <TextInput
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#9CA3AF"
-                                        secureTextEntry
-                                        value={password}
-                                        onChangeText={setPassword}
-                                    />
+
+                                    <View className="w-full flex-row items-center border border-gray-300 rounded-lg">
+                                        <TextInput
+
+                                            className="flex-1 pl-4 py-3 text-black text-base"
+                                            placeholder="••••••••"
+                                            placeholderTextColor="#9CA3AF"
+                                            secureTextEntry={!isPasswordVisible}
+                                            value={password}
+                                            onChangeText={setPassword}
+                                        />
+
+                                        <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
+                                            <Text className="font-semibold text-blue-600 text-center px-3">
+                                                {isPasswordVisible ? 'Hide' : 'Show'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <Text className={`text-red-500 text-sm ${wrongP ? 'opacity-100' : 'opacity-0'}`}>Wrong Password</Text>
+                                    <Text className={`text-red-500 ${credentE ? 'opacity-100' : 'opacity-0'}`} >Fill all fields with valid format</Text>
+                                    <Text className={`text-red-500 ${tokenE ? 'opacity-100' : 'opacity-0'}`} >Token Expired !!! Login Again.</Text>
                                 </View>
 
 
@@ -151,7 +212,6 @@ export default function LoginScreen() {
 
                                         className="w-full bg-[#FEFA17] py-3 rounded-lg shadow-sm"
                                         onPress={handleLogin}
-                                    /* onPress={() => router.push('/(tabs)')} */
                                     >
                                         <Text className="text-center text-black font-bold text-lg">
                                             Sign In
