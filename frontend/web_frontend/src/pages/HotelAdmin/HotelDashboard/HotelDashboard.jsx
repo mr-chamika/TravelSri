@@ -159,9 +159,9 @@ const HotelDashboard = () => {
   
   // Sample booking data
   const recentBookings = [
-    { name: 'Theekshana Thathsara', room: 'Deluxe Room', in: 'Jun 12, 2025', out: 'Jun 15, 2024', status: 'Confirmed' },
-    { name: 'Tharusha Samarawickrama', room: 'Suite', in: 'Jun 23, 2025', out: 'Jun 26, 2024', status: 'Pending' },
-    { name: 'Hasith Chamika', room: 'Standard', in: 'Oct 17, 2024', out: 'Oct 19, 2024', status: 'Confirmed' },
+    { name: 'Theekshana Thathsara', room: 'Deluxe Room', in: 'Jun 12, 2025', out: 'Jun 15, 2025', status: 'Confirmed' },
+    { name: 'Tharusha Samarawickrama', room: 'Suite', in: 'Jun 23, 2025', out: 'Jun 26, 2025', status: 'Pending' },
+    { name: 'Hasith Chamika', room: 'Standard', in: 'Oct 17, 2025', out: 'Oct 19, 2025', status: 'Confirmed' },
   ];
   
   return (
