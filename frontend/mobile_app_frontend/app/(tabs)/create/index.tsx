@@ -132,7 +132,6 @@ export default function Dropdown() {
                 if (res) {
 
                     const data: Route[] = await res.json()
-                    console.log(data)
                     setRoutes(data)
 
                 }

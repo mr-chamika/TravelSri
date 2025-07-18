@@ -21,6 +21,54 @@ const p = require('../../../assets/images/user2.png');
 const t = require('../../../assets/images/tag.png');
 const mark = require('../../../assets/images/mark.png');
 
+interface BookO {
+    dates: string[];
+    loc: string;
+    ad: string;
+    ch: string;
+    ni: string;
+    s: string;
+    d: string
+}
+interface BookG {
+    dates: string[];
+    loc: string;
+    lan: string;
+}
+
+interface Form {
+
+    //index.tsx (select a route)
+    routeId: string;
+
+    //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
+    hotelId: string;
+    singleBeds: number;
+    doubleBeds: number;
+    hdatesBooked: string[];
+    hlocation: string;
+    adults: number;
+    children: number;
+    nights: number;
+
+    //guide.tsx (select dates, location, language)
+
+    guideId: string;
+    gdatesBooked: string[];
+    glocation: string;
+    glanguage: string;
+
+    //car.tsx (select dates, location, language)
+
+    carId: string;
+    cdatesBooked: string[];
+    startLocation: string;
+    endLocation: string;
+    clanguage: string;
+    bookedTime: string;
+
+}
+
 interface g {
 
     id: string,
@@ -32,6 +80,23 @@ interface H {
     id: string,
     singlePrice: number,
     doublePrice: number,
+}
+
+interface Cat {
+
+    _id: string,
+    image: string,
+    members: number,
+    title: string,
+    price: number
+
+}
+
+interface Car {
+
+    _id: string;
+    price: number;
+
 }
 
 export default function App() {
@@ -139,7 +204,38 @@ export default function App() {
         },
     ];
  */
-    const categories = [
+
+    const x = async () => {
+
+        try {
+            const res = await fetch(`http://localhost:8080/traveler/vehicles-all`)
+
+            const data = await res.json()
+
+            if (data.length > 0) {
+
+                const minimalCars = data.map((car: Car) => ({
+                    id: car._id,
+                    price: car.price,
+                }));
+                await AsyncStorage.setItem('cars', JSON.stringify(minimalCars))
+                //console.log(data)
+                setCategories(data)
+            }
+
+
+
+        } catch (err) {
+
+            console.log(err)
+
+        }
+
+    }
+    useEffect(() => {
+        x();
+    }, [])
+    /* const categories = [
         {
             id: '1',
             image: pic,
@@ -183,7 +279,7 @@ export default function App() {
             price: 15000
         }
     ];
-
+ */
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
@@ -200,9 +296,45 @@ export default function App() {
     const [time, setTime] = useState('')
     const [guides, setGuides] = useState<g[]>([])
     const [hotels, setHotels] = useState<H[]>([])
+    const [categories, setCategories] = useState<Cat[]>([])
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
+
+    const [hotelId, setHotelId] = useState<string | null>(null)
+    const [guideId, setGuideId] = useState<string | null>(null)
+    const [submitForm, setSubmitForm] = useState<Form>({
+
+        routeId: '',
+
+        //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
+        hotelId: '',
+        singleBeds: 0,
+        doubleBeds: 0,
+        hdatesBooked: [],
+        hlocation: '',
+        adults: 0,
+        children: 0,
+        nights: 0,
+
+        //guide.tsx (select dates, location, language)
+
+        guideId: '',
+        gdatesBooked: [],
+        glocation: '',
+        glanguage: '',
+
+        //car.tsx (select dates, location, language)
+
+        carId: '',
+        cdatesBooked: [],
+        startLocation: '',
+        endLocation: '',
+        clanguage: '',
+        bookedTime: '',
+
+
+    })
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -230,6 +362,7 @@ export default function App() {
             await AsyncStorage.setItem('cbookings', JSON.stringify(newBooking));
             await AsyncStorage.setItem('cbookingComplete', 'true');
             await AsyncStorage.setItem('cbookingSession', Date.now().toString());
+            x()
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -294,9 +427,11 @@ export default function App() {
             setLanguage('');
             setStartLocation('');
             setEndLocation('');
+            setTime('')
             setShowLanguageDropdown(false);
             setShowStartDropdown(false);
             setShowEndDropdown(false);
+            setModalVisible(true)
 
             if (savedSelectedCarId) {
                 setSelectedCardId(savedSelectedCarId);
@@ -335,6 +470,7 @@ export default function App() {
             setIsBookingComplete(false);
             setBookingData(null);
             setLanguage('');
+            setTime('')
             setStartLocation('');
             setEndLocation('');
             setShowLanguageDropdown(false);
@@ -355,7 +491,7 @@ export default function App() {
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
+                const category = categories.find(cat => cat._id === carIndex);
                 if (category) {
                     total += category.price;
                 }
@@ -364,6 +500,7 @@ export default function App() {
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
             if (guideIndex && guides) {
+                setGuideId(guideIndex)
                 const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
                     total += guide.price;
@@ -374,6 +511,7 @@ export default function App() {
             const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
             if (savedHotelBooking && hotels.length > 0) {
                 const hotelBookingData = JSON.parse(savedHotelBooking);
+                setHotelId(hotelBookingData.id)
                 const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
 
                 if (selectedHotel && hotelBookingData) { // Null check for selectedHotel
@@ -403,7 +541,50 @@ export default function App() {
 
     const handleCreatePlan = async () => {
         try {
-            await AsyncStorage.multiRemove([
+
+            const routeId = await AsyncStorage.getItem('selectedLocation')
+            routeId ? setSubmitForm({ ...submitForm, routeId: routeId }) : console.log('routeId not found');
+
+            //setting hotel details
+            const hbookings = await AsyncStorage.getItem('hbookings');
+            const hotelData: BookO = hbookings ? JSON.parse(hbookings) : [];
+
+            (hotelData && hotelId) ? setSubmitForm({
+                ...submitForm,
+                hotelId: hotelId ? hotelId : '',
+                singleBeds: Number(hotelData.s),
+                doubleBeds: Number(hotelData.d),
+                hdatesBooked: hotelData.dates,
+                hlocation: hotelData.loc,
+                adults: Number(hotelData.ad),
+                children: Number(hotelData.ch),
+                nights: Number(hotelData.ni)
+            }) : console.log('hotel not found')
+
+            //setting guide details
+            const gbookings = await AsyncStorage.getItem('gbookings');
+            const guideData: BookG = gbookings ? JSON.parse(gbookings) : [];
+
+            (guideData && guideId) ? setSubmitForm({
+                ...submitForm,
+                guideId: guideId ? guideId : '',
+                gdatesBooked: guideData.dates,
+                glocation: guideData.loc,
+                glanguage: guideData.lan
+            }) : console.log('guide not found');
+
+            //setting car details
+
+            (bookingData && selectedCardId) ? setSubmitForm({
+                ...submitForm,
+                carId: selectedCardId ? selectedCardId : '',
+                cdatesBooked: bookingData.dates,
+                startLocation: bookingData.start,
+                endLocation: bookingData.end,
+                clanguage: bookingData.language,
+                bookedTime: bookingData.time
+            }) : console.log('vehicle not found')
+            /* await AsyncStorage.multiRemove([
                 'selectedLocation',
                 'hasMadeInitialSelection',
                 'hotel',
@@ -426,23 +607,24 @@ export default function App() {
                 'selectedRouteId',
                 'guides',
                 'hotels'
-
-
-            ]);
+ 
+ 
+            ]); 
 
             setSelectedDates({});
             setIsBookingComplete(false);
             setLanguage('');
             setStartLocation('');
             setEndLocation('');
-            setModalVisible(true);
+            setModalVisible(false);
             setSelectedCardId(null);
             setTotal('0');
             setBookingData(null);
-
-            // alert('Plan created and session reset!');
-            router.push('/(tabs)/create');
-            router.replace('/(tabs)');
+*/
+            console.log(submitForm)
+            alert('Plan created and session reset!');
+            /* router.push('/(tabs)/create');
+            router.replace('/(tabs)'); */
         } catch (e) {
             alert(`Error creating plan and resetting session: ${e}`);
             console.error('Error creating plan and resetting session:', e);
@@ -578,13 +760,13 @@ export default function App() {
                         >
                             {categories.map((x, i) => {
                                 return (
-                                    <TouchableOpacity onPress={() => handleCategoryNavigation(x.id)} key={x.id}>
+                                    <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)} key={x._id}>
                                         <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
                                             <TouchableOpacity
                                                 className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
-                                                onPress={() => toggleCardSelection(x.id)}
+                                                onPress={() => toggleCardSelection(x._id)}
                                             >
-                                                {selectedCardId === x.id && (
+                                                {selectedCardId === x._id && (
                                                     <Image className='w-4 h-4' source={mark} />
                                                 )}
                                             </TouchableOpacity>
@@ -592,7 +774,7 @@ export default function App() {
                                         <View className="bg-[#d9d9d98e] w-[150px] h-[140px] items-center py-2 rounded-2xl">
                                             <Image
                                                 className="w-[70px] h-[60px]"
-                                                source={x.image}
+                                                source={{ uri: `data:image/jpeg;base64,${x.image}` }}
                                             />
                                             <View>
                                                 <View className='flex-row items-center gap-4'>
@@ -614,7 +796,7 @@ export default function App() {
                                                     </Text>
                                                 </View>
                                             </View>
-                                            <TouchableOpacity onPress={() => handleCategoryNavigation(x.id)}>
+                                            <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)}>
                                                 <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
                                                     <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
                                                 </View>

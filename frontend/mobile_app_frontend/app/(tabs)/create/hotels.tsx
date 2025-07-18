@@ -53,6 +53,13 @@ interface g {
 
 }
 
+interface Car {
+
+    id: string;
+    price: number;
+
+}
+
 /* const hotels: Hotel[] = [
     { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
@@ -62,7 +69,7 @@ interface g {
 
 export default function HotelsBookingScreen() {
 
-    const categories = [
+    /* const categories = [
         {
             id: '1',
             members: 2,
@@ -100,7 +107,7 @@ export default function HotelsBookingScreen() {
             price: 15000
         }
     ]
-
+ */
 
     /* const guides = [
         {
@@ -200,6 +207,7 @@ export default function HotelsBookingScreen() {
         d: ''
     })
     const [guides, setGuides] = useState<g[]>([])
+    const [cars, setCars] = useState<Car[]>([])
 
     const sortedLocations = useMemo(() => {
         if (!location) return LOCATIONS;
@@ -305,6 +313,10 @@ export default function HotelsBookingScreen() {
                 setGuides(guideData ? JSON.parse(guideData) : [])
 
             }
+
+            const carData = await AsyncStorage.getItem('cars')
+            setCars(carData ? JSON.parse(carData) : []);
+
             // Reset states before loading new data
             setSelectedDates({});
             setBookingComplete(false);
@@ -393,7 +405,6 @@ export default function HotelsBookingScreen() {
                 if (res) {
 
                     const data = await res.json()
-                    console.log(data)
                     setHotels(data)
 
 
@@ -431,7 +442,7 @@ export default function HotelsBookingScreen() {
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
+                const category = cars.find(cat => cat.id === carIndex);
                 if (category) {
                     total += category.price;
                 }

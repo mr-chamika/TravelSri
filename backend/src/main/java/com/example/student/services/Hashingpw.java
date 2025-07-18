@@ -44,7 +44,11 @@ public class Hashingpw {
                                 "/traveler/shop-reviews",
                                 "/traveler/shop-get",
                                 "/traveler/review-create",
-                                "/traveler/search"
+                                "/traveler/search",
+                                "/traveler/vehicles-all",
+                                "/traveler/driver-get",
+                                "/traveler/driver-data",
+                                "/traveler/get-reviews"
 
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC

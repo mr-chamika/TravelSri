@@ -573,6 +573,8 @@ export default function SignupForm() {
                     ...payload
                 } = dataToSend;
 
+                console.log(...payload)
+
                 await fetch('http://localhost:8080/user/signup', {
 
                     method: 'POST',

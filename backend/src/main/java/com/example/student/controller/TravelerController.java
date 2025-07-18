@@ -243,5 +243,51 @@ public class TravelerController {
         return ResponseEntity.ok(response);
     }
 
+    @Autowired
+    private CategoryRepo categoryRepo;
+
+    @GetMapping("/vehicles-all")
+    public ResponseEntity<List<Category>> CategoryAll() {
+
+        List<Category> list= categoryRepo.findAll();
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private VehicleRepo vehicleRepo;
+
+    @GetMapping("/driver-get")
+    public ResponseEntity<List<Driverdto>> VehiclesAll(String id) {
+
+        List<Driverdto> list= vehicleRepo.findByCatId(id);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/driver-data")
+    public ResponseEntity<?> VehicleData(String id) {
+
+        Optional<Vehicle> list = vehicleRepo.findById(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.ok("Data Not Found");
+        }
+
+    return ResponseEntity.ok(list.get());
+
+    }
+
+    @GetMapping("/get-reviews")
+    public ResponseEntity<List<Review>> GetReviews(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
+
+        return ResponseEntity.ok(list);
+
+    }
 
 }

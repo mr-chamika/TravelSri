@@ -36,9 +36,16 @@ interface H {
     doublePrice: number,
 }
 
+interface Car {
+
+    id: string;
+    price: number;
+
+}
+
 export default function Guide() {
 
-    const categories = [
+    /* const categories = [
         {
             id: '1',
             members: 2,
@@ -76,7 +83,7 @@ export default function Guide() {
             price: 15000
         }
     ]
-
+ */
     const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
@@ -88,7 +95,9 @@ export default function Guide() {
     const [location, setLocation] = useState('');
     const [lan, setLan] = useState('');
     const [guides, setGuides] = useState<Guid[]>([])
-    const [hotels, setHotels] = useState<H[]>([])
+    const [hotelx, setHotels] = useState<H[]>([])
+    const [cars, setCars] = useState<Car[]>([])
+
 
     const [showDropdown, setShowDropdown] = useState(false);
     const [show, setShow] = useState(false);
@@ -159,8 +168,10 @@ export default function Guide() {
             const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
             const savedIndex = await AsyncStorage.getItem('guide');
             const hotelData = await AsyncStorage.getItem('hotels')
-
             setHotels(hotelData ? JSON.parse(hotelData) : [])
+
+            const carData = await AsyncStorage.getItem('cars')
+            setCars(carData ? JSON.parse(carData) : []);
 
             // --- Reset local state before loading from storage ---
             setSelectedDates({});
@@ -272,8 +283,8 @@ export default function Guide() {
             let total = 0;
 
             const carIndex = await AsyncStorage.getItem('car');
-            if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
+            if (carIndex && cars.length > 0) {
+                const category = cars.find(cat => cat.id === carIndex);
                 if (category) {
                     total += category.price;
                 }
@@ -288,10 +299,9 @@ export default function Guide() {
             }
 
             const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking');
-            if (savedHotelBooking && hotels.length > 0) { // Ensure hotels list is populated
+            if (savedHotelBooking && hotelx.length > 0) { // Ensure hotels list is populated
                 const hotelBookingData = JSON.parse(savedHotelBooking);
-                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id);
-
+                const selectedHotel = hotelx.find(hotel => hotel.id === hotelBookingData.id);
                 if (selectedHotel && hotelBookingData) {
                     const singleBedPrice = selectedHotel.singlePrice || 0;
                     const doubleBedPrice = selectedHotel.doublePrice || 0;
@@ -312,7 +322,7 @@ export default function Guide() {
     useFocusEffect(
         useCallback(() => {
             count();
-        }, [selectedCardIndex, guides, hotels]) // Runs when selection or data changes
+        }, [selectedCardIndex, guides, hotelx]) // Runs when selection or data changes
     );
 
 
