@@ -75,6 +75,7 @@ export default function Dropdown() {
         try {
 
             const routeIdToSave = newIndex !== null ? newIndex : '';
+            console.log(routeIdToSave)
             await AsyncStorage.setItem('selectedRouteId', routeIdToSave);
         } catch (error) {
             console.error('Error saving selectedCardIndex to AsyncStorage:', error);

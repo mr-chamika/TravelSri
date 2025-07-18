@@ -272,6 +272,7 @@ export default function HotelsBookingScreen() {
             return;
         }
         const newBooking: Book[] = [{ dates: Object.keys(selectedDates), loc: location, ad: adults, ch: children, ni: nights, s: s, d: d }];
+        console.log(newBooking)
         setBook(newBooking);
         setModalVisible(false);
         setBookingComplete(true);

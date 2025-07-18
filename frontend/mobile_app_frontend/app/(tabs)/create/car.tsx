@@ -542,49 +542,66 @@ export default function App() {
     const handleCreatePlan = async () => {
         try {
 
-            const routeId = await AsyncStorage.getItem('selectedLocation')
-            routeId ? setSubmitForm({ ...submitForm, routeId: routeId }) : console.log('routeId not found');
+            const finalFormObject = { ...submitForm }
+
+            const routeId = await AsyncStorage.getItem('selectedRouteId')
+            if (routeId) { finalFormObject.routeId = routeId } else { console.log('routeId not found'); }
 
             //setting hotel details
             const hbookings = await AsyncStorage.getItem('hbookings');
-            const hotelData: BookO = hbookings ? JSON.parse(hbookings) : [];
+            const hotelData: BookO[] = hbookings ? JSON.parse(hbookings) : [];
+            const obj = hotelData[0]
+            if (hotelData.length > 0 && hotelId) {
+                finalFormObject.hotelId = hotelId;
+                finalFormObject.singleBeds = Number(obj.s);
+                finalFormObject.doubleBeds = Number(obj.d);
+                finalFormObject.hdatesBooked = obj.dates;
+                finalFormObject.hlocation = obj.loc;
+                finalFormObject.adults = Number(obj.ad);
+                finalFormObject.children = Number(obj.ch);
+                finalFormObject.nights = Number(obj.ni);
 
-            (hotelData && hotelId) ? setSubmitForm({
-                ...submitForm,
-                hotelId: hotelId ? hotelId : '',
-                singleBeds: Number(hotelData.s),
-                doubleBeds: Number(hotelData.d),
-                hdatesBooked: hotelData.dates,
-                hlocation: hotelData.loc,
-                adults: Number(hotelData.ad),
-                children: Number(hotelData.ch),
-                nights: Number(hotelData.ni)
-            }) : console.log('hotel not found')
+            } else {
+
+                console.log('hotel not found')
+
+            }
 
             //setting guide details
             const gbookings = await AsyncStorage.getItem('gbookings');
-            const guideData: BookG = gbookings ? JSON.parse(gbookings) : [];
+            const guideData: BookG[] = gbookings ? JSON.parse(gbookings) : [];
 
-            (guideData && guideId) ? setSubmitForm({
-                ...submitForm,
-                guideId: guideId ? guideId : '',
-                gdatesBooked: guideData.dates,
-                glocation: guideData.loc,
-                glanguage: guideData.lan
-            }) : console.log('guide not found');
+            if (guideData.length > 0 && guideId) {
+
+                finalFormObject.guideId = guideId;
+                finalFormObject.gdatesBooked = guideData[0].dates;
+                finalFormObject.glocation = guideData[0].loc;
+                finalFormObject.glanguage = guideData[0].lan;
+
+            } else {
+
+                console.log('guide not found');
+
+            }
 
             //setting car details
 
-            (bookingData && selectedCardId) ? setSubmitForm({
-                ...submitForm,
-                carId: selectedCardId ? selectedCardId : '',
-                cdatesBooked: bookingData.dates,
-                startLocation: bookingData.start,
-                endLocation: bookingData.end,
-                clanguage: bookingData.language,
-                bookedTime: bookingData.time
-            }) : console.log('vehicle not found')
-            /* await AsyncStorage.multiRemove([
+            if (bookingData && selectedCardId) {
+
+                finalFormObject.carId = selectedCardId ? selectedCardId : '';
+                finalFormObject.cdatesBooked = bookingData.dates;
+                finalFormObject.startLocation = bookingData.start;
+                finalFormObject.endLocation = bookingData.end;
+                finalFormObject.clanguage = bookingData.language;
+                finalFormObject.bookedTime = bookingData.time;
+            } else {
+
+                console.log('vehicle not found')
+
+            }
+            console.log(finalFormObject)
+
+            await AsyncStorage.multiRemove([
                 'selectedLocation',
                 'hasMadeInitialSelection',
                 'hotel',
@@ -607,9 +624,9 @@ export default function App() {
                 'selectedRouteId',
                 'guides',
                 'hotels'
- 
- 
-            ]); 
+
+
+            ]);
 
             setSelectedDates({});
             setIsBookingComplete(false);
@@ -620,11 +637,11 @@ export default function App() {
             setSelectedCardId(null);
             setTotal('0');
             setBookingData(null);
-*/
-            console.log(submitForm)
+
+            //==setSubmitForm(finalFormObject)
             alert('Plan created and session reset!');
-            /* router.push('/(tabs)/create');
-            router.replace('/(tabs)'); */
+            router.push('/(tabs)/create');
+            router.replace('/(tabs)');
         } catch (e) {
             alert(`Error creating plan and resetting session: ${e}`);
             console.error('Error creating plan and resetting session:', e);
