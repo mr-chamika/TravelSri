@@ -37,7 +37,9 @@ public class Hashingpw {
                                 "/traveler/facis-view",
                                 "/traveler/guides-all",
                                 "/traveler/guides-view",
-                                "/traveler/guides-reviews"
+                                "/traveler/guides-reviews",
+                                "/guide/groupTours",
+                                "/guide/quotation/{tourId}"
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
