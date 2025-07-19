@@ -14,7 +14,7 @@ const CreateTrip03 = () => {
     // Google Maps API loader
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "YOUR_GOOGLE_MAPS_API_KEY", // Replace with your API key
+        // googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "YOUR_GOOGLE_MAPS_API_KEY", 
         libraries: ['places', 'geometry']
     });
 
