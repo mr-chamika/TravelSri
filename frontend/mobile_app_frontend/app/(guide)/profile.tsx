@@ -1,6 +1,7 @@
 import { Text, TouchableOpacity, View, StyleSheet, SafeAreaView } from 'react-native'
 import { Image } from 'expo-image'
 import { useState } from 'react'
+import BackButton from '../../components/ui/backButton';
 
 import Animated, {
     useSharedValue,
@@ -88,8 +89,10 @@ export default function Profile() {
     return (
         <SafeAreaView style={styles.safeArea}>
             <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+            
 
             <View style={styles.container}>
+                <BackButton />
                 {/* --- Profile and Personal Details Sections --- */}
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>

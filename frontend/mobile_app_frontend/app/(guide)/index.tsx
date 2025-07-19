@@ -27,6 +27,7 @@ import BookingScreen from './bookings';
 import AvailabilityScreen from './availability';
 import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
 import ProfileScreen from '../(guide)/profile';
+import RatingScreen from '../views/guideRating/[id]';
 
 // Type definitions
 interface Stats {
@@ -42,7 +43,7 @@ export type GuideStackParamList = {
   Profile: undefined;
   availability: undefined;
   travelFeed: undefined;
-  Earnings: undefined;
+  rating: undefined;
 };
 
 type GuideNavigation = NativeStackNavigationProp<GuideStackParamList>;
@@ -149,7 +150,7 @@ const TravelMateGuideHome = () => {
       icon: '😊',
       title: 'Rating & Reviews',
       subtitle: 'View Rating and Review',
-      id: 'earnings'
+      id: 'Rating'
     }
   ];
 
@@ -173,9 +174,9 @@ const TravelMateGuideHome = () => {
         console.log('Navigating to travel feed screen...');
         navigation.navigate('travelFeed');
         break;
-      case 'earnings':
+      case 'Rating':
         console.log('Navigating to earnings screen...');
-        // navigation.navigate('Earnings');
+         navigation.navigate('rating');
         break;
       default:
         console.log('Unknown menu item:', item.id);
@@ -247,7 +248,7 @@ const TravelMateGuide = () => {
       <Stack.Screen name="travelFeed" component={TravelFeedScreen} />
       {/* Add other screens here when ready */}
       <Stack.Screen name="Profile" component={ProfileScreen} />
-      {/* <Stack.Screen name="Earnings" component={EarningsScreen} /> */}
+      <Stack.Screen name="rating" component={RatingScreen} /> 
     </Stack.Navigator>
   );
 };

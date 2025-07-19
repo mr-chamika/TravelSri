@@ -39,9 +39,9 @@ public class Hashingpw {
                                 "/traveler/guides-view",
                                 "/traveler/guides-reviews",
                                 "/guide/groupTours",
-                                "/guide/submitQuotation/{tourId}",
-                                "/guide/submittedQuotation/{guideId}"
-                        ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
+                                "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
+                                "/guide/submittedQuotation/**" // Fixed: Allow all submittedQuotation endpoints
+                        ).permitAll() /// <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
                 .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
