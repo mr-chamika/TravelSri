@@ -15,133 +15,177 @@ import CreateTrip01 from "./pages/Admin/CreateTrip01";
 import CreateTrip02 from "./pages/Admin/CreateTrip02";
 import PendingTripDetails from "./pages/Admin/PendingTripDetails";
 import AllHotelQuotation from "./pages/Admin/AllHotelQuotation";
-import AllVehileQuotation from "./pages/Admin/AllVehicleQuotation";
 import AllGuideQuotation from "./pages/Admin/AllGuideQuotation";
+import AllVehicleQuotation from "./pages/Admin/AllVehicleQuotation";
 import PendingTripDetails02 from "./pages/Admin/PendingTripDetails02";
 import PendingTripDetails03 from "./pages/Admin/PendingTripDetails03";
+import CreateTrip03 from "./pages/Admin/CreateTrip03";
 
 function App() {
   return (
     <Router>
       <div className="app">
-        <AdminLayout>
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-              <Login />
-              }
-           />
-            <Route
-              path="/admin"
-              element={
+        <Routes>
+          {/* Login route without AdminLayout */}
+          <Route 
+            path="/" 
+            element={<Login />}
+          />
+          
+          {/* Admin routes with AdminLayout */}
+          <Route
+            path="/admin"
+            element={
+              <AdminLayout>
                 <DashboardPage />
-              }
-            />
-            <Route
-              path="/allhotelrequests"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allhotelrequests"
+            element={
+              <AdminLayout>
                 <AllHotelRequests/>
-              }
-            />
-            <Route
-              path="/allvehiclerequests"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allvehiclerequests"
+            element={
+              <AdminLayout>
                 <AllVehicleRequests/>
-              }
-            />
-            <Route
-              path="/allguiderequests"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allguiderequests"
+            element={
+              <AdminLayout>
                 <AllGuidesRequests/>
-              }
-            />
-            <Route
-              path="/allupcomingtrips"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allupcomingtrips"
+            element={
+              <AdminLayout>
                 <AllUpcomingTrips/>
-              }
-            />
-            <Route
-              path="/allpendingtrips"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allpendingtrips"
+            element={
+              <AdminLayout>
                 <AllPendingTrip/>
-              }
-            />
-            <Route
-              path="/upcomingtripdetails"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/upcomingtripdetails"
+            element={
+              <AdminLayout>
                 <UpcomingTripDetails/>
-              }
-            />
-            <Route
-              path="/upcomingtripparticipants"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/upcomingtripparticipants"
+            element={
+              <AdminLayout>
                 <UpcomingTripParticipants/>
-              }
-            />
-            <Route
-              path="/upcomingtrippayment"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/upcomingtrippayment"
+            element={
+              <AdminLayout>
                 <UpcomingTripPayment/>
-              }
-            />
-            <Route
-              path="/canceltrip"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/canceltrip"
+            element={
+              <AdminLayout>
                 <CancelTrip/>
-              }
-            />
-            <Route
-              path="/createtrip01"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/createtrip01"
+            element={
+              <AdminLayout>
                 <CreateTrip01/>
-              }
-            />
-            <Route
-              path="/createtrip02"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/createtrip02"
+            element={
+              <AdminLayout>
                 <CreateTrip02/>
-              }
-            />
-            <Route
-              path="/pendingtripdetails"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/createtrip03"
+            element={
+              <AdminLayout>
+                <CreateTrip03/>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/pendingtripdetails"
+            element={
+              <AdminLayout>
                 <PendingTripDetails/>
-              }
-            />
-            <Route
-              path="/pendingtripdetails02"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/pendingtripdetails02"
+            element={
+              <AdminLayout>
                 <PendingTripDetails02/>
-              }
-            />
-            <Route
-              path="/pendingtripdetails03"
-              element={
-                <PendingTripDetails03/>
-              }
-            />
-            <Route
-              path="/allhotelquotation"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/pendingtripdetails03"
+            element={
+              <AdminLayout>
+                <PendingTripDetails03 />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allhotelquotation"
+            element={
+              <AdminLayout>
                 <AllHotelQuotation/>
-              }
-            />
-            <Route
-              path="/allvehiclequotation"
-              element={
-                <AllVehileQuotation/>
-              }
-            />
-            <Route
-              path="/allguidequotation"
-              element={
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allguidequotation"
+            element={
+              <AdminLayout>
                 <AllGuideQuotation/>
-              }
-            />
-          </Routes>
-        </AdminLayout>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/allvehiclequotation"
+            element={
+              <AdminLayout>
+                <AllVehicleQuotation/>
+              </AdminLayout>
+            }
+          />
+        </Routes>
       </div>
     </Router>
   );

@@ -1,10 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import dayjs from "dayjs"; 
 
 const PendingTripDetails = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [tripData, setTripData] = useState(null);
+    const [calendarDate, setCalendarDate] = useState(null); // Add state for calendar
+
+    // Load trip data from localStorage
+    useEffect(() => {
+        const storedTrip = localStorage.getItem('selectedTripForDetails');
+        if (storedTrip) {
+            const parsedTrip = JSON.parse(storedTrip);
+            setTripData(parsedTrip);
+            if (parsedTrip.date) {
+                setCalendarDate(dayjs(parsedTrip.date)); // Set calendar date from trip
+            }
+        }
+    }, []);
 
     const quotationsList = [
         {
@@ -56,14 +71,24 @@ const PendingTripDetails = () => {
         // Example: window.location.href = "/next-step";
     };
 
+    // Helper to format date
+    const formatDate = (dateString) => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
+    };
+
     return (
         <div className="flex min-h-screen bg-gray-100">
-           
-
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
-                
-
                 {/* Page Content */}
                 <div className="flex-1 bg-gray-100 p-4 md:p-8">
                     <div className="bg-white rounded-3xl shadow-lg flex flex-col lg:flex-row w-full max-w-6xl mx-auto min-h-[600px] p-6 md:p-8 gap-6">
@@ -83,9 +108,45 @@ const PendingTripDetails = () => {
                             {/* Trip Title */}
                             <div className="mb-8">
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                                    Kandy trip
+                                    {tripData?.title || "Trip Details"}
                                 </h1>
                             </div>
+
+                            {/* Trip Important Data */}
+                            {tripData && (
+                                <div className="mb-8 bg-gray-50 rounded-xl p-4 md:p-6 shadow-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <span className="font-semibold text-gray-700">Start Location:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.startLocation}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-gray-700">End Location:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.endLocation}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-gray-700">Date:</span>
+                                            <span className="ml-2 text-gray-900">{formatDate(tripData.date)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-gray-700">Number of Seats:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.numberOfSeats}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-gray-700">Pickup Time:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.pickupTime}</span>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <span className="font-semibold text-gray-700">Description:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.descriptionAboutStartLocation}</span>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <span className="font-semibold text-gray-700">Route:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.path}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Quotations List */}
                             <div className="flex flex-col gap-4 mb-8">
@@ -133,7 +194,7 @@ const PendingTripDetails = () => {
                             {/* MUI Calendar */}
                             <div className="bg-gray-100 rounded-xl p-4 w-full flex flex-col items-center">
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DateCalendar />
+                                    <DateCalendar value={calendarDate} readOnly />
                                 </LocalizationProvider>
                             </div>
                         </div>

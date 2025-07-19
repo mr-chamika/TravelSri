@@ -88,26 +88,7 @@ const DashboardPage = () => {
 						))}
 					</div>
 					{/* System Cards */}
-					<div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-8">
-						<div className="bg-gray-100 rounded-xl p-4 md:p-6 flex-1 flex flex-col items-center">
-							<div className="font-bold text-base">Hotel System</div>
-							<button className="mt-4 bg-gray-900 text-white rounded-lg px-6 py-1 font-semibold cursor-pointer  hover:bg-gray-700">
-								Go to Dashboard
-							</button>
-						</div>
-						<div className="bg-gray-100 rounded-xl p-4 md:p-6 flex-1 flex flex-col items-center">
-							<div className="font-bold text-base">Vehical System</div>
-							<button className="mt-4 bg-gray-900 text-white rounded-lg px-6 py-1 font-semibold cursor-pointer  hover:bg-gray-700">
-								Go to Dashboard
-							</button>
-						</div>
-						<div className="bg-gray-100 rounded-xl p-4 md:p-6 flex-1 flex flex-col items-center">
-							<div className="font-bold text-base">Guid System</div>
-							<button className="mt-4 bg-gray-900 text-white rounded-lg px-6 py-1 font-semibold cursor-pointer  hover:bg-gray-700">
-								Go to Dashboard
-							</button>
-						</div>
-					</div>
+					
 				</div>
 				{/* Right Sidebar */}
 				<div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-200 pt-6 lg:pt-0 lg:pl-8 flex flex-col items-center">

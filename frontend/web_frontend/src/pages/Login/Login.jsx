@@ -25,7 +25,8 @@ const Login = () => {
             .catch(err => console.error('Error:', err));
     };
 
-    const getAll = () => {
+    // Using async/await
+const getAll = () => {
         setOk(true);
 
         fetch('http://localhost:8080/student/getAll')
