@@ -11,4 +11,6 @@ import org.springframework.stereotype.Service;
 //import com.example.Student.model.Student;
 //import com.example.mongodbdemo.domain.Student;
 @Repository
-public interface Repo extends MongoRepository<Student, String> {}
+public interface Repo extends MongoRepository<Student, String> {
+
+}
