@@ -120,7 +120,7 @@ function App() {
           </Route>
         </Routes>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
 
