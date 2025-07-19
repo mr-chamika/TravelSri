@@ -62,9 +62,9 @@ const Calendar = ({ calendarDate, setCalendarDate, today }) => {
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-sm text-gray-500 mb-2">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-          <div key={d} className="text-center">
-            {d}
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+          <div key={`day-${index}`} className="text-center">
+            {day.charAt(0)}
           </div>
         ))}
       </div>

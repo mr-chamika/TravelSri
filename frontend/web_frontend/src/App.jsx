@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 //import './App.css';
 import Login from './pages/Login/Login';
@@ -208,7 +207,7 @@ function App() {
               </AdminLayout>
             }
           />
-          <Route path="/" element={<Login />} />
+          
           <Route path="/dashboard" element={<Dashboard />} />
           
           {/* System Hotels Managing Admin Routes */}

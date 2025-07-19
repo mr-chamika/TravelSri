@@ -324,7 +324,7 @@ const SystemAdminDashboard = () => {
       {/* Chart + Calendar */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm flex-1  border-2 w-[75%]">
+        <div className="bg-white p-6 rounded-lg shadow-sm flex-1 w-[75%]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
               {chartView === 'monthly' ? 'Monthly Booking Trends' : 'Hotel Revenue Overview'}
@@ -361,8 +361,8 @@ const SystemAdminDashboard = () => {
             </button>
           </div>
           <div className="grid grid-cols-7 text-sm text-center text-gray-700 gap-y-1">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-              <div key={day} className="font-semibold">{day}</div>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+              <div key={`day-header-${index}`} className="font-semibold">{day.charAt(0)}</div>
             ))}
             {days.map((day, index) => {
               const isToday =
