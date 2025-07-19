@@ -3,10 +3,10 @@ import { NavLink, useLocation } from "react-router-dom";
 import profile1 from "../../assets/profile1.jpeg"; // <-- Add this import
 
 const sidebarLinks = [
-  { label: "Dashboard", to: "/admin" },
-  { label: "Hotel's Requests", to: "/allhotelrequests" },
-  { label: "Vehicle's Requests", to: "/allvehiclerequests" },
-  { label: "Guide's Requests", to: "/allguiderequests" },
+  { label: "Admin Dashboard", to: "/admin" },
+  { label: "Hotel Dashboard", to: "/allhotelrequests" },
+  { label: "Vehicle Dashboard", to: "/allvehiclerequests" },
+  { label: "Guide Dashboard", to: "/allguiderequests" },
 ];
 
 const AdminSidebar = () => {
