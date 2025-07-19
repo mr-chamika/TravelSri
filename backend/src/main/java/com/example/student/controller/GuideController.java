@@ -9,16 +9,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8081")
+@CrossOrigin(origins = "http://localhost:8082")
 @RequestMapping("/guide")
 public class GuideController {
 
@@ -32,7 +30,6 @@ public class GuideController {
     public void redirectToSwagger(HttpServletResponse response) throws IOException {
         response.sendRedirect("/swagger-ui/index.html");
     }
-
 
     public List<GuideQuotation> allQuotations() {
         return quotationRepo.findAll();
@@ -68,17 +65,13 @@ public class GuideController {
         return unsubmittedTours;
     }
 
-
-
-
-
     @PostMapping("/quotation")
     public Tour addQuotation(@RequestBody Tour guide) {
         return guideRepo.save(guide);
     }
 
-    // Enhanced endpoint to submit quotation price - now accepts guideId in request body
-    @PutMapping("/quotation/{tourId}")
+    // Fixed endpoint to submit quotation price - now accepts tourId in path and data in body
+    @PutMapping("/submitQuotation/{tourId}")
     public ResponseEntity<?> submitQuotationPrice(@PathVariable String tourId, @RequestBody QuotationRequest quotationRequest) {
         System.out.println("Received quotation request for tour ID: " + tourId);
         System.out.println("Quotation data: " + quotationRequest);
@@ -141,10 +134,6 @@ public class GuideController {
             GuideQuotation savedQuotation = quotationRepo.save(quotation);
             System.out.println("Successfully saved quotation with ID: " + savedQuotation.get_id());
 
-            // Optionally, also update the tour status to indicate quotation has been submitted
-//            tour.setStatus("quoted");
-//            guideRepo.save(tour);
-
             return ResponseEntity.ok(savedQuotation);
 
         } catch (Exception e) {
@@ -152,6 +141,54 @@ public class GuideController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error submitting quotation: " + e.getMessage());
+        }
+    }
+
+    // Fixed endpoint to get submitted quotations by guide ID
+    @GetMapping("/submittedQuotation/{guideId}")
+    public ResponseEntity<?> getSubmittedQuotationsByGuide(@PathVariable String guideId) {
+        System.out.println("Fetching submitted quotations for guide ID: " + guideId);
+
+        try {
+            // Step 1: Fetch all quotations submitted by this guide
+            List<GuideQuotation> quotations = quotationRepo.findByGuideId(guideId);
+
+            if (quotations.isEmpty()) {
+                System.out.println("No submitted quotations for guide ID: " + guideId);
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+            // Step 2: Join each quotation with its corresponding tour
+            List<Map<String, Object>> resultList = new ArrayList<>();
+
+            for (GuideQuotation quotation : quotations) {
+                Optional<Tour> tourOptional = guideRepo.findById(quotation.getTourId());
+
+                if (tourOptional.isPresent()) {
+                    Tour tour = tourOptional.get();
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("quotationId", quotation.get_id());
+                    data.put("guideId", quotation.getGuideId());
+                    data.put("tourId", tour.get_id());
+                    data.put("tourDetails", tour);  // Entire Tour model
+                    data.put("quotedAmount", quotation.getQuotedAmount());
+                    data.put("quotationNotes", quotation.getQuotationNotes());
+                    data.put("quotationDate", quotation.getQuotationDate());
+                    data.put("status", quotation.getStatus());
+
+                    resultList.add(data);
+                }
+            }
+
+            System.out.println("Returning " + resultList.size() + " quotations for guide ID: " + guideId);
+            return ResponseEntity.ok(resultList);
+
+        } catch (Exception e) {
+            System.err.println("Error fetching submitted quotations: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching submitted quotations");
         }
     }
 
