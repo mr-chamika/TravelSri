@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, TextInput, TouchableOpacity, View } from "react-native";
+import { View, Text } from "react-native";
 const bg = require('../../assets/images/bg.jpg');
 const srch = require('../../assets/images/search1.png');
 
@@ -30,28 +30,8 @@ export default function Index() {
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-black">
-
-      <View className="bg-[#FFFFFF33] rounded-full px-5 absolute z-10 flex flex-row items-center">
-
-        <TextInput
-
-          className="h-11 w-72 outline-none text-[#ffffffaa]"
-          placeholderTextColor="#ffffffaa"
-          placeholder='Search'
-          value={search}
-          onChangeText={setSearch}
-
-        />
-
-        <TouchableOpacity onPress={handler} className="ml-2">
-          <Image source={srch}></Image>
-        </TouchableOpacity>
-
-      </View>
-
-      <Image source={bg} style={{ height: '100%' }} />
-
+    <View className="justify-center items-center h-full">
+      <Text>hello, This is the homepage</Text>
     </View>
   );
 }

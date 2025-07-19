@@ -11,6 +11,12 @@ export default function RootLayout() {
         options={{ headerShown: false }}
 
       />
+      <Stack.Screen
+
+        name="sideTabs"
+        options={{ headerShown: false }}
+
+      />
 
     </Stack>
   );
