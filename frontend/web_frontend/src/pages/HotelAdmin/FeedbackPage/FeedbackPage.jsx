@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import FeedbackStats from '../../../components/HotelAdmin/Feedback/FeedbackStats';
-import FeedbackFilters from '../../../components/HotelAdmin/Feedback/FeedbackFilters';
-import FeedbackList from '../../../components/HotelAdmin/Feedback/FeedbackList';
+import FeedbackStats from '../../../components/HotelAdminM/HotelAdmin/Feedback/FeedbackStats';
+import FeedbackFilters from '../../../components/HotelAdminM/HotelAdmin/Feedback/FeedbackFilters';
+import FeedbackList from '../../../components/HotelAdminM/HotelAdmin/Feedback/FeedbackList';
 
 const FeedbackPage = () => {
   // Sample feedback data - in a real app, this would come from API/backend

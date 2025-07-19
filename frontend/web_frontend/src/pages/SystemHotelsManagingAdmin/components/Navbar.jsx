@@ -9,7 +9,7 @@ const Navbar = ({ toggleSidebar }) => {
   });
 
   return (
-    <nav className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+    <nav className="w-full bg-white border-b border-gray-200 px-1 py-3 flex items-center justify-between shadow-sm ">
       {/* Left side: Logo + TravelSri + Search */}
       <div className="flex items-center space-x-4">
         <button onClick={toggleSidebar} className="lg:hidden mr-2">
@@ -34,7 +34,7 @@ const Navbar = ({ toggleSidebar }) => {
       </div>
 
       {/* Right side: Notifications + User Profile */}
-      <div className="flex items-center space-x-6">
+      <div className="flex items-center space-x-6 mr-4">
         <button className="relative hover:bg-gray-100 p-2 rounded-full transition">
           <span className="material-icons text-gray-700">notifications</span>
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -42,7 +42,7 @@ const Navbar = ({ toggleSidebar }) => {
           </span>
         </button>
 
-        <button className="hover:bg-gray-100 p-2 rounded-full transition flex items-center space-x-2">
+        {/* <button className="hover:bg-gray-100 p-2 rounded-full transition flex items-center space-x-2">
           <img
             src="https://randomuser.me/api/portraits/men/75.jpg"
             alt="User Profile"
@@ -51,7 +51,7 @@ const Navbar = ({ toggleSidebar }) => {
           <span className="hidden md:block text-gray-700 font-medium">
             System Hotel Managing Administrator
           </span>
-        </button>
+        </button> */}
       </div>
     </nav>
   );

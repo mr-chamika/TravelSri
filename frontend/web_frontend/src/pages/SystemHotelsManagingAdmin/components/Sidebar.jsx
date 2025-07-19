@@ -18,7 +18,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   };
   
   return (
-    <div className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative z-50 w-64 h-screen bg-black text-white transition-transform duration-300 ease-in-out flex flex-col`}>
+    <div className={`${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed bottom-0 left-0 z-50 w-64 h-[90%] bg-black text-white transition-transform duration-300 ease-in-out flex flex-col`}>
       <div className="flex items-center p-4 mb-6">
         <button onClick={() => setIsOpen(false)} className="lg:hidden mr-2">
           <span className="material-icons">close</span>

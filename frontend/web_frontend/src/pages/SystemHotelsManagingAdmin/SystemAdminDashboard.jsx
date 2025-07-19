@@ -324,7 +324,7 @@ const SystemAdminDashboard = () => {
       {/* Chart + Calendar */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-sm flex-1">
+        <div className="bg-white p-6 rounded-lg shadow-sm flex-1  border-2 w-[75%]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
               {chartView === 'monthly' ? 'Monthly Booking Trends' : 'Hotel Revenue Overview'}
@@ -348,7 +348,7 @@ const SystemAdminDashboard = () => {
         </div>
 
         {/* Calendar */}
-        <div className="bg-white p-6 rounded-lg shadow-sm w-full lg:w-80">
+        <div className="bg-white p-6 rounded-lg shadow-sm w-full lg:w-80 h-80">
           <div className="flex items-center justify-between mb-4">
             <button onClick={handlePrevMonth}>
               <MdChevronLeft className="text-2xl text-gray-600 hover:text-gray-800" />

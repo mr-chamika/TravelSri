@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../../components/HotelAdmin/Sidebar/Sidebar';
-import Navbar from '../../components/HotelAdmin/Navbar/Navbar';
+import Sidebar from '../../components/HotelAdminM/HotelAdmin/Sidebar/Sidebar';
+import Navbar from '../../components/HotelAdminM/HotelAdmin/Navbar/Navbar';
 
 const HotelAdmin = () => {
   return (

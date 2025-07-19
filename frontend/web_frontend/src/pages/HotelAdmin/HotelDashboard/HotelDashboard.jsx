@@ -10,10 +10,10 @@ import {
 } from 'chart.js';
 
 // Import components
-import StatsCards from '../../../components/HotelAdmin/Dashboard/StatsCards';
-import BookingChart from '../../../components/HotelAdmin/Dashboard/BookingChart';
-import Calendar from '../../../components/HotelAdmin/Dashboard/Calendar';
-import RecentBookings from '../../../components/HotelAdmin/Dashboard/RecentBookings';
+import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
+import BookingChart from '../../../components/HotelAdminM/HotelAdmin/Dashboard/BookingChart';
+import Calendar from '../../../components/HotelAdminM/HotelAdmin/Dashboard/Calendar';
+import RecentBookings from '../../../components/HotelAdminM/HotelAdmin/Dashboard/RecentBookings';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 

@@ -33,7 +33,7 @@ function App() {
           
           {/* System Hotels Managing Admin Routes */}
           <Route path="/system-admin" element={
-            <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+            <Suspense fallback={<div className="flex justify-center items-center h-screen ">Loading...</div>}>
               <SystemAdmin />
             </Suspense>
           }>
