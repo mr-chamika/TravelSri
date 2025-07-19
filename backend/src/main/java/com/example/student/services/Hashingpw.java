@@ -37,18 +37,20 @@ public class Hashingpw {
                                 "/traveler/facis-view",
                                 "/traveler/guides-all",
                                 "/traveler/guides-view",
-                                "/traveler/guides-reviews",
                                 "/traveler/items-top",
                                 "/traveler/shops-get",
                                 "/traveler/shop-items",
-                                "/traveler/shop-reviews",
                                 "/traveler/shop-get",
                                 "/traveler/review-create",
                                 "/traveler/search",
                                 "/traveler/vehicles-all",
                                 "/traveler/driver-get",
                                 "/traveler/driver-data",
-                                "/traveler/get-reviews"
+                                "/traveler/get-reviews",
+                                "/traveler/create-trip",
+                                "/traveler/trips-view",
+                                "/traveler/map",
+                                "/traveler/trip-one"
 
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC

@@ -351,8 +351,8 @@ export default function Equipments() {
                                     <View className="flex-1 border border-gray-200 rounded-lg">
                                         {searchResults.items.length > 0 ? (
                                             <ScrollView showsVerticalScrollIndicator={false} className="p-2">
-                                                {searchResults.items.map((item) => (
-                                                    <TouchableOpacity key={item.id} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2" onPress={() => alert(`Contact us - ${item.contact}`)}>
+                                                {searchResults.items.map((item, i) => (
+                                                    <TouchableOpacity key={i} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2" onPress={() => alert(`Contact us - ${item.contact}`)}>
                                                         <Image className="w-14 h-14 rounded-md" source={{ uri: `data:image/jpeg;base64,${item.image}` }} />
                                                         <View className="ml-3 flex-1">
                                                             <Text className="font-bold">{item.name}</Text>
@@ -374,7 +374,7 @@ export default function Equipments() {
                                         {searchResults.stores.length > 0 ? (
                                             <ScrollView showsVerticalScrollIndicator={false} className="p-2">
                                                 {searchResults.stores.map((shop) => (
-                                                    <TouchableOpacity key={shop._id} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2">
+                                                    <TouchableOpacity key={shop._id} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2" onPress={() => { router.push(`/views/shop/${shop._id}`); setModalVisible(false) }}>
                                                         <Image className="w-14 h-14 rounded-md" source={{ uri: `data:image/jpeg;base64,${shop.image}` }} />
                                                         <View className="ml-3 flex-1">
                                                             <Text className="font-bold">{shop.name}</Text>

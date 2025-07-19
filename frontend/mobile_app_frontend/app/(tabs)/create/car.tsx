@@ -6,8 +6,16 @@ import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
+import { jwtDecode } from 'jwt-decode';
 import SimpleTimePicker from '../../../components/TimeSelector';
 
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
 
 cssInterop(Image, { className: "style" });
 
@@ -40,6 +48,7 @@ interface Form {
 
     //index.tsx (select a route)
     routeId: string;
+    creatorId: string;
 
     //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
     hotelId: string;
@@ -50,6 +59,7 @@ interface Form {
     adults: number;
     children: number;
     nights: number;
+    hprice: number;
 
     //guide.tsx (select dates, location, language)
 
@@ -57,6 +67,8 @@ interface Form {
     gdatesBooked: string[];
     glocation: string;
     glanguage: string;
+    gprice: number;
+
 
     //car.tsx (select dates, location, language)
 
@@ -66,6 +78,8 @@ interface Form {
     endLocation: string;
     clanguage: string;
     bookedTime: string;
+    cprice: number;
+
 
 }
 
@@ -298,6 +312,7 @@ export default function App() {
     const [hotels, setHotels] = useState<H[]>([])
     const [categories, setCategories] = useState<Cat[]>([])
 
+
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
 
@@ -306,6 +321,7 @@ export default function App() {
     const [submitForm, setSubmitForm] = useState<Form>({
 
         routeId: '',
+        creatorId: '',
 
         //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
         hotelId: '',
@@ -316,6 +332,7 @@ export default function App() {
         adults: 0,
         children: 0,
         nights: 0,
+        hprice: 0,
 
         //guide.tsx (select dates, location, language)
 
@@ -323,6 +340,7 @@ export default function App() {
         gdatesBooked: [],
         glocation: '',
         glanguage: '',
+        gprice: 0,
 
         //car.tsx (select dates, location, language)
 
@@ -332,9 +350,13 @@ export default function App() {
         endLocation: '',
         clanguage: '',
         bookedTime: '',
+        cprice: 0
 
 
     })
+    const [catPrice, setCatPrice] = useState(0);
+    const [guidePrice, setGuidePrice] = useState(0);
+    const [hotelPrice, setHotelPrice] = useState(0);
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -482,7 +504,8 @@ export default function App() {
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
-        }, [loadBookingData])
+            count()
+        }, [categories])
     );
     const count = async () => {
         try {
@@ -494,6 +517,7 @@ export default function App() {
                 const category = categories.find(cat => cat._id === carIndex);
                 if (category) {
                     total += category.price;
+                    setCatPrice(category.price)
                 }
             }
 
@@ -504,6 +528,7 @@ export default function App() {
                 const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
                     total += guide.price;
+                    setGuidePrice(guide.price)
                 }
             }
 
@@ -521,6 +546,7 @@ export default function App() {
                     const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
                     const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
                     total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    setHotelPrice((singleBedPrice * numSingle) + (doubleBedPrice * numDouble))
                     //}
                 }
             }
@@ -533,119 +559,147 @@ export default function App() {
     };
 
 
-    useFocusEffect(
+    /* useFocusEffect(
         useCallback(() => {
             count();
         }, [selectedCardId, guides, hotels])
-    );
+    ); */
+
+    useEffect(() => {
+        count();
+    }, [selectedCardId, guideId, hotelId, guides, hotels]);
+
 
     const handleCreatePlan = async () => {
         try {
 
-            const finalFormObject = { ...submitForm }
+            const keys = await AsyncStorage.getItem("token");
+            if (keys) {
 
-            const routeId = await AsyncStorage.getItem('selectedRouteId')
-            if (routeId) { finalFormObject.routeId = routeId } else { console.log('routeId not found'); }
+                const token: MyToken = jwtDecode(keys)
+                const finalFormObject = { ...submitForm }
 
-            //setting hotel details
-            const hbookings = await AsyncStorage.getItem('hbookings');
-            const hotelData: BookO[] = hbookings ? JSON.parse(hbookings) : [];
-            const obj = hotelData[0]
-            if (hotelData.length > 0 && hotelId) {
-                finalFormObject.hotelId = hotelId;
-                finalFormObject.singleBeds = Number(obj.s);
-                finalFormObject.doubleBeds = Number(obj.d);
-                finalFormObject.hdatesBooked = obj.dates;
-                finalFormObject.hlocation = obj.loc;
-                finalFormObject.adults = Number(obj.ad);
-                finalFormObject.children = Number(obj.ch);
-                finalFormObject.nights = Number(obj.ni);
+                const routeId = await AsyncStorage.getItem('selectedRouteId')
+                if (routeId) { finalFormObject.routeId = routeId } else { console.log('routeId not found'); }
 
-            } else {
+                //setting hotel details
+                const hbookings = await AsyncStorage.getItem('hbookings');
+                const hotelData: BookO[] = hbookings ? JSON.parse(hbookings) : [];
+                const obj = hotelData[0]
+                if (hotelData.length > 0 && hotelId) {
+                    finalFormObject.creatorId = token.id;
 
-                console.log('hotel not found')
+                    finalFormObject.hotelId = hotelId;
+                    finalFormObject.singleBeds = Number(obj.s);
+                    finalFormObject.doubleBeds = Number(obj.d);
+                    finalFormObject.hdatesBooked = obj.dates;
+                    finalFormObject.hlocation = obj.loc;
+                    finalFormObject.adults = Number(obj.ad);
+                    finalFormObject.children = Number(obj.ch);
+                    finalFormObject.nights = Number(obj.ni);
+                    finalFormObject.hprice = hotelPrice
 
+                } else {
+
+                    console.log('hotel not found')
+
+                }
+
+                //setting guide details
+                const gbookings = await AsyncStorage.getItem('gbookings');
+                const guideData: BookG[] = gbookings ? JSON.parse(gbookings) : [];
+
+                if (guideData.length > 0 && guideId) {
+
+                    finalFormObject.guideId = guideId;
+                    finalFormObject.gdatesBooked = guideData[0].dates;
+                    finalFormObject.glocation = guideData[0].loc;
+                    finalFormObject.glanguage = guideData[0].lan;
+                    finalFormObject.gprice = guidePrice;
+
+                } else {
+
+                    console.log('guide not found');
+
+                }
+
+                //setting car details
+                const driver = await AsyncStorage.getItem('driver')
+                if (bookingData && selectedCardId) {
+
+                    finalFormObject.carId = driver ? driver : '';
+                    finalFormObject.cdatesBooked = bookingData.dates;
+                    finalFormObject.startLocation = bookingData.start;
+                    finalFormObject.endLocation = bookingData.end;
+                    finalFormObject.clanguage = bookingData.language;
+                    finalFormObject.bookedTime = bookingData.time;
+                    finalFormObject.cprice = catPrice;
+                } else {
+
+                    console.log('vehicle not found')
+
+                }
+                console.log(finalFormObject)
+
+                await fetch('http://localhost:8080/traveler/create-trip', {
+
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalFormObject)
+
+                })
+                    .then(res => res.text())
+                    .then(data => console.log(data))
+                    .catch(err => console.log(err))
+
+                await AsyncStorage.multiRemove([
+                    'selectedLocation',
+                    'hasMadeInitialSelection',
+                    'hotel',
+                    'guide',
+                    'car',
+                    'hbookings',
+                    'hbookingComplete',
+                    'hbookingSession',
+                    'bookingSession',
+                    'gbookings',
+                    'gbookingComplete',
+                    'gbookingSession',
+                    'cbookings',
+                    'cbookingComplete',
+                    'cbookingSession',
+                    'bookingSession',
+                    'total',
+                    'route',
+                    'selectedHotelBooking',
+                    'selectedRouteId',
+                    'guides',
+                    'hotels',
+                    'driver'
+
+
+                ]);
+
+                setSelectedDates({});
+                setIsBookingComplete(false);
+                setLanguage('');
+                setStartLocation('');
+                setEndLocation('');
+                setModalVisible(false);
+                setSelectedCardId(null);
+                setTotal('0');
+                setBookingData(null);
+
+                //==setSubmitForm(finalFormObject)
+                alert('Plan created and session reset!');
+                router.push('/(tabs)/create');
+                router.replace('/(tabs)');
             }
-
-            //setting guide details
-            const gbookings = await AsyncStorage.getItem('gbookings');
-            const guideData: BookG[] = gbookings ? JSON.parse(gbookings) : [];
-
-            if (guideData.length > 0 && guideId) {
-
-                finalFormObject.guideId = guideId;
-                finalFormObject.gdatesBooked = guideData[0].dates;
-                finalFormObject.glocation = guideData[0].loc;
-                finalFormObject.glanguage = guideData[0].lan;
-
-            } else {
-
-                console.log('guide not found');
-
-            }
-
-            //setting car details
-
-            if (bookingData && selectedCardId) {
-
-                finalFormObject.carId = selectedCardId ? selectedCardId : '';
-                finalFormObject.cdatesBooked = bookingData.dates;
-                finalFormObject.startLocation = bookingData.start;
-                finalFormObject.endLocation = bookingData.end;
-                finalFormObject.clanguage = bookingData.language;
-                finalFormObject.bookedTime = bookingData.time;
-            } else {
-
-                console.log('vehicle not found')
-
-            }
-            console.log(finalFormObject)
-
-            await AsyncStorage.multiRemove([
-                'selectedLocation',
-                'hasMadeInitialSelection',
-                'hotel',
-                'guide',
-                'car',
-                'hbookings',
-                'hbookingComplete',
-                'hbookingSession',
-                'bookingSession',
-                'gbookings',
-                'gbookingComplete',
-                'gbookingSession',
-                'cbookings',
-                'cbookingComplete',
-                'cbookingSession',
-                'bookingSession',
-                'total',
-                'route',
-                'selectedHotelBooking',
-                'selectedRouteId',
-                'guides',
-                'hotels'
-
-
-            ]);
-
-            setSelectedDates({});
-            setIsBookingComplete(false);
-            setLanguage('');
-            setStartLocation('');
-            setEndLocation('');
-            setModalVisible(false);
-            setSelectedCardId(null);
-            setTotal('0');
-            setBookingData(null);
-
-            //==setSubmitForm(finalFormObject)
-            alert('Plan created and session reset!');
-            router.push('/(tabs)/create');
-            router.replace('/(tabs)');
         } catch (e) {
             alert(`Error creating plan and resetting session: ${e}`);
             console.error('Error creating plan and resetting session:', e);
         }
+
     };
 
     return (

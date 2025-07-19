@@ -80,7 +80,7 @@ export default function ShopDetailScreen() {
 
         try {
 
-            const res = await fetch(`http://localhost:8080/traveler/shop-reviews?id=${id}`)
+            const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
 
             if (res.ok) {
 

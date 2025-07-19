@@ -13,7 +13,8 @@ interface Location {
     routeId: any[],
     name: string,
     image: string,
-    description: string
+    description: string,
+    mapRoute: string
 
 }
 
@@ -99,6 +100,7 @@ export default function Views() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
     const [item, setItem] = useState<Location[]>([]);
+    const [img, setImg] = useState('')
 
     /* const getItem = (Id: string | string[]) => {
         const foundItem = routes.find(collection => collection._id === Id);
@@ -119,6 +121,29 @@ export default function Views() {
     }, [id]);
  */
 
+    const getMap = async () => {
+
+
+        try {
+
+            const res1 = await fetch(`http://localhost:8080/traveler/map?id=${id.toString()}`)
+
+            if (res1) {
+
+                const data1 = await res1.json()
+                setImg(data1.uri)
+
+            }
+
+        } catch (err) {
+
+            console.log(`Error from map image getting : ${err}`)
+
+        }
+
+
+    }
+
     useEffect(() => {
         const getRoutes = async () => {
 
@@ -126,11 +151,12 @@ export default function Views() {
 
                 const res = await fetch(`http://localhost:8080/traveler/routes-one?id=${id.toString()}`)
 
+
                 if (res) {
 
                     const data = await res.json()
                     setItem(data)
-                    console.log(data)
+                    //console.log(data)
 
                 }
 
@@ -142,6 +168,7 @@ export default function Views() {
 
         }
         getRoutes()
+        getMap()
     }, [])
 
     return (
@@ -235,7 +262,7 @@ export default function Views() {
 
                     </View>
                     <View>
-                        <Image className="w-full h-40" source={map} />
+                        <Image className="w-full h-40" source={{ uri: `data:image/jpeg;base64,${img}` }} />
                     </View>
                     <Text className='bg-black w-20 px-1 rounded-lg py-1 text-center font-bold text-white'>Locations</Text>
                     <View className=" w-full">

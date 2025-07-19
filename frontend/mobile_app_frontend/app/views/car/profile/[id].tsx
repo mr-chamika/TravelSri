@@ -190,6 +190,7 @@ export default function Views() {
         try {
             // Set a new session timestamp to indicate new booking intent
             await AsyncStorage.setItem('bookingSession', Date.now().toString());
+            await AsyncStorage.setItem('driver', id.toString())
             router.push(`/(tabs)/create/car`);
         } catch (error) {
             console.error('Error updating booking session in AsyncStorage:', error);

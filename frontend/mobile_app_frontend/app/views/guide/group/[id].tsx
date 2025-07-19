@@ -167,7 +167,7 @@ export default function Views() {
 
             try {
 
-                const res1 = await fetch(`http://localhost:8080/traveler/guides-reviews?id=${id}`)
+                const res1 = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
 
                 if (res1) {
 

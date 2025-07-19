@@ -3,15 +3,13 @@ package com.example.student.controller;
 import com.example.student.model.*;
 import com.example.student.model.dto.*;
 import com.example.student.repo.*;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @CrossOrigin
@@ -20,6 +18,8 @@ public class TravelerController {
 
     @Autowired
     private RoutesRepo repo;
+    @Autowired
+    private HotelsRepo hotelsRepo;
 
     @GetMapping("/routes-allshow")
 
@@ -140,20 +140,6 @@ public class TravelerController {
         return ResponseEntity.ok(list);
     }
 
-    @GetMapping("/guides-reviews")
-    public ResponseEntity<List<Review>> GuideReview(@RequestParam String id) {
-
-        List<Review> list = repo3.findByServiceId(id);
-
-        if (list.isEmpty()) {
-
-            return ResponseEntity.notFound().build();
-
-        }
-
-        return ResponseEntity.ok(list);
-
-    }
 
     @Autowired
     private ItemsRepo itemrepo;
@@ -183,15 +169,6 @@ public class TravelerController {
     public ResponseEntity<List<Item>> StoreItemsGet(@RequestParam String id) {
 
         List<Item> list = itemrepo.findByShopId(id);
-
-        return ResponseEntity.ok(list);
-
-    }
-
-    @GetMapping("/shop-reviews")
-    public ResponseEntity<List<Review>> StoreReviewsGet(@RequestParam String id) {
-
-        List<Review> list = repo3.findByServiceId(id);
 
         return ResponseEntity.ok(list);
 
@@ -287,6 +264,130 @@ public class TravelerController {
         List<Review> list = repo3.findByServiceId(id);
 
         return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private SoloTripRepo soloTripRepo;
+
+    @PostMapping("/create-trip")
+    public String CreateTrip(@RequestBody SolotripGetdto obj){
+
+       Optional <Route> r = repo.findById(obj.getRouteId());
+
+        SoloTrip x = new SoloTrip(
+                obj.getRouteId(),
+                obj.getCreatorId(),
+                obj.getHotelId(),
+                obj.getAdults(),
+                obj.getChildren(),
+                obj.getNights(),
+                obj.getDoubleBeds(),
+                obj.getSingleBeds(),
+                obj.getHdatesBooked(),
+                obj.getHlocation(),
+                obj.getHprice(),
+                obj.getGuideId(),
+                obj.getGdatesBooked(),
+                obj.getGlocation(),
+                obj.getGlanguage(),
+                obj.getGprice(),
+                obj.getCarId(),
+                obj.getCdatesBooked(),
+                obj.getClanguage(),
+                obj.getEndLocation(),
+                obj.getStartLocation(),
+                obj.getBookedTime(),
+                obj.getCprice(),
+                r.get().getThumbnail(),
+                r.get().getFrom(),
+                r.get().getTo(),
+                "pending",
+                obj.getCdatesBooked().get(0),
+r.get().getMapRoute()
+                );
+
+        soloTripRepo.save(x);
+        return "success";
+    }
+
+    @GetMapping("/trips-view")
+    public ResponseEntity<List<Solotripdto>> GetShowTrip(@RequestParam String id) {
+
+        List<Solotripdto> list = soloTripRepo.findByCreatorId(id);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+
+    @GetMapping("/map")
+    public ResponseEntity<?> GetMap(@RequestParam String id) {
+
+        Optional <Route> x = repo.findById(id);
+
+        if(x.isEmpty()) {
+
+            return ResponseEntity.ok("Data Not Found");
+
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("uri", x.get().getMapRoute());
+
+        return ResponseEntity.ok( map);
+
+    }
+
+    @GetMapping("/trip-one")
+    public ResponseEntity<?> GetOne(@RequestParam String id) {
+
+        Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
+        Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
+        Optional<Guide> guide = repo5.findById(solotrip.get().getGuideId());
+        Optional<Vehicle> vehicle = vehicleRepo.findById(solotrip.get().getCarId());
+
+        if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
+
+            return ResponseEntity.ok("Data Not Found");
+
+        }
+
+        SoloTrip x = solotrip.get();
+        Hotel h = hotel.get();
+        Guide g = guide.get();
+        Vehicle v = vehicle.get();
+
+        Optional<Category> cat = categoryRepo.findById(v.getCatId());
+        Category c = cat.get();
+
+
+SolotripViewdto s = new SolotripViewdto(
+        x.get_id(),
+        x.getCreatorId(),
+        x.getRouteId(),
+        x.getHotelId(),
+        h.getName(),
+        x.getHlocation(),
+        x.getHprice(),
+        x.getGuideId(),
+        x.getGlocation(),
+        x.getGprice(),
+        g.getUsername(),
+        x.getCarId(),
+        x.getCprice(),
+        v.getName(),
+        c.getTitle(),
+        x.getStart(),
+        x.getDestination(),
+        x.getStatus(),
+        x.getStartDate(),
+        x.getMap()
+
+
+);
+
+        return ResponseEntity.ok(s);
 
     }
 

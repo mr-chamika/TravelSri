@@ -275,6 +275,7 @@ export default function Guide() {
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
+            count()
         }, [])
     );
 
@@ -322,7 +323,7 @@ export default function Guide() {
     useFocusEffect(
         useCallback(() => {
             count();
-        }, [selectedCardIndex, guides, hotelx]) // Runs when selection or data changes
+        }, [selectedCardIndex, cars, hotelx]) // Runs when selection or data changes
     );
 
 
