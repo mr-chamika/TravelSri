@@ -5,7 +5,7 @@ import profile1 from "../../assets/profile1.jpeg"; // <-- Add this import
 const sidebarLinks = [
   { label: "Admin Dashboard", to: "/admin" },
   { label: "Hotel Dashboard", to: "/system-admin/dashboard" },
-  { label: "Vehicle Dashboard", to: "/allvehiclerequests" },
+  { label: "Vehicle Dashboard", to: "/VehicleAdmin" },
   { label: "Guide Dashboard", to: "/GuideAdmin" },
 ];
 
