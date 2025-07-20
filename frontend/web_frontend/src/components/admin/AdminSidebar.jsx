@@ -6,7 +6,7 @@ const sidebarLinks = [
   { label: "Admin Dashboard", to: "/admin" },
   { label: "Hotel Dashboard", to: "/system-admin/dashboard" },
   { label: "Vehicle Dashboard", to: "/allvehiclerequests" },
-  { label: "Guide Dashboard", to: "/allguiderequests" },
+  { label: "Guide Dashboard", to: "/GuideAdmin" },
 ];
 
 const AdminSidebar = () => {
