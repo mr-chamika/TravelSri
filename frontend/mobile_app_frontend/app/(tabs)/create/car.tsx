@@ -357,6 +357,7 @@ export default function App() {
     const [catPrice, setCatPrice] = useState(0);
     const [guidePrice, setGuidePrice] = useState(0);
     const [hotelPrice, setHotelPrice] = useState(0);
+    var m = ''
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -601,7 +602,8 @@ export default function App() {
 
                 } else {
 
-                    console.log('hotel not found')
+                    console.log('hotel not found');
+                    m = m + ' Please select a hotel |';
 
                 }
 
@@ -620,7 +622,7 @@ export default function App() {
                 } else {
 
                     console.log('guide not found');
-
+                    m = m + ' Please select a guide |'
                 }
 
                 //setting car details
@@ -637,63 +639,71 @@ export default function App() {
                 } else {
 
                     console.log('vehicle not found')
+                    m = m + ' Please select a vehicle |'
 
                 }
-                console.log(finalFormObject)
+                if (m == '') {
+                    console.log(finalFormObject)
 
-                await fetch('http://localhost:8080/traveler/create-trip', {
+                    await fetch('http://localhost:8080/traveler/create-trip', {
 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(finalFormObject)
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(finalFormObject)
 
-                })
-                    .then(res => res.text())
-                    .then(data => console.log(data))
-                    .catch(err => console.log(err))
+                    })
+                        .then(res => res.text())
+                        .then(data => console.log(data))
+                        .catch(err => console.log(err))
 
-                await AsyncStorage.multiRemove([
-                    'selectedLocation',
-                    'hasMadeInitialSelection',
-                    'hotel',
-                    'guide',
-                    'car',
-                    'hbookings',
-                    'hbookingComplete',
-                    'hbookingSession',
-                    'bookingSession',
-                    'gbookings',
-                    'gbookingComplete',
-                    'gbookingSession',
-                    'cbookings',
-                    'cbookingComplete',
-                    'cbookingSession',
-                    'bookingSession',
-                    'total',
-                    'route',
-                    'selectedHotelBooking',
-                    'selectedRouteId',
-                    'guides',
-                    'hotels',
-                    'driver'
+                    await AsyncStorage.multiRemove([
+                        'selectedLocation',
+                        'hasMadeInitialSelection',
+                        'hotel',
+                        'guide',
+                        'car',
+                        'hbookings',
+                        'hbookingComplete',
+                        'hbookingSession',
+                        'bookingSession',
+                        'gbookings',
+                        'gbookingComplete',
+                        'gbookingSession',
+                        'cbookings',
+                        'cbookingComplete',
+                        'cbookingSession',
+                        'bookingSession',
+                        'total',
+                        'route',
+                        'selectedHotelBooking',
+                        'selectedRouteId',
+                        'guides',
+                        'hotels',
+                        'driver'
 
 
-                ]);
+                    ]);
 
-                setSelectedDates({});
-                setIsBookingComplete(false);
-                setLanguage('');
-                setStartLocation('');
-                setEndLocation('');
-                setModalVisible(false);
-                setSelectedCardId(null);
-                setTotal('0');
-                setBookingData(null);
+                    setSelectedDates({});
+                    setIsBookingComplete(false);
+                    setLanguage('');
+                    setStartLocation('');
+                    setEndLocation('');
+                    setModalVisible(false);
+                    setSelectedCardId(null);
+                    setTotal('0');
+                    setBookingData(null);
 
-                //==setSubmitForm(finalFormObject)
-                alert('Plan created and session reset!');
-                router.push('/(tabs)/create');
-                router.replace('/(tabs)');
+                    //==setSubmitForm(finalFormObject)
+                    alert('Plan created and session reset!');
+                    router.push('/(tabs)/create');
+                    router.replace('/(tabs)');
+                } else {
+
+                    alert(m)
+                    m = '';
+
+                }
             }
         } catch (e) {
             alert(`Error creating plan and resetting session: ${e}`);
