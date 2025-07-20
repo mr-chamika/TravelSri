@@ -32,7 +32,7 @@ export default function Index() {
 
       {/* Quick Actions */}
       <View className="flex-row justify-between mx-4 mt-6 mb-6">
-        <TouchableOpacity onPress={() => router.push('/(vehicle)/bookings')} className="bg-white p-4 rounded-2xl flex-1 mr-2 items-center shadow-sm">
+        <TouchableOpacity onPress={() => router.push('/(vehicle)/vehicleBookings')} className="bg-white p-4 rounded-2xl flex-1 mr-2 items-center shadow-sm">
           <View className="bg-green-100 p-3 rounded-full mb-2">
             <Ionicons name="calendar" size={24} color="#22c55e" />
           </View>
@@ -40,7 +40,7 @@ export default function Index() {
           <Text className="text-gray-500 text-xs">3 bookings</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/(vehicle)/carRental')} className="bg-white p-4 rounded-2xl flex-1 ml-2 items-center shadow-sm">
+        <TouchableOpacity onPress={() => router.push('/(vehicle)/myVehicles')} className="bg-white p-4 rounded-2xl flex-1 ml-2 items-center shadow-sm">
           <View className="bg-blue-100 p-3 rounded-full mb-2">
             <Ionicons name="car" size={24} color="#3b82f6" />
           </View>

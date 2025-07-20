@@ -93,7 +93,7 @@ export default function _Layout() {
                         }}
                     />
                     <Tabs.Screen
-                        name="carRental"
+                        name="myVehicles"
                         options={{
                             tabBarIcon: ({ focused }) => (
                                 <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
@@ -103,7 +103,7 @@ export default function _Layout() {
                         }}
                     />
                     <Tabs.Screen
-                        name="bookings"
+                        name="vehicleBookings"
                         options={{
                             tabBarIcon: ({ focused }) => (
                                 <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
@@ -113,7 +113,7 @@ export default function _Layout() {
                         }}
                     />
                     <Tabs.Screen
-                        name="feedback"
+                        name="vehicleFeedback"
                         options={{
                             tabBarIcon: ({ focused }) => (
                                 <View className={`p-2 ${focused ? "bg-white" : "bg-transparent"} rounded-full`}>
