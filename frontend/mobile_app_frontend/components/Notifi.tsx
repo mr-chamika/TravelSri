@@ -1,6 +1,6 @@
 import { View, Modal, TouchableOpacity, Text, StyleSheet, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { Bell, CreditCard, Users, Clock } from 'lucide-react-native';
+import { Bell, CreditCard, Users, Clock, X } from 'lucide-react-native';
 
 interface NotifyModalProps {
   isVisible: boolean;
@@ -119,9 +119,9 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
-                <TouchableOpacity onPress={onClose}>
-                  <Text style={{ color: 'black' }}>Cancel</Text>
-                </TouchableOpacity>
+                <TouchableOpacity onPress={onClose} >
+  <X size={24} color="#000" />
+</TouchableOpacity>
 
                 <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
                   {notifications.length === 0 ? (
@@ -183,11 +183,12 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
 const styles = StyleSheet.create({
   modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(240, 240, 240, 0.7)', // << Updated here
+},
+
   modalContent: {
     width: '93%',
     height: '97%',
@@ -266,6 +267,8 @@ const styles = StyleSheet.create({
     color: '#616161',
     lineHeight: 20,
   },
+  
+
   unreadIndicator: {
     position: 'absolute',
     top: 12,

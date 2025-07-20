@@ -5,6 +5,8 @@ const RegistrationRequests = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedNicPhotos, setSelectedNicPhotos] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Sample registration requests data
   const [requests, setRequests] = useState([
@@ -13,9 +15,9 @@ const RegistrationRequests = () => {
       name: 'John Smith',
       email: 'john.smith@email.com',
       phone: '+1 (555) 123-4567',
-      businessName: 'Smith Transport Co.',
       vehicleType: 'Sedan',
-      licenseNumber: 'ABC123456',
+      nicFront: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
+      nicBack: 'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
       submittedDate: '2024-01-15',
       status: 'pending',
       documents: ['License', 'Insurance', 'Registration']
@@ -25,9 +27,9 @@ const RegistrationRequests = () => {
       name: 'Sarah Johnson',
       email: 'sarah.j@email.com',
       phone: '+1 (555) 987-6543',
-      businessName: 'Quick Rides LLC',
       vehicleType: 'SUV',
-      licenseNumber: 'XYZ789012',
+      nicFront: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
+      nicBack: 'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
       submittedDate: '2024-01-14',
       status: 'approved',
       documents: ['License', 'Insurance', 'Registration', 'Background Check']
@@ -37,9 +39,9 @@ const RegistrationRequests = () => {
       name: 'Michael Brown',
       email: 'mike.brown@email.com',
       phone: '+1 (555) 456-7890',
-      businessName: 'Brown Logistics',
       vehicleType: 'Van',
-      licenseNumber: 'DEF345678',
+      nicFront: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
+      nicBack: 'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
       submittedDate: '2024-01-13',
       status: 'rejected',
       documents: ['License', 'Insurance']
@@ -49,9 +51,9 @@ const RegistrationRequests = () => {
       name: 'Emily Davis',
       email: 'emily.davis@email.com',
       phone: '+1 (555) 234-5678',
-      businessName: 'Davis Delivery',
       vehicleType: 'Truck',
-      licenseNumber: 'GHI901234',
+      nicFront: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
+      nicBack: 'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
       submittedDate: '2024-01-12',
       status: 'pending',
       documents: ['License', 'Insurance', 'Registration']
@@ -61,9 +63,9 @@ const RegistrationRequests = () => {
       name: 'Robert Wilson',
       email: 'robert.w@email.com',
       phone: '+1 (555) 345-6789',
-      businessName: 'Wilson Express',
       vehicleType: 'Motorcycle',
-      licenseNumber: 'JKL567890',
+      nicFront: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
+      nicBack: 'https://images.pexels.com/photos/6801642/pexels-photo-6801642.jpeg?auto=compress&cs=tinysrgb&w=300&h=200&fit=crop',
       submittedDate: '2024-01-11',
       status: 'pending',
       documents: ['License', 'Insurance']
@@ -74,6 +76,11 @@ const RegistrationRequests = () => {
     setRequests(requests.map(request => 
       request.id === requestId ? { ...request, status: newStatus } : request
     ));
+    setConfirmAction(null);
+  };
+
+  const handleConfirmAction = (requestId, action, requestName) => {
+    setConfirmAction({ requestId, action, requestName });
   };
 
   const getStatusColor = (status) => {
@@ -96,8 +103,7 @@ const RegistrationRequests = () => {
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = request.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         request.businessName.toLowerCase().includes(searchTerm.toLowerCase());
+                         request.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -116,7 +122,7 @@ const RegistrationRequests = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600 mb-1">Total Requests</div>
@@ -128,7 +134,7 @@ const RegistrationRequests = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600 mb-1">Pending</div>
@@ -140,7 +146,7 @@ const RegistrationRequests = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600 mb-1">Approved</div>
@@ -152,7 +158,7 @@ const RegistrationRequests = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600 mb-1">Rejected</div>
@@ -166,7 +172,7 @@ const RegistrationRequests = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6 mb-6">   
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
@@ -174,7 +180,7 @@ const RegistrationRequests = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by name, email, or business..."
+                placeholder="Search by name or email..."
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -200,19 +206,17 @@ const RegistrationRequests = () => {
       </div>
 
       {/* Requests Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 overflow-hidden">
+
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b-[0.5px] border-gray-300">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Provider Details
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Business Info
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  Vehicle Type
+                  NIC Photo
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                   Submitted
@@ -247,13 +251,26 @@ const RegistrationRequests = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{request.businessName}</div>
-                    <div className="text-sm text-gray-500">License: {request.licenseNumber}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {request.vehicleType}
-                    </span>
+                    <div className="space-y-2">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Front Side</div>
+                        <img 
+                          src={request.nicFront} 
+                          alt="NIC Front" 
+                          className="w-20 h-12 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setSelectedNicPhotos({ front: request.nicFront, back: request.nicBack, name: request.name })}
+                        />
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Back Side</div>
+                        <img 
+                          src={request.nicBack} 
+                          alt="NIC Back" 
+                          className="w-20 h-12 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setSelectedNicPhotos({ front: request.nicFront, back: request.nicBack, name: request.name })}
+                        />
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center text-sm text-gray-500">
@@ -280,14 +297,14 @@ const RegistrationRequests = () => {
                       {request.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => handleStatusChange(request.id, 'approved')}
+                            onClick={() => handleConfirmAction(request.id, 'approved', request.name)}
                             className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Approve"
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleStatusChange(request.id, 'rejected')}
+                            onClick={() => handleConfirmAction(request.id, 'rejected', request.name)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Reject"
                           >
@@ -311,6 +328,96 @@ const RegistrationRequests = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mr-4 ${
+                  confirmAction.action === 'approved' ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                  {confirmAction.action === 'approved' ? (
+                    <Check className="w-6 h-6 text-green-600" />
+                  ) : (
+                    <X className="w-6 h-6 text-red-600" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {confirmAction.action === 'approved' ? 'Approve Request' : 'Reject Request'}
+                  </h3>
+                  <p className="text-sm text-gray-500">{confirmAction.requestName}</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                Are you sure you want to {confirmAction.action === 'approved' ? 'approve' : 'reject'} this request?
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmAction(null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleStatusChange(confirmAction.requestId, confirmAction.action)}
+                  className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
+                    confirmAction.action === 'approved' 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {confirmAction.action === 'approved' ? 'Approve' : 'Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NIC Photos Modal */}
+      {selectedNicPhotos && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">NIC Photos - {selectedNicPhotos.name}</h2>
+                <button
+                  onClick={() => setSelectedNicPhotos(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Front Side</label>
+                  <img 
+                    src={selectedNicPhotos.front} 
+                    alt="NIC Front" 
+                    className="w-full h-64 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Back Side</label>
+                  <img 
+                    src={selectedNicPhotos.back} 
+                    alt="NIC Back" 
+                    className="w-full h-64 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Request Details Modal */}
       {selectedRequest && (
@@ -347,22 +454,30 @@ const RegistrationRequests = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                    <p className="text-gray-900">{selectedRequest.businessName}</p>
+                    <p className="text-gray-900">N/A</p>
                   </div>
                 </div>
               </div>
 
-              {/* Vehicle Information */}
+              {/* NIC Information */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Vehicle Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">NIC Photos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
-                    <p className="text-gray-900">{selectedRequest.vehicleType}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Front Side</label>
+                    <img 
+                      src={selectedRequest.nicFront} 
+                      alt="NIC Front" 
+                      className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
-                    <p className="text-gray-900">{selectedRequest.licenseNumber}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Back Side</label>
+                    <img 
+                      src={selectedRequest.nicBack} 
+                      alt="NIC Back" 
+                      className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                    />
                   </div>
                 </div>
               </div>
@@ -388,7 +503,7 @@ const RegistrationRequests = () => {
                 <div className="flex gap-3 pt-4 border-t">
                   <button
                     onClick={() => {
-                      handleStatusChange(selectedRequest.id, 'approved');
+                      handleConfirmAction(selectedRequest.id, 'approved', selectedRequest.name);
                       setSelectedRequest(null);
                     }}
                     className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
@@ -398,7 +513,7 @@ const RegistrationRequests = () => {
                   </button>
                   <button
                     onClick={() => {
-                      handleStatusChange(selectedRequest.id, 'rejected');
+                      handleConfirmAction(selectedRequest.id, 'rejected', selectedRequest.name);
                       setSelectedRequest(null);
                     }}
                     className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center"

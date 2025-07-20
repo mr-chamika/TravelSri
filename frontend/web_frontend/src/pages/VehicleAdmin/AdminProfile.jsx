@@ -60,7 +60,7 @@ const AdminProfile = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6">
             <div className="text-center">
               {/* Profile Picture */}
               <div className="relative inline-block mb-4">
@@ -101,7 +101,7 @@ const AdminProfile = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="bg-white rounded-lg shadow-sm border p-6 mt-6">
+          <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300 p-6 mt-6">  
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -122,9 +122,9 @@ const AdminProfile = () => {
 
         {/* Main Content */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border">
+          <div className="bg-white rounded-lg shadow-sm border-[0.5px] border-gray-300">
             {/* Tabs */}
-            <div className="border-b">
+            <div className="border-b-[0.5px] border-gray-300">
               <nav className="flex space-x-8 px-6">
                 <button
                   onClick={() => setActiveTab('profile')}

@@ -1,24 +1,30 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './components/sideBar'; // ✅ case-sensitive
-import Navbar from './components/navBar';   // ✅ case-sensitive
+import Sidebar from './components/SideBar'; 
+import Navbar from './components/NavBar';   
 
 const Pagelayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex flex-col h-screen bg-gray-100">
+        {/* Top Navbar - Full Width */}
+        <Navbar toggleSidebar={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 overflow-y-auto p-4">
-          <Outlet />
-        </main>
+        {/* Content Area with Sidebar */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Fixed Sidebar */}
+          <div className="w-64 flex-shrink-0">
+            <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+          </div>
+          
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto p-4">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default Pagelayout;

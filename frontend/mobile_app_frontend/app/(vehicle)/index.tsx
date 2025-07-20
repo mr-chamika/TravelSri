@@ -6,7 +6,7 @@ export default function Index() {
   const router = useRouter();
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-[#F2F0EF]">    
       {/* Good Morning Section */}
       <View className="bg-[#FEFA17] mx-4 mt-4 p-4 rounded-2xl">
         <Text className="text-black text-lg font-semibold mb-2">Good Morning!</Text>
