@@ -48,7 +48,6 @@ const AdminProfile = lazy(() => import('./pages/SystemHotelsManagingAdmin/AdminP
 import GuideDashboard from './pages/guideAdmin/Dashboard';
 import Pagelayout from './pages/guideAdmin/Pagelayout';
 import GuideRegistrationRequests from './pages/guideAdmin/RegistrationRequests';
-import VehicleManagement from './pages/guideAdmin/VehicleManagement';
 import BookingManagement from './pages/guideAdmin/BookingManagement';
 import GuideAdminProfile from './pages/guideAdmin/AdminProfile';
 
@@ -62,7 +61,6 @@ function App() {
           <Route path="/GuideAdmin" element={<Pagelayout />}>
   <Route index element={<GuideDashboard />} />
   <Route path="RegistrationRequests" element={<GuideRegistrationRequests />} />
-  <Route path="VehicleManagement" element={<VehicleManagement />} />
   <Route path="BookingManagement" element={<BookingManagement />} />
   <Route path="AdminProfile" element={<GuideAdminProfile />} />
 </Route> 
