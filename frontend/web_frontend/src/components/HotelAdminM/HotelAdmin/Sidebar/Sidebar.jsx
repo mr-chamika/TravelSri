@@ -9,6 +9,7 @@ const Sidebar = ({ unreadCount = 0 }) => {
     { path: '/hotel/dashboard',  label: 'Dashboard',     icon: 'dashboard'      },
     { path: '/hotel/rooms',      label: 'Room Inventory',icon: 'inventory_2'    },
     { path: '/hotel/bookings',   label: 'Bookings',      icon: 'book_online'    },
+    { path: '/hotel/quotations', label: 'Quotations',    icon: 'description'    },
     { path: '/hotel/notifications',
       label: 'Notifications',
       icon: 'notifications',
