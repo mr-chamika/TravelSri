@@ -25,6 +25,7 @@ public class Tour {
     private int groupSize;
     private String description;
     private String guideId;
+    private String vehicleOwnerId;
     private String status;
     private Date createdAt;
 
