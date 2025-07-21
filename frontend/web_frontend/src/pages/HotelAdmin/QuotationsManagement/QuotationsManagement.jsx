@@ -152,20 +152,41 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
   // Calculate nights
   const calculateNights = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return 0;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    try {
+      const start = new Date(checkIn);
+      const end = new Date(checkOut);
+      
+      // Check for valid date objects
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        console.error('Invalid date format:', { checkIn, checkOut });
+        return 0;
+      }
+      
+      return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    } catch (error) {
+      console.error('Error calculating nights:', error);
+      return 0;
+    }
   };
   
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.error('Invalid date format:', dateString);
+        return 'Invalid date';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Error';
+    }
   };
   
   // Format time
@@ -1024,12 +1045,26 @@ const QuotationsManagement = () => {
     setIsLoading(true);
     setError(null);
     
-    // Use mock data instead of API call
-    setTimeout(() => {
-      setGroupPackages(mockGroupTripPackages);
-      setQuotations(mockQuotations);
-      setIsLoading(false);
-    }, 500); // Simulate API delay
+    // Fetch real quotations data from backend
+    const fetchData = async () => {
+      try {
+        // For group packages we can still use mock data for now
+        setGroupPackages(mockGroupTripPackages);
+        
+        // Fetch actual quotations from API
+        const fetchedQuotations = await quotationService.getAllQuotations();
+        setQuotations(fetchedQuotations);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data. Please try again.');
+        // Fallback to mock data if API fails
+        setQuotations(mockQuotations);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
     
     // Add event listener for sendToSuperAdmin
     const handleSendToSuperAdminEvent = (e) => {
@@ -1167,8 +1202,10 @@ const QuotationsManagement = () => {
       // Call the API to create quotation
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       
-      // Update state
-      setQuotations(prev => [...prev, createdQuotation]);
+      // Get fresh data from the server to ensure we have the latest list
+      const updatedQuotations = await quotationService.getAllQuotations();
+      setQuotations(updatedQuotations);
+      
       setShowQuotationModal(false);
       setNewQuotation(blankQuotation);
       
@@ -1543,7 +1580,11 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             <span className="material-icons mr-2">hotel</span>
             Accommodation Quotation {quotation.quoteNumber}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">Created on {new Date(quotation.createdAt).toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {quotation.createdAt ? 
+              `Created on ${new Date(quotation.createdAt).toLocaleDateString()}` : 
+              'Recently Created'}
+          </p>
         </div>
         <button
           onClick={onClose}
@@ -1578,8 +1619,8 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             Package Information
           </h4>
           <div className="bg-yellow-50 p-4 rounded-lg">
-            <h5 className="font-medium text-lg">{quotation.packageName}</h5>
-            <p className="text-gray-600">Accommodation at {quotation.hotelName}</p>
+            <h5 className="font-medium text-lg">{quotation.packageName || 'N/A'}</h5>
+            <p className="text-gray-600">Accommodation Type: {quotation.accommodationType || 'Standard'}</p>
           </div>
         </section>
         
@@ -1601,7 +1642,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             <div>
               <h5 className="font-medium mb-2">Hotel Details</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p><strong>Hotel:</strong> {quotation.hotelName}</p>
+                <p><strong>Contact Person:</strong> {quotation.contactPersonName || 'N/A'}</p>
                 <p><strong>Accommodation Type:</strong> {quotation.accommodationType}</p>
               </div>
             </div>
@@ -1617,11 +1658,11 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-500">Check-in Date</p>
-              <p className="font-medium">{new Date(quotation.checkInDate).toLocaleDateString()}</p>
+              <p className="font-medium">{formatDate(quotation.checkInDate)}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-500">Check-out Date</p>
-              <p className="font-medium">{new Date(quotation.checkOutDate).toLocaleDateString()}</p>
+              <p className="font-medium">{formatDate(quotation.checkOutDate)}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-500">Duration</p>
@@ -1661,7 +1702,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
               ) : (
                 <div className="flex items-center text-gray-500">
                   <span className="material-icons mr-2">cancel</span>
-                  No Airport Transfer
+                  Transportation
                 </div>
               )}
             </div>
@@ -2534,7 +2575,7 @@ const StatusBadge = ({ status }) => {
                                 calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}` : 'None'}
                             </div>
                             
-                            <div className="text-gray-600">Airport Transfer:</div>
+                            <div className="text-gray-600">Transportation:</div>
                             <div className="text-right">{newQuotation.airportTransfer ? '$200.00' : 'Not included'}</div>
                           </div>
                         </div>

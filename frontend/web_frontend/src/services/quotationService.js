@@ -2,7 +2,17 @@
  * Quotation Service
  * Handles API interactions for group travel quotation management
  */
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+// Create axios instance
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
 // Helper to generate demo data
 const generateMockQuotations = (count = 15) => {
@@ -100,90 +110,98 @@ const generateMockQuotations = (count = 15) => {
 const quotationService = {
   // Get all quotations
   getAllQuotations: async () => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations`).then(res => res.json());
-    
-    // For demo, generate mock data
-    return Promise.resolve(generateMockQuotations());
+    try {
+      const response = await apiClient.get('/quotations');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quotations:', error);
+      // Fallback to mock data if API call fails
+      return generateMockQuotations();
+    }
   },
   
   // Get quotation by ID
   getQuotationById: async (id) => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations/${id}`).then(res => res.json());
-    
-    // For demo, generate mock data and find the one with the requested ID
-    const quotations = generateMockQuotations();
-    const quotation = quotations.find(q => q.id === id);
-    return Promise.resolve(quotation || null);
+    try {
+      const response = await apiClient.get(`/quotations/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching quotation ${id}:`, error);
+      // Fallback to mock data
+      const quotations = generateMockQuotations();
+      return quotations.find(q => q.id === id) || null;
+    }
   },
   
   // Create a new quotation
   createQuotation: async (quotationData) => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(quotationData)
-    // }).then(res => res.json());
-    
-    // For demo, just return the data with an ID added
-    return Promise.resolve({
-      ...quotationData,
-      id: `qtn-${Date.now()}`,
-      quoteNumber: `QTN-${Date.now().toString().slice(-6)}`,
-      createdAt: new Date().toISOString(),
-      status: 'Pending',
-      roomAvailability: 'Available',
-      discountOffered: 0
-    });
+    try {
+      // Format dates for Java LocalDate compatibility if needed
+      const formattedData = {
+        ...quotationData,
+        // checkInDate and checkOutDate should already be in YYYY-MM-DD format
+      };
+      
+      const response = await apiClient.post('/quotations', formattedData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating quotation:', error);
+      // For development, return mock data as fallback
+      return {
+        ...quotationData,
+        id: `qtn-${Date.now()}`,
+        quoteNumber: `QTN-${Date.now().toString().slice(-6)}`,
+        createdAt: new Date().toISOString(),
+        status: 'Pending',
+        roomAvailability: 'Available',
+      };
+    }
   },
   
   // Update an existing quotation
   updateQuotation: async (id, quotationData) => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations/${id}`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(quotationData)
-    // }).then(res => res.json());
-    
-    // For demo, just return the updated data
-    return Promise.resolve({
-      ...quotationData,
-      id,
-      updatedAt: new Date().toISOString()
-    });
+    try {
+      const response = await apiClient.put(`/quotations/${id}`, quotationData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating quotation ${id}:`, error);
+      // Fallback for development
+      return {
+        ...quotationData,
+        id,
+        updatedAt: new Date().toISOString()
+      };
+    }
   },
   
   // Delete a quotation
   deleteQuotation: async (id) => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations/${id}`, {
-    //   method: 'DELETE'
-    // }).then(res => res.json());
-    
-    // For demo, just resolve successfully
-    return Promise.resolve({ success: true, id });
+    try {
+      await apiClient.delete(`/quotations/${id}`);
+      return { success: true, id };
+    } catch (error) {
+      console.error(`Error deleting quotation ${id}:`, error);
+      return { success: false, id, error: error.message };
+    }
   },
   
   // Change quotation status
   updateQuotationStatus: async (id, status, notes = '') => {
-    // In a real app, this would call the API
-    // return fetch(`${API_URL}/quotations/${id}/status`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ status, notes })
-    // }).then(res => res.json());
-    
-    // For demo, just resolve successfully
-    return Promise.resolve({ 
-      success: true, 
-      id, 
-      status,
-      adminNotes: notes,
-      updatedAt: new Date().toISOString()
-    });
+    try {
+      const response = await apiClient.put(`/quotations/${id}/status`, { status, notes });
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating quotation status ${id}:`, error);
+      // Fallback for development
+      return { 
+        success: false, 
+        id, 
+        status,
+        adminNotes: notes,
+        updatedAt: new Date().toISOString(),
+        error: error.message
+      };
+    }
   }
 };
 
