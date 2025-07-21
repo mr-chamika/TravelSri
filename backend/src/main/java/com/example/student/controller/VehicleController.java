@@ -56,32 +56,62 @@ public class VehicleController {
     }
 
     @GetMapping("/groupTours")
-    public List<Tour> getUnsubmittedToursForVehicleOwner() {
-        List<Tour> allTours = tourRepo.findAll();
-        // Changed from findByVehicleOwnerId to findByOwnerId (as per your repo interface)
-        List<VehicleOwnerQuotation> vehicleOwnerQuotations = vehicleOwnerQuotationRepo.findByOwnerId(vehicleOwnerId);
+    public ResponseEntity<List<Tour>> getUnsubmittedToursForVehicleOwner() {
+        try {
+            System.out.println("=== Starting getUnsubmittedToursForVehicleOwner ===");
+            System.out.println("Vehicle Owner ID: " + vehicleOwnerId);
 
-        System.out.println("All Tours:");
-        allTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+            // Get all tours
+            List<Tour> allTours = tourRepo.findAll();
+            System.out.println("Total tours found: " + allTours.size());
 
-        System.out.println("Vehicle Owner Quotations:");
-        vehicleOwnerQuotations.forEach(q -> System.out.println("Tour ID: " + q.getTourId() + ", Vehicle Owner ID: " + vehicleOwnerId));
+            if (allTours.isEmpty()) {
+                System.out.println("No tours found in database");
+                return ResponseEntity.ok(Collections.emptyList());
+            }
 
-        Set<String> quotedTourIds = vehicleOwnerQuotations.stream()
-                .map(q -> String.valueOf(q.getTourId()))
-                .collect(Collectors.toSet());
+            // Log first few tours for debugging
+            for (int i = 0; i < Math.min(3, allTours.size()); i++) {
+                Tour tour = allTours.get(i);
+                System.out.println("Tour " + i + ": ID=" + tour.get_id() +
+                        ", Title=" + tour.getTitle() +
+                        ", Start=" + tour.getStart_location() +
+                        ", End=" + tour.getEnd_location());
+            }
 
-        System.out.println("Quoted Tour IDs by Vehicle Owner:");
-        quotedTourIds.forEach(System.out::println);
+            // Get quotations for this vehicle owner
+            List<VehicleOwnerQuotation> vehicleOwnerQuotations =
+                    vehicleOwnerQuotationRepo.findByOwnerId(vehicleOwnerId);
+            System.out.println("Quotations found for vehicle owner: " + vehicleOwnerQuotations.size());
 
-        List<Tour> unsubmittedTours = allTours.stream()
-                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.get_id())))
-                .collect(Collectors.toList());
+            // Get set of quoted tour IDs
+            Set<String> quotedTourIds = vehicleOwnerQuotations.stream()
+                    .map(q -> String.valueOf(q.getTourId()))
+                    .collect(Collectors.toSet());
 
-        System.out.println("Unsubmitted Tours:");
-        unsubmittedTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+            System.out.println("Quoted Tour IDs: " + quotedTourIds);
 
-        return unsubmittedTours;
+            // Filter unsubmitted tours
+            List<Tour> unsubmittedTours = allTours.stream()
+                    .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.get_id())))
+                    .collect(Collectors.toList());
+
+            System.out.println("Unsubmitted tours count: " + unsubmittedTours.size());
+
+            // Log the tours being returned
+            unsubmittedTours.forEach(tour ->
+                    System.out.println("Returning tour: " + tour.get_id() + " - " + tour.getTitle())
+            );
+
+            System.out.println("=== Completed getUnsubmittedToursForVehicleOwner ===");
+            return ResponseEntity.ok(unsubmittedTours);
+
+        } catch (Exception e) {
+            System.err.println("Error in getUnsubmittedToursForVehicleOwner: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.emptyList());
+        }
     }
 
     @PutMapping("/submitQuotation/{tourId}")

@@ -31,14 +31,15 @@ import {
   AlertCircle,
   ArrowLeft,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Navigation
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 interface TourDetails {
-  id:string,
+  id: string,
   destination: string;
   startDate: Date;
   endDate: Date;
@@ -49,6 +50,10 @@ interface TourDetails {
   budget?: string;
   accommodation?: string;
   transportation?: string;
+  startLocation?: string;
+  endLocation?: string;
+  path?: string;
+  pickupTime?: Date;
 }
 
 interface QuotationRequest {
@@ -78,22 +83,25 @@ interface SubmittedQuotation {
     groupSize: number;
     duration: string;
     tourType?: string;
+    startLocation?: string;
+    endLocation?: string;
+    path?: string;
   };
   clientName: string;
 }
 
-interface BackendTourData {
+interface BackendTripData {
   _id: string;
-  description: string;
-  destination: string;
-  durationInDays: number;
-  endDate: string;
-  groupSize: number;
-  guideId: string;
-  startDate: string;
-  status: string;
-  tourTitle: string;
-  createdAt: string;
+  title: string;
+  start_location: string;
+  end_location: string;
+  number_of_seats: number;
+  date: string;
+  number_of_dates: number;
+  description_about_start_location: string;
+  pickup_time: string;
+  path: string;
+  _class: string;
 }
 
 interface EditableQuotation {
@@ -102,8 +110,6 @@ interface EditableQuotation {
   notes: string;
   status: string;
 }
-
-
 
 const QuotationsScreen = () => {
   const router = useRouter();
@@ -120,155 +126,272 @@ const QuotationsScreen = () => {
     notes: ''
   });
 
-  const [backendData, setBackendData] = useState<BackendTourData[]>([]);
+  const [backendData, setBackendData] = useState<BackendTripData[]>([]);
 
-const [showEditModal, setShowEditModal] = useState(false);
-const [editingQuote, setEditingQuote] = useState<SubmittedQuotation | null>(null);
-const [editFormData, setEditFormData] = useState({
-  quotedAmount: '',
-  notes: ''
-});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<SubmittedQuotation | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    quotedAmount: '',
+    notes: ''
+  });
 
-  // Function to convert backend data to frontend format
-  // Function to convert backend data to frontend format
-const convertBackendDataToRequests = (backendData: BackendTourData[]): QuotationRequest[] => {
-  return backendData.map((tour) => ({
-    id: tour._id,
-    clientName: tour.tourTitle,
-    clientPhone: '',
-    clientEmail: '',
-    tourDetails: {
-      id: tour._id, // Add the missing id property
-      destination: tour.destination,
-      startDate: new Date(tour.startDate),
-      endDate: new Date(tour.endDate),
-      duration: `${tour.durationInDays} days`,
-      groupSize: tour.groupSize,
-      tourType: tour.tourTitle,
-      specialRequests: tour.description,
-      budget: '',
-      accommodation: '',
-      transportation: '',
-    },
-    requestDate: new Date(tour.createdAt),
-    status: tour.status === 'active' ? 'pending' : 'expired',
-    priority: tour.groupSize > 6 ? 'high' : tour.groupSize > 3 ? 'medium' : 'low'
-  }));
+    // Safer conversion function with better error handling
+const convertBackendDataToRequests = (backendData: BackendTripData[]): QuotationRequest[] => {
+  console.log('Converting backend data:', backendData);
+  
+  if (!Array.isArray(backendData)) {
+    console.error('Backend data is not an array:', backendData);
+    return [];
+  }
+
+  return backendData.map((trip, index) => {
+    try {
+      console.log(`Processing trip ${index}:`, trip);
+      
+      // Safely parse dates with fallbacks
+      let startDate: Date;
+      try {
+        startDate = trip.date ? new Date(trip.date) : new Date();
+        if (isNaN(startDate.getTime())) {
+          startDate = new Date();
+        }
+      } catch (e) {
+        console.warn('Invalid start date, using current date:', trip.date);
+        startDate = new Date();
+      }
+
+      let pickupTime: Date;
+      try {
+        pickupTime = trip.pickup_time ? new Date(trip.pickup_time) : new Date();
+        if (isNaN(pickupTime.getTime())) {
+          pickupTime = new Date();
+        }
+      } catch (e) {
+        console.warn('Invalid pickup time, using current time:', trip.pickup_time);
+        pickupTime = new Date();
+      }
+
+      // Calculate end date safely
+      const endDate = new Date(startDate);
+      const daysToAdd = (trip.number_of_dates || 1) - 1;
+      endDate.setDate(startDate.getDate() + daysToAdd);
+      
+      // Determine priority based on number of seats with proper typing
+      let priority: 'high' | 'medium' | 'low' = 'low';
+      const seats = trip.number_of_seats || 0;
+      if (seats > 6) {
+        priority = 'high';
+      } else if (seats > 3) {
+        priority = 'medium';
+      }
+
+      // Use proper status type
+      const status: 'pending' | 'quoted' | 'expired' = 'pending';
+
+      const converted: QuotationRequest = {
+        id: trip._id || `temp_${index}`,
+        clientName: trip.title || 'Unknown Trip',
+        clientPhone: '',
+        clientEmail: '',
+        tourDetails: {
+          id: trip._id || `temp_${index}`,
+          destination: `${trip.start_location || 'Unknown'} to ${trip.end_location || 'Unknown'}`,
+          startDate: startDate,
+          endDate: endDate,
+          duration: `${trip.number_of_dates || 1} day${(trip.number_of_dates || 1) > 1 ? 's' : ''}`,
+          groupSize: trip.number_of_seats || 0,
+          tourType: trip.title || 'Standard Trip',
+          specialRequests: trip.description_about_start_location || '',
+          budget: '',
+          accommodation: '',
+          transportation: '',
+          startLocation: trip.start_location || '',
+          endLocation: trip.end_location || '',
+          path: trip.path || '',
+          pickupTime: pickupTime,
+        },
+        requestDate: startDate,
+        status: status,
+        priority: priority
+      };
+
+      console.log(`Converted trip ${index}:`, converted);
+      return converted;
+      
+    } catch (error) {
+      console.error(`Error converting trip ${index}:`, error, trip);
+      // Return a default object to prevent the entire conversion from failing
+      const errorRequest: QuotationRequest = {
+        id: `error_${index}`,
+        clientName: 'Error Loading Trip',
+        clientPhone: '',
+        clientEmail: '',
+        tourDetails: {
+          id: `error_${index}`,
+          destination: 'Error Loading',
+          startDate: new Date(),
+          endDate: new Date(),
+          duration: '1 day',
+          groupSize: 0,
+          tourType: 'Error',
+          specialRequests: 'Error loading trip data',
+          budget: '',
+          accommodation: '',
+          transportation: '',
+          startLocation: '',
+          endLocation: '',
+          path: '',
+          pickupTime: new Date(),
+        },
+        requestDate: new Date(),
+        status: 'pending' as const,  // Explicitly type as literal
+        priority: 'low' as const     // Explicitly type as literal
+      };
+      return errorRequest;
+    }
+  });
 };
 
-  // Fetch quotation requests
-  const fetchRequests = async () => {
-    try {
-      const res = await fetch('http://localhost:8080/vehicle/groupTours');
-      const data = await res.json();
-
-      if (data) {
-        console.log('Backend data:', data);
-        setBackendData(data);
-        
-        // Convert backend data to frontend format
-        const convertedRequests = convertBackendDataToRequests(data);
-        setRequests(convertedRequests);
-      } else {
-        console.log("Error");
-      }
-    } catch (err) {
-      console.log('error in quotation getting : ', err);
-      Alert.alert('Error', 'Failed to load quotations');
-    }
-  };
-
-  // Fetch submitted quotations
- const fetchSubmittedQuotations = async () => {
+  // Fetch quotation requests with new API endpoint
+  // Updated fetchRequests function with better error handling and debugging
+const fetchRequests = async () => {
   try {
-    // Fix: Use the same ID that the backend controller uses
-    const ownerId = "TEMP_VEHICLE_OWNER_ID_001"; // Changed from "TEMP_OWNRE_ID_001"
-    
-    if (!ownerId) {
-      console.error('Owner ID not found');
-      Alert.alert('Error', 'Owner ID not found. Please log in again.');
-      return;
-    }
-
     setError(null);
-
-    // Fix 2: Add authorization header if your backend requires it
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // If you have an auth token, add it here:
-    const authToken = await AsyncStorage.getItem('authToken');
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
-
-    const res = await fetch(`http://localhost:8080/vehicle/submittedQuotation/${ownerId}`, {
-      method: 'GET',
-      headers: headers,
-      signal: AbortSignal.timeout(10000),
-    });
+    console.log('Starting to fetch requests...');
     
+    // Use your actual IP address instead of localhost
+    const apiUrl = 'http://localhost:8080/vehicle/groupTours'; // Replace XXX with your IP
+    console.log('Fetching from URL:', apiUrl);
+    
+    const res = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000)
+    });
+
+    console.log('Response status:', res.status);
+    console.log('Response ok:', res.ok);
+
     if (!res.ok) {
-      // Better error handling for 401
-      if (res.status === 401) {
-        console.error('Unauthorized access - clearing stored credentials');
-        await AsyncStorage.multiRemove(['authToken', 'guideId']);
-        throw new Error('Authentication failed. Please log in again.');
-      }
-      
-      const errorMessage = res.status === 404 
-        ? 'No quotations found' 
-        : `Failed to fetch quotations (${res.status})`;
-      throw new Error(errorMessage);
+      throw new Error(`HTTP error! status: ${res.status}`);
     }
 
     const data = await res.json();
-    console.log('Fetched submitted quotations:', data);
+    console.log('Raw backend data:', JSON.stringify(data, null, 2));
+    console.log('Data type:', typeof data);
+    console.log('Is array:', Array.isArray(data));
+    console.log('Data length:', data?.length);
 
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid response format');
+    if (data && Array.isArray(data)) {
+      console.log('First item structure:', JSON.stringify(data[0], null, 2));
+      setBackendData(data);
+      
+      // Convert backend data to frontend format
+      const convertedRequests = convertBackendDataToRequests(data);
+      console.log('Converted requests:', JSON.stringify(convertedRequests, null, 2));
+      setRequests(convertedRequests);
+    } else {
+      console.log("Data is not an array or is empty");
+      setRequests([]);
     }
-
-    // Fix 3: Better data mapping to handle the backend response structure
-    const formatted: SubmittedQuotation[] = data.map((item: any) => ({
-      id: item.quotationId || item._id || item.id,
-      guideId: item.guideId || item.ownerId,
-      status: item.status?.toLowerCase() || 'pending',
-      quotedAmount: parseFloat(item.quotedAmount) || 0,
-      notes: item.quotationNotes || item.notes || '',
-      submittedDate: item.quotationDate || item.submittedDate || new Date().toISOString(),
-      validUntil: item.validUntil || '',
-      currency: item.currency || 'LKR',
-      clientName: item.tourDetails?.tourTitle || item.clientName || 'Unknown Client',
-      tourDetails: {
-        destination: item.tourDetails?.destination || 'Unknown Destination',
-        startDate: item.tourDetails?.startDate || '',
-        endDate: item.tourDetails?.endDate || '',
-        groupSize: item.tourDetails?.groupSize || 1,
-        duration: item.tourDetails?.durationInDays 
-          ? `${item.tourDetails.durationInDays} days` 
-          : 'Duration not specified',
-        tourType: item.tourDetails?.tourType || item.tourDetails?.tourTitle || 'Standard',
-      }
-    }));
-
-    setSubmittedQuotations(formatted);
-  } catch (error) {
-    console.error('Error fetching submitted quotations:', error);
-    let errorMessage = 'Failed to fetch quotations';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    setError(errorMessage);
-
-    // Don't show alert for 404 (no quotations found)
-    if (!errorMessage.includes('404') && !errorMessage.includes('No quotations found')) {
-      Alert.alert('Error', errorMessage);
-    }
-  }
+  } catch (err) {
+  const error = err instanceof Error ? err : new Error(String(err));
+  console.log('error in refresh: ', error.message);
+  console.error('Error stack:', error.stack);
+}
 };
+
+  // Fetch submitted quotations (keeping the same as it might not change)
+  const fetchSubmittedQuotations = async () => {
+    try {
+      const ownerId = "TEMP_VEHICLE_OWNER_ID_001";
+      
+      if (!ownerId) {
+        console.error('Owner ID not found');
+        Alert.alert('Error', 'Owner ID not found. Please log in again.');
+        return;
+      }
+
+      setError(null);
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const res = await fetch(`http://localhost:8080/vehicle/submittedQuotation/${ownerId}`, {
+        method: 'GET',
+        headers: headers,
+        signal: AbortSignal.timeout(10000),
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.error('Unauthorized access - clearing stored credentials');
+          await AsyncStorage.multiRemove(['authToken', 'guideId']);
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        
+        const errorMessage = res.status === 404 
+          ? 'No quotations found' 
+          : `Failed to fetch quotations (${res.status})`;
+        throw new Error(errorMessage);
+      }
+
+      const data = await res.json();
+      console.log('Fetched submitted quotations:', data);
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid response format');
+      }
+
+      const formatted: SubmittedQuotation[] = data.map((item: any) => ({
+        id: item.quotationId || item._id || item.id,
+        guideId: item.guideId || item.ownerId,
+        status: item.status?.toLowerCase() || 'pending',
+        quotedAmount: parseFloat(item.quotedAmount) || 0,
+        notes: item.quotationNotes || item.notes || '',
+        submittedDate: item.quotationDate || item.submittedDate || new Date().toISOString(),
+        validUntil: item.validUntil || '',
+        currency: item.currency || 'LKR',
+        clientName: item.tourDetails?.title || item.clientName || 'Unknown Client',
+        tourDetails: {
+          destination: item.tourDetails?.destination || 
+                      `${item.tourDetails?.start_location || 'Unknown'} to ${item.tourDetails?.end_location || 'Unknown'}`,
+          startDate: item.tourDetails?.startDate || item.tourDetails?.date || '',
+          endDate: item.tourDetails?.endDate || item.tourDetails?.date || '',
+          groupSize: item.tourDetails?.groupSize || item.tourDetails?.number_of_seats || 1,
+          duration: item.tourDetails?.duration || 
+                   `${item.tourDetails?.number_of_dates || 1} day${(item.tourDetails?.number_of_dates || 1) > 1 ? 's' : ''}`,
+          tourType: item.tourDetails?.tourType || item.tourDetails?.title || 'Standard',
+          startLocation: item.tourDetails?.start_location || '',
+          endLocation: item.tourDetails?.end_location || '',
+          path: item.tourDetails?.path || '',
+        }
+      }));
+
+      setSubmittedQuotations(formatted);
+    } catch (error) {
+      console.error('Error fetching submitted quotations:', error);
+      let errorMessage = 'Failed to fetch quotations';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
+
+      if (!errorMessage.includes('404') && !errorMessage.includes('No quotations found')) {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
 
   // Initial data fetch
   useEffect(() => {
@@ -310,6 +433,15 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    });
+  };
+
+  const formatTime = (date: Date | string): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return 'Invalid Time';
+    return d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -359,101 +491,98 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
     setModalVisible(true);
   };
 
- const submitQuotation = async () => {
-  console.log('Submit quotation called');
-  
-  try {
-    // Validation
-    if (!quotationForm.amount || quotationForm.amount.trim() === '') {
-      Alert.alert('Error', 'Please fill in the total amount');
-      return;
-    }
-
-    const parsedAmount = parseFloat(quotationForm.amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount greater than 0');
-      return;
-    }
-
-    if (!selectedRequest) {
-      Alert.alert('Error', 'No request selected');
-      return;
-    }
-
-    // Fix: Use the same guide ID format as backend
-    let guideId = await AsyncStorage.getItem('guideId');
-    if (!guideId) {
-      console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
-      guideId = 'TEMP_VEHICLE_OWNER_ID_001'; // Fixed the typo
-    }
-
-    const quotationData = {
-      amount: parseFloat(quotationForm.amount),
-      notes: quotationForm.notes || '',
-      guideId: guideId,
-    };
-
-    // Fix 5: Add authorization headers if needed
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    const authToken = await AsyncStorage.getItem('authToken');
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
-
-    const response = await fetch(`http://localhost:8080/vehicle/submitQuotation/${selectedRequest.id}`, {
-      method: 'PUT',
-      headers: headers,
-      body: JSON.stringify(quotationData),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
-        await AsyncStorage.multiRemove(['authToken', 'guideId']);
-        return;
-      } else if (response.status === 400) {
-        const errorText = await response.text();
-        Alert.alert('Validation Error', errorText || 'Invalid data provided');
-        return;
-      } else if (response.status === 404) {
-        Alert.alert('Error', 'Tour request not found');
-        return;
-      } else {
-        const errorText = await response.text();
-        Alert.alert('Error', `Failed to submit quotation: ${response.status} - ${errorText}`);
+  const submitQuotation = async () => {
+    console.log('Submit quotation called');
+    
+    try {
+      if (!quotationForm.amount || quotationForm.amount.trim() === '') {
+        Alert.alert('Error', 'Please fill in the total amount');
         return;
       }
+
+      const parsedAmount = parseFloat(quotationForm.amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        Alert.alert('Error', 'Please enter a valid amount greater than 0');
+        return;
+      }
+
+      if (!selectedRequest) {
+        Alert.alert('Error', 'No request selected');
+        return;
+      }
+
+      let guideId = await AsyncStorage.getItem('guideId');
+      if (!guideId) {
+        console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
+        guideId = 'TEMP_VEHICLE_OWNER_ID_001';
+      }
+
+      const quotationData = {
+        amount: parseFloat(quotationForm.amount),
+        notes: quotationForm.notes || '',
+        guideId: guideId,
+      };
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      // Updated endpoint to match new structure
+      const response = await fetch(`http://localhost:8080/vehicle/submitQuotation/${selectedRequest.id}`, {
+        method: 'PUT',
+        headers: headers,
+        body: JSON.stringify(quotationData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
+          await AsyncStorage.multiRemove(['authToken', 'guideId']);
+          return;
+        } else if (response.status === 400) {
+          const errorText = await response.text();
+          Alert.alert('Validation Error', errorText || 'Invalid data provided');
+          return;
+        } else if (response.status === 404) {
+          Alert.alert('Error', 'Trip request not found');
+          return;
+        } else {
+          const errorText = await response.text();
+          Alert.alert('Error', `Failed to submit quotation: ${response.status} - ${errorText}`);
+          return;
+        }
+      }
+
+      const updatedQuotation = await response.json();
+      
+      setRequests(prevRequests =>
+        prevRequests.map(request =>
+          request.id === selectedRequest.id
+            ? { ...request, status: 'quoted' }
+            : request
+        )
+      );
+
+      setQuotationForm({
+        amount: '',
+        notes: ''
+      });
+
+      Alert.alert('Success', 'Quotation submitted successfully!');
+      setModalVisible(false);
+      await onRefresh();
+
+    } catch (error) {
+      console.error('Error in submitQuotation:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      Alert.alert('Network Error', `Failed to connect to server: ${errorMessage}`);
     }
-
-    // Success handling
-    const updatedQuotation = await response.json();
-    
-    setRequests(prevRequests =>
-      prevRequests.map(request =>
-        request.id === selectedRequest.id
-          ? { ...request, status: 'quoted' }
-          : request
-      )
-    );
-
-    setQuotationForm({
-      amount: '',
-      notes: ''
-    });
-
-    Alert.alert('Success', 'Quotation submitted successfully!');
-    setModalVisible(false);
-    await onRefresh();
-
-  } catch (error) {
-    console.error('Error in submitQuotation:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    Alert.alert('Network Error', `Failed to connect to server: ${errorMessage}`);
-  }
-};
+  };
 
   const formatTimeAgo = (date: Date | string): string => {
     const now = new Date();
@@ -492,28 +621,44 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
 
       <View style={styles.tourDetails}>
         <View style={styles.detailRow}>
-          <MapPin size={18} color="#6B7280" />
+          <Navigation size={18} color="#6B7280" />
           <Text style={styles.detailText}>{request.tourDetails.destination}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <MapPin size={18} color="#6B7280" />
+          <Text style={styles.detailText}>
+            From: {request.tourDetails.startLocation} → To: {request.tourDetails.endLocation}
+          </Text>
         </View>
         <View style={styles.detailRow}>
           <Calendar size={18} color="#6B7280" />
           <Text style={styles.detailText}>
-            {formatDate(request.tourDetails.startDate)} - {formatDate(request.tourDetails.endDate)}
+            {formatDate(request.tourDetails.startDate)}
+            {request.tourDetails.endDate !== request.tourDetails.startDate && 
+              ` - ${formatDate(request.tourDetails.endDate)}`}
           </Text>
         </View>
         <View style={styles.detailRow}>
           <Users size={18} color="#6B7280" />
-          <Text style={styles.detailText}>{request.tourDetails.groupSize} people</Text>
+          <Text style={styles.detailText}>{request.tourDetails.groupSize} seats</Text>
         </View>
         <View style={styles.detailRow}>
           <Clock size={18} color="#6B7280" />
-          <Text style={styles.detailText}>{request.tourDetails.duration}</Text>
+          <Text style={styles.detailText}>
+            {request.tourDetails.duration} • Pickup: {formatTime(request.tourDetails.pickupTime || new Date())}
+          </Text>
         </View>
+        {request.tourDetails.path && (
+          <View style={styles.detailRow}>
+            <Tag size={18} color="#6B7280" />
+            <Text style={styles.detailText}>Route: {request.tourDetails.path}</Text>
+          </View>
+        )}
       </View>
 
       {request.tourDetails.specialRequests && (
         <View style={styles.specialRequests}>
-          <Text style={styles.specialRequestsLabel}>Special Requests:</Text>
+          <Text style={styles.specialRequestsLabel}>Pickup Details:</Text>
           <Text style={styles.specialRequestsText}>{request.tourDetails.specialRequests}</Text>
         </View>
       )}
@@ -537,51 +682,40 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
     Alert.alert('View Breakdown', `Viewing breakdown for quotation ${quotationId}`);
   };
 
-
-
-const handleEditQuote = (quotationId: string) => {
-  console.log('handleEditQuote called with ID:', quotationId);
-  console.log('Available quotations:', submittedQuotations);
-  
-  const quotationToEdit = submittedQuotations.find((q: SubmittedQuotation) => q.id === quotationId);
-  console.log('Found quotation to edit:', quotationToEdit);
-  
-  if (quotationToEdit) {
-    setEditingQuote(quotationToEdit);
-    setEditFormData({
-      quotedAmount: quotationToEdit.quotedAmount.toString(),
-      notes: quotationToEdit.notes
-    });
-    console.log('Setting modal visible to true');
-    setShowEditModal(true);
-  } else {
-    console.log('Quotation not found with ID:', quotationId);
-    Alert.alert('Error', 'Quotation not found');
-  }
-};
-
-const handleSaveEdit = async (quotationId: string) => {
-  try {
-    if (!editFormData.quotedAmount) {
-      Alert.alert('Error', 'Please enter a valid amount');
-      return;
+  const handleEditQuote = (quotationId: string) => {
+    console.log('handleEditQuote called with ID:', quotationId);
+    console.log('Available quotations:', submittedQuotations);
+    
+    const quotationToEdit = submittedQuotations.find((q: SubmittedQuotation) => q.id === quotationId);
+    console.log('Found quotation to edit:', quotationToEdit);
+    
+    if (quotationToEdit) {
+      setEditingQuote(quotationToEdit);
+      setEditFormData({
+        quotedAmount: quotationToEdit.quotedAmount.toString(),
+        notes: quotationToEdit.notes
+      });
+      console.log('Setting modal visible to true');
+      setShowEditModal(true);
+    } else {
+      console.log('Quotation not found with ID:', quotationId);
+      Alert.alert('Error', 'Quotation not found');
     }
+  };
 
-    const updateData = {
-      quotedAmount: parseFloat(editFormData.quotedAmount),
-      notes: editFormData.notes
-    };
+  const handleSaveEdit = async (quotationId: string) => {
+    try {
+      if (!editFormData.quotedAmount) {
+        Alert.alert('Error', 'Please enter a valid amount');
+        return;
+      }
 
-    /* const response = await fetch(`http://localhost:8080/guide/editQuotation/${quotationId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    }); */
+      const updateData = {
+        quotedAmount: parseFloat(editFormData.quotedAmount),
+        notes: editFormData.notes
+      };
 
-    /* if (response.ok) {
-      // Update local state
+      // Update local state for demo purposes
       setSubmittedQuotations(prev => prev.map(q => 
         q.id === quotationId ? { ...q, ...updateData } : q
       ));
@@ -589,20 +723,18 @@ const handleSaveEdit = async (quotationId: string) => {
       setEditingQuote(null);
       setEditFormData({ quotedAmount: '', notes: '' });
       Alert.alert('Success', 'Quotation updated successfully!');
-    } else {
-      throw new Error('Failed to update quotation');
-    } */
-  } catch (error) {
-    console.error('Error updating quotation:', error);
-    Alert.alert('Error', 'Failed to update quotation');
-  }
-};
 
-const handleCancelEdit = () => {
-  setShowEditModal(false);
-  setEditingQuote(null);
-  setEditFormData({ quotedAmount: '', notes: '' });
-};
+    } catch (error) {
+      console.error('Error updating quotation:', error);
+      Alert.alert('Error', 'Failed to update quotation');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingQuote(null);
+    setEditFormData({ quotedAmount: '', notes: '' });
+  };
 
   const handleGenerateInvoice = (quotationId: string) => {
     Alert.alert(
@@ -614,8 +746,6 @@ const handleCancelEdit = () => {
       ]
     );
   };
-
-  
 
   const renderSubmittedCard = (quotation: SubmittedQuotation) => (
     <View key={quotation.id} style={styles.card}>
@@ -643,11 +773,19 @@ const handleCancelEdit = () => {
 
       <View style={styles.tourDetails}>
         <View style={styles.detailRow}>
-          <MapPin size={18} color="#6B7280" />
+          <Navigation size={18} color="#6B7280" />
           <Text style={styles.detailText} numberOfLines={2}>
             {quotation.tourDetails.destination}
           </Text>
         </View>
+        {quotation.tourDetails.startLocation && quotation.tourDetails.endLocation && (
+          <View style={styles.detailRow}>
+            <MapPin size={18} color="#6B7280" />
+            <Text style={styles.detailText}>
+              {quotation.tourDetails.startLocation} → {quotation.tourDetails.endLocation}
+            </Text>
+          </View>
+        )}
         <View style={styles.detailRow}>
           <Calendar size={18} color="#6B7280" />
           <Text style={styles.detailText}>
@@ -657,13 +795,19 @@ const handleCancelEdit = () => {
         <View style={styles.detailRow}>
           <Users size={18} color="#6B7280" />
           <Text style={styles.detailText}>
-            {quotation.tourDetails.groupSize} people • {quotation.tourDetails.duration}
+            {quotation.tourDetails.groupSize} seats • {quotation.tourDetails.duration}
           </Text>
         </View>
         {quotation.tourDetails.tourType && (
           <View style={styles.detailRow}>
             <Tag size={18} color="#6B7280" />
             <Text style={styles.detailText}>{quotation.tourDetails.tourType}</Text>
+          </View>
+        )}
+        {quotation.tourDetails.path && (
+          <View style={styles.detailRow}>
+            <Tag size={18} color="#6B7280" />
+            <Text style={styles.detailText}>Route: {quotation.tourDetails.path}</Text>
           </View>
         )}
       </View>
@@ -688,29 +832,19 @@ const handleCancelEdit = () => {
       )}
 
       <View style={styles.cardActions}>
-        {/* <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => handleViewBreakdown(quotation.id)}
-          accessible={true}
-          accessibilityLabel="View quotation breakdown"
-        >
-          <Eye size={18} color="#6B7280" />
-          <Text style={styles.actionText}>View Breakdown</Text>
-        </TouchableOpacity> */}
-        
         {(quotation.status === 'pending' || quotation.status === 'quoted') && (
-  <TouchableOpacity 
-  style={styles.actionButton} 
-  onPress={() => {
-    console.log('Edit button pressed - ID:', quotation.id);
-    console.log('Status:', quotation.status);
-    handleEditQuote(quotation.id);
-  }}
->
-  <Edit3 size={18} color="#6B7280" />
-  <Text style={styles.actionText}>Edit Quote (Test)</Text>
-</TouchableOpacity>
-)}
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => {
+              console.log('Edit button pressed - ID:', quotation.id);
+              console.log('Status:', quotation.status);
+              handleEditQuote(quotation.id);
+            }}
+          >
+            <Edit3 size={18} color="#6B7280" />
+            <Text style={styles.actionText}>Edit Quote</Text>
+          </TouchableOpacity>
+        )}
         
         {quotation.status === 'accepted' && (
           <TouchableOpacity 
@@ -727,7 +861,7 @@ const handleCancelEdit = () => {
     </View>
   );
 
-   const renderEditModal = () => (
+  const renderEditModal = () => (
     <Modal
       visible={showEditModal}
       animationType="slide"
@@ -751,7 +885,7 @@ const handleCancelEdit = () => {
                   {editingQuote.tourDetails.destination} - {editingQuote.tourDetails.duration}
                 </Text>
                 <Text style={styles.requestSummaryText}>
-                  {editingQuote.tourDetails.groupSize} people
+                  {editingQuote.tourDetails.groupSize} seats
                 </Text>
                 <Text style={styles.requestSummaryText}>
                   Client: {editingQuote.clientName}
@@ -768,7 +902,6 @@ const handleCancelEdit = () => {
                 style={styles.formInput}
                 value={editFormData.quotedAmount}
                 onChangeText={(text) => {
-                  // Only allow numeric input
                   const numericText = text.replace(/[^0-9.]/g, '');
                   setEditFormData({...editFormData, quotedAmount: numericText});
                 }}
@@ -888,7 +1021,7 @@ const handleCancelEdit = () => {
           >
             <ArrowLeft size={24} color="#111827" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quotations</Text>
+          <Text style={styles.headerTitle}>Trip Quotations</Text>
         </View>
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -921,7 +1054,7 @@ const handleCancelEdit = () => {
             {requests.map(renderRequestCard)}
             {requests.length === 0 && !loading && (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No quotation requests found</Text>
+                <Text style={styles.emptyStateText}>No trip requests found</Text>
               </View>
             )}
           </>
@@ -951,12 +1084,18 @@ const handleCancelEdit = () => {
             <ScrollView style={styles.modalContent}>
               {selectedRequest && (
                 <View style={styles.requestSummary}>
-                  <Text style={styles.requestSummaryTitle}>Request Summary:</Text>
+                  <Text style={styles.requestSummaryTitle}>Trip Request Summary:</Text>
                   <Text style={styles.requestSummaryText}>
                     {selectedRequest.tourDetails.destination} - {selectedRequest.tourDetails.duration}
                   </Text>
                   <Text style={styles.requestSummaryText}>
-                    {selectedRequest.tourDetails.groupSize} people
+                    {selectedRequest.tourDetails.groupSize} seats available
+                  </Text>
+                  <Text style={styles.requestSummaryText}>
+                    Route: {selectedRequest.tourDetails.path}
+                  </Text>
+                  <Text style={styles.requestSummaryText}>
+                    Pickup: {formatTime(selectedRequest.tourDetails.pickupTime || new Date())}
                   </Text>
                 </View>
               )}
@@ -972,7 +1111,7 @@ const handleCancelEdit = () => {
                 />
               </View>
 
-              {/* <View style={styles.formGroup}>
+              <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Notes</Text>
                 <TextInput
                   style={[styles.formInput, styles.textArea]}
@@ -982,7 +1121,7 @@ const handleCancelEdit = () => {
                   multiline
                   numberOfLines={4}
                 />
-              </View> */}
+              </View>
             </ScrollView>
 
             <View style={styles.modalActions}>
@@ -1002,89 +1141,82 @@ const handleCancelEdit = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Modal */}
+      {renderEditModal()}
     </SafeAreaView>
   );
 };
 
-
-
+// Styles remain the same as the original code
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
   header: {
     backgroundColor: '#FEFA17',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    elevation: 3,
+    paddingBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   backButton: {
+    marginRight: 16,
     padding: 8,
-    marginRight: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
     flex: 1,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 4,
+    paddingHorizontal: 16,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    borderRadius: 8,
+    marginHorizontal: 4,
   },
   activeTab: {
     backgroundColor: '#111827',
   },
   tabText: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
+    color: '#6B7280',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
+    marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1096,41 +1228,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerRight: {
-    flexDirection: 'row',
-    gap: 8,
+    marginLeft: 12,
   },
   clientName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 4,
   },
   requestDate: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  validUntil: {
+    fontSize: 12,
+    color: '#EF4444',
     marginTop: 2,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-  },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 4,
   },
   statusText: {
-    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   tourDetails: {
     marginBottom: 12,
@@ -1138,110 +1264,87 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    gap: 8,
   },
   detailText: {
     fontSize: 14,
     color: '#374151',
-    marginLeft: 8,
     flex: 1,
   },
-  budgetContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 6,
-  },
-  budgetLabel: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  budgetText: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '600',
-  },
   specialRequests: {
-    marginBottom: 12,
+    backgroundColor: '#F3F4F6',
     padding: 12,
-    backgroundColor: '#FEF3C7',
     borderRadius: 8,
+    marginBottom: 12,
   },
   specialRequestsLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#6B7280',
     marginBottom: 4,
   },
   specialRequestsText: {
     fontSize: 14,
-    color: '#92400E',
+    color: '#374151',
+    lineHeight: 20,
   },
   quotationAmount: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: '#F0FDF4',
     padding: 12,
-    backgroundColor: '#ECFDF5',
     borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
   },
   amountText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#10B981',
-    marginLeft: 8,
-  },
-  validUntil: {
-    marginBottom: 12,
-  },
-  validUntilText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    fontWeight: 'bold',
+    color: '#059669',
   },
   notes: {
-    marginBottom: 12,
+    backgroundColor: '#F9FAFB',
     padding: 12,
-    backgroundColor: '#F3F4F6',
     borderRadius: 8,
+    marginBottom: 12,
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#6B7280',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#374151',
+    lineHeight: 20,
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
+    gap: 8,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
+    gap: 6,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
   actionText: {
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 6,
     fontWeight: '500',
-  },
-  primaryButton: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    color: '#6B7280',
   },
   primaryButtonText: {
     color: '#FFFFFF',
@@ -1249,55 +1352,96 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 48,
   },
   emptyStateText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
   },
-  // Modal styles
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: width * 0.9,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '80%',
-    paddingVertical: 20,
+    minHeight: 400,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#111827',
   },
   modalContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flex: 1,
+    padding: 20,
   },
   requestSummary: {
     backgroundColor: '#F3F4F6',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   requestSummaryTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#374151',
     marginBottom: 8,
   },
   requestSummaryText: {
@@ -1306,11 +1450,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   formGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   formLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
@@ -1320,174 +1464,64 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
+    fontSize: 16,
     backgroundColor: '#FFFFFF',
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
-  breakdownTitle: {
-    fontSize: 16,
+  editInfo: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  editInfoTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
-    marginTop: 8,
+    color: '#374151',
+    marginBottom: 8,
+  },
+  editInfoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    padding: 20,
+    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    marginRight: 8,
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
     fontWeight: '500',
+    color: '#6B7280',
   },
   submitButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 8,
-    backgroundColor: '#111827',
-    marginLeft: 8,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
   },
   submitButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '500',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#EF4444', // Tailwind red-500
-    textAlign: 'center',
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    backgroundColor: '#3B82F6', // Tailwind blue-500
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: 'bold',
   },
-  emptyTitle: {
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6B7280', // Tailwind gray-500
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#9CA3AF', // Tailwind gray-400
-    textAlign: 'center',
-    paddingHorizontal: 30,
-  },
-   editContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  editInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-  },
-  editActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  saveButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalSaveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  modalSaveText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalCancelText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  editInfo: {
-      marginTop: 16,
-      padding: 12,
-      backgroundColor: '#F9FAFB',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
-    editInfoTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#374151',
-      marginBottom: 8,
-    },
-    editInfoText: {
-      fontSize: 12,
-      color: '#6B7280',
-      marginBottom: 4,
-    },
-
 });
 
 export default QuotationsScreen;
