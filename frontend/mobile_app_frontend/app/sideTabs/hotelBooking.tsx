@@ -329,21 +329,21 @@ export default function HotelsBookingScreen() {
 
 
                                         <TouchableOpacity
-                                            onPress={() => router.push(`/views/hotel/solo/${hotel.id}`)}
+                                            onPress={() => router.push(`/views/hotel/solo/${Number(hotel.id) + 1}`)}
                                             className="w-full h-full"
                                         >
 
                                             <View className="h-full ">
                                                 <View className="w-full h-[75%]">
                                                     <View className="w-full absolute items-end pr-2 pt-1 z-10">
-                                                        <TouchableOpacity
+                                                        {/* <TouchableOpacity
                                                             className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
                                                             onPress={() => toggleCardSelection(index)}
                                                         >
                                                             {selectedCardIndex === index && (
                                                                 <Image className='w-4 h-4' source={mark} />
                                                             )}
-                                                        </TouchableOpacity>
+                                                        </TouchableOpacity> */}
                                                     </View>
                                                     <Image
                                                         className='w-[95%] h-full rounded-xl self-center'

@@ -20,6 +20,8 @@ interface Book {
     ad: string;
     ch: string;
     ni: string;
+    s: string;
+    d: string
 }
 
 interface Hotel {
@@ -28,14 +30,35 @@ interface Hotel {
     title: string;
     stars: number;
     price: number
+    beds: { type: string; price: number }[]
 }
 
-const hotels: Hotel[] = [
-    { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000 },
-    { id: '2', image: pic, title: 'Bawana', stars: 1, price: 1000 },
-    { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 1000 },
-    { id: '4', image: pic, title: 'Raheema', stars: 5, price: 1000 },
-];
+interface x {
+
+    availableDouble: number;
+    availableSingle: number;
+    doublePrice: number;
+    name: string;
+    singlePrice: number;
+    stars: number;
+    thumbnail: string;
+    _id: string
+
+}
+
+interface g {
+
+    id: string,
+    price: number
+
+}
+
+/* const hotels: Hotel[] = [
+    { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+    { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+    { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+    { id: '4', image: pic, title: 'Raheema', stars: 5, price: 4000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
+]; */
 
 export default function HotelsBookingScreen() {
 
@@ -79,8 +102,7 @@ export default function HotelsBookingScreen() {
     ]
 
 
-
-    const guides = [
+    /* const guides = [
         {
             id: '1',
             image: pic,
@@ -154,21 +176,30 @@ export default function HotelsBookingScreen() {
             price: 8000
         },
     ];
-
+ */
 
     const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null); // Stores the array index (0-based) of the selected hotel
     const [modalVisible, setModalVisible] = useState(false);
     const [bookingComplete, setBookingComplete] = useState(false);
-    const [book, setBook] = useState<Book[] | null>([]);
+    const [book, setBook] = useState<Book[] | null>(null);
     const [adults, setAdults] = useState('');
     const [children, setChildren] = useState('');
     const [nights, setNights] = useState('');
+    const [s, setS] = useState('');
+    const [d, setD] = useState('');
     const [location, setLocation] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
     const [total, setTotal] = useState('');
+    const [hotes, setHotels] = useState<x[] | null>(null)
+    const [input, setInput] = useState({
+        id: '',
+        s: '',
+        d: ''
+    })
+    const [guides, setGuides] = useState<g[]>([])
 
     const sortedLocations = useMemo(() => {
         if (!location) return LOCATIONS;
@@ -179,22 +210,35 @@ export default function HotelsBookingScreen() {
         return Object.keys(selectedDates).sort().map(date => new Date(date).toDateString()).join(', ');
     }, [selectedDates]);
 
-    const toggleCardSelection = useCallback((index: number) => {
-        let newIndex: number | null = null;
+    const toggleCardSelection = useCallback((index: string) => {
         setSelectedCardIndex(prev => {
-            newIndex = prev === index ? null : index;
+            const newIndex = prev === index ? null : index; // Toggle logic for 0-based index
+
+            // Async function to update AsyncStorage based on the resolved newIndex
+            const updateStorage = async (selectedIndex: string | null) => {
+                try {
+                    if (hotes) {
+                        const selectedHotel = selectedIndex !== null ? hotes.find(hotel => hotel._id == selectedIndex) : null;
+
+                        if (selectedHotel) {
+                            const hotelData = {
+                                id: selectedHotel._id, // Store the actual hotel ID (e.g., '1', '2')
+                                s: s,
+                                d: d
+                            };
+                            await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
+                        } else {
+                            await AsyncStorage.removeItem('selectedHotelBooking'); // Remove if no hotel is selected
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error saving selectedHotelBooking to AsyncStorage:', error);
+                }
+            };
+            updateStorage(newIndex); // Call with the resolved newIndex
             return newIndex;
         });
-        // Update AsyncStorage after state change
-        const updateStorage = async () => {
-            try {
-                await AsyncStorage.setItem('hotel', newIndex !== null ? (newIndex + 1).toString() : '');
-            } catch (error) {
-                console.error('Error saving selectedCardIndex to AsyncStorage:', error);
-            }
-        };
-        updateStorage();
-    }, []);
+    }, [s, d, hotes, selectedCardIndex]); // Dependencies for useCallback to prevent stale closures of s, d, hotels
 
     const onDayPress = (day: { dateString: string }) => {
         setSelectedDates((prev) => {
@@ -219,7 +263,7 @@ export default function HotelsBookingScreen() {
             alert('Please fill in all fields.');
             return;
         }
-        const newBooking = [{ dates: Object.keys(selectedDates), loc: location, ad: adults, ch: children, ni: nights }];
+        const newBooking: Book[] = [{ dates: Object.keys(selectedDates), loc: location, ad: adults, ch: children, ni: nights, s: s, d: d }];
         setBook(newBooking);
         setModalVisible(false);
         setBookingComplete(true);
@@ -227,7 +271,24 @@ export default function HotelsBookingScreen() {
             await AsyncStorage.setItem('hbookings', JSON.stringify(newBooking));
             await AsyncStorage.setItem('hbookingComplete', 'true');
             await AsyncStorage.setItem('hbookingSession', Date.now().toString());
-            //alert('Booking saved to AsyncStorage');
+
+            // Also ensure selected hotel data (s, d) is updated in storage
+            if (hotes) {
+                const selectedHotel = selectedCardIndex !== null ? hotes.find(hotel => hotel._id == selectedCardIndex) : null;
+                if (selectedHotel) {
+                    const hotelData = {
+                        id: selectedHotel._id,
+                        s: s,
+                        d: d
+                    };
+                    setInput(hotelData)
+                    await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
+                } else {
+                    await AsyncStorage.removeItem('selectedHotelBooking');
+                }
+                count()
+
+            }
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -237,28 +298,54 @@ export default function HotelsBookingScreen() {
         try {
             const sessionExists = await AsyncStorage.getItem('hbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('hbookingComplete');
-            const savedIndex = await AsyncStorage.getItem('hotel');
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use the consistent key
+            const guideData = await AsyncStorage.getItem('guides')
+            if (guideData) {
 
-            if (savedIndex) {
-                setSelectedCardIndex(Number(savedIndex) - 1); // Persist selected hotel
+                setGuides(guideData ? JSON.parse(guideData) : [])
+
+            }
+            // Reset states before loading new data
+            setSelectedDates({});
+            setBookingComplete(false);
+            setBook(null);
+            setLocation('');
+            setAdults('');
+            setShowDropdown(false);
+            setChildren('');
+            setNights('');
+            setS('');
+            setD('');
+
+            let hotelWasFound = false;
+            if (savedHotelBooking) {
+                const hotelData = JSON.parse(savedHotelBooking);
+                // Find the array index of the hotel based on its 'id'
+                if (hotes) {
+                    const hotelIndex = hotes.find(h => h._id === hotelData.id);
+                    if (hotelIndex) {
+                        setSelectedCardIndex(hotelIndex._id); // Set the array index (0-based)
+                        setS(hotelData.s || ''); // Load s from stored data
+                        setD(hotelData.d || ''); // Load d from stored data
+                        hotelWasFound = true;
+                    }
+                }
             }
 
-            if (!sessionExists) {
-                // No session exists, create a new one and show modal
-                await AsyncStorage.setItem('hbookingSession', Date.now().toString());
-                setModalVisible(true);
-                setBookingComplete(false);
-            } else if (bookingCompleteStatus === 'true') {
-                // Booking is complete, load saved data and hide modal
+            if (!hotelWasFound) {
+                setSelectedCardIndex(null);
+            }
+
+            if (sessionExists && bookingCompleteStatus === 'true') {
                 setModalVisible(false);
                 setBookingComplete(true);
+
                 const savedBookings = await AsyncStorage.getItem('hbookings');
                 if (savedBookings) {
-                    const bookingData = JSON.parse(savedBookings);
+                    const bookingData: Book[] = JSON.parse(savedBookings);
                     setBook(bookingData);
                     if (bookingData.length > 0) {
                         const booking = bookingData[0];
-                        // Reconstruct selectedDates object from saved dates array
                         const dates = booking.dates.reduce((acc: any, date: string) => {
                             acc[date] = { selected: true, selectedColor: '#007BFF' };
                             return acc;
@@ -268,73 +355,83 @@ export default function HotelsBookingScreen() {
                         setAdults(booking.ad);
                         setChildren(booking.ch);
                         setNights(booking.ni);
+                        setS(booking.s || '')
+                        setD(booking.d || '')
+                        // s and d for the booking modal inputs will be loaded from 'selectedHotelBooking' if a hotel is selected,
+                        // otherwise they default to empty strings.
                     }
                 }
             } else {
-                // Session exists but booking not complete, show modal
+                await AsyncStorage.setItem('hbookingSession', Date.now().toString());
                 setModalVisible(true);
                 setBookingComplete(false);
             }
         } catch (error) {
             console.error('Error loading data from AsyncStorage:', error);
-            setModalVisible(true); // Default to showing modal on error
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setModalVisible(true);
+            setBookingComplete(false);
+            setBook([]);
+            setLocation('');
+            setAdults('');
+            setShowDropdown(false);
+            setChildren('');
+            setNights('');
+            setS('');
+            setD('');
         }
     };
 
     useEffect(() => {
-        loadBookingData();
-    }, []);
+        const getHotels = async () => {
+
+            try {
+
+                const res = await fetch('http://localhost:8080/traveler/hotels-all')
+
+                if (res) {
+
+                    const data = await res.json()
+                    console.log(data)
+                    setHotels(data)
+
+
+                    const minimalHotles = data.map((hotel: x) => ({
+                        id: hotel._id,
+                        singlePrice: hotel.singlePrice,
+                        doublePrice: hotel.doublePrice,
+                    }));
+                    await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error from hotel getting : ${err}`)
+
+            }
+
+        }
+
+        getHotels();
+    }, [])
 
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
             count()
-        }, [])
-    );
-    useFocusEffect(
-        useCallback(() => {
-
-            count()
-        }, [selectedCardIndex, total])
+        }, [hotes])
     );
 
-    // useFocusEffect(
-    //     useCallback(() => {
-    //         const calculateTotal = async () => {
-    //             try {
-    //                 const baseTotal = await AsyncStorage.getItem('total');
-    //                 const base = baseTotal ? Number(baseTotal) : 0;
-
-    //                 if (selectedCardIndex !== null) {
-    //                     const hotel = hotels.find(h => Number(h.id) === selectedCardIndex);
-    //                     if (hotel) {
-    //                         const newTotal = base + hotel.price;
-    //                         setTotal(newTotal.toString());
-    //                         await AsyncStorage.setItem('total', newTotal.toString());
-    //                     } else {
-    //                         alert('Hotel not exists');
-    //                     }
-    //                 } else {
-    //                     setTotal(base.toString());
-    //                 }
-    //             } catch (error) {
-    //                 console.error('Error calculating total:', error);
-    //                 alert('Error calculating total price');
-    //             }
-    //         };
-
-    //         calculateTotal();
-    //     }, [selectedCardIndex])
-    // );
     const count = async () => {
-
         try {
             let total = 0;
 
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex) - 1).toString());
+                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
                 if (category) {
                     total += category.price;
                 }
@@ -342,19 +439,32 @@ export default function HotelsBookingScreen() {
 
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex !== null && guideIndex >= '0') {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex) - 1).toString());
+            if (guideIndex && guides) {
+                const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
                     total += guide.price;
                 }
             }
 
             // Hotel Booking Price
-            const hotelIndex = await AsyncStorage.getItem('hotel');
-            if (hotelIndex) {
-                const hotel = hotels.find(hotel => hotel.id === (Number(hotelIndex) - 1).toString());
-                if (hotel) {
-                    total += hotel.price;
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
+            if (savedHotelBooking && hotes) {
+                const hotelBookingData = JSON.parse(savedHotelBooking);
+                const selectedHotel = hotes.find(hotel => hotel._id === hotelBookingData.id); // Find hotel by its ID
+
+                if (selectedHotel) { // Null check for selectedHotel
+
+                    if (selectedHotel.availableDouble >= Number(d) && selectedHotel.availableSingle >= Number(s)) {
+                        const singleBedPrice = selectedHotel.singlePrice || 0;
+                        const doubleBedPrice = selectedHotel.doublePrice || 0;
+                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    } else {
+
+                        await AsyncStorage.removeItem('selectedHotelBooking')
+
+                    }
                 }
             }
 
@@ -363,11 +473,14 @@ export default function HotelsBookingScreen() {
             console.error('Error calculating total price from AsyncStorage:', error);
             setTotal('0');
         }
-
-    }
-
+    };
 
 
+    useFocusEffect(
+        useCallback(() => {
+            count()
+        }, [selectedCardIndex, s, d]) // Dependencies for recalculation, ensuring it reacts to s/d changes
+    );
 
     return (
         <View className='bg-[#F2F5FA] h-full'>
@@ -393,6 +506,7 @@ export default function HotelsBookingScreen() {
                                         if (bookingComplete) {
                                             setModalVisible(false);
                                         } else {
+                                            setModalVisible(false);
                                             router.back();
                                         }
                                     }}
@@ -459,40 +573,66 @@ export default function HotelsBookingScreen() {
                             {/* Fixed Bottom Section - Text Inputs and Button */}
                             <View className="w-full p-6 bg-white h-[25%]">
                                 <View className="w-full gap-4 justify-between h-full">
-                                    <View className='flex-row justify-between gap-3'>
-                                        <TextInput
-                                            placeholder="# Adults"
-                                            placeholderTextColor="#8E8E8E"
-                                            value={adults}
-                                            onChangeText={(text) => {
-                                                const numericText = text.replace(/[^0-9]/g, '');
-                                                setAdults(numericText);
-                                            }}
-                                            keyboardType="numeric"
-                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
-                                        />
-                                        <TextInput
-                                            placeholder="# Children"
-                                            placeholderTextColor="#8E8E8E"
-                                            value={children}
-                                            onChangeText={(text) => {
-                                                const numericText = text.replace(/[^0-9]/g, '');
-                                                setChildren(numericText);
-                                            }}
-                                            keyboardType="numeric"
-                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
-                                        />
-                                        <TextInput
-                                            placeholder="# Nights"
-                                            placeholderTextColor="#8E8E8E"
-                                            value={nights}
-                                            onChangeText={(text) => {
-                                                const numericText = text.replace(/[^0-9]/g, '');
-                                                setNights(numericText);
-                                            }}
-                                            keyboardType="numeric"
-                                            className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
-                                        />
+                                    <View className='flex-col gap-2'>
+                                        <View className='flex-row justify-between gap-3'>
+                                            <TextInput
+                                                placeholder="# Adults"
+                                                placeholderTextColor="#8E8E8E"
+                                                value={adults}
+                                                onChangeText={(text) => {
+                                                    const numericText = text.replace(/[^0-9]/g, '');
+                                                    setAdults(numericText);
+                                                }}
+                                                keyboardType="numeric"
+                                                className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            />
+                                            <TextInput
+                                                placeholder="# Children"
+                                                placeholderTextColor="#8E8E8E"
+                                                value={children}
+                                                onChangeText={(text) => {
+                                                    const numericText = text.replace(/[^0-9]/g, '');
+                                                    setChildren(numericText);
+                                                }}
+                                                keyboardType="numeric"
+                                                className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            />
+                                            <TextInput
+                                                placeholder="# Nights"
+                                                placeholderTextColor="#8E8E8E"
+                                                value={nights}
+                                                onChangeText={(text) => {
+                                                    const numericText = text.replace(/[^0-9]/g, '');
+                                                    setNights(numericText);
+                                                }}
+                                                keyboardType="numeric"
+                                                className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            />
+                                        </View>
+                                        <View className='flex-row justify-between gap-3'>
+                                            <TextInput
+                                                placeholder="# Single Beds"
+                                                placeholderTextColor="#8E8E8E"
+                                                value={s}
+                                                onChangeText={(text) => {
+                                                    const numericText = text.replace(/[^0-9]/g, '');
+                                                    setS(numericText);
+                                                }}
+                                                keyboardType="numeric"
+                                                className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            />
+                                            <TextInput
+                                                placeholder="# Double Beds"
+                                                placeholderTextColor="#8E8E8E"
+                                                value={d}
+                                                onChangeText={(text) => {
+                                                    const numericText = text.replace(/[^0-9]/g, '');
+                                                    setD(numericText);
+                                                }}
+                                                keyboardType="numeric"
+                                                className="text-black border border-gray-300 rounded-xl px-3 py-3 text-base flex-1"
+                                            />
+                                        </View>
                                     </View>
                                     <TouchableOpacity
                                         onPress={handleSubmit}
@@ -524,54 +664,48 @@ export default function HotelsBookingScreen() {
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
                                 showsVerticalScrollIndicator={false}
                             >
-                                {hotels.map((hotel, index) => (
-                                    <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300">
+                                {hotes && hotes ? hotes.map((hotel, index) => (
+                                    ((Number(adults) + Number(children)) <= (hotel.availableDouble + hotel.availableSingle) && Number(s) < hotel.availableSingle && Number(d) < hotel.availableDouble) && <View key={index} className={`bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300`}>
                                         <TouchableOpacity
-                                            onPress={() => router.push(`/views/hotel/group/${(Number(hotel.id) + 1).toString()}`)}
-                                            className="w-full h-full"
+                                            onPress={() => router.push(`/views/hotel/group/${hotel._id}`)} // Pass actual hotel.id (e.g., '1', '2')
+                                            className="w-full"
                                         >
-                                            <View className="h-full ">
-                                                <View className="w-full h-[75%]">
-                                                    <View className="w-full absolute items-end pr-2 pt-1 z-10">
-                                                        <TouchableOpacity
-                                                            className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                            onPress={() => toggleCardSelection(index + 1)}
-                                                        >
-                                                            {Number(selectedCardIndex) - 1 === index && (
-                                                                <Image className='w-4 h-4' source={mark} />
-                                                            )}
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                    <Image
-                                                        className='w-[95%] h-full rounded-xl self-center'
-                                                        source={pic}
-                                                        contentFit="cover"
-                                                    />
+                                            <View className="h-[75%] ">
+                                                <View className="w-full absolute items-end pr-2 pt-1 z-10">
+                                                    <TouchableOpacity
+                                                        className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
+                                                        onPress={() => toggleCardSelection(hotel._id)} // Pass array index (0-based)
+                                                    >
+                                                        {selectedCardIndex === hotel._id && ( // Compare with array index (0-based)
+                                                            <Image className='w-4 h-4' source={mark} />
+                                                        )}
+                                                    </TouchableOpacity>
                                                 </View>
+                                                <Image
+                                                    className='w-[95%] h-full rounded-xl self-center'
+                                                    source={{ uri: `data:image/jpeg;base64,${hotel.thumbnail}` }}
+                                                    contentFit="cover"
+                                                />
+                                            </View>
 
-                                                <View>
-                                                    <Text className="text-sm font-semibold text-center" numberOfLines={1}>
-                                                        {hotel.title}
-                                                    </Text>
-                                                    <View className="flex-row justify-center mt-1">
-                                                        {[...Array(hotel.stars)].map((_, i) => (
-                                                            <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
-                                                        ))}
-                                                    </View>
+                                            <View>
+                                                <Text className="text-sm font-semibold text-center" numberOfLines={1}>
+                                                    {hotel.name}
+                                                </Text>
+                                                <View className="flex-row justify-center mt-1">
+                                                    {[...Array(hotel.stars)].map((_, i) => (
+                                                        <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
+                                                    ))}
                                                 </View>
                                             </View>
                                         </TouchableOpacity>
                                     </View>
-                                ))}
+                                )) : <View><Text className="text-gray-200 italic">No hotels available</Text></View>}
                             </ScrollView>
                         </View>
 
                         <View className="p-4 border-t border-gray-200 bg-white">
-                            {
-
-                                <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
-
-                            }
+                            <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
                         </View>
                     </>
                 )}

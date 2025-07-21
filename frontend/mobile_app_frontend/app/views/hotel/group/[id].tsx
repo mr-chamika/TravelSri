@@ -14,21 +14,127 @@ const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelth
 const star = require('../../../../assets/images/tabbar/create/hotel/stars.png')
 const back = require('../../../../assets/images/back.png')
 
+interface Hotel {
+
+    _id: string,
+    images: string[],
+    name: string,
+    location: string,
+    stars: number,
+    description: string,
+    price: number
+
+}
+interface Review {
+
+    _id: string,
+    serviseId: string,
+    text: string,
+    country: string,
+    stars: number,
+    author: string,
+    dp: string,
+
+}
+
+interface Faci {
+
+    _id: string,
+    hotelId: string,
+    image: string,
+    title: string
+
+}
+
 export default function Views() {
 
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
+    const [hotelv, setHotelv] = useState<Hotel>()
+    const [reviewv, setReviewv] = useState<Review[]>([])
+    const [faciv, setFaciv] = useState<Faci[]>([])
+
+
     useEffect(() => {
 
-        getItem((Number(id) - 1).toString())
+        const gethotel = async () => {
 
+            try {
 
-    }, [id])
+                const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
 
-    const [item, setItem] = useState<{ id: string, image: any[], title: string, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[] }>({ id: '1', image: [], title: 'Matara to Colombo', stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [] })
+                if (res1) {
 
-    const groupCollection = [
+                    const data1 = await res1.json()
+                    //console.log(data1)
+                    setHotelv(data1)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error in hotel data getting : ${err}`)
+
+            }
+
+        }
+        const getReviews = async () => {
+
+            try {
+
+                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+
+                if (res2) {
+
+                    const data2 = await res2.json()
+                    // console.log(data2)
+                    setReviewv(data2)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error in hotel reviews getting : ${err}`)
+
+            }
+
+        }
+        const getFaci = async () => {
+
+            try {
+
+                const res3 = await fetch(`http://localhost:8080/traveler/facis-view?id=${id}`)
+
+                if (res3) {
+
+                    const data3 = await res3.json()
+                    //console.log(data3)
+                    setFaciv(data3)
+
+                }
+
+            } catch (err) {
+
+                console.log(`Error in hotel reviews getting : ${err}`)
+
+            }
+
+        }
+        gethotel()
+        getReviews()
+        getFaci()
+    }, [])
+
+    /*  useEffect(() => {
+         // Ensure id is treated as a string for getItem, or convert it if necessary
+         getItem((Number(id) - 1).toString());
+ 
+     }, [id]) */
+
+    //const [item, setItem] = useState<{ id: string, image: any[], title: string, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[] }>({ id: '1', image: [], title: 'Matara to Colombo', stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [] })
+
+    /* const groupCollection = [
         {
             id: '1',
             image: [thumbnail, thumbnail],
@@ -133,23 +239,15 @@ export default function Views() {
                 }
             ]
         },
-        // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-
     ];
-
-    const getItem = (Id: string | string[]) => {
+ */
+    /* const getItem = (Id: string) => { // Changed type to string as id from useLocalSearchParams is string
         groupCollection.map((collection, i) => {
             if (collection.id == Id) {
                 setItem(collection)
             }
         })
-    }
-
-    const route = item.title.split(" ");
+    } */
 
     return (
         <View>
@@ -175,13 +273,13 @@ export default function Views() {
                                 nestedScrollEnabled={true}
 
                             >
-                                {item.image.map((x, i) => {
+                                {hotelv && hotelv.images && hotelv.images.map((x, i) => {
 
                                     return (
 
                                         <View key={i} className=" w-[310px] h-40">
 
-                                            <Image className=" w-[300px] h-full" source={x} />
+                                            <Image className=" w-[300px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
 
                                         </View>
                                     )
@@ -193,22 +291,22 @@ export default function Views() {
                         </View>
                         <View className="flex-row justify-between pt-1">
                             <View>
-                                <Text className="font-black text-xl">{item.title}</Text>
+                                <Text className="font-black text-xl">{hotelv && hotelv.name}</Text>
                                 <View className="flex-row items-center">
                                     <Image className="w-4 h-4" source={location} />
-                                    <Text className="text-start">{item.location}</Text>
+                                    <Text className="text-start">{hotelv && hotelv.location}</Text>
                                 </View>
                             </View>
                             <View className="flex-row items-start">
                                 <Image className="w-5 h-5" source={star} />
-                                <Text>{item.stars}</Text>
+                                <Text>{hotelv && hotelv.stars}</Text>
                             </View>
                         </View>
                     </View>
 
                     <View>
 
-                        <Text className="px-3 text-sm italic text-justify text-gray-500 font-semibold">{item.description}</Text>
+                        <Text className="px-3 text-sm italic text-justify text-gray-500 font-semibold">{hotelv && hotelv.description}</Text>
                         <Text className=" text-2xl font-semibold py-1">Reviews</Text>
 
                         <View>
@@ -220,20 +318,20 @@ export default function Views() {
                                 nestedScrollEnabled={true}
 
                             >
-                                {item.reviewers.map((x, i) => {
+                                {reviewv.map((x, i) => {
 
                                     return (
 
                                         <View key={i} className="bg-gray-200 px-3 rounded-2xl">
                                             <View className="flex-row items-center">
-                                                <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                                <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.name} from {x.from}</Text>
+                                                <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
+                                                <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
                                                 <View className="flex-row items-center gap-1">
                                                     <Image className="w-5 h-5" source={star} />
                                                     <Text>{x.stars}/5</Text>
                                                 </View>
                                             </View>
-                                            <Text className="text-lg mx-5 my-2">{x.review}</Text>
+                                            <Text className="text-lg mx-5 my-2">{x.text}</Text>
 
                                         </View>
                                     )
@@ -251,20 +349,20 @@ export default function Views() {
                                 <ScrollView
                                     horizontal
                                     className="w-full rounded-2xl px-1"
-                                    contentContainerClassName="flex-row px-1 py-2 bg-gray-200 gap-4"
+                                    contentContainerClassName="flex-row w-full px-1 py-2 bg-gray-200 gap-4 items-center"
                                     showsHorizontalScrollIndicator={false}
                                     nestedScrollEnabled={true}
 
                                 >
-                                    {item.faci.map((x, i) => {
+                                    {faciv.map((x, i) => {
 
                                         return (
 
                                             <View key={i} className="p-3 rounded-2xl">
                                                 <View className="items-center">
 
-                                                    <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                                    <Text className="text-center">{x.name}</Text>
+                                                    <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.image}` }} />
+                                                    <Text className="text-center">{x.title}</Text>
 
                                                 </View>
 
@@ -284,16 +382,37 @@ export default function Views() {
 
                 <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
 
-                    <Text className="px-3 font-extrabold text-xl">{item.price}.00 LKR/day</Text>
+                    <Text className="px-3 font-extrabold text-xl">{hotelv && hotelv.price}.00 LKR/day</Text>
 
                     <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={
-
                         async () => {
+                            // Use the consistent key 'selectedHotelBooking'
+                            const existingHotelBooking = await AsyncStorage.getItem('selectedHotelBooking');
+                            let hotelDataToSave = {
+                                id: id, // Store the actual ID from route params
+                                s: '',
+                                d: ''
+                            };
 
-                            await AsyncStorage.setItem('hotel', id.toString())
-                            //await AsyncStorage.setItem('hotel', item.id)
-                            router.back()
+                            if (existingHotelBooking) {
+                                const parsedExisting = JSON.parse(existingHotelBooking);
+                                // Preserve s and d from the existing booking if they exist
+                                hotelDataToSave.s = parsedExisting.s || '';
+                                hotelDataToSave.d = parsedExisting.d || '';
+                            } else {
+                                // Fallback to hbookings if selectedHotelBooking doesn't exist to get s and d
+                                const hbookings = await AsyncStorage.getItem('hbookings');
+                                if (hbookings) {
+                                    const parsedHbookings = JSON.parse(hbookings);
+                                    if (parsedHbookings.length > 0) {
+                                        hotelDataToSave.s = parsedHbookings[0].s || '';
+                                        hotelDataToSave.d = parsedHbookings[0].d || '';
+                                    }
+                                }
+                            }
 
+                            await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelDataToSave));
+                            router.back();
                         }}>
                         <View className="py-2 px-3 flex-row justify-between items-center w-full">
                             <Text>Book Now</Text>

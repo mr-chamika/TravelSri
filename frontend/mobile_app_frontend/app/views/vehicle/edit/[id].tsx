@@ -744,9 +744,8 @@ licensePhoto:formData.licensePhoto?.base64,
         {placeholder} {required && <Text className="text-red-500">*</Text>}
       </Text>
       <TextInput
-        className={`border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
-          multiline ? 'h-24 text-top' : ''
-        } ${errors[field as keyof FormErrors] ? 'border-red-500' : ''}`}
+        className={`border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${multiline ? 'h-24 text-top' : ''
+          } ${errors[field as keyof FormErrors] ? 'border-red-500' : ''}`}
         placeholder={placeholder}
         placeholderTextColor="#9CA3AF"
         value={formData[field] as string}
@@ -787,15 +786,13 @@ licensePhoto:formData.licensePhoto?.base64,
         {placeholder} <Text className="text-red-500">*</Text>
       </Text>
       <TouchableOpacity
-        className={`border border-gray-300 rounded-lg px-4 py-3 bg-white justify-center ${
-          errors[field as keyof FormErrors] ? 'border-red-500' : ''
-        }`}
+        className={`border border-gray-300 rounded-lg px-4 py-3 bg-white justify-center ${errors[field as keyof FormErrors] ? 'border-red-500' : ''
+          }`}
         onPress={() => setShowPicker(!showPicker)}
       >
         <Text
-          className={`text-base ${
-            !formData[field] ? 'text-gray-400' : 'text-gray-900'
-          }`}
+          className={`text-base ${!formData[field] ? 'text-gray-400' : 'text-gray-900'
+            }`}
         >
           {formData[field]
             ? options.find((option) => option.value === formData[field])?.label
@@ -841,9 +838,8 @@ licensePhoto:formData.licensePhoto?.base64,
         {title} <Text className="text-red-500">*</Text>
       </Text>
       <TouchableOpacity
-        className={`border-2 border-gray-200 border-dashed rounded-lg py-8 px-4 items-center justify-center bg-gray-50 min-h-[120px] ${
-          errors[type] ? 'border-red-500' : ''
-        }`}
+        className={`border-2 border-gray-200 border-dashed rounded-lg py-8 px-4 items-center justify-center bg-gray-50 min-h-[120px] ${errors[type] ? 'border-red-500' : ''
+          }`}
         onPress={() => handleImageUpload(type)}
       >
         {formData[type] ? (
@@ -927,15 +923,13 @@ licensePhoto:formData.licensePhoto?.base64,
                       Gender <Text className="text-red-500">*</Text>
                     </Text>
                     <TouchableOpacity
-                      className={`border border-gray-300 rounded-lg px-4 py-3 bg-white justify-center ${
-                        errors.gender ? 'border-red-500' : ''
-                      }`}
+                      className={`border border-gray-300 rounded-lg px-4 py-3 bg-white justify-center ${errors.gender ? 'border-red-500' : ''
+                        }`}
                       onPress={() => setShowGenderPicker(!showGenderPicker)}
                     >
                       <Text
-                        className={`text-base ${
-                          !formData.gender ? 'text-gray-400' : 'text-gray-900'
-                        }`}
+                        className={`text-base ${!formData.gender ? 'text-gray-400' : 'text-gray-900'
+                          }`}
                       >
                         {formData.gender
                           ? genderOptions.find((option) => option.value === formData.gender)?.label
@@ -1081,7 +1075,7 @@ licensePhoto:formData.licensePhoto?.base64,
   };
 
   return (
-    <View className="flex-1 bg-white"> 
+    <View className="flex-1 bg-white">
       {renderStep()}
 
       <View className="flex-row px-6 pb-8 pt-4 gap-3 justify-between items-center">

@@ -1,10 +1,14 @@
 package com.example.student.controller;
 
-import com.example.student.model.Traveler;
-import com.example.student.repo.TravelerRepo;
+import com.example.student.model.*;
+import com.example.student.model.dto.*;
+import com.example.student.repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -13,43 +17,139 @@ import java.util.Optional;
 public class TravelerController {
 
     @Autowired
-    TravelerRepo repo;
+    private RoutesRepo repo;
 
-    @PostMapping("/login")
+    @GetMapping("/routes-allshow")
 
-//    public boolean login (@RequestBody Traveler traveler) {
-//
-//        if(traveler.getEmail() != null){
-//
-//            repo.save(traveler);
-//            return true;
-//
-//        }
-//            return false;
-//    }
+    public ResponseEntity<List<Routedto>> RoutesAllshow() {
 
-    public String login(@RequestBody Traveler traveler) {
+        List<Routedto> list = repo.findAllRoutedtos();
 
-
-       Optional<Traveler> exists = repo.findByEmail(traveler.getEmail());
-
-       if(exists.isPresent()) {//user exists
-
-           Traveler t = exists.get();
-
-           if (t.getPassword().equals(traveler.getPassword())) {
-               return "true";
-           }else {
-               return "wrong password";//password not match
-           }
-
-       }else{//user does not exist
-
-           return "invalid email";
-       }
-
-
+        return ResponseEntity.ok(list);
 
     }
 
+    @Autowired
+    private LocationsRepo repo1;
+
+    @GetMapping("/routes-one")
+
+    public ResponseEntity<List<Location>> RoutesOne(@RequestParam String id) {
+
+        List<Location> items = repo1.findByRouteIdContaining(id);
+        if (items.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(items);
+
+    }
+
+    @Autowired
+    private HotelsRepo repo2;
+
+    @GetMapping("/hotels-all")
+    public ResponseEntity<List<Hoteldto>> HotelsAll() {
+
+        List<Hoteldto> list = repo2.findAllHoteldtos();
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/hotels-view")
+    public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
+
+        Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
+
+        if (list.isEmpty()) {
+            return ResponseEntity.notFound().build();
+
+
+        }
+
+        return ResponseEntity.ok(list.get());
+
+    }
+
+    @Autowired
+    private ReviewRepo repo3;
+
+    @GetMapping("/reviews-view")
+    public ResponseEntity<List<Review>> HotelReview(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private FaciRepo repo4;
+
+    @GetMapping("/facis-view")
+    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
+
+        List<Faci> list = repo4.findByHotelIdContaining(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private GuidesRepo repo5;
+
+
+    @GetMapping("/guides-all")
+            public ResponseEntity<List<Guidedto>> GuidesAll(String location,String language) {
+        List<Guidedto> list = repo5.findAllGuidedtos(location,language);
+
+
+//        if (list.isEmpty()) {
+//            return ResponseEntity.notFound().build();
+//        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/guides-view")
+    public ResponseEntity<Optional<GuideViewdto>> Guide(@RequestParam String id) {
+        Optional<GuideViewdto> list = repo5.findData(id);
+
+
+        if (list.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/guides-reviews")
+    public ResponseEntity<List<Review>> GuideReview(@RequestParam String id) {
+
+        List<Review> list = repo3.findByServiceId(id);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
 }

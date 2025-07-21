@@ -31,7 +31,7 @@ export default function CreateLayout() {
 
                     alignItems: "center",
                     justifyContent: "center",
-                    paddingVertical: 8,
+                    paddingVertical: 10,
                 },
                 tabBarPosition: 'top'
                 // Remove tabBarPosition as it's not supported
@@ -41,8 +41,8 @@ export default function CreateLayout() {
                 name="index"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <View className={`p-6 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-6 h-6" source={pin} />
+                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
+                            <Image className="w-7 h-7" source={pin} />
                         </View>
                     ),
                 }}
@@ -51,8 +51,8 @@ export default function CreateLayout() {
                 name="hotels"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <View className={`p-6 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-6 h-6" source={bed} />
+                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
+                            <Image className="w-7 h-7" source={bed} />
                         </View>
                     ),
                 }}
@@ -61,8 +61,8 @@ export default function CreateLayout() {
                 name="guide"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <View className={`p-6 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-6 h-6" source={guide} />
+                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
+                            <Image className="w-7 h-7" source={guide} />
                         </View>
                     ),
                 }}
@@ -71,8 +71,8 @@ export default function CreateLayout() {
                 name="equipments"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <View className={`p-6 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-6 h-6" source={equips} />
+                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
+                            <Image className="w-7 h-7" source={equips} />
                         </View>
                     ),
                 }}
@@ -81,8 +81,8 @@ export default function CreateLayout() {
                 name="car"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <View className={`p-6 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-6 h-6" source={car} />
+                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
+                            <Image className="w-7 h-7" source={car} />
                         </View>
                     ),
                 }}

@@ -56,7 +56,7 @@ const Feedback: React.FC = () => {
     },
   ];
 
-  const renderStars = (rating: number): JSX.Element[] => {
+  const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
       <Ionicons
         key={index}
@@ -67,7 +67,7 @@ const Feedback: React.FC = () => {
     ));
   };
 
-  const renderRatingBars = (): JSX.Element[] => {
+  const renderRatingBars = () => {
     const ratings: RatingBar[] = [
       { stars: 5, percentage: 85 },
       { stars: 4, percentage: 60 },

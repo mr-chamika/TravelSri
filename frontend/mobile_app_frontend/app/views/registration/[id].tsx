@@ -22,7 +22,7 @@ import { Button } from '../../../components/ui/buttons';
 import { ImageUpload } from '../../../components/ui/imageUpload';
 import DropDownPicker from 'react-native-dropdown-picker';
 import MultiSelect from 'react-native-multiple-select';
-import Topbar from "../../../components/topbar";
+import Topbar from "../../../components/Topbar";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, } from "react-native-reanimated";
 
 
@@ -38,7 +38,7 @@ interface FormData {
   frontNicImage: string | null;
   rearNicImage: string | null;
   guideLicenseNumber: string;
-  guideLicenseExpireDate:Date;
+  guideLicenseExpireDate: Date;
   guideLicenseFrontImage: string | null;
   guideLicenseRearImage: string | null;
   language: string;
@@ -101,7 +101,7 @@ export default function GuideRegistrationScreen() {
     profileImage: null,
     frontNicImage: null,
     rearNicImage: null,
-    guideLicenseNumber:'',
+    guideLicenseNumber: '',
     guideLicenseExpireDate: new Date(),
     guideLicenseFrontImage: null,
     guideLicenseRearImage: null,
@@ -212,16 +212,16 @@ export default function GuideRegistrationScreen() {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
     if (field === 'rateForeigners' || field === 'rateLocals') {
-    setFormData({ ...formData, [field]: Number(value) });
-  } else {
-    setFormData({ ...formData, [field]: value });
-  }
+      setFormData({ ...formData, [field]: Number(value) });
+    } else {
+      setFormData({ ...formData, [field]: value });
+    }
   };
 
   const handleImagePick = async (field: 'profileImage' | 'frontNicImage' | 'rearNicImage' | 'guideLicenseFrontImage' | 'guideLicenseRearImage') => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
         Alert.alert('Permission required', 'Please allow access to photo library');
         return;
@@ -250,7 +250,7 @@ export default function GuideRegistrationScreen() {
     }
   };
 
-  
+
 
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-GB', {
@@ -270,7 +270,7 @@ export default function GuideRegistrationScreen() {
     try {
       // Create FormData for multipart upload
       const submitData = new FormData();
-      
+
       // Add text fields
       submitData.append('firstName', formData.firstName);
       submitData.append('lastName', formData.lastName);
@@ -338,30 +338,30 @@ export default function GuideRegistrationScreen() {
   const [selectedArea, setSelectedArea] = useState('');
 
   const [show, setShow] = useState(false);
-      const translateX = useSharedValue(-1000);
-      const opacity = useSharedValue(0);
-  
-      const menuStyle = useAnimatedStyle(() => ({
-          transform: [{ translateX: translateX.value }],
-          opacity: opacity.value,
-      }));
+  const translateX = useSharedValue(-1000);
+  const opacity = useSharedValue(0);
+
+  const menuStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
+  }));
 
   const toggleMenu = () => {
-          setShow(!show);
-          if (!show) {
-              translateX.value = withTiming(0, {
-                  duration: 300,
-                  easing: Easing.inOut(Easing.ease),
-              });
-              opacity.value = withTiming(1, { duration: 400 });
-          } else {
-              translateX.value = withTiming(-1000, {
-                  duration: 300,
-                  easing: Easing.inOut(Easing.ease),
-              });
-              opacity.value = withTiming(0, { duration: 300 });
-          }
-      };
+    setShow(!show);
+    if (!show) {
+      translateX.value = withTiming(0, {
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+      });
+      opacity.value = withTiming(1, { duration: 400 });
+    } else {
+      translateX.value = withTiming(-1000, {
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+      });
+      opacity.value = withTiming(0, { duration: 300 });
+    }
+  };
 
   const logo = require('../../../assets/images/top bar/logo.png')
 
@@ -369,18 +369,18 @@ export default function GuideRegistrationScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
       <StatusBar style="dark" />
-      
 
-      
+
+
       {/* Header */}
       <View className='h-[70px] items-center justify-center px-2'>
-    <View className='justify-between flex flex-row w-full px-2 items-center'>
-      <View className='flex-1 flex-row items-center justify-center '>
+        <View className='justify-between flex flex-row w-full px-2 items-center'>
+          <View className='flex-1 flex-row items-center justify-center '>
             <Image className='w-[30px] h-[30px] mr-2' source={logo} />
             <Text className='text-lg font-bold text-black'>TravelSri</Text>
+          </View>
         </View>
-        </View>
-        </View>
+      </View>
 
       <ScrollView className="flex-1 px-4 py-6" contentContainerStyle={{ paddingBottom: 50 }}>
         <Text className="text-xl font-bold text-gray-900 mb-6">Guide Registration</Text>
@@ -425,9 +425,8 @@ export default function GuideRegistrationScreen() {
             <Text className="text-gray-700 font-medium mb-2">Birth Day *</Text>
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
-              className={`border border-gray-300 rounded-lg px-4 py-3 mr-2 ${
-                errors.birthDay ? 'border-red-500' : ''
-              }`}
+              className={`border border-gray-300 rounded-lg px-4 py-3 mr-2 ${errors.birthDay ? 'border-red-500' : ''
+                }`}
             >
               <Text className="text-gray-900">{formatDate(formData.birthDay)}</Text>
             </TouchableOpacity>
@@ -435,18 +434,19 @@ export default function GuideRegistrationScreen() {
               <Text className="text-red-500 text-sm mt-1">{errors.birthDay}</Text>
             )}
           </View>
-          
+
           <View className="flex-1">
             <Text className="text-gray-700 font-medium mb-2">Gender *</Text>
-            <View className={`border border-gray-300 rounded-lg ml-2 ${
-              errors.gender ? 'border-red-500' : ''
-            }`}>
+            <View className={`border border-gray-300 rounded-lg ml-2 ${errors.gender ? 'border-red-500' : ''
+              }`}>
               <Picker
                 selectedValue={formData.gender}
                 onValueChange={(value) => handleInputChange('gender', value)}
-                style={{ paddingVertical: 0,
-                marginVertical: -6,
-                fontSize: 14, }}
+                style={{
+                  paddingVertical: 0,
+                  marginVertical: -6,
+                  fontSize: 14,
+                }}
               >
                 <Picker.Item label="Male or Female" value="" />
                 <Picker.Item label="Male" value="Male" />
@@ -527,185 +527,182 @@ export default function GuideRegistrationScreen() {
 
         {/*Guide Licence Number */}
         <Input
-        label="Guide License Number *"
-        placeholder="SL123456"
-        value={formData.guideLicenseNumber}
-        onChangeText={(text) => handleInputChange('guideLicenseNumber', text)}
-        error={errors.guideLicenseNumber}
-        className="mb-4"
-      />
+          label="Guide License Number *"
+          placeholder="SL123456"
+          value={formData.guideLicenseNumber}
+          onChangeText={(text) => handleInputChange('guideLicenseNumber', text)}
+          error={errors.guideLicenseNumber}
+          className="mb-4"
+        />
 
-      {/* Guide License Expire Date */}
-      <View className="mb-4">
-        <Text className="text-gray-700 font-medium mb-2">Guide License Expire Date *</Text>
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          className={`border border-gray-300 rounded-lg px-4 py-3 w-1/2 mr-2 ${
-            errors.guideLicenseExpireDate ? 'border-red-500' : ''
-          }`}
-        >
-          <Text className="text-gray-900">
-            {formatDate(formData.guideLicenseExpireDate)}
-          </Text>
-        </TouchableOpacity>
-        {errors.guideLicenseExpireDate && (
-          <Text className="text-red-500 text-sm mt-1">{errors.guideLicenseExpireDate}</Text>
-        )}
-      </View>
+        {/* Guide License Expire Date */}
+        <View className="mb-4">
+          <Text className="text-gray-700 font-medium mb-2">Guide License Expire Date *</Text>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            className={`border border-gray-300 rounded-lg px-4 py-3 w-1/2 mr-2 ${errors.guideLicenseExpireDate ? 'border-red-500' : ''
+              }`}
+          >
+            <Text className="text-gray-900">
+              {formatDate(formData.guideLicenseExpireDate)}
+            </Text>
+          </TouchableOpacity>
+          {errors.guideLicenseExpireDate && (
+            <Text className="text-red-500 text-sm mt-1">{errors.guideLicenseExpireDate}</Text>
+          )}
+        </View>
 
-      {/* Front Side of Guide License */}
-      <ImageUpload
-        label="Front Side of Guide License *"
-        placeholder="Upload front side of Guide License"
-        imageUri={formData.guideLicenseFrontImage}
-        onPress={() => handleImagePick('guideLicenseFrontImage')}
-        error={errors.guideLicenseFrontImage}
-        className="mb-8"
-      />
+        {/* Front Side of Guide License */}
+        <ImageUpload
+          label="Front Side of Guide License *"
+          placeholder="Upload front side of Guide License"
+          imageUri={formData.guideLicenseFrontImage}
+          onPress={() => handleImagePick('guideLicenseFrontImage')}
+          error={errors.guideLicenseFrontImage}
+          className="mb-8"
+        />
 
-      {/* Rear Side of Guide License */}
-      <ImageUpload
-        label="Rear Side of Guide License *"
-        placeholder="Upload rear side of Guide License"
-        imageUri={formData.guideLicenseRearImage}
-        onPress={() => handleImagePick('guideLicenseRearImage')}
-        error={errors.guideLicenseRearImage}
-        className="mb-8"
-      />
+        {/* Rear Side of Guide License */}
+        <ImageUpload
+          label="Rear Side of Guide License *"
+          placeholder="Upload rear side of Guide License"
+          imageUri={formData.guideLicenseRearImage}
+          onPress={() => handleImagePick('guideLicenseRearImage')}
+          error={errors.guideLicenseRearImage}
+          className="mb-8"
+        />
 
         <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1, padding: 0, }}
-    >
-      <View style={{ flex: 1 }}>
-        {/* Language Selection */}
-        <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color:'#374151' }}>Languages You Speak *</Text>
-        <MultiSelect
-          items={languagesList}
-          uniqueKey="id"
-          onSelectedItemsChange={(selected) => setSelectedLanguages(selected)}
-          selectedItems={selectedLanguages}
-          selectText="Select Languages"
-          searchInputPlaceholderText="Search languages..."
-          displayKey="name"
-          submitButtonColor="#007AFF"
-          submitButtonText="Done"
-          styleMainWrapper={{
-            marginTop: 10,
-          }}
-          styleDropdownMenuSubsection={{
-            borderWidth: 1,
-            borderColor: '#ccc',
-            borderRadius: 10,
-            height: 45,
-            justifyContent: 'center',
-            paddingHorizontal: 10,
-            paddingLeft: 25,
-            overflow: 'hidden',
-          }}
-          styleInputGroup={{
-            height: 45,
-          }}
-        />
-        {errors.language && (
-          <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
-            {errors.language}
-          </Text>
-        )}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, padding: 0, }}
+        >
+          <View style={{ flex: 1 }}>
+            {/* Language Selection */}
+            <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color: '#374151' }}>Languages You Speak *</Text>
+            <MultiSelect
+              items={languagesList}
+              uniqueKey="id"
+              onSelectedItemsChange={(selected) => setSelectedLanguages(selected)}
+              selectedItems={selectedLanguages}
+              selectText="Select Languages"
+              searchInputPlaceholderText="Search languages..."
+              displayKey="name"
+              submitButtonColor="#007AFF"
+              submitButtonText="Done"
+              styleMainWrapper={{
+                marginTop: 10,
+              }}
+              styleDropdownMenuSubsection={{
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 10,
+                height: 45,
+                justifyContent: 'center',
+                paddingHorizontal: 10,
+                paddingLeft: 25,
+                overflow: 'hidden',
+              }}
+              styleInputGroup={{
+                height: 45,
+              }}
+            />
+            {errors.language && (
+              <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                {errors.language}
+              </Text>
+            )}
 
 
 
-        {/* District Picker */}
-        <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color:'#374151' }}>Base District *</Text>
-        <View style={{ borderWidth: 1, borderColor: '#ccc', marginTop: 5, borderRadius: 10, height:45,  justifyContent: 'center',paddingHorizontal: 10, overflow: 'hidden', }}>
-          <Picker
-            selectedValue={selectedDistrict}
-            onValueChange={(value) => {
-              setSelectedDistrict(value);
-              setSelectedArea('');
-            }}
-          >
-            <Picker.Item label="Select District" value="" />
-            {districts.map((district) => (
-              <Picker.Item key={district} label={district} value={district} />
-            ))}
-          </Picker>
+            {/* District Picker */}
+            <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color: '#374151' }}>Base District *</Text>
+            <View style={{ borderWidth: 1, borderColor: '#ccc', marginTop: 5, borderRadius: 10, height: 45, justifyContent: 'center', paddingHorizontal: 10, overflow: 'hidden', }}>
+              <Picker
+                selectedValue={selectedDistrict}
+                onValueChange={(value) => {
+                  setSelectedDistrict(value);
+                  setSelectedArea('');
+                }}
+              >
+                <Picker.Item label="Select District" value="" />
+                {districts.map((district) => (
+                  <Picker.Item key={district} label={district} value={district} />
+                ))}
+              </Picker>
+            </View>
+            {errors.district && (
+              <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                {errors.district}
+              </Text>
+            )}
+
+
+
+            {/* Area Picker */}
+            <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color: '#374151' }}>Base Area *</Text>
+            <View style={{ borderWidth: 1, borderColor: '#ccc', marginTop: 5, borderRadius: 10, height: 45, justifyContent: 'center', paddingHorizontal: 10, overflow: 'hidden', }}>
+              <Picker
+                selectedValue={selectedArea}
+                onValueChange={(value) => setSelectedArea(value)}
+                enabled={!!selectedDistrict}
+              >
+                <Picker.Item label="Select Area " value="" />
+                {(areas[selectedDistrict] || []).map((area) => (
+                  <Picker.Item key={area} label={area} value={area} />
+                ))}
+              </Picker>
+            </View>
+            {errors.area && (
+              <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
+                {errors.area}
+              </Text>
+            )}
+
+
+          </View>
+        </KeyboardAvoidingView>
+
+        {/* Daily Rates */}
+        <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color: '#374151' }}>Daily Rate *</Text>
+        <View className="flex-row space-x-3 mb-4">
+          {/* Foreigners Rate (USD) */}
+          <View className="flex-1">
+            <Text className="text-gray-700 font-medium mb-2 mt-5 ml-2">for Foreigners (USD) *</Text>
+            <View className={`border border-gray-300 rounded-lg flex-row items-center px-3 py-2 ${errors.rateForeigners ? 'border-red-500' : ''
+              }`}>
+              <Text className="text-gray-700 text-base mr-1">$</Text>
+              <Input
+                className="flex-1 text-gray-900"
+                keyboardType="numeric"
+                placeholder="Enter amount"
+                value={formData.rateForeigners}
+                onChangeText={(text) => handleInputChange('rateForeigners', text)}
+              />
+            </View>
+            {errors.rateForeigners && (
+              <Text className="text-red-500 text-sm mt-1">{errors.rateForeigners}</Text>
+            )}
+          </View>
+
+          {/* Locals Rate (LKR) */}
+          <View className="flex-1">
+            <Text className="text-gray-700 font-medium mb-2 mt-5 ml-4">for Locals (LKR) *</Text>
+            <View className={`border border-gray-300 rounded-lg flex-row items-center px-3 py-2 ml-2 ${errors.rateLocals ? 'border-red-500' : ''
+              }`}>
+              <Text className="text-gray-700 text-base mr-1">Rs</Text>
+              <Input
+                className="flex-1 text-gray-900"
+                keyboardType="numeric"
+                placeholder="Enter amount"
+                value={formData.rateLocals}
+                onChangeText={(text) => handleInputChange('rateLocals', text)}
+              />
+            </View>
+            {errors.rateLocals && (
+              <Text className="text-red-500 text-sm mt-1">{errors.rateLocals}</Text>
+            )}
+          </View>
         </View>
-        {errors.district && (
-          <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
-            {errors.district}
-          </Text>
-        )}
-
-        
-
-        {/* Area Picker */}
-        <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20 , color:'#374151'}}>Base Area *</Text>
-        <View style={{ borderWidth: 1, borderColor: '#ccc', marginTop: 5, borderRadius: 10, height:45,  justifyContent: 'center',paddingHorizontal: 10, overflow: 'hidden', }}>
-          <Picker
-            selectedValue={selectedArea}
-            onValueChange={(value) => setSelectedArea(value)}
-            enabled={!!selectedDistrict}
-          >
-            <Picker.Item label="Select Area " value="" />
-            {(areas[selectedDistrict] || []).map((area) => (
-              <Picker.Item key={area} label={area} value={area} />
-            ))}
-          </Picker>
-        </View>
-        {errors.area && (
-          <Text style={{ color: 'red', fontSize: 12, marginTop: 5 }}>
-            {errors.area}
-          </Text>
-        )}
-
-
-      </View>
-    </KeyboardAvoidingView>
-
-    {/* Daily Rates */}
-    <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color:'#374151' }}>Daily Rate *</Text>
-<View className="flex-row space-x-3 mb-4">
-  {/* Foreigners Rate (USD) */}
-  <View className="flex-1">
-    <Text className="text-gray-700 font-medium mb-2 mt-5 ml-2">for Foreigners (USD) *</Text>
-    <View className={`border border-gray-300 rounded-lg flex-row items-center px-3 py-2 ${
-      errors.rateForeigners ? 'border-red-500' : ''
-    }`}>
-      <Text className="text-gray-700 text-base mr-1">$</Text>
-      <Input
-        className="flex-1 text-gray-900"
-        keyboardType="numeric"
-        placeholder="Enter amount"
-        value={formData.rateForeigners}
-        onChangeText={(text) => handleInputChange('rateForeigners', text)}
-      />
-    </View>
-    {errors.rateForeigners && (
-      <Text className="text-red-500 text-sm mt-1">{errors.rateForeigners}</Text>
-    )}
-  </View>
-
-  {/* Locals Rate (LKR) */}
-  <View className="flex-1">
-    <Text className="text-gray-700 font-medium mb-2 mt-5 ml-4">for Locals (LKR) *</Text>
-    <View className={`border border-gray-300 rounded-lg flex-row items-center px-3 py-2 ml-2 ${
-      errors.rateLocals ? 'border-red-500' : ''
-    }`}>
-      <Text className="text-gray-700 text-base mr-1">Rs</Text>
-      <Input
-        className="flex-1 text-gray-900"
-        keyboardType="numeric"
-        placeholder="Enter amount"
-        value={formData.rateLocals}
-        onChangeText={(text) => handleInputChange('rateLocals', text)}
-      />
-    </View>
-    {errors.rateLocals && (
-      <Text className="text-red-500 text-sm mt-1">{errors.rateLocals}</Text>
-    )}
-  </View>
-</View>
 
 
       </ScrollView>
@@ -713,12 +710,12 @@ export default function GuideRegistrationScreen() {
       {/* Bottom Buttons */}
       <View className="bg-white px-4 py-4 border-t border-gray-200">
         <View className="flex-row space-x-10">
-         <Button
-          title="Previous"
-          variant="secondary"
-          onPress={handlePrevious}
-          className="flex-1 bg-gray-400 text-black mr-2 "
-        />
+          <Button
+            title="Previous"
+            variant="secondary"
+            onPress={handlePrevious}
+            className="flex-1 bg-gray-400 text-black mr-2 "
+          />
 
           <Button
             title="Next"

@@ -24,10 +24,27 @@ public class Hashingpw {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
+                                "/user/signup",
+                                "/user/login",
+                                "/user/check-email",
+                                "/user/profile",
+                                "/user/reset-password",
+                                "/traveler/routes-allshow",
+                                "/traveler/routes-one",
+                                "/traveler/hotels-all",
+                                "/traveler/hotels-view",
+                                "/traveler/reviews-view",
+                                "/traveler/facis-view",
+                                "/traveler/guides-all",
+                                "/traveler/guides-view",
+                                "/traveler/guides-reviews",
+                                "/guide/groupTours",
+                                "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
+                                "/guide/submittedQuotation/**", // Fixed: Allow all submittedQuotation endpoints
                                 "/vehicle/addVehicle",
                                 "/vehicle/all",
                                 "/vehicle/edit"
-                        ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
+                        ).permitAll()
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
                 .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
