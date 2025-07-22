@@ -223,11 +223,11 @@ export default function Views() {
                     <View className="items-center py-2">
                         <View className="w-[90%] justify-between items-center">
                             <View className="mb-4 py-2">
-                                <Text className="text-xl">Hotel Fee : {dataSet?.hprice}</Text>
-                                <Text className="text-xl">Vehicle Fee : {dataSet?.cprice}</Text>
-                                <Text className="text-xl">Guide Fee : {dataSet?.gprice}</Text>
+                                <Text className="text-xl">Hotel Fee : Rs. {dataSet?.hprice}.00</Text>
+                                <Text className="text-xl">Vehicle Fee : Rs. {dataSet?.cprice}.00</Text>
+                                <Text className="text-xl">Guide Fee : Rs. {dataSet?.gprice}.00</Text>
                             </View>
-                            <Text className="text-xl">Total : {dataSet && (dataSet?.hprice + dataSet?.cprice + dataSet?.gprice) || 0}</Text>
+                            <Text className="text-xl">Total : Rs. {dataSet && (dataSet?.hprice + dataSet?.cprice + dataSet?.gprice) || 0}.00</Text>
                             <TouchableOpacity onPress={() => router.replace(`/views/payment/${guide.guideId}`)} className="bg-[#FEFA17] self-end px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">Pay Now</Text></TouchableOpacity>
 
                         </View>

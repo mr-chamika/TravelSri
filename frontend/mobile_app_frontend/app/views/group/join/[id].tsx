@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useEffect, useState } from "react";
@@ -88,7 +88,8 @@ export default function Views() {
 
     return (
 
-        <View>
+        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
+
 
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
             {/* <View className="h-full justify-center items-center">
@@ -148,7 +149,7 @@ export default function Views() {
                     <View className="w-full">
 
                         <Text className='bg-[#FEFA17] w-20 px-1 rounded-lg py-1 text-center font-bold'>Includes</Text>
-                        <View className="w-full flex-wrap h-24 flex-row p-3 items-center justify-evenly gap-3 border-gray-200 border-2 rounded-2xl mt-2">
+                        <View className="w-full flex-wrap h-24 flex-row p-3 items-center justify-evenly gap-2 border-gray-200 border-2 rounded-2xl mt-2">
                             <View className="w-44 flex-row justify-evenly items-center bg-gray-300 px-1 py-1 rounded-xl">
                                 <Image className="w-5 h-5" source={mark} />
 
@@ -214,7 +215,7 @@ export default function Views() {
                     <View className="w-full">
 
                         <Text className='bg-[#FEFA17] w-20 px-1 rounded-lg py-1 text-center font-bold'>Excludes</Text>
-                        <View className="w-full flex-wrap h-auto flex-row p-3 gap-4  items-center justify-between border-gray-200 border-2 rounded-2xl mt-2">
+                        <View className="w-full flex-wrap h-auto flex-row p-1 gap-3  items-center justify-between border-gray-200 border-2 rounded-2xl mt-2">
                             <View className="w-44 flex-row justify-evenly items-center bg-gray-300 px-1 py-1 rounded-xl">
                                 <Image className="w-4 h-4" source={cross} />
 
