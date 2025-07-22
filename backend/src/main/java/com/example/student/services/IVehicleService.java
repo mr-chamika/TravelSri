@@ -1,7 +1,7 @@
 package com.example.student.services;
 
 
-import com.example.student.model.Vehicle;
+import com.example.student.model.TVehicle;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,28 +11,28 @@ import java.util.Optional;
 public interface IVehicleService {
 
     // Basic CRUD operations
-    Vehicle createVehicle(Vehicle vehicle);
+    TVehicle createVehicle(TVehicle TVehicle);
 
-    Optional<Vehicle> getVehicleById(String id);
+    Optional<TVehicle> getVehicleById(String id);
 
-    List<Vehicle> getAllVehicles();
+    List<TVehicle> getAllVehicles();
 
-    Vehicle updateVehicle(String id, Vehicle vehicle);
+    TVehicle updateVehicle(String id, TVehicle TVehicle);
 
     boolean deleteVehicle(String id);
 
     // Custom search operations
-    List<Vehicle> getVehiclesByType(String vehicleType);
+    List<TVehicle> getVehiclesByType(String vehicleType);
 
-    List<Vehicle> getVehiclesByBaseCity(String baseCity);
+    List<TVehicle> getVehiclesByBaseCity(String baseCity);
 
-    List<Vehicle> getVehiclesBySeatingCapacity(Integer seatingCapacity);
+    List<TVehicle> getVehiclesBySeatingCapacity(Integer seatingCapacity);
 
-    List<Vehicle> getVehiclesByMinSeatingCapacity(Integer minCapacity);
+    List<TVehicle> getVehiclesByMinSeatingCapacity(Integer minCapacity);
 
-    List<Vehicle> getVehiclesByMaxSeatingCapacity(Integer maxCapacity);
+    List<TVehicle> getVehiclesByMaxSeatingCapacity(Integer maxCapacity);
 
-    List<Vehicle> getVehiclesBySeatingCapacityRange(Integer minCapacity, Integer maxCapacity);
+    List<TVehicle> getVehiclesBySeatingCapacityRange(Integer minCapacity, Integer maxCapacity);
 
-    List<Vehicle> getVehiclesByCityAndMinCapacity(String baseCity, Integer minCapacity);
+    List<TVehicle> getVehiclesByCityAndMinCapacity(String baseCity, Integer minCapacity);
 }

@@ -1,6 +1,6 @@
 package com.example.student.services;
 
-import com.example.student.model.Guide;
+import com.example.student.model.TGuide;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,24 +10,24 @@ import java.util.Optional;
 public interface IGuideService {
 
     // Basic CRUD operations
-    Guide createGuide(Guide guide);
+    TGuide createGuide(TGuide TGuide);
 
-    Optional<Guide> getGuideById(String id);
+    Optional<TGuide> getGuideById(String id);
 
-    List<Guide> getAllGuides();
+    List<TGuide> getAllGuides();
 
-    Guide updateGuide(String id, Guide guide);
+    TGuide updateGuide(String id, TGuide TGuide);
 
     boolean deleteGuide(String id);
 
     // Custom search operations
-    List<Guide> getGuidesByBaseCity(String baseCity);
+    List<TGuide> getGuidesByBaseCity(String baseCity);
 
-    List<Guide> getGuidesByLanguage(String language);
+    List<TGuide> getGuidesByLanguage(String language);
 
-    List<Guide> getGuidesByMinExperience(Integer minExperience);
+    List<TGuide> getGuidesByMinExperience(Integer minExperience);
 
-    List<Guide> getGuidesByDailyRateRange(Double minRate, Double maxRate);
+    List<TGuide> getGuidesByDailyRateRange(Double minRate, Double maxRate);
 
-    List<Guide> getGuidesByAreaOfService(String area);
+    List<TGuide> getGuidesByAreaOfService(String area);
 }

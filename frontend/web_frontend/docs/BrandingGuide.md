@@ -96,6 +96,6 @@ const chartData = {
 
 1. **Consistency**: Always use the color system rather than hardcoding values
 2. **Accessibility**: Ensure text has sufficient contrast against backgrounds
-3. **Hierarchy**: Use color to establish visual hierarchy and guide users
+3. **Hierarchy**: Use color to establish visual hierarchy and TGuide users
 4. **Sparingly**: Use the bright yellow (#FEFA17) as an accent, not for large areas
 5. **Testing**: Test how the yellow appears on different screens and devices

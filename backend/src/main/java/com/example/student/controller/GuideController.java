@@ -1,6 +1,6 @@
 package com.example.student.controller;
 
-import com.example.student.model.Guide;
+import com.example.student.model.TGuide;
 import com.example.student.services.IGuideService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,13 +19,13 @@ public class GuideController {
 
     // Create new guide
     @PostMapping("/create")
-    public ResponseEntity<Guide> createGuide(@RequestBody Guide guide) {
+    public ResponseEntity<TGuide> createGuide(@RequestBody TGuide TGuide) {
         try {
-            if (guide == null) {
+            if (TGuide == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            Guide createdGuide = guideService.createGuide(guide);
-            return new ResponseEntity<>(createdGuide, HttpStatus.CREATED);
+            TGuide createdTGuide = guideService.createGuide(TGuide);
+            return new ResponseEntity<>(createdTGuide, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -35,10 +35,10 @@ public class GuideController {
 
     // Get all guides
     @GetMapping("/getall")
-    public ResponseEntity<List<Guide>> getAllGuides() {
+    public ResponseEntity<List<TGuide>> getAllGuides() {
         try {
-            List<Guide> guides = guideService.getAllGuides();
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getAllGuides();
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -46,13 +46,13 @@ public class GuideController {
 
     // Get guide by ID
     @GetMapping("/get/{id}")
-    public ResponseEntity<Guide> getGuideById(@PathVariable("id") String id) {
+    public ResponseEntity<TGuide> getGuideById(@PathVariable("id") String id) {
         try {
             if (id == null || id.trim().isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
-            Optional<Guide> guide = guideService.getGuideById(id);
+            Optional<TGuide> guide = guideService.getGuideById(id);
 
             if (guide.isPresent()) {
                 return new ResponseEntity<>(guide.get(), HttpStatus.OK);
@@ -84,10 +84,10 @@ public class GuideController {
 
     // Get guides by base city
     @GetMapping("/city/{baseCity}")
-    public ResponseEntity<List<Guide>> getGuidesByBaseCity(@PathVariable("baseCity") String baseCity) {
+    public ResponseEntity<List<TGuide>> getGuidesByBaseCity(@PathVariable("baseCity") String baseCity) {
         try {
-            List<Guide> guides = guideService.getGuidesByBaseCity(baseCity);
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getGuidesByBaseCity(baseCity);
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -97,10 +97,10 @@ public class GuideController {
 
     // Get guides by language
     @GetMapping("/language/{language}")
-    public ResponseEntity<List<Guide>> getGuidesByLanguage(@PathVariable("language") String language) {
+    public ResponseEntity<List<TGuide>> getGuidesByLanguage(@PathVariable("language") String language) {
         try {
-            List<Guide> guides = guideService.getGuidesByLanguage(language);
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getGuidesByLanguage(language);
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -110,10 +110,10 @@ public class GuideController {
 
     // Get guides by minimum experience
     @GetMapping("/experience/{minExperience}")
-    public ResponseEntity<List<Guide>> getGuidesByMinExperience(@PathVariable("minExperience") Integer minExperience) {
+    public ResponseEntity<List<TGuide>> getGuidesByMinExperience(@PathVariable("minExperience") Integer minExperience) {
         try {
-            List<Guide> guides = guideService.getGuidesByMinExperience(minExperience);
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getGuidesByMinExperience(minExperience);
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -123,12 +123,12 @@ public class GuideController {
 
     // Get guides by daily rate range
     @GetMapping("/rate/range")
-    public ResponseEntity<List<Guide>> getGuidesByDailyRateRange(
+    public ResponseEntity<List<TGuide>> getGuidesByDailyRateRange(
             @RequestParam("min") Double minRate,
             @RequestParam("max") Double maxRate) {
         try {
-            List<Guide> guides = guideService.getGuidesByDailyRateRange(minRate, maxRate);
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getGuidesByDailyRateRange(minRate, maxRate);
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -138,10 +138,10 @@ public class GuideController {
 
     // Get guides by area of service
     @GetMapping("/area/{area}")
-    public ResponseEntity<List<Guide>> getGuidesByAreaOfService(@PathVariable("area") String area) {
+    public ResponseEntity<List<TGuide>> getGuidesByAreaOfService(@PathVariable("area") String area) {
         try {
-            List<Guide> guides = guideService.getGuidesByAreaOfService(area);
-            return new ResponseEntity<>(guides, HttpStatus.OK);
+            List<TGuide> TGuides = guideService.getGuidesByAreaOfService(area);
+            return new ResponseEntity<>(TGuides, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {

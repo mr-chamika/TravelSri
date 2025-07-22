@@ -12,8 +12,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "guides")
-public class Guide {
+@Document(collection = "tguides")
+public class TGuide {
     @Id
     private String id;
 

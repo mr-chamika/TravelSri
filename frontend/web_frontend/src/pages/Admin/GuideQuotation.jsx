@@ -86,7 +86,7 @@ const GuideQuotation = () => {
         }
 
         if (!formData.guideId.trim()) {
-            setError("Please enter a guide ID");
+            setError("Please enter a TGuide ID");
             return;
         }
 
@@ -111,7 +111,7 @@ const GuideQuotation = () => {
             uploadData.append('quotationPdf', formData.quotationPdf);
 
             // API call to your backend
-            const response = await fetch('http://localhost:8080/api/guide-quotation/create', {
+            const response = await fetch('http://localhost:8080/api/TGuide-quotation/create', {
                 method: 'POST',
                 body: uploadData,
             });
@@ -164,7 +164,7 @@ const GuideQuotation = () => {
                                 Upload Guide Quotation
                             </h1>
                             <p className="text-gray-600">
-                                Submit your guide service quotation with PDF document
+                                Submit your TGuide service quotation with PDF document
                             </p>
                         </div>
 
@@ -219,7 +219,7 @@ const GuideQuotation = () => {
                                     name="guideId"
                                     value={formData.guideId}
                                     onChange={handleInputChange}
-                                    placeholder="Enter the guide ID"
+                                    placeholder="Enter the TGuide ID"
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
                                     required
                                 />
@@ -330,7 +330,7 @@ const GuideQuotation = () => {
                                 <li>• Only PDF files are accepted</li>
                                 <li>• Maximum file size is 10MB</li>
                                 <li>• Ensure the pending trip ID is correct</li>
-                                <li>• Ensure the guide ID is correct</li>
+                                <li>• Ensure the TGuide ID is correct</li>
                                 <li>• Price should be in Sri Lankan Rupees (LKR)</li>
                                 <li>• Include detailed service information in the PDF</li>
                             </ul>

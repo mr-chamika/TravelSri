@@ -1,6 +1,6 @@
 package com.example.student.services;
 
-import com.example.student.model.Vehicle;
+import com.example.student.model.TVehicle;
 import com.example.student.repo.VehicleRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,22 +15,22 @@ public class VehicleService implements IVehicleService {
     private VehicleRepo vehicleRepo;
 
     @Override
-    public Vehicle createVehicle(Vehicle vehicle) {
-        if (vehicle == null) {
+    public TVehicle createVehicle(TVehicle TVehicle) {
+        if (TVehicle == null) {
             throw new IllegalArgumentException("Vehicle cannot be null");
         }
         // Additional validation
-        if (vehicle.getRegistrationNumber() == null || vehicle.getRegistrationNumber().trim().isEmpty()) {
+        if (TVehicle.getRegistrationNumber() == null || TVehicle.getRegistrationNumber().trim().isEmpty()) {
             throw new IllegalArgumentException("Registration number is required");
         }
-        if (vehicle.getVehicleType() == null || vehicle.getVehicleType().trim().isEmpty()) {
+        if (TVehicle.getVehicleType() == null || TVehicle.getVehicleType().trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle type is required");
         }
-        return vehicleRepo.save(vehicle);
+        return vehicleRepo.save(TVehicle);
     }
 
     @Override
-    public Optional<Vehicle> getVehicleById(String id) {
+    public Optional<TVehicle> getVehicleById(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle ID cannot be null or empty");
         }
@@ -38,41 +38,41 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<Vehicle> getAllVehicles() {
+    public List<TVehicle> getAllVehicles() {
         return vehicleRepo.findAll();
     }
 
     @Override
-    public Vehicle updateVehicle(String id, Vehicle vehicle) {
-        if (vehicle == null) {
+    public TVehicle updateVehicle(String id, TVehicle TVehicle) {
+        if (TVehicle == null) {
             throw new IllegalArgumentException("Vehicle cannot be null");
         }
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle ID cannot be null or empty");
         }
 
-        Optional<Vehicle> existingVehicle = vehicleRepo.findById(id);
+        Optional<TVehicle> existingVehicle = vehicleRepo.findById(id);
         if (existingVehicle.isPresent()) {
-            Vehicle vehicleToUpdate = existingVehicle.get();
+            TVehicle TVehicleToUpdate = existingVehicle.get();
 
             // Update all fields
-            vehicleToUpdate.setVehicleType(vehicle.getVehicleType());
-            vehicleToUpdate.setBrand(vehicle.getBrand());
-            vehicleToUpdate.setModel(vehicle.getModel());
-            vehicleToUpdate.setYear(vehicle.getYear());
-            vehicleToUpdate.setRegistrationNumber(vehicle.getRegistrationNumber());
-            vehicleToUpdate.setSeatingCapacity(vehicle.getSeatingCapacity());
-            vehicleToUpdate.setFuelType(vehicle.getFuelType());
-            vehicleToUpdate.setRentalPricePerDay(vehicle.getRentalPricePerDay());
-            vehicleToUpdate.setPhoneNumber(vehicle.getPhoneNumber());
-            vehicleToUpdate.setEmail(vehicle.getEmail());
-            vehicleToUpdate.setBaseCity(vehicle.getBaseCity());
-            vehicleToUpdate.setOwnerName(vehicle.getOwnerName());
-            vehicleToUpdate.setOwnerPhoneNumber(vehicle.getOwnerPhoneNumber());
-            vehicleToUpdate.setOwnerEmail(vehicle.getOwnerEmail());
-            vehicleToUpdate.setOwnerAddress(vehicle.getOwnerAddress());
+            TVehicleToUpdate.setVehicleType(TVehicle.getVehicleType());
+            TVehicleToUpdate.setBrand(TVehicle.getBrand());
+            TVehicleToUpdate.setModel(TVehicle.getModel());
+            TVehicleToUpdate.setYear(TVehicle.getYear());
+            TVehicleToUpdate.setRegistrationNumber(TVehicle.getRegistrationNumber());
+            TVehicleToUpdate.setSeatingCapacity(TVehicle.getSeatingCapacity());
+            TVehicleToUpdate.setFuelType(TVehicle.getFuelType());
+            TVehicleToUpdate.setRentalPricePerDay(TVehicle.getRentalPricePerDay());
+            TVehicleToUpdate.setPhoneNumber(TVehicle.getPhoneNumber());
+            TVehicleToUpdate.setEmail(TVehicle.getEmail());
+            TVehicleToUpdate.setBaseCity(TVehicle.getBaseCity());
+            TVehicleToUpdate.setOwnerName(TVehicle.getOwnerName());
+            TVehicleToUpdate.setOwnerPhoneNumber(TVehicle.getOwnerPhoneNumber());
+            TVehicleToUpdate.setOwnerEmail(TVehicle.getOwnerEmail());
+            TVehicleToUpdate.setOwnerAddress(TVehicle.getOwnerAddress());
 
-            return vehicleRepo.save(vehicleToUpdate);
+            return vehicleRepo.save(TVehicleToUpdate);
         }
         throw new RuntimeException("Vehicle not found with id: " + id);
     }
@@ -90,22 +90,22 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<Vehicle> getVehiclesByType(String vehicleType) {
+    public List<TVehicle> getVehiclesByType(String vehicleType) {
         return vehicleRepo.safeFindByVehicleType(vehicleType);
     }
 
     @Override
-    public List<Vehicle> getVehiclesByBaseCity(String baseCity) {
+    public List<TVehicle> getVehiclesByBaseCity(String baseCity) {
         return vehicleRepo.safeFindByBaseCity(baseCity);
     }
 
     @Override
-    public List<Vehicle> getVehiclesBySeatingCapacity(Integer seatingCapacity) {
+    public List<TVehicle> getVehiclesBySeatingCapacity(Integer seatingCapacity) {
         return vehicleRepo.safeFindBySeatingCapacity(seatingCapacity);
     }
 
     @Override
-    public List<Vehicle> getVehiclesByMinSeatingCapacity(Integer minCapacity) {
+    public List<TVehicle> getVehiclesByMinSeatingCapacity(Integer minCapacity) {
         if (minCapacity == null || minCapacity <= 0) {
             throw new IllegalArgumentException("Minimum capacity must be a positive number");
         }
@@ -113,7 +113,7 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<Vehicle> getVehiclesByMaxSeatingCapacity(Integer maxCapacity) {
+    public List<TVehicle> getVehiclesByMaxSeatingCapacity(Integer maxCapacity) {
         if (maxCapacity == null || maxCapacity <= 0) {
             throw new IllegalArgumentException("Maximum capacity must be a positive number");
         }
@@ -121,7 +121,7 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<Vehicle> getVehiclesBySeatingCapacityRange(Integer minCapacity, Integer maxCapacity) {
+    public List<TVehicle> getVehiclesBySeatingCapacityRange(Integer minCapacity, Integer maxCapacity) {
         if (minCapacity == null || minCapacity <= 0) {
             throw new IllegalArgumentException("Minimum capacity must be a positive number");
         }
@@ -135,7 +135,7 @@ public class VehicleService implements IVehicleService {
     }
 
     @Override
-    public List<Vehicle> getVehiclesByCityAndMinCapacity(String baseCity, Integer minCapacity) {
+    public List<TVehicle> getVehiclesByCityAndMinCapacity(String baseCity, Integer minCapacity) {
         if (baseCity == null || baseCity.trim().isEmpty()) {
             throw new IllegalArgumentException("Base city cannot be null or empty");
         }

@@ -86,7 +86,7 @@ const VehicleQuotation = () => {
         }
 
         if (!formData.vehicleId.trim()) {
-            setError("Please enter a vehicle ID");
+            setError("Please enter a TVehicle ID");
             return;
         }
 
@@ -164,7 +164,7 @@ const VehicleQuotation = () => {
                                 Upload Vehicle Quotation
                             </h1>
                             <p className="text-gray-600">
-                                Submit your vehicle rental quotation with PDF document
+                                Submit your TVehicle rental quotation with PDF document
                             </p>
                         </div>
 
@@ -219,7 +219,7 @@ const VehicleQuotation = () => {
                                     name="vehicleId"
                                     value={formData.vehicleId}
                                     onChange={handleInputChange}
-                                    placeholder="Enter the vehicle ID"
+                                    placeholder="Enter the TVehicle ID"
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700"
                                     required
                                 />
@@ -330,7 +330,7 @@ const VehicleQuotation = () => {
                                 <li>• Only PDF files are accepted</li>
                                 <li>• Maximum file size is 10MB</li>
                                 <li>• Ensure the pending trip ID is correct</li>
-                                <li>• Ensure the vehicle ID is correct</li>
+                                <li>• Ensure the TVehicle ID is correct</li>
                                 <li>• Price should be in Sri Lankan Rupees (LKR)</li>
                             </ul>
                         </div>

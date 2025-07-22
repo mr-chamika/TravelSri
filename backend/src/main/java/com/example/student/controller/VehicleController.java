@@ -1,6 +1,6 @@
 package com.example.student.controller;
 
-import com.example.student.model.Vehicle;
+import com.example.student.model.TVehicle;
 import com.example.student.services.IVehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,13 +20,13 @@ public class VehicleController {
 
     // Create new vehicle
     @PostMapping("/create")
-    public ResponseEntity<Vehicle> createVehicle(@RequestBody Vehicle vehicle) {
+    public ResponseEntity<TVehicle> createVehicle(@RequestBody TVehicle TVehicle) {
         try {
-            if (vehicle == null) {
+            if (TVehicle == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            Vehicle createdVehicle = vehicleService.createVehicle(vehicle);
-            return new ResponseEntity<>(createdVehicle, HttpStatus.CREATED);
+            TVehicle createdTVehicle = vehicleService.createVehicle(TVehicle);
+            return new ResponseEntity<>(createdTVehicle, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -36,10 +36,10 @@ public class VehicleController {
 
     // Get all vehicles
     @GetMapping("/getall")
-    public ResponseEntity<List<Vehicle>> getAllVehicles() {
+    public ResponseEntity<List<TVehicle>> getAllVehicles() {
         try {
-            List<Vehicle> vehicles = vehicleService.getAllVehicles();
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getAllVehicles();
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -47,13 +47,13 @@ public class VehicleController {
 
     // Get vehicle by ID
     @GetMapping("/get/{id}")
-    public ResponseEntity<Vehicle> getVehicleById(@PathVariable("id") String id) {
+    public ResponseEntity<TVehicle> getVehicleById(@PathVariable("id") String id) {
         try {
             if (id == null || id.trim().isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
-            Optional<Vehicle> vehicle = vehicleService.getVehicleById(id);
+            Optional<TVehicle> vehicle = vehicleService.getVehicleById(id);
 
             if (vehicle.isPresent()) {
                 return new ResponseEntity<>(vehicle.get(), HttpStatus.OK);
@@ -85,10 +85,10 @@ public class VehicleController {
 
     // Get vehicles by type (Car, Van, Bus)
     @GetMapping("/type/{vehicleType}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByType(@PathVariable("vehicleType") String vehicleType) {
+    public ResponseEntity<List<TVehicle>> getVehiclesByType(@PathVariable("vehicleType") String vehicleType) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesByType(vehicleType);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesByType(vehicleType);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -98,10 +98,10 @@ public class VehicleController {
 
     // Get vehicles by base city
     @GetMapping("/city/{baseCity}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByBaseCity(@PathVariable("baseCity") String baseCity) {
+    public ResponseEntity<List<TVehicle>> getVehiclesByBaseCity(@PathVariable("baseCity") String baseCity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesByBaseCity(baseCity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesByBaseCity(baseCity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -111,10 +111,10 @@ public class VehicleController {
 
     // Get vehicles by exact seating capacity
     @GetMapping("/capacity/{seatingCapacity}")
-    public ResponseEntity<List<Vehicle>> getVehiclesBySeatingCapacity(@PathVariable("seatingCapacity") Integer seatingCapacity) {
+    public ResponseEntity<List<TVehicle>> getVehiclesBySeatingCapacity(@PathVariable("seatingCapacity") Integer seatingCapacity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesBySeatingCapacity(seatingCapacity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesBySeatingCapacity(seatingCapacity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -124,10 +124,10 @@ public class VehicleController {
 
     // Get vehicles with minimum seating capacity
     @GetMapping("/capacity/min/{minCapacity}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByMinSeatingCapacity(@PathVariable("minCapacity") Integer minCapacity) {
+    public ResponseEntity<List<TVehicle>> getVehiclesByMinSeatingCapacity(@PathVariable("minCapacity") Integer minCapacity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesByMinSeatingCapacity(minCapacity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesByMinSeatingCapacity(minCapacity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -137,10 +137,10 @@ public class VehicleController {
 
     // Get vehicles with maximum seating capacity
     @GetMapping("/capacity/max/{maxCapacity}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByMaxSeatingCapacity(@PathVariable("maxCapacity") Integer maxCapacity) {
+    public ResponseEntity<List<TVehicle>> getVehiclesByMaxSeatingCapacity(@PathVariable("maxCapacity") Integer maxCapacity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesByMaxSeatingCapacity(maxCapacity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesByMaxSeatingCapacity(maxCapacity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -150,12 +150,12 @@ public class VehicleController {
 
     // Get vehicles within seating capacity range
     @GetMapping("/capacity/range")
-    public ResponseEntity<List<Vehicle>> getVehiclesBySeatingCapacityRange(
+    public ResponseEntity<List<TVehicle>> getVehiclesBySeatingCapacityRange(
             @RequestParam("min") Integer minCapacity,
             @RequestParam("max") Integer maxCapacity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesBySeatingCapacityRange(minCapacity, maxCapacity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesBySeatingCapacityRange(minCapacity, maxCapacity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -165,12 +165,12 @@ public class VehicleController {
 
     // Get vehicles by base city and minimum seating capacity
     @GetMapping("/city/{baseCity}/capacity/min/{minCapacity}")
-    public ResponseEntity<List<Vehicle>> getVehiclesByCityAndMinCapacity(
+    public ResponseEntity<List<TVehicle>> getVehiclesByCityAndMinCapacity(
             @PathVariable("baseCity") String baseCity,
             @PathVariable("minCapacity") Integer minCapacity) {
         try {
-            List<Vehicle> vehicles = vehicleService.getVehiclesByCityAndMinCapacity(baseCity, minCapacity);
-            return new ResponseEntity<>(vehicles, HttpStatus.OK);
+            List<TVehicle> TVehicles = vehicleService.getVehiclesByCityAndMinCapacity(baseCity, minCapacity);
+            return new ResponseEntity<>(TVehicles, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -179,13 +179,13 @@ public class VehicleController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<Vehicle> updateVehicle(@PathVariable("id") String id, @RequestBody Vehicle vehicle) {
+    public ResponseEntity<TVehicle> updateVehicle(@PathVariable("id") String id, @RequestBody TVehicle TVehicle) {
         try {
-            if (id == null || id.trim().isEmpty() || vehicle == null) {
+            if (id == null || id.trim().isEmpty() || TVehicle == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            Vehicle updatedVehicle = vehicleService.updateVehicle(id, vehicle);
-            return new ResponseEntity<>(updatedVehicle, HttpStatus.OK);
+            TVehicle updatedTVehicle = vehicleService.updateVehicle(id, TVehicle);
+            return new ResponseEntity<>(updatedTVehicle, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (RuntimeException e) {
