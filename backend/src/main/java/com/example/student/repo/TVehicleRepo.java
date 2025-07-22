@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface VehicleRepo extends MongoRepository<TVehicle, String> {
+public interface TVehicleRepo extends MongoRepository<TVehicle, String> {
     // Find vehicles by vehicle type (Car, Van, Bus)
     @Query("{'vehicle_type': {$regex: ?0, $options: 'i'}}")
     List<TVehicle> findByVehicleType(String vehicleType);

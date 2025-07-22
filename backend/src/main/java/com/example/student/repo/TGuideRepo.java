@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface GuideRepo extends MongoRepository<TGuide, String> {
+public interface TGuideRepo extends MongoRepository<TGuide, String> {
     // Find guides by base city (case-insensitive)
     @Query("{'base_city': {$regex: ?0, $options: 'i'}}")
     List<TGuide> findByBaseCity(String baseCity);

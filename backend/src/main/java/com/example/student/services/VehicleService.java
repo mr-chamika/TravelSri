@@ -1,7 +1,7 @@
 package com.example.student.services;
 
 import com.example.student.model.TVehicle;
-import com.example.student.repo.VehicleRepo;
+import com.example.student.repo.TVehicleRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 public class VehicleService implements IVehicleService {
 
     @Autowired
-    private VehicleRepo vehicleRepo;
+    private TVehicleRepo TVehicleRepo;
 
     @Override
     public TVehicle createVehicle(TVehicle TVehicle) {
@@ -26,7 +26,7 @@ public class VehicleService implements IVehicleService {
         if (TVehicle.getVehicleType() == null || TVehicle.getVehicleType().trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle type is required");
         }
-        return vehicleRepo.save(TVehicle);
+        return TVehicleRepo.save(TVehicle);
     }
 
     @Override
@@ -34,12 +34,12 @@ public class VehicleService implements IVehicleService {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle ID cannot be null or empty");
         }
-        return vehicleRepo.findById(id);
+        return TVehicleRepo.findById(id);
     }
 
     @Override
     public List<TVehicle> getAllVehicles() {
-        return vehicleRepo.findAll();
+        return TVehicleRepo.findAll();
     }
 
     @Override
@@ -51,7 +51,7 @@ public class VehicleService implements IVehicleService {
             throw new IllegalArgumentException("Vehicle ID cannot be null or empty");
         }
 
-        Optional<TVehicle> existingVehicle = vehicleRepo.findById(id);
+        Optional<TVehicle> existingVehicle = TVehicleRepo.findById(id);
         if (existingVehicle.isPresent()) {
             TVehicle TVehicleToUpdate = existingVehicle.get();
 
@@ -72,7 +72,7 @@ public class VehicleService implements IVehicleService {
             TVehicleToUpdate.setOwnerEmail(TVehicle.getOwnerEmail());
             TVehicleToUpdate.setOwnerAddress(TVehicle.getOwnerAddress());
 
-            return vehicleRepo.save(TVehicleToUpdate);
+            return TVehicleRepo.save(TVehicleToUpdate);
         }
         throw new RuntimeException("Vehicle not found with id: " + id);
     }
@@ -82,8 +82,8 @@ public class VehicleService implements IVehicleService {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Vehicle ID cannot be null or empty");
         }
-        if (vehicleRepo.existsById(id)) {
-            vehicleRepo.deleteById(id);
+        if (TVehicleRepo.existsById(id)) {
+            TVehicleRepo.deleteById(id);
             return true;
         }
         return false;
@@ -91,17 +91,17 @@ public class VehicleService implements IVehicleService {
 
     @Override
     public List<TVehicle> getVehiclesByType(String vehicleType) {
-        return vehicleRepo.safeFindByVehicleType(vehicleType);
+        return TVehicleRepo.safeFindByVehicleType(vehicleType);
     }
 
     @Override
     public List<TVehicle> getVehiclesByBaseCity(String baseCity) {
-        return vehicleRepo.safeFindByBaseCity(baseCity);
+        return TVehicleRepo.safeFindByBaseCity(baseCity);
     }
 
     @Override
     public List<TVehicle> getVehiclesBySeatingCapacity(Integer seatingCapacity) {
-        return vehicleRepo.safeFindBySeatingCapacity(seatingCapacity);
+        return TVehicleRepo.safeFindBySeatingCapacity(seatingCapacity);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class VehicleService implements IVehicleService {
         if (minCapacity == null || minCapacity <= 0) {
             throw new IllegalArgumentException("Minimum capacity must be a positive number");
         }
-        return vehicleRepo.findBySeatingCapacityGreaterThanEqual(minCapacity);
+        return TVehicleRepo.findBySeatingCapacityGreaterThanEqual(minCapacity);
     }
 
     @Override
@@ -117,7 +117,7 @@ public class VehicleService implements IVehicleService {
         if (maxCapacity == null || maxCapacity <= 0) {
             throw new IllegalArgumentException("Maximum capacity must be a positive number");
         }
-        return vehicleRepo.findBySeatingCapacityLessThanEqual(maxCapacity);
+        return TVehicleRepo.findBySeatingCapacityLessThanEqual(maxCapacity);
     }
 
     @Override
@@ -131,7 +131,7 @@ public class VehicleService implements IVehicleService {
         if (minCapacity > maxCapacity) {
             throw new IllegalArgumentException("Minimum capacity cannot be greater than maximum capacity");
         }
-        return vehicleRepo.findBySeatingCapacityBetween(minCapacity, maxCapacity);
+        return TVehicleRepo.findBySeatingCapacityBetween(minCapacity, maxCapacity);
     }
 
     @Override
@@ -142,7 +142,7 @@ public class VehicleService implements IVehicleService {
         if (minCapacity == null || minCapacity <= 0) {
             throw new IllegalArgumentException("Minimum capacity must be a positive number");
         }
-        return vehicleRepo.findByBaseCityAndSeatingCapacityGreaterThanEqual(baseCity, minCapacity);
+        return TVehicleRepo.findByBaseCityAndSeatingCapacityGreaterThanEqual(baseCity, minCapacity);
     }
 
 }
