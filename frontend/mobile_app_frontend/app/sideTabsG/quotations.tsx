@@ -130,11 +130,53 @@ const QuotationsScreen = () => {
   const [backendData, setBackendData] = useState<BackendTripData[]>([]);
 
   const [showEditModal, setShowEditModal] = useState(false);
+  const [errors, setErrors] = useState<{
+    quotedAmount?: string;
+    notes?: string;
+  }>({});
   const [editingQuote, setEditingQuote] = useState<SubmittedQuotation | null>(null);
   const [editFormData, setEditFormData] = useState({
     quotedAmount: '',
     notes: ''
   });
+
+  // Validation function for whole number amounts
+  const validateWholeNumberAmount = (amount: string): string => {
+    if (!amount || amount.trim() === '') {
+      return 'Total amount is required';
+    }
+    
+    // Check if it's a valid number
+    if (isNaN(Number(amount))) {
+      return 'Please enter a valid number';
+    }
+    
+    const numericAmount = parseFloat(amount);
+    
+    // Check if it's a positive number
+    if (numericAmount <= 0) {
+      return 'Amount must be greater than 0';
+    }
+    
+    // Check if it's a whole number (no decimal places)
+    if (!Number.isInteger(numericAmount)) {
+      return 'Please enter a whole number only (no decimals)';
+    }
+    
+    return '';
+  };
+
+  // Function to format input to only allow whole numbers
+  const formatWholeNumberInput = (text: string): string => {
+    // Remove all non-numeric characters
+    const numericOnly = text.replace(/[^0-9]/g, '');
+    
+    // Remove leading zeros (except for single zero)
+    const withoutLeadingZeros = numericOnly.replace(/^0+/, '') || '0';
+    
+    // If the result is just '0', return empty string or '0' based on your preference
+    return withoutLeadingZeros === '0' ? '' : withoutLeadingZeros;
+  };
 
   // Updated function to convert new backend data structure to frontend format
   const convertBackendDataToRequests = (backendData: BackendTripData[]): QuotationRequest[] => {
@@ -483,14 +525,10 @@ const QuotationsScreen = () => {
     console.log('Submit quotation called');
     
     try {
-      if (!quotationForm.amount || quotationForm.amount.trim() === '') {
-        Alert.alert('Error', 'Please fill in the total amount');
-        return;
-      }
-
-      const parsedAmount = parseFloat(quotationForm.amount);
-      if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        Alert.alert('Error', 'Please enter a valid amount greater than 0');
+      // Validate amount using the new validation function
+      const amountError = validateWholeNumberAmount(quotationForm.amount);
+      if (amountError) {
+        Alert.alert('Validation Error', amountError);
         return;
       }
 
@@ -506,7 +544,7 @@ const QuotationsScreen = () => {
       }
 
       const quotationData = {
-        amount: parseFloat(quotationForm.amount),
+        amount: parseInt(quotationForm.amount), // Use parseInt for whole numbers
         notes: quotationForm.notes || '',
         guideId: guideId,
       };
@@ -688,13 +726,15 @@ const QuotationsScreen = () => {
 
   const handleSaveEdit = async (quotationId: string) => {
     try {
-      if (!editFormData.quotedAmount) {
-        Alert.alert('Error', 'Please enter a valid amount');
+      // Validate amount using the new validation function
+      const amountError = validateWholeNumberAmount(editFormData.quotedAmount);
+      if (amountError) {
+        Alert.alert('Validation Error', amountError);
         return;
       }
 
       const updateData = {
-        quotedAmount: parseFloat(editFormData.quotedAmount),
+        quotedAmount: parseInt(editFormData.quotedAmount), // Use parseInt for whole numbers
         notes: editFormData.notes
       };
 
@@ -799,8 +839,8 @@ const QuotationsScreen = () => {
         <DollarSign size={20} color="#10B981" />
         <Text style={styles.amountText}>
           {quotation.currency} {quotation.quotedAmount.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
           })}
         </Text>
       </View>
@@ -882,15 +922,32 @@ const QuotationsScreen = () => {
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Total Amount ({editingQuote?.currency || 'LKR'}) *</Text>
               <TextInput
-                style={styles.formInput}
+                style={[
+                  styles.formInput,
+                  errors.quotedAmount && styles.formInputError
+                ]}
                 value={editFormData.quotedAmount}
                 onChangeText={(text) => {
-                  const numericText = text.replace(/[^0-9.]/g, '');
-                  setEditFormData({...editFormData, quotedAmount: numericText});
+                  const formattedText = formatWholeNumberInput(text);
+                  setEditFormData({...editFormData, quotedAmount: formattedText});
+                  
+                  // Clear error when user starts typing
+                  if (errors.quotedAmount) {
+                    setErrors({...errors, quotedAmount: ''});
+                  }
                 }}
-                placeholder="Enter total amount"
+                onBlur={() => {
+                  // Validate on blur
+                  const error = validateWholeNumberAmount(editFormData.quotedAmount);
+                  setErrors({...errors, quotedAmount: error});
+                }}
+                placeholder="Enter amount LKR"
                 keyboardType="numeric"
               />
+              {errors.quotedAmount && (
+                <Text style={styles.errorText}>{errors.quotedAmount}</Text>
+              )}
+              <Text style={styles.inputHint}>Note: Only whole numbers allowed (no decimals)</Text>
             </View>
 
             <View style={styles.formGroup}>
@@ -910,8 +967,8 @@ const QuotationsScreen = () => {
                 <Text style={styles.editInfoTitle}>Original Submission:</Text>
                 <Text style={styles.editInfoText}>
                   Amount: {editingQuote.currency} {editingQuote.quotedAmount.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
                   })}
                 </Text>
                 <Text style={styles.editInfoText}>
@@ -1088,10 +1145,14 @@ const QuotationsScreen = () => {
                 <TextInput
                   style={styles.formInput}
                   value={quotationForm.amount}
-                  onChangeText={(text) => setQuotationForm({...quotationForm, amount: text})}
-                  placeholder="Enter total amount"
+                  onChangeText={(text) => {
+                    const formattedText = formatWholeNumberInput(text);
+                    setQuotationForm({...quotationForm, amount: formattedText});
+                  }}
+                  placeholder="Enter whole number amount (e.g., 15000)"
                   keyboardType="numeric"
                 />
+                <Text style={styles.inputHint}>Note: Only whole numbers allowed (no decimals)</Text>
               </View>
 
               <View style={styles.formGroup}>
@@ -1131,45 +1192,30 @@ const QuotationsScreen = () => {
   );
 };
 
-
+// Add styles for the new elements
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
   header: {
     backgroundColor: '#FEFA17',
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    elevation: 3,
+    paddingBottom: 8,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   backButton: {
-    padding: 8,
     marginRight: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    flex: 1,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -1185,30 +1231,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: '#111827',
+    backgroundColor: '#3B82F6',
   },
   tabText: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
+    color: '#6B7280',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
-    elevation: 2,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1220,41 +1269,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerRight: {
-    flexDirection: 'row',
-    gap: 8,
+    alignItems: 'flex-end',
   },
   clientName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 4,
   },
   requestDate: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  validUntil: {
+    fontSize: 12,
+    color: '#F59E0B',
     marginTop: 2,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-  },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 4,
   },
   statusText: {
-    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   tourDetails: {
     marginBottom: 12,
@@ -1262,165 +1305,175 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    gap: 8,
   },
   detailText: {
     fontSize: 14,
     color: '#374151',
-    marginLeft: 8,
     flex: 1,
   },
-  budgetContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 6,
-  },
-  budgetLabel: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  budgetText: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '600',
-  },
   specialRequests: {
-    marginBottom: 12,
+    backgroundColor: '#F3F4F6',
     padding: 12,
-    backgroundColor: '#FEF3C7',
     borderRadius: 8,
+    marginBottom: 12,
   },
   specialRequestsLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#92400E',
+    fontWeight: 'bold',
+    color: '#6B7280',
     marginBottom: 4,
   },
   specialRequestsText: {
     fontSize: 14,
-    color: '#92400E',
+    color: '#374151',
   },
   quotationAmount: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    padding: 12,
     backgroundColor: '#ECFDF5',
+    padding: 12,
     borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
   },
   amountText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#10B981',
-    marginLeft: 8,
-  },
-  validUntil: {
-    marginBottom: 12,
-  },
-  validUntilText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
   },
   notes: {
-    marginBottom: 12,
-    padding: 12,
     backgroundColor: '#F3F4F6',
+    padding: 12,
     borderRadius: 8,
+    marginBottom: 12,
   },
   notesLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: 'bold',
+    color: '#6B7280',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#374151',
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
+    gap: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+    gap: 6,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
   actionText: {
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 6,
     fontWeight: '500',
-  },
-  primaryButton: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    color: '#6B7280',
   },
   primaryButtonText: {
     color: '#FFFFFF',
   },
   emptyState: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
+    alignItems: 'center',
+    paddingVertical: 50,
   },
   emptyStateText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
   },
-  // Modal styles
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: width * 0.9,
-    maxHeight: '80%',
-    paddingVertical: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#111827',
   },
   modalContent: {
+    maxHeight: 400,
     paddingHorizontal: 20,
-    paddingVertical: 16,
   },
   requestSummary: {
     backgroundColor: '#F3F4F6',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: 16,
+    marginVertical: 16,
   },
   requestSummaryTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#111827',
     marginBottom: 8,
   },
@@ -1436,182 +1489,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   formInput: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
+    padding: 12,
+    fontSize: 16,
     backgroundColor: '#FFFFFF',
   },
+  formInputError: {
+    borderColor: '#EF4444',
+  },
   textArea: {
-    height: 80,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
-  breakdownTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  inputHint: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  editInfo: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  editInfoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 12,
-    marginTop: 8,
+    marginBottom: 8,
+  },
+  editInfoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    gap: 12,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    marginRight: 8,
     alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
   },
   cancelButtonText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
     fontWeight: '500',
+    color: '#6B7280',
   },
   submitButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    backgroundColor: '#111827',
-    marginLeft: 8,
     alignItems: 'center',
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
   },
   submitButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '500',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#EF4444', // Tailwind red-500
-    textAlign: 'center',
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    backgroundColor: '#3B82F6', // Tailwind blue-500
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: 'bold',
   },
-  emptyTitle: {
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6B7280', // Tailwind gray-500
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#9CA3AF', // Tailwind gray-400
-    textAlign: 'center',
-    paddingHorizontal: 30,
-  },
-   editContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  editInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-  },
-  editActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  saveButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalSaveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  modalSaveText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalCancelText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  editInfo: {
-      marginTop: 16,
-      padding: 12,
-      backgroundColor: '#F9FAFB',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
-    editInfoTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#374151',
-      marginBottom: 8,
-    },
-    editInfoText: {
-      fontSize: 12,
-      color: '#6B7280',
-      marginBottom: 4,
-    },
-
 });
 
 export default QuotationsScreen;

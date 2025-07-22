@@ -16,9 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8082")
+@CrossOrigin(origins = "http://localhost:8081")
 @RequestMapping("/guide")
-public class GuideController {
+public class SGuideController {
 
     @Autowired
     private GuideRepo guideRepo;
