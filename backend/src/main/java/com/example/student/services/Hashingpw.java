@@ -43,7 +43,10 @@ public class Hashingpw {
                                 "/guide/submittedQuotation/**", // Fixed: Allow all submittedQuotation endpoints
                                 "/vehicle/addVehicle",
                                 "/vehicle/all",
-                                "/vehicle/edit"
+                                "/vehicle/edit",
+                                "vehicle/groupTours",
+                                "vehicle/submittedQuotation/{ownerId}",
+                                "vehicle/submitQuotation/{tourId}"
                         ).permitAll()
                         .anyRequest().authenticated() // Secure all other endpoints
                 )

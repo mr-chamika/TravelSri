@@ -9,7 +9,7 @@ export default function Index() {
     <ScrollView className="flex-1 bg-[#F2F0EF]">    
       {/* Good Morning Section */}
       <View className="bg-[#FEFA17] mx-4 mt-4 p-4 rounded-2xl">
-        <Text className="text-black text-lg font-semibold mb-2">Good Morning!</Text>
+        <Text className="text-black text-lg font-semibold mb-2">Welcome back!</Text>
         <Text className="text-black text-sm mb-4">You have 3 new booking requests</Text>
 
         <View className="flex-row justify-between items-center">

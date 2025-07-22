@@ -87,7 +87,6 @@ export default function App() {
     )
 
     const bookings = 
-
         {
             id:'1',
             title:"Nimal Gamage",
@@ -104,6 +103,16 @@ export default function App() {
     return (
         <ScrollView className="flex-1 bg-[#F2F0EF]">
             <View className="px-4 pt-4 pb-24">
+                {/* Group Tour Navigation Button */}
+                <TouchableOpacity 
+                    className="bg-[#FEFA17] py-3 px-4 rounded-lg mb-6"
+                    onPress={() => router.push('/views/vehicleQuotation/[id]')}
+                >
+                    <Text className="text-center text-black font-semibold text-base">
+                        Group Tour Requests
+                    </Text>
+                </TouchableOpacity>
+
                 {/* Filter Tabs */}
                 <View className="flex-row space-x-3 mb-6">
                     <FilterTab title="All" isActive={true} />
@@ -125,7 +134,7 @@ export default function App() {
                 />
 
                  <BookingCard
-                 id='1'
+                 id='2'
                     title="Group Tour - 7 people"
                     subtitle="Sigiriya"
                     dateRange="2023-06-15 - 2023-06-16"

@@ -39,7 +39,7 @@ import { useRouter } from 'expo-router';
 const { width } = Dimensions.get('window');
 
 interface TourDetails {
-  id: string;
+  id: string,
   destination: string;
   startDate: Date;
   endDate: Date;
@@ -90,7 +90,6 @@ interface SubmittedQuotation {
   clientName: string;
 }
 
-// Updated interface to match the new backend structure
 interface BackendTripData {
   _id: string;
   title: string;
@@ -136,196 +135,210 @@ const QuotationsScreen = () => {
     notes: ''
   });
 
-  // Updated function to convert new backend data structure to frontend format
-  const convertBackendDataToRequests = (backendData: BackendTripData[]): QuotationRequest[] => {
-    console.log('Converting backend data:', backendData);
-    
-    if (!Array.isArray(backendData)) {
-      console.error('Backend data is not an array:', backendData);
-      return [];
-    }
+    // Safer conversion function with better error handling
+const convertBackendDataToRequests = (backendData: BackendTripData[]): QuotationRequest[] => {
+  console.log('Converting backend data:', backendData);
+  
+  if (!Array.isArray(backendData)) {
+    console.error('Backend data is not an array:', backendData);
+    return [];
+  }
 
-    return backendData.map((trip, index) => {
+  return backendData.map((trip, index) => {
+    try {
+      console.log(`Processing trip ${index}:`, trip);
+      
+      // Safely parse dates with fallbacks
+      let startDate: Date;
       try {
-        console.log(`Processing trip ${index}:`, trip);
-        
-        // Safely parse dates with fallbacks
-        let startDate: Date;
-        try {
-          startDate = trip.date ? new Date(trip.date) : new Date();
-          if (isNaN(startDate.getTime())) {
-            startDate = new Date();
-          }
-        } catch (e) {
-          console.warn('Invalid start date, using current date:', trip.date);
+        startDate = trip.date ? new Date(trip.date) : new Date();
+        if (isNaN(startDate.getTime())) {
           startDate = new Date();
         }
+      } catch (e) {
+        console.warn('Invalid start date, using current date:', trip.date);
+        startDate = new Date();
+      }
 
-        let pickupTime: Date;
-        try {
-          pickupTime = trip.pickup_time ? new Date(trip.pickup_time) : new Date();
-          if (isNaN(pickupTime.getTime())) {
-            pickupTime = new Date();
-          }
-        } catch (e) {
-          console.warn('Invalid pickup time, using current time:', trip.pickup_time);
+      let pickupTime: Date;
+      try {
+        pickupTime = trip.pickup_time ? new Date(trip.pickup_time) : new Date();
+        if (isNaN(pickupTime.getTime())) {
           pickupTime = new Date();
         }
+      } catch (e) {
+        console.warn('Invalid pickup time, using current time:', trip.pickup_time);
+        pickupTime = new Date();
+      }
 
-        // Calculate end date safely
-        const endDate = new Date(startDate);
-        const daysToAdd = (trip.number_of_dates || 1) - 1;
-        endDate.setDate(startDate.getDate() + daysToAdd);
-        
-        // Determine priority based on number of seats with proper typing
-        let priority: 'high' | 'medium' | 'low' = 'low';
-        const seats = trip.number_of_seats || 0;
-        if (seats > 6) {
-          priority = 'high';
-        } else if (seats > 3) {
-          priority = 'medium';
-        }
+      // Calculate end date safely
+      const endDate = new Date(startDate);
+      const daysToAdd = (trip.number_of_dates || 1) - 1;
+      endDate.setDate(startDate.getDate() + daysToAdd);
+      
+      // Determine priority based on number of seats with proper typing
+      let priority: 'high' | 'medium' | 'low' = 'low';
+      const seats = trip.number_of_seats || 0;
+      if (seats > 6) {
+        priority = 'high';
+      } else if (seats > 3) {
+        priority = 'medium';
+      }
 
-        // Use proper status type
-        const status: 'pending' | 'quoted' | 'expired' = 'pending';
+      // Use proper status type
+      const status: 'pending' | 'quoted' | 'expired' = 'pending';
 
-        const converted: QuotationRequest = {
+      const converted: QuotationRequest = {
+        id: trip._id || `temp_${index}`,
+        clientName: trip.title || 'Unknown Trip',
+        clientPhone: '',
+        clientEmail: '',
+        tourDetails: {
           id: trip._id || `temp_${index}`,
-          clientName: trip.title || 'Unknown Trip',
-          clientPhone: '',
-          clientEmail: '',
-          tourDetails: {
-            id: trip._id || `temp_${index}`,
-            destination: `${trip.start_location || 'Unknown'} to ${trip.end_location || 'Unknown'}`,
-            startDate: startDate,
-            endDate: endDate,
-            duration: `${trip.number_of_dates || 1} day${(trip.number_of_dates || 1) > 1 ? 's' : ''}`,
-            groupSize: trip.number_of_seats || 0,
-            tourType: trip.title || 'Standard Trip',
-            specialRequests: trip.description_about_start_location || '',
-            budget: '',
-            accommodation: '',
-            transportation: '',
-            startLocation: trip.start_location || '',
-            endLocation: trip.end_location || '',
-            path: trip.path || '',
-            pickupTime: pickupTime,
-          },
-          requestDate: startDate,
-          status: status,
-          priority: priority
-        };
-
-        console.log(`Converted trip ${index}:`, converted);
-        return converted;
-        
-      } catch (error) {
-        console.error(`Error converting trip ${index}:`, error, trip);
-        // Return a default object to prevent the entire conversion from failing
-        const errorRequest: QuotationRequest = {
-          id: `error_${index}`,
-          clientName: 'Error Loading Trip',
-          clientPhone: '',
-          clientEmail: '',
-          tourDetails: {
-            id: `error_${index}`,
-            destination: 'Error Loading',
-            startDate: new Date(),
-            endDate: new Date(),
-            duration: '1 day',
-            groupSize: 0,
-            tourType: 'Error',
-            specialRequests: 'Error loading trip data',
-            budget: '',
-            accommodation: '',
-            transportation: '',
-            startLocation: '',
-            endLocation: '',
-            path: '',
-            pickupTime: new Date(),
-          },
-          requestDate: new Date(),
-          status: 'pending' as const,
-          priority: 'low' as const
-        };
-        return errorRequest;
-      }
-    });
-  };
-
-  // Updated fetch requests to use the new endpoint structure
-  const fetchRequests = async () => {
-    try {
-      setError(null);
-      console.log('Starting to fetch requests...');
-      
-      // Update this to match your actual API endpoint
-      const apiUrl = 'http://localhost:8080/guide/groupTours';
-      console.log('Fetching from URL:', apiUrl);
-      
-      const res = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+          destination: `${trip.start_location || 'Unknown'} to ${trip.end_location || 'Unknown'}`,
+          startDate: startDate,
+          endDate: endDate,
+          duration: `${trip.number_of_dates || 1} day${(trip.number_of_dates || 1) > 1 ? 's' : ''}`,
+          groupSize: trip.number_of_seats || 0,
+          tourType: trip.title || 'Standard Trip',
+          specialRequests: trip.description_about_start_location || '',
+          budget: '',
+          accommodation: '',
+          transportation: '',
+          startLocation: trip.start_location || '',
+          endLocation: trip.end_location || '',
+          path: trip.path || '',
+          pickupTime: pickupTime,
         },
-        signal: AbortSignal.timeout(10000)
-      });
+        requestDate: startDate,
+        status: status,
+        priority: priority
+      };
 
-      console.log('Response status:', res.status);
-      console.log('Response ok:', res.ok);
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log('Raw backend data:', JSON.stringify(data, null, 2));
-      console.log('Data type:', typeof data);
-      console.log('Is array:', Array.isArray(data));
-      console.log('Data length:', data?.length);
-
-      if (data && Array.isArray(data)) {
-        console.log('First item structure:', JSON.stringify(data[0], null, 2));
-        setBackendData(data);
-        
-        // Convert backend data to frontend format
-        const convertedRequests = convertBackendDataToRequests(data);
-        console.log('Converted requests:', JSON.stringify(convertedRequests, null, 2));
-        setRequests(convertedRequests);
-      } else {
-        console.log("Data is not an array or is empty");
-        setRequests([]);
-      }
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      console.error('Error in fetchRequests:', error.message);
-      console.error('Error stack:', error.stack);
-      setError(`Failed to load trip requests: ${error.message}`);
-      Alert.alert('Error', `Failed to load trip requests: ${error.message}`);
+      console.log(`Converted trip ${index}:`, converted);
+      return converted;
+      
+    } catch (error) {
+      console.error(`Error converting trip ${index}:`, error, trip);
+      // Return a default object to prevent the entire conversion from failing
+      const errorRequest: QuotationRequest = {
+        id: `error_${index}`,
+        clientName: 'Error Loading Trip',
+        clientPhone: '',
+        clientEmail: '',
+        tourDetails: {
+          id: `error_${index}`,
+          destination: 'Error Loading',
+          startDate: new Date(),
+          endDate: new Date(),
+          duration: '1 day',
+          groupSize: 0,
+          tourType: 'Error',
+          specialRequests: 'Error loading trip data',
+          budget: '',
+          accommodation: '',
+          transportation: '',
+          startLocation: '',
+          endLocation: '',
+          path: '',
+          pickupTime: new Date(),
+        },
+        requestDate: new Date(),
+        status: 'pending' as const,  // Explicitly type as literal
+        priority: 'low' as const     // Explicitly type as literal
+      };
+      return errorRequest;
     }
-  };
+  });
+};
 
-  // Fetch submitted quotations (keeping the same structure as it should work)
+  // Fetch quotation requests with new API endpoint
+  // Updated fetchRequests function with better error handling and debugging
+const fetchRequests = async () => {
+  try {
+    setError(null);
+    console.log('Starting to fetch requests...');
+    
+    // Use your actual IP address instead of localhost
+    const apiUrl = 'http://localhost:8080/vehicle/groupTours'; // Replace XXX with your IP
+    console.log('Fetching from URL:', apiUrl);
+    
+    const res = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000)
+    });
+
+    console.log('Response status:', res.status);
+    console.log('Response ok:', res.ok);
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    console.log('Raw backend data:', JSON.stringify(data, null, 2));
+    console.log('Data type:', typeof data);
+    console.log('Is array:', Array.isArray(data));
+    console.log('Data length:', data?.length);
+
+    if (data && Array.isArray(data)) {
+      console.log('First item structure:', JSON.stringify(data[0], null, 2));
+      setBackendData(data);
+      
+      // Convert backend data to frontend format
+      const convertedRequests = convertBackendDataToRequests(data);
+      console.log('Converted requests:', JSON.stringify(convertedRequests, null, 2));
+      setRequests(convertedRequests);
+    } else {
+      console.log("Data is not an array or is empty");
+      setRequests([]);
+    }
+  } catch (err) {
+  const error = err instanceof Error ? err : new Error(String(err));
+  console.log('error in refresh: ', error.message);
+  console.error('Error stack:', error.stack);
+}
+};
+
+  // Fetch submitted quotations (keeping the same as it might not change)
   const fetchSubmittedQuotations = async () => {
     try {
-      const guideId = "TEMP_GUIDE_ID_001";
-      if (!guideId) {
-        console.error('Guide ID not found in AsyncStorage');
-        Alert.alert('Error', 'Guide ID not found. Please log in again.');
+      const ownerId = "TEMP_VEHICLE_OWNER_ID_001";
+      
+      if (!ownerId) {
+        console.error('Owner ID not found');
+        Alert.alert('Error', 'Owner ID not found. Please log in again.');
         return;
       }
 
       setError(null);
 
-      const res = await fetch(`http://localhost:8080/guide/submittedQuotation/${guideId}`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const res = await fetch(`http://localhost:8080/vehicle/submittedQuotation/${ownerId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         signal: AbortSignal.timeout(10000),
       });
       
       if (!res.ok) {
+        if (res.status === 401) {
+          console.error('Unauthorized access - clearing stored credentials');
+          await AsyncStorage.multiRemove(['authToken', 'guideId']);
+          throw new Error('Authentication failed. Please log in again.');
+        }
+        
         const errorMessage = res.status === 404 
           ? 'No quotations found' 
           : `Failed to fetch quotations (${res.status})`;
@@ -341,7 +354,7 @@ const QuotationsScreen = () => {
 
       const formatted: SubmittedQuotation[] = data.map((item: any) => ({
         id: item.quotationId || item._id || item.id,
-        guideId: item.guideId,
+        guideId: item.guideId || item.ownerId,
         status: item.status?.toLowerCase() || 'pending',
         quotedAmount: parseFloat(item.quotedAmount) || 0,
         notes: item.quotationNotes || item.notes || '',
@@ -374,7 +387,7 @@ const QuotationsScreen = () => {
 
       setError(errorMessage);
 
-      if (!errorMessage.includes('404')) {
+      if (!errorMessage.includes('404') && !errorMessage.includes('No quotations found')) {
         Alert.alert('Error', errorMessage);
       }
     }
@@ -403,8 +416,7 @@ const QuotationsScreen = () => {
         fetchSubmittedQuotations()
       ]);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      console.log('error in refresh: ', error.message);
+      console.log('error in refresh: ', err);
     } finally {
       setRefreshing(false);
     }
@@ -502,7 +514,7 @@ const QuotationsScreen = () => {
       let guideId = await AsyncStorage.getItem('guideId');
       if (!guideId) {
         console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
-        guideId = 'TEMP_GUIDE_ID_001';
+        guideId = 'TEMP_VEHICLE_OWNER_ID_001';
       }
 
       const quotationData = {
@@ -520,7 +532,8 @@ const QuotationsScreen = () => {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`http://localhost:8080/guide/submitQuotation/${selectedRequest.id}`, {
+      // Updated endpoint to match new structure
+      const response = await fetch(`http://localhost:8080/vehicle/submitQuotation/${selectedRequest.id}`, {
         method: 'PUT',
         headers: headers,
         body: JSON.stringify(quotationData),
@@ -592,7 +605,6 @@ const QuotationsScreen = () => {
     }
   };
 
-  // Updated renderRequestCard to show the new fields
   const renderRequestCard = (request: QuotationRequest) => (
     <View key={request.id} style={styles.card}>
       <View style={styles.cardHeader}>
@@ -664,6 +676,11 @@ const QuotationsScreen = () => {
       </View>
     </View>
   );
+
+  // Helper functions for the actions
+  const handleViewBreakdown = (quotationId: string) => {
+    Alert.alert('View Breakdown', `Viewing breakdown for quotation ${quotationId}`);
+  };
 
   const handleEditQuote = (quotationId: string) => {
     console.log('handleEditQuote called with ID:', quotationId);
@@ -1131,84 +1148,75 @@ const QuotationsScreen = () => {
   );
 };
 
-
+// Styles remain the same as the original code
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
   header: {
     backgroundColor: '#FEFA17',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    elevation: 3,
+    paddingBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   backButton: {
+    marginRight: 16,
     padding: 8,
-    marginRight: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
     flex: 1,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 4,
+    paddingHorizontal: 16,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    borderRadius: 8,
+    marginHorizontal: 4,
   },
   activeTab: {
     backgroundColor: '#111827',
   },
   tabText: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
+    color: '#6B7280',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
+    padding: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
+    marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1220,41 +1228,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerRight: {
-    flexDirection: 'row',
-    gap: 8,
+    marginLeft: 12,
   },
   clientName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#111827',
+    marginBottom: 4,
   },
   requestDate: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  validUntil: {
+    fontSize: 12,
+    color: '#EF4444',
     marginTop: 2,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
-  },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     gap: 4,
   },
   statusText: {
-    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   tourDetails: {
     marginBottom: 12,
@@ -1262,110 +1264,87 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    gap: 8,
   },
   detailText: {
     fontSize: 14,
     color: '#374151',
-    marginLeft: 8,
     flex: 1,
   },
-  budgetContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 6,
-  },
-  budgetLabel: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '500',
-  },
-  budgetText: {
-    fontSize: 14,
-    color: '#059669',
-    fontWeight: '600',
-  },
   specialRequests: {
-    marginBottom: 12,
+    backgroundColor: '#F3F4F6',
     padding: 12,
-    backgroundColor: '#FEF3C7',
     borderRadius: 8,
+    marginBottom: 12,
   },
   specialRequestsLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#92400E',
+    color: '#6B7280',
     marginBottom: 4,
   },
   specialRequestsText: {
     fontSize: 14,
-    color: '#92400E',
+    color: '#374151',
+    lineHeight: 20,
   },
   quotationAmount: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: '#F0FDF4',
     padding: 12,
-    backgroundColor: '#ECFDF5',
     borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
   },
   amountText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#10B981',
-    marginLeft: 8,
-  },
-  validUntil: {
-    marginBottom: 12,
-  },
-  validUntilText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    fontWeight: 'bold',
+    color: '#059669',
   },
   notes: {
-    marginBottom: 12,
+    backgroundColor: '#F9FAFB',
     padding: 12,
-    backgroundColor: '#F3F4F6',
     borderRadius: 8,
+    marginBottom: 12,
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#6B7280',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#374151',
+    lineHeight: 20,
   },
   cardActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
+    gap: 8,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     backgroundColor: '#FFFFFF',
+    gap: 6,
+  },
+  primaryButton: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
   actionText: {
     fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 6,
     fontWeight: '500',
-  },
-  primaryButton: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    color: '#6B7280',
   },
   primaryButtonText: {
     color: '#FFFFFF',
@@ -1373,55 +1352,96 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 48,
   },
   emptyStateText: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
   },
-  // Modal styles
+  centerContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: width * 0.9,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: '80%',
-    paddingVertical: 20,
+    minHeight: 400,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#111827',
   },
   modalContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flex: 1,
+    padding: 20,
   },
   requestSummary: {
     backgroundColor: '#F3F4F6',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   requestSummaryTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#374151',
     marginBottom: 8,
   },
   requestSummaryText: {
@@ -1430,11 +1450,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   formGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   formLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
@@ -1444,174 +1464,64 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
+    fontSize: 16,
     backgroundColor: '#FFFFFF',
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
   },
-  breakdownTitle: {
-    fontSize: 16,
+  editInfo: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  editInfoTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
-    marginTop: 8,
+    color: '#374151',
+    marginBottom: 8,
+  },
+  editInfoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
+    padding: 20,
+    gap: 12,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
-    marginRight: 8,
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
     fontWeight: '500',
+    color: '#6B7280',
   },
   submitButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 8,
-    backgroundColor: '#111827',
-    marginLeft: 8,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
   },
   submitButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '500',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 40,
-  },
-  errorText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#EF4444', // Tailwind red-500
-    textAlign: 'center',
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
-    backgroundColor: '#3B82F6', // Tailwind blue-500
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    marginLeft: 8,
-    fontWeight: 'bold',
   },
-  emptyTitle: {
-    marginTop: 10,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#6B7280', // Tailwind gray-500
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: '#9CA3AF', // Tailwind gray-400
-    textAlign: 'center',
-    paddingHorizontal: 30,
-  },
-   editContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  editInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-  },
-  editActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  saveButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalSaveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  modalSaveText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalCancelText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  editInfo: {
-      marginTop: 16,
-      padding: 12,
-      backgroundColor: '#F9FAFB',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
-    editInfoTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#374151',
-      marginBottom: 8,
-    },
-    editInfoText: {
-      fontSize: 12,
-      color: '#6B7280',
-      marginBottom: 4,
-    },
-
 });
 
 export default QuotationsScreen;
