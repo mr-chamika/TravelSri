@@ -357,7 +357,7 @@ const QuotationsList = () => {
                         <StatusBadge status={quotation.status} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div>${quotation.totalAmount.toFixed(2)}</div>
+                        <div>LKR {quotation.totalAmount.toFixed(2)}</div>
                         {quotation.discountOffered > 0 && (
                           <div className="text-xs text-green-600 mt-1">
                             {quotation.discountOffered}% discount

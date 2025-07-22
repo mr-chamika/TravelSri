@@ -243,15 +243,15 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex justify-between mb-2">
               <span>Base Price:</span>
-              <span>${quotation.totalAmount}</span>
+              <span>LKR {quotation.totalAmount}</span>
             </div>
             <div className="flex justify-between mb-2">
               <span>Discount ({quotation.discountOffered}%):</span>
-              <span>-${(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+              <span>-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
               <span>Total Amount:</span>
-              <span>${(quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+              <span>LKR {(quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
             </div>
           </div>
         </section>

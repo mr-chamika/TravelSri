@@ -44,7 +44,7 @@ const SystemAdminDashboard = () => {
     },
     { 
       label: 'Revenue', 
-      value: '$75,000', 
+      value: 'LKR 75,000', 
       icon: <MdAttachMoney className="text-3xl text-yellow-500" />,
       bgColor: 'bg-gradient-to-br from-yellow-50 to-yellow-100'
     },
@@ -118,7 +118,7 @@ const SystemAdminDashboard = () => {
         labels: sortedHotelData.map(item => item.hotel),
         datasets: [
           {
-            label: 'Revenue ($)',
+            label: 'Revenue (LKR)',
             data: sortedHotelData.map(item => item.revenue),
             backgroundColor: 'yellow',
             borderRadius: 5,
@@ -149,7 +149,7 @@ const SystemAdminDashboard = () => {
               if (chartView === 'monthly') {
                 label += context.parsed.y + '%';
               } else {
-                label += '$' + context.parsed.y.toLocaleString();
+                label += 'LKR' + context.parsed.y.toLocaleString();
               }
               return label;
             }
@@ -243,8 +243,8 @@ const SystemAdminDashboard = () => {
       rating: 4.8,
       joinedDate: '2022-05-15',
       revenue: {
-        lastMonth: '$28,500',
-        year: '$342,000'
+        lastMonth: 'LKR 28,500',
+        year: 'LKR 342,000'
       }
     },
     2: {
@@ -259,8 +259,8 @@ const SystemAdminDashboard = () => {
       rating: 4.5,
       joinedDate: '2022-07-22',
       revenue: {
-        lastMonth: '$22,800',
-        year: '$274,500'
+        lastMonth: 'LKR 22,800',
+        year: 'LKR 274,500'
       }
     },
     3: {
@@ -275,8 +275,8 @@ const SystemAdminDashboard = () => {
       rating: 4.7,
       joinedDate: '2022-08-10',
       revenue: {
-        lastMonth: '$18,900',
-        year: '$227,000'
+        lastMonth: 'LKR 18,900',
+        year: 'LKR 227,000'
       }
     },
     4: {
@@ -291,8 +291,8 @@ const SystemAdminDashboard = () => {
       rating: 4.6,
       joinedDate: '2022-06-15',
       revenue: {
-        lastMonth: '$26,400',
-        year: '$317,000'
+        lastMonth: 'LKR 26,400',
+        year: 'LKR 317,000'
       }
     }
   };

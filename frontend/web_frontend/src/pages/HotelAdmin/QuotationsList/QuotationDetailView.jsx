@@ -184,7 +184,7 @@ const QuotationDetailView = () => {
             </p>
           </div>
           <div className="ml-auto text-right">
-            <p className="text-2xl font-bold">${quotation.totalAmount}</p>
+            <p className="text-2xl font-bold">LKR {quotation.totalAmount}</p>
             <p className="text-sm opacity-75">Total Amount</p>
           </div>
         </div>
@@ -285,7 +285,7 @@ const QuotationDetailView = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex justify-between items-center mb-2">
               <p>Room Rate</p>
-              <p className="font-medium">${quotation.totalAmount / calculateNights(quotation.checkIn, quotation.checkOut)} per night</p>
+              <p className="font-medium">LKR {quotation.totalAmount / calculateNights(quotation.checkIn, quotation.checkOut)} per night</p>
             </div>
             <div className="flex justify-between items-center mb-2">
               <p>Number of Nights</p>
@@ -299,7 +299,7 @@ const QuotationDetailView = () => {
             )}
             <div className="border-t border-gray-200 mt-4 pt-4 flex justify-between items-center">
               <p className="font-medium">Total Amount</p>
-              <p className="font-bold text-xl">${parseFloat(quotation.totalAmount).toFixed(2)}</p>
+              <p className="font-bold text-xl">LKR {parseFloat(quotation.totalAmount).toFixed(2)}</p>
             </div>
           </div>
         </section>

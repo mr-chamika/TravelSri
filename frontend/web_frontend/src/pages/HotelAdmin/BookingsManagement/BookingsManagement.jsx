@@ -228,11 +228,11 @@ const BookingsManagement = () => {
   };
 
   const roomPrices = {
-    'Standard Room': 120,
-    'Deluxe Room': 150,
-    Suite: 250,
-    'Family Room': 200,
-    'Executive Suite': 350,
+    'Standard Room': 2500,
+    'Deluxe Room': 3200,
+    'Suite': 3500,
+    'Family Room': 4500,
+    'Executive Suite': 4000,
   };
 
   const formatDate = (iso) => {
@@ -663,7 +663,7 @@ const BookingsManagement = () => {
                     {b.paymentStatus}
                   </span>
                 </td>
-                <td className="py-3 px-4">${b.totalAmount}</td>
+                <td className="py-3 px-4">LKR {b.totalAmount}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-2">
                     <button 
@@ -1051,7 +1051,7 @@ const BookingsManagement = () => {
                   <div className="flex justify-between">
                     <span>Total Amount:</span>
                     <span className="font-bold text-xl">
-                      ${calculateAmount(editBooking)}
+                      LKR {calculateAmount(editBooking)}
                     </span>
                   </div>
                 </div>

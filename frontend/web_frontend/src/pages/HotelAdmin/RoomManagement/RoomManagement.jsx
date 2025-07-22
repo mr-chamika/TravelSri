@@ -6,12 +6,12 @@ import React, { useState } from 'react';
 const RoomManagement = () => {
   /* 1. STATE --------------------------------------------------- */
   const [rooms, setRooms] = useState([
-    { id: 1, number: '101', type: 'Deluxe Room',   status: 'Available',   price: 150, capacity: 2, amenities: ['Wi-Fi','TV','Mini Bar'] },
-    { id: 2, number: '102', type: 'Standard Room', status: 'Occupied',    price: 120, capacity: 2, amenities: ['Wi-Fi'] },
-    { id: 3, number: '103', type: 'Suite',         status: 'Available',   price: 250, capacity: 4, amenities: ['Wi-Fi','TV','Air Conditioning','Bath Tub'] },
-    { id: 4, number: '104', type: 'Deluxe Room',   status: 'Maintenance', price: 150, capacity: 2 },
-    { id: 5, number: '105', type: 'Standard Room', status: 'Available',   price: 120, capacity: 2 },
-    { id: 6, number: '201', type: 'Suite',         status: 'Occupied',    price: 250, capacity: 4, amenities: ['Wi-Fi','Balcony','Ocean View'] },
+    { id: 1, number: '101', type: 'Deluxe Room',   status: 'Available',   price: 3200, capacity: 2, amenities: ['Wi-Fi','TV','Mini Bar'] },
+    { id: 2, number: '102', type: 'Standard Room', status: 'Occupied',    price: 2500, capacity: 2, amenities: ['Wi-Fi'] },
+    { id: 3, number: '103', type: 'Suite',         status: 'Available',   price: 3500, capacity: 4, amenities: ['Wi-Fi','TV','Air Conditioning','Bath Tub'] },
+    { id: 4, number: '104', type: 'Deluxe Room',   status: 'Maintenance', price: 32000, capacity: 2 },
+    { id: 5, number: '105', type: 'Standard Room', status: 'Available',   price: 2500, capacity: 2 },
+    { id: 6, number: '201', type: 'Suite',         status: 'Occupied',    price: 4000, capacity: 4, amenities: ['Wi-Fi','Balcony','Ocean View'] },
   ]);
 
   const [filterStatus, setFilterStatus] = useState('All');
@@ -118,7 +118,7 @@ const RoomManagement = () => {
             </div>
 
             <InfoRow icon="person" label={`Capacity: ${room.capacity} Guests`} />
-            <InfoRow icon="attach_money" label={`$${room.price}/Night`} />
+            <InfoRow icon="attach_money" label={`LKR ${room.price}/Night`} />
 
             {/* Amenities Chips */}
             {room.amenities?.length>0 && (
@@ -184,7 +184,7 @@ const RoomManagement = () => {
           <div className="grid grid-cols-2 gap-6 text-gray-800">
             <Detail label="Room Type" value={selectedRoom.type}/>
             <Detail label="Status" status value={selectedRoom.status}/>
-            <Detail label="Price / Night" value={`$${selectedRoom.price}`}/>
+            <Detail label="Price / Night" value={`LKR ${selectedRoom.price}`}/>
             <Detail label="Capacity" value={`${selectedRoom.capacity} Guests`}/>
             {selectedRoom.description && (
               <div className="col-span-2"><Detail label="Description" value={selectedRoom.description}/></div>
@@ -228,7 +228,7 @@ const RoomFormFields = ({roomData,roomTypes,availableAmenities,onChange,onAmenit
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <LabeledInput label="Room Number*" name="number" value={roomData.number} onChange={onChange} required/>
       <LabeledSelect label="Room Type*" name="type" value={roomData.type} options={roomTypes} onChange={onChange}/>
-      <LabeledInput label="Price per Night ($)*" type="number" name="price" value={roomData.price} min="0" step="0.01" onChange={onChange} required/>
+      <LabeledInput label="Price per Night (LKR)*" type="number" name="price" value={roomData.price} min="0" step="0.01" onChange={onChange} required/>
       <LabeledSelect label="Status*" name="status" value={roomData.status} options={['Available','Occupied','Maintenance']} onChange={onChange}/>
       <LabeledInput label="Capacity (Guests)*" type="number" name="capacity" value={roomData.capacity} min="1" onChange={onChange} required/>
     </div>

@@ -376,10 +376,10 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 <div className="bg-gray-50 p-2 rounded border border-gray-200">
                   {editedQuotation.airportTransfer ? 
                     <span className="text-green-600 flex items-center">
-                      <span className="material-icons text-sm mr-1">check_circle</span> Airport Transfer Included
+                      <span className="material-icons text-sm mr-1">check_circle</span>  Transportation Included
                     </span> : 
                     <span className="text-gray-500 flex items-center">
-                      <span className="material-icons text-sm mr-1">cancel</span> No Airport Transfer
+                      <span className="material-icons text-sm mr-1">cancel</span> No Transportation
                     </span>
                   }
                 </div>
@@ -404,7 +404,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div className="text-gray-600">Room Rate:</div>
-              <div className="text-right font-medium">${roomPrices[quotation.accommodationType] || 0} per room/night</div>
+              <div className="text-right font-medium">LKR {roomPrices[quotation.accommodationType] || 0} per room/night</div>
               
               <div className="text-gray-600">Number of Rooms:</div>
               <div className="text-right font-medium">{quotation.roomsRequired || Math.ceil(quotation.groupSize / 2)} rooms</div>
@@ -414,7 +414,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="text-gray-600 border-b pb-2">Accommodation Subtotal:</div>
               <div className="text-right font-medium border-b pb-2">
-                ${((roomPrices[quotation.accommodationType] || 0) * 
+                LKR {((roomPrices[quotation.accommodationType] || 0) * 
                   (quotation.roomsRequired || Math.ceil(quotation.groupSize / 2)) * 
                   calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
               </div>
@@ -423,7 +423,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 <>
                   <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
                   <div className="text-right font-medium">
-                    ${(quotation.groupSize * 
+                    LKR {(quotation.groupSize * 
                       (quotation.mealPlan === 'Half Board' ? 25 : 
                        quotation.mealPlan === 'Full Board' ? 40 : 
                        quotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
@@ -434,8 +434,8 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               {quotation.airportTransfer && (
                 <>
-                  <div className="text-gray-600">Airport Transfer:</div>
-                  <div className="text-right font-medium">$200.00</div>
+                  <div className="text-gray-600"> Transpotation Cost:</div>
+                  <div className="text-right font-medium">LKR 2000.00</div>
                 </>
               )}
               
@@ -463,13 +463,13 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                   <span className="material-icons text-sm mr-1">local_offer</span>
                   Discount ({quotation.discountOffered}%):
                 </span>
-                <span className="font-medium">-${(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+                <span className="font-medium">-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
               </div>
             )}
             
             <div className="flex justify-between font-bold text-lg border-t border-yellow-300 pt-3 mt-3 bg-yellow-50 p-3 rounded">
               <span className="text-gray-800">Total Quote Amount:</span>
-              <span className="text-xl">${(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
+              <span className="text-xl">LKR {(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
             </div>
             
             <div className="mt-4 text-xs text-gray-500 bg-white p-3 border border-gray-100 rounded">
@@ -817,12 +817,12 @@ const QuotationsManagement = () => {
   
   // Room type pricing options
   const roomPrices = {
-    'Standard Rooms': 80,
-    'Deluxe Rooms': 120,
-    'Executive Suites': 200,
-    'Family Rooms': 150,
-    'Dormitory Style': 40,
-    'Villa Accommodation': 300,
+    'Standard Rooms': 2500,
+    'Deluxe Rooms': 3200,
+    'Executive Suites': 4000,
+    'Family Rooms': 4500,
+    'Dormitory Style': 3000,
+    'Villa Accommodation': 5000,
   };
   
   // Mock data for group trip packages
@@ -841,8 +841,7 @@ const QuotationsManagement = () => {
       travelGuideIncluded: true,
       transportIncluded: true,
       createdBy: 'Super Admin',
-      createdAt: '2025-07-01T10:15:00Z',
-      image: 'kandy_cultural.jpg'
+      createdAt: '2025-07-01T10:15:00Z'
     },
     {
       id: 2,
@@ -858,8 +857,7 @@ const QuotationsManagement = () => {
       travelGuideIncluded: true,
       transportIncluded: true,
       createdBy: 'Super Admin',
-      createdAt: '2025-07-05T14:30:00Z',
-      image: 'southern_beaches.jpg'
+      createdAt: '2025-07-05T14:30:00Z'
     },
     {
       id: 3,
@@ -875,8 +873,7 @@ const QuotationsManagement = () => {
       travelGuideIncluded: true,
       transportIncluded: true,
       createdBy: 'Super Admin',
-      createdAt: '2025-07-10T09:45:00Z',
-      image: 'highlands.jpg'
+      createdAt: '2025-07-10T09:45:00Z'
     },
     {
       id: 4,
@@ -892,8 +889,7 @@ const QuotationsManagement = () => {
       travelGuideIncluded: true,
       transportIncluded: true,
       createdBy: 'Super Admin',
-      createdAt: '2025-07-12T16:20:00Z',
-      image: 'safari.jpg'
+      createdAt: '2025-07-12T16:20:00Z'
     },
     {
       id: 5,
@@ -909,8 +905,7 @@ const QuotationsManagement = () => {
       travelGuideIncluded: true,
       transportIncluded: true,
       createdBy: 'Super Admin',
-      createdAt: '2025-07-15T11:30:00Z',
-      image: 'ancient_cities.jpg'
+      createdAt: '2025-07-15T11:30:00Z'
     }
   ];
 
@@ -1127,7 +1122,7 @@ const QuotationsManagement = () => {
         quotation.mealPlan === 'All Inclusive' ? 60 : 0) * nights) : 0;
     
     // Add airport transfer cost if selected
-    const transferCost = quotation.airportTransfer ? 200 : 0;
+    const transferCost = quotation.airportTransfer ? 2000 : 0;
     
     return roomCost + mealPlanCost + transferCost;
   };
@@ -1719,7 +1714,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             <div className="grid grid-cols-2 gap-2 mb-2">
               <div className="text-gray-600">Room Rate:</div>
               <div className="text-right font-medium">
-                ${(quotation.totalAmount / (calculateNights(quotation.checkInDate, quotation.checkOutDate) * quotation.roomsRequired)).toFixed(2)} per room/night
+                LKR {(quotation.totalAmount / (calculateNights(quotation.checkInDate, quotation.checkOutDate) * quotation.roomsRequired)).toFixed(2)} per room/night
               </div>
               
               <div className="text-gray-600">Number of Rooms:</div>
@@ -1729,13 +1724,13 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
               <div className="text-right font-medium">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
               
               <div className="text-gray-600">Accommodation Subtotal:</div>
-              <div className="text-right font-medium">${quotation.totalAmount.toFixed(2)}</div>
+              <div className="text-right font-medium">LKR {quotation.totalAmount.toFixed(2)}</div>
               
               {quotation.discountOffered > 0 && (
                 <>
                   <div className="text-green-600">Discount ({quotation.discountOffered}%):</div>
                   <div className="text-right text-green-600 font-medium">
-                    -${(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}
+                    -LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}
                   </div>
                 </>
               )}
@@ -1744,7 +1739,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             <div className="border-t border-green-200 pt-2 mt-2">
               <div className="flex justify-between items-center font-bold text-lg">
                 <span>Final Amount:</span>
-                <span>${quotation.finalAmount?.toFixed(2) || (quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+                <span>LKR {quotation.finalAmount?.toFixed(2) || (quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -2168,7 +2163,7 @@ const StatusBadge = ({ status }) => {
                   </td>
                   <td className="py-3 px-4">
                     <div>
-                      <p className="font-medium">${q.totalAmount?.toFixed(2)}</p>
+                      <p className="font-medium">LKR {q.totalAmount?.toFixed(2)}</p>
                       {q.discountOffered > 0 && (
                         <p className="text-xs text-green-600">
                           {q.discountOffered}% discount
@@ -2247,7 +2242,7 @@ const StatusBadge = ({ status }) => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
             <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-              <h3 className="text-xl font-bold">New Hotel Accommodation Quotation for Group Trip</h3>
+              <h3 className="text-xl font-bold">Hotel Accommodation Quotation for Group Trip</h3>
               <button
                 onClick={() => setShowQuotationModal(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -2394,7 +2389,7 @@ const StatusBadge = ({ status }) => {
                         onChange={(e) => setNewQuotation({...newQuotation, airportTransfer: e.target.checked})}
                         className="rounded text-yellow-500 focus:ring-yellow-400"
                       />
-                      <span>Include Airport Transfer</span>
+                      <span>Include Transportation</span>
                     </label>
                   </div>
                 </div>
@@ -2459,7 +2454,7 @@ const StatusBadge = ({ status }) => {
                           <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
                           Room Rate:
                         </div>
-                        <div className="text-right font-medium">${roomPrices[newQuotation.accommodationType] || 0} per room/night</div>
+                        <div className="text-right font-medium">LKR {roomPrices[newQuotation.accommodationType] || 0} per room/night</div>
                         
                         <div className="text-gray-600 flex items-center">
                           <span className="material-icons text-yellow-600 text-sm mr-2">meeting_room</span>
@@ -2484,7 +2479,7 @@ const StatusBadge = ({ status }) => {
                           Accommodation Subtotal:
                         </div>
                         <div className="text-right font-medium border-b pb-2">
-                          ${((roomPrices[newQuotation.accommodationType] || 0) * 
+                          LKR {((roomPrices[newQuotation.accommodationType] || 0) * 
                             (newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)) * 
                             calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
                         </div>
@@ -2496,7 +2491,7 @@ const StatusBadge = ({ status }) => {
                               Meal Plan ({newQuotation.mealPlan}):
                             </div>
                             <div className="text-right font-medium">
-                              ${(newQuotation.groupSize * 
+                              LKR {(newQuotation.groupSize * 
                                 (newQuotation.mealPlan === 'Half Board' ? 25 : 
                                 newQuotation.mealPlan === 'Full Board' ? 40 : 
                                 newQuotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
@@ -2509,9 +2504,9 @@ const StatusBadge = ({ status }) => {
                           <>
                             <div className="text-gray-600 flex items-center">
                               <span className="material-icons text-yellow-600 text-sm mr-2">airport_shuttle</span>
-                              Airport Transfer:
+                              Transportation Cost:
                             </div>
-                            <div className="text-right font-medium">$200.00</div>
+                            <div className="text-right font-medium">LKR 2000.00</div>
                           </>
                         )}
                         
@@ -2522,7 +2517,7 @@ const StatusBadge = ({ status }) => {
                               Discount ({newQuotation.discountOffered}%):
                             </div>
                             <div className="text-right text-green-600 font-medium">
-                              -${(calculateAccommodationTotal(newQuotation) * newQuotation.discountOffered / 100).toFixed(2)}
+                              -LKR {(calculateAccommodationTotal(newQuotation) * newQuotation.discountOffered / 100).toFixed(2)}
                             </div>
                           </>
                         )}
@@ -2535,7 +2530,7 @@ const StatusBadge = ({ status }) => {
                             Total Quote Amount:
                           </span>
                           <span className="font-bold text-xl">
-                            ${calculateFinalTotal(newQuotation)}
+                            LKR {calculateFinalTotal(newQuotation)}
                           </span>
                         </div>
                         <div className="text-sm text-gray-600 mt-1 flex items-center">
@@ -2552,10 +2547,10 @@ const StatusBadge = ({ status }) => {
                           </h6>
                           <div className="grid grid-cols-2 gap-1 text-sm">
                             <div className="text-gray-600">Base Amount:</div>
-                            <div className="text-right">${calculateAccommodationTotal(newQuotation).toFixed(2)}</div>
+                            <div className="text-right">LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}</div>
                             
                             <div className="text-gray-600">After Discount:</div>
-                            <div className="text-right font-medium">${calculateFinalTotal(newQuotation)}</div>
+                            <div className="text-right font-medium">LKR {calculateFinalTotal(newQuotation)}</div>
                           </div>
                         </div>
                         
@@ -2568,7 +2563,7 @@ const StatusBadge = ({ status }) => {
                             <div className="text-gray-600">Meal Plan Upgrade:</div>
                             <div className="text-right">
                               {newQuotation.mealPlan && newQuotation.mealPlan !== 'Breakfast Only' ? 
-                              `$${(newQuotation.groupSize * 
+                              `LKR ${(newQuotation.groupSize * 
                                 (newQuotation.mealPlan === 'Half Board' ? 25 : 
                                 newQuotation.mealPlan === 'Full Board' ? 40 : 
                                 newQuotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
@@ -2576,7 +2571,7 @@ const StatusBadge = ({ status }) => {
                             </div>
                             
                             <div className="text-gray-600">Transportation:</div>
-                            <div className="text-right">{newQuotation.airportTransfer ? '$200.00' : 'Not included'}</div>
+                            <div className="text-right">{newQuotation.airportTransfer ? 'LKR 2000.00' : 'Not included'}</div>
                           </div>
                         </div>
                       </div>
@@ -2601,7 +2596,7 @@ const StatusBadge = ({ status }) => {
                 >
                   <span className="material-icons text-sm mr-2">send</span>
                   {newQuotation.checkInDate && newQuotation.checkOutDate && newQuotation.accommodationType && newQuotation.groupSize ? 
-                    `Send Quotation ($${calculateFinalTotal(newQuotation)})` : 
+                    `Send Quotation (LKR ${calculateFinalTotal(newQuotation)})` : 
                     'Send Accommodation Quotation'}
                 </button>
               </div>
