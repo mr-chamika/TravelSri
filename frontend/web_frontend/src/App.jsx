@@ -48,15 +48,15 @@ const AdminProfile = lazy(() => import('./pages/SystemHotelsManagingAdmin/AdminP
 
 function App() {
   return (
-    <Router>      
+    <Router>
       <div className="app">
         <Routes>
           {/* Login route without AdminLayout */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={<Login />}
           />
-          
+
           {/* Admin routes with AdminLayout */}
           <Route
             path="/admin"
@@ -70,7 +70,7 @@ function App() {
             path="/allhotelrequests"
             element={
               <AdminLayout>
-                <AllHotelRequests/>
+                <AllHotelRequests />
               </AdminLayout>
             }
           />
@@ -78,7 +78,7 @@ function App() {
             path="/allvehiclerequests"
             element={
               <AdminLayout>
-                <AllVehicleRequests/>
+                <AllVehicleRequests />
               </AdminLayout>
             }
           />
@@ -86,7 +86,7 @@ function App() {
             path="/allguiderequests"
             element={
               <AdminLayout>
-                <AllGuidesRequests/>
+                <AllGuidesRequests />
               </AdminLayout>
             }
           />
@@ -94,7 +94,7 @@ function App() {
             path="/allupcomingtrips"
             element={
               <AdminLayout>
-                <AllUpcomingTrips/>
+                <AllUpcomingTrips />
               </AdminLayout>
             }
           />
@@ -102,7 +102,7 @@ function App() {
             path="/allpendingtrips"
             element={
               <AdminLayout>
-                <AllPendingTrip/>
+                <AllPendingTrip />
               </AdminLayout>
             }
           />
@@ -110,7 +110,7 @@ function App() {
             path="/upcomingtripdetails"
             element={
               <AdminLayout>
-                <UpcomingTripDetails/>
+                <UpcomingTripDetails />
               </AdminLayout>
             }
           />
@@ -118,7 +118,7 @@ function App() {
             path="/upcomingtripparticipants"
             element={
               <AdminLayout>
-                <UpcomingTripParticipants/>
+                <UpcomingTripParticipants />
               </AdminLayout>
             }
           />
@@ -126,7 +126,7 @@ function App() {
             path="/upcomingtrippayment"
             element={
               <AdminLayout>
-                <UpcomingTripPayment/>
+                <UpcomingTripPayment />
               </AdminLayout>
             }
           />
@@ -134,7 +134,7 @@ function App() {
             path="/canceltrip"
             element={
               <AdminLayout>
-                <CancelTrip/>
+                <CancelTrip />
               </AdminLayout>
             }
           />
@@ -142,7 +142,7 @@ function App() {
             path="/createtrip01"
             element={
               <AdminLayout>
-                <CreateTrip01/>
+                <CreateTrip01 />
               </AdminLayout>
             }
           />
@@ -150,7 +150,7 @@ function App() {
             path="/createtrip02"
             element={
               <AdminLayout>
-                <CreateTrip02/>
+                <CreateTrip02 />
               </AdminLayout>
             }
           />
@@ -158,7 +158,7 @@ function App() {
             path="/createtrip03"
             element={
               <AdminLayout>
-                <CreateTrip03/>
+                <CreateTrip03 />
               </AdminLayout>
             }
           />
@@ -166,7 +166,7 @@ function App() {
             path="/vehiclequotation"
             element={
               <AdminLayout>
-                <VehicleQuotation/>
+                <VehicleQuotation />
               </AdminLayout>
             }
           />
@@ -174,7 +174,7 @@ function App() {
             path="/guidequotation"
             element={
               <AdminLayout>
-                <GuideQuotation/>
+                <GuideQuotation />
               </AdminLayout>
             }
           />
@@ -182,7 +182,7 @@ function App() {
             path="/hotelquotation"
             element={
               <AdminLayout>
-                <HotelQuotation/>
+                <HotelQuotation />
               </AdminLayout>
             }
           />
@@ -190,7 +190,7 @@ function App() {
             path="/pendingtripdetails"
             element={
               <AdminLayout>
-                <PendingTripDetails/>
+                <PendingTripDetails />
               </AdminLayout>
             }
           />
@@ -198,7 +198,7 @@ function App() {
             path="/pendingtripdetails02"
             element={
               <AdminLayout>
-                <PendingTripDetails02/>
+                <PendingTripDetails02 />
               </AdminLayout>
             }
           />
@@ -214,7 +214,7 @@ function App() {
             path="/allhotelquotation"
             element={
               <AdminLayout>
-                <AllHotelQuotation/>
+                <AllHotelQuotation />
               </AdminLayout>
             }
           />
@@ -222,7 +222,7 @@ function App() {
             path="/allguidequotation"
             element={
               <AdminLayout>
-                <AllGuideQuotation/>
+                <AllGuideQuotation />
               </AdminLayout>
             }
           />
@@ -230,13 +230,13 @@ function App() {
             path="/allvehiclequotation"
             element={
               <AdminLayout>
-                <AllVehicleQuotation/>
+                <AllVehicleQuotation />
               </AdminLayout>
             }
           />
-          
+
           <Route path="/dashboard" element={<Dashboard />} />
-          
+
           {/* System Hotels Managing Admin Routes */}
           <Route path="/system-admin" element={
             <Suspense fallback={<div className="flex justify-center items-center h-screen ">Loading...</div>}>
@@ -279,7 +279,7 @@ function App() {
               </Suspense>
             } />
           </Route>
-          
+
           {/* Hotel Admin Routes */}
           <Route path="/hotel" element={
             <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
@@ -326,7 +326,7 @@ function App() {
           </Route>
         </Routes>
       </div>
-      
+
     </Router>
 
   );
