@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { useEffect, useState } from "react";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
@@ -201,7 +201,7 @@ export default function Views() {
     };
 
     return (
-        <View className="">
+        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
             <ScrollView
                 className="w-full h-[97%]"

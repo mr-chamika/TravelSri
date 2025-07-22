@@ -574,8 +574,8 @@ export default function App() {
 
     const handleCreatePlan = async () => {
         try {
-
             const keys = await AsyncStorage.getItem("token");
+
             if (keys) {
 
                 const token: MyToken = jwtDecode(keys)
@@ -588,6 +588,7 @@ export default function App() {
                 const hbookings = await AsyncStorage.getItem('hbookings');
                 const hotelData: BookO[] = hbookings ? JSON.parse(hbookings) : [];
                 const obj = hotelData[0]
+
                 if (hotelData.length > 0 && hotelId) {
                     finalFormObject.creatorId = token.id;
 
@@ -706,7 +707,11 @@ export default function App() {
                     m = '';
 
                 }
+            } else {
+
+                alert('Not allowed for this action')
             }
+
         } catch (e) {
             alert(`Error creating plan and resetting session: ${e}`);
             console.error('Error creating plan and resetting session:', e);
@@ -804,7 +809,7 @@ export default function App() {
                                 <View>
                                     <Text>Choose a time</Text>
                                     {/* <SimpleTimePicker onTimeChange={setSelectedTime} /> */}
-                                    <View className="border border-gray-300 rounded-lg">
+                                    <View className="border border-gray-300 rounded-lg py-3 px-2">
                                         <Picker numberOfLines={5} selectedValue={time} onValueChange={(itemValue) => setTime(itemValue)}>
                                             <Picker.Item label="Select..." value="" />
                                             {timeOptions.map((time, index) => (<Picker.Item key={index} label={time} value={time} />))}
