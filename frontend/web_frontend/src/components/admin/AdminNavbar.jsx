@@ -232,7 +232,7 @@ export default function AdminNavbar() {
 
   const menuItems = [
     { label: "Pending Trip", to: "/allpendingtrips" },
-    { label: "Create a Trip", to: "/createtrip01" },
+    { label: "Create a Trip", to: "/createtrip03" },
     { label: "Upcoming Trip", to: "/allupcomingtrips" },
   ];
 

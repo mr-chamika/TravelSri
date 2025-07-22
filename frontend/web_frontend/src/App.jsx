@@ -23,6 +23,9 @@ import PendingTripDetails02 from "./pages/Admin/PendingTripDetails02";
 import PendingTripDetails03 from "./pages/Admin/PendingTripDetails03";
 import CreateTrip03 from "./pages/Admin/CreateTrip03";
 import Dashboard from './pages/Dashboard/Dashboard';
+import VehicleQuotation from "./pages/Admin/VehicleQuotation";
+import GuideQuotation from "./pages/Admin/GuideQuotation";
+import HotelQuotation from "./pages/Admin/HotelQuotation";
 
 // Hotel Admin components
 const HotelAdmin = lazy(() => import('./pages/HotelAdmin/HotelAdmin'));
@@ -156,6 +159,30 @@ function App() {
             element={
               <AdminLayout>
                 <CreateTrip03/>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/vehiclequotation"
+            element={
+              <AdminLayout>
+                <VehicleQuotation/>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/guidequotation"
+            element={
+              <AdminLayout>
+                <GuideQuotation/>
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/hotelquotation"
+            element={
+              <AdminLayout>
+                <HotelQuotation/>
               </AdminLayout>
             }
           />
