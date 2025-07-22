@@ -101,19 +101,19 @@ export default function SignupForm() {
     const [generatedOtp, setGeneratedOtp] = useState({ code: '', timestamp: 0 });
     const [formData, setFormData] = useState<FormData>({
         // Step 1
-        fullName: 'W.K. Hasith Chamika Wijesinghe',//
-        mobileNumber: '771161615',//
-        whatsappNumber: '0786715765',//
-        email: 'chamikauni2001@gmail.com',//
-        username: 'chami',//
-        address: '"WIJAYAWASA",HATHTHAKA,PITIGALA.',//
-        nicPassport: '200124102989',//
-        dob: '2001-08-28',//
-        gender: 'male',//
-        country: 'SL',//
-        password: '123456789',//
-        confirmPassword: '123456789',
-        role: 'user',//
+        fullName: '',//
+        mobileNumber: '',//
+        whatsappNumber: '',//
+        email: '',//
+        username: '',//
+        address: '',//
+        nicPassport: '',//
+        dob: '',//
+        gender: '',//
+        country: '',//
+        password: '',//
+        confirmPassword: '',
+        role: '',//
         pp: null, // Profile Picture
 
         // Step 2
@@ -246,6 +246,7 @@ export default function SignupForm() {
         try {
             // Replace with your actual backend endpoint for email validation
             const response = await fetch(`http://localhost:8080/user/check-email?email=${email}`);
+            //const response = await fetch(`https://travelsri-backend.onrender.com/user/check-email?email=${email}`);
             const data = await response.text();
             console.log(data)
             if (data === "Exists") {
@@ -456,10 +457,13 @@ export default function SignupForm() {
         // 3. Send the email using EmailJS
         try {
             await emailjs.send(
-                'service_ug7b6t5',      // 👈 Replace with your Service ID
-                'template_ozobnan',     // 👈 Replace with your Template ID
+                'service_h0e38l2',      // 👈 Replace with your Service ID
+                'template_crl1nc9',     // 👈 Replace with your Template ID
                 templateParams,
-                'l0b_m5wGJi-b4JhDW'       // 👈 Replace with your Public Key
+                {
+
+                    publicKey: 'Xav8YamG7K9e8q0nD'       // 👈 Replace with your Public Key
+                }       // 👈 Replace with your Public Key
             );
             alert(`A verification code has been sent to ${formData.email}.`);
             setStep(5); // Move to the OTP verification screen
@@ -573,9 +577,10 @@ export default function SignupForm() {
                     ...payload
                 } = dataToSend;
 
-                console.log(...payload)
+                console.log(payload)
 
                 await fetch('http://localhost:8080/user/signup', {
+                    //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',
                     body: JSON.stringify(payload),
@@ -619,6 +624,7 @@ export default function SignupForm() {
                 const { businessType, confirmPassword, ...payload } = dataToSend
 
                 await fetch('http://localhost:8080/user/signup', {
+                    //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',
                     body: JSON.stringify(payload),

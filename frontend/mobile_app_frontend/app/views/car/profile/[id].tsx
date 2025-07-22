@@ -58,6 +58,7 @@ export default function Views() {
 
         try {
             const res = await fetch(`http://localhost:8080/traveler/driver-data?id=${id}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/driver-data?id=${id}`)
 
             var data;
             try {
@@ -87,6 +88,7 @@ export default function Views() {
         try {
 
             const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
             if (res) {
 
@@ -206,7 +208,7 @@ export default function Views() {
                 contentContainerClassName="flex-col px-3 py-5"
                 showsVerticalScrollIndicator={false}
             >
-                <View className="justify-between gap-5">
+                <View className="justify-between gap-10">
                     <View className="w-full gap-5">
                         <View className=" items-center">
                             <Image className="rounded-full w-[200px] h-[200px] mb-2" source={{ uri: `data:image/jpeg;base64,${data && data.image}` }} />
@@ -249,13 +251,13 @@ export default function Views() {
                                 </View>
                             </View>
                             <View>
-                                {review.length == 0 && <View className=' w-full h-full justify-center items-center'><Text className='italic text-gray-400'>No Reviews Yet</Text></View>}
                                 <ScrollView
-                                    className="w-full h-72 border-2 border-gray-200 rounded-2xl mx-2"
-                                    contentContainerClassName=" flex-col px-2 py-3 gap-5 "
+                                    className="w-full h-72 border-2 border-gray-200 rounded-2xl px-2"
+                                    contentContainerClassName={`flex-col px-2 py-3 gap-5 ${!review || review.length == 0 ? 'h-full' : ''}`}
                                     showsVerticalScrollIndicator={false}
                                     nestedScrollEnabled={true}
                                 >
+                                    {(!review || review.length == 0) && <View className='w-full h-full items-center justify-center'><Text className='italic text-gray-400'>No Reviews Yet</Text></View>}
                                     {review.map((x, i) => {
                                         return (
                                             <View key={i} className="bg-gray-200 px-3 rounded-2xl">

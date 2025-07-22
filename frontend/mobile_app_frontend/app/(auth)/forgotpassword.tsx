@@ -115,12 +115,12 @@ export default function ForgotPassword() {
 
         try {
             await emailjs.send(
-                'service_ug7b6t5',      // 👈 Replace with your Service ID
-                'template_ozobnan',     // 👈 Replace with your Template ID
+                'service_h0e38l2',      // 👈 Replace with your Service ID
+                'template_crl1nc9',     // 👈 Replace with your Template ID
                 templateParams,
                 {
 
-                    publicKey: 'l0b_m5wGJi-b4JhDW'       // 👈 Replace with your Public Key
+                    publicKey: 'Xav8YamG7K9e8q0nD'       // 👈 Replace with your Public Key
                 }
             );
             Alert.alert('OTP Sent', `A 4-digit code has been sent to ${email}.`);

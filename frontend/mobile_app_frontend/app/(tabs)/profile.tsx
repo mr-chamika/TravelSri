@@ -65,6 +65,7 @@ export default function Profile() {
                 try {
 
                     const res = await fetch(`http://localhost:8080/user/profile?email=${x.email}`)
+                    //const res = await fetch(`https://travelsri-backend.onrender.com/user/profile?email=${x.email}`)
 
                     const data = await res.json()
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput, Modal } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from "react-native";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useRouter } from "expo-router";
@@ -204,6 +204,7 @@ export default function Equipments() {
             try {
 
                 const res = await fetch(`http://localhost:8080/traveler/shops-get`)
+                //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shops-get`)
 
                 if (res.ok) {
 
@@ -232,7 +233,7 @@ export default function Equipments() {
 
     return (
         <>
-            <View className="w-full gap-10">
+            <View className="w-full gap-3">
 
                 <View className="w-[80%] items-center mx-10 flex-row justify-center bg-[#d9d9d976] rounded-2xl my-8">
 

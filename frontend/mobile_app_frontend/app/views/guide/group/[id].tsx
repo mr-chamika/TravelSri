@@ -147,6 +147,7 @@ export default function Views() {
             try {
 
                 const res1 = await fetch(`http://localhost:8080/traveler/guides-view?id=${id}`)
+                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/guides-view?id=${id}`)
 
                 if (res1) {
 
@@ -168,6 +169,7 @@ export default function Views() {
             try {
 
                 const res1 = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
+                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
                 if (res1) {
 
@@ -289,11 +291,12 @@ export default function Views() {
                                 <ScrollView
 
                                     className="w-full h-72 border-2 border-gray-200 rounded-2xl mx-2"
-                                    contentContainerClassName=" flex-col px-2 py-3 gap-5 "
+                                    contentContainerClassName={`flex-col px-2 py-3 gap-5 ${!review || review.length == 0 ? 'h-full' : ''}`}
                                     showsVerticalScrollIndicator={false}
                                     nestedScrollEnabled={true}
 
                                 >
+                                    {!review || review.length == 0 && <View className="h-full items-center justify-center"><Text>No reviews yet</Text></View>}
                                     {review.map((x, i) => {
 
                                         return (

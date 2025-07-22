@@ -402,12 +402,12 @@ export default function HotelsBookingScreen() {
             try {
 
                 const res = await fetch('http://localhost:8080/traveler/hotels-all')
+                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
                 if (res) {
 
                     const data = await res.json()
                     setHotels(data)
-
 
                     const minimalHotles = data.map((hotel: x) => ({
                         id: hotel._id,
@@ -429,9 +429,23 @@ export default function HotelsBookingScreen() {
         getHotels();
     }, [])
 
+    useEffect(() => {
+
+        if (hotes) {
+
+            loadBookingData()
+
+        }
+
+    }, [hotes])
+
     useFocusEffect(
         useCallback(() => {
-            loadBookingData();
+            if (hotes) {
+
+                loadBookingData();
+
+            }
             count()
         }, [hotes])
     );
@@ -491,7 +505,7 @@ export default function HotelsBookingScreen() {
     useFocusEffect(
         useCallback(() => {
             count()
-        }, [selectedCardIndex, s, d]) // Dependencies for recalculation, ensuring it reacts to s/d changes
+        }, [selectedCardIndex, s, d, guides, cars]) // Dependencies for recalculation, ensuring it reacts to s/d changes
     );
 
     return (

@@ -126,6 +126,7 @@ export default function Car() {
 
         try {
             const res = await fetch(`http://localhost:8080/traveler/driver-get?id=${id}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/driver-get?id=${id}`)
 
             const data = await res.json()
 

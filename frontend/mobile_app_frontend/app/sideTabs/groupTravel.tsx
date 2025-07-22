@@ -70,17 +70,17 @@ export default function Group() {
             email: email,
             message: des,
             from_name: name,
-            to_email: 'travelsriucsc@gmail.com'
+            to_email: 'travelsri2025@gmail.com'
 
         }
 
         emailjs
             .send(
-                'service_ug7b6t5',
-                'template_sayi62l',
+                'service_h0e38l2',
+                'template_sp7fntf',
                 emailTemplate,
                 {
-                    publicKey: "l0b_m5wGJi-b4JhDW"
+                    publicKey: "Xav8YamG7K9e8q0nD"
                 }
             )
             .then(
@@ -178,6 +178,7 @@ export default function Group() {
                             contentContainerClassName='items-center'
                         >
                             <View className="flex-row gap-10 items-center">
+
                                 {groupCollection.map((item, i) => {
 
                                     return (

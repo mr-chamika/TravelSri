@@ -81,6 +81,7 @@ export default function ShopDetailScreen() {
         try {
 
             const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
             if (res.ok) {
 
@@ -109,6 +110,7 @@ export default function ShopDetailScreen() {
             try {
 
                 const res = await fetch(`http://localhost:8080/traveler/shop-items?id=${id}`)
+                //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shop-items?id=${id}`)
 
                 if (res.ok) {
 
@@ -135,6 +137,7 @@ export default function ShopDetailScreen() {
 
             try {
 
+                //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shop-get?id=${id}`)
                 const res = await fetch(`http://localhost:8080/traveler/shop-get?id=${id}`)
 
                 if (res.ok) {
@@ -407,9 +410,9 @@ export default function ShopDetailScreen() {
 
     return (
         <>
-            <View className="h-full gap-10">
+            <View className="h-full gap-5">
 
-                <View className="h-[20%]">
+                <View className="h-[30%]">
                     {/* --- Header Section --- */}
                     <TouchableOpacity onPress={() => router.back()}><Text className="ml-3">Back</Text></TouchableOpacity>
                     <View className="items-center pt-10 pb-5">
@@ -432,13 +435,13 @@ export default function ShopDetailScreen() {
                 >
                     <ScrollView
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ justifyContent: 'space-evenly' }}
+                        contentContainerClassName="justify-evenly"
                     >
                         <View className="h-[36%]">
                             <Text className="text-[22px] font-semibold mx-3 py-6">Items</Text>
 
                             <ScrollView
-                                className="h-[28%] w-full  pt-2 px-3"
+                                className="w-full pt-2 px-3 py-14"
                                 contentContainerClassName="bg-white flex-row flex-wrap justify-center gap-12 py-1"
                                 showsVerticalScrollIndicator={false}
                                 nestedScrollEnabled={true}
@@ -496,9 +499,9 @@ export default function ShopDetailScreen() {
                                 </ScrollView>
                             </View>
 
-                            <View className="w-full ">
+                            <View className="w-full gap-1">
 
-                                <View className="flex-row items-center">
+                                <View className="flex-row items-center px-3">
                                     {/* <Text className="text-lg px-3 py-5">Rate {shop.name}</Text> */}
                                     <View className=" flex-row  gap-2">
                                         {[...Array(5)].map((x, i) => {

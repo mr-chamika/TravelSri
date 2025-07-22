@@ -95,6 +95,7 @@ export default function Index() {
         const x: MyToken = jwtDecode(keys)
 
         const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
+        //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
 
         const data = await res.json()
 
@@ -213,14 +214,14 @@ export default function Index() {
 
 
   return (
-    <View className="bg-[#F2F5FA] justify-between h-full py-3">
+    <View className="bg-[#F2F5FA] justify-evenly h-full w-full">
 
       <View className="w-full items-center mt-1 ">
 
-        <Text className="text-[22px] font-semibold text-gray-400">Good Morning {username} !</Text>
+        <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
       </View>
-      <View>
+      <View className="h-[40%]">
 
         <Text className="text-[22px] font-semibold m-3">My Plans</Text>
 
@@ -228,10 +229,10 @@ export default function Index() {
           horizontal
           showsHorizontalScrollIndicator={false}
           className="px-5"
-          contentContainerStyle={{ paddingRight: 40 }}
+          contentContainerClassName={`pr-16 ${!trips || trips.length === 0 ? 'w-full' : ''}`}
         >
-          <View className=" flex-row gap-10">
-
+          <View className=" flex-row gap-10 w-full">
+            {(!trips || trips.length == 0) && <View className=" w-full h-full justify-center items-center"><Text className="text-gray-400">No plans yet</Text></View>}
             {trips.map((item) => {
 
               return (

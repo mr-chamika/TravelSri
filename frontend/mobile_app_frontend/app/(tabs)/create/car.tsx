@@ -223,6 +223,7 @@ export default function App() {
 
         try {
             const res = await fetch(`http://localhost:8080/traveler/vehicles-all`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/vehicles-all`)
 
             const data = await res.json()
 
@@ -646,6 +647,7 @@ export default function App() {
                     console.log(finalFormObject)
 
                     await fetch('http://localhost:8080/traveler/create-trip', {
+                        //await fetch('https://travelsri-backend.onrender.com/traveler/create-trip', {
 
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -854,7 +856,7 @@ export default function App() {
                                         </View>
                                         <View className="bg-[#d9d9d98e] w-[150px] h-[140px] items-center py-2 rounded-2xl">
                                             <Image
-                                                className="w-[70px] h-[60px]"
+                                                className="w-[90px] h-[60px]"
                                                 source={{ uri: `data:image/jpeg;base64,${x.image}` }}
                                             />
                                             <View>

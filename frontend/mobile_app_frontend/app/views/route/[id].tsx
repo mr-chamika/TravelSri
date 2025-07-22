@@ -127,6 +127,7 @@ export default function Views() {
         try {
 
             const res1 = await fetch(`http://localhost:8080/traveler/map?id=${id.toString()}`)
+            //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/map?id=${id.toString()}`)
 
             if (res1) {
 
@@ -150,6 +151,7 @@ export default function Views() {
             try {
 
                 const res = await fetch(`http://localhost:8080/traveler/routes-one?id=${id.toString()}`)
+                //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/routes-one?id=${id.toString()}`)
 
 
                 if (res) {

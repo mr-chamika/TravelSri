@@ -242,6 +242,7 @@ export default function Guide() {
 
         try {
             const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
 
             if (res.ok) {
                 const data = await res.json()
