@@ -7,6 +7,8 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import BackButton from '../../../components/ui/backButton';
+
 
 
 import Topbar from '../../../components/Topbar';
@@ -103,9 +105,10 @@ export default function TravelFeedScreen() {
   
   return (
     <SafeAreaView>
-                                  <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+                                  {/* <Topbar pressing={toggleMenu} notifying={toggling} on={notify} /> */}
       
     <View style={styles.container}>
+      <BackButton />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Where did you travel?</Text>
@@ -149,6 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#000',
+    marginTop: 40
   },
   headerIcons: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 package com.example.student.model;
 
+import com.example.student.model.dto.ReviewGetdto;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +13,18 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @Document(collection = "reviews")
 public class Review {
+
+    public Review(String serviceId, String text, String author, String country, String dp, int stars) {
+
+this.serviceId = serviceId;
+this.text = text;
+this.author = author;
+this.country = country;
+this.dp = dp;
+this.stars = stars;
+
+
+    }
 
     @Id
     private String _id;

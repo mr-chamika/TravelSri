@@ -46,6 +46,20 @@ interface x {
 
 }
 
+interface g {
+
+    id: string,
+    price: number
+
+}
+
+interface Car {
+
+    id: string;
+    price: number;
+
+}
+
 /* const hotels: Hotel[] = [
     { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
     { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
@@ -55,7 +69,7 @@ interface x {
 
 export default function HotelsBookingScreen() {
 
-    const categories = [
+    /* const categories = [
         {
             id: '1',
             members: 2,
@@ -93,9 +107,9 @@ export default function HotelsBookingScreen() {
             price: 15000
         }
     ]
+ */
 
-
-    const guides = [
+    /* const guides = [
         {
             id: '1',
             image: pic,
@@ -169,7 +183,7 @@ export default function HotelsBookingScreen() {
             price: 8000
         },
     ];
-
+ */
 
     const router = useRouter();
 
@@ -192,6 +206,8 @@ export default function HotelsBookingScreen() {
         s: '',
         d: ''
     })
+    const [guides, setGuides] = useState<g[]>([])
+    const [cars, setCars] = useState<Car[]>([])
 
     const sortedLocations = useMemo(() => {
         if (!location) return LOCATIONS;
@@ -256,6 +272,7 @@ export default function HotelsBookingScreen() {
             return;
         }
         const newBooking: Book[] = [{ dates: Object.keys(selectedDates), loc: location, ad: adults, ch: children, ni: nights, s: s, d: d }];
+        console.log(newBooking)
         setBook(newBooking);
         setModalVisible(false);
         setBookingComplete(true);
@@ -279,7 +296,7 @@ export default function HotelsBookingScreen() {
                     await AsyncStorage.removeItem('selectedHotelBooking');
                 }
                 count()
-                console.log(`Boooked : ${input}`)
+
             }
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
@@ -291,10 +308,18 @@ export default function HotelsBookingScreen() {
             const sessionExists = await AsyncStorage.getItem('hbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('hbookingComplete');
             const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use the consistent key
+            const guideData = await AsyncStorage.getItem('guides')
+            if (guideData) {
+
+                setGuides(guideData ? JSON.parse(guideData) : [])
+
+            }
+
+            const carData = await AsyncStorage.getItem('cars')
+            setCars(carData ? JSON.parse(carData) : []);
 
             // Reset states before loading new data
             setSelectedDates({});
-            setSelectedCardIndex(null);
             setBookingComplete(false);
             setBook(null);
             setLocation('');
@@ -305,17 +330,23 @@ export default function HotelsBookingScreen() {
             setS('');
             setD('');
 
+            let hotelWasFound = false;
             if (savedHotelBooking) {
                 const hotelData = JSON.parse(savedHotelBooking);
                 // Find the array index of the hotel based on its 'id'
                 if (hotes) {
                     const hotelIndex = hotes.find(h => h._id === hotelData.id);
                     if (hotelIndex) {
-                        setSelectedCardIndex(hotelData.id); // Set the array index (0-based)
+                        setSelectedCardIndex(hotelIndex._id); // Set the array index (0-based)
                         setS(hotelData.s || ''); // Load s from stored data
                         setD(hotelData.d || ''); // Load d from stored data
+                        hotelWasFound = true;
                     }
                 }
+            }
+
+            if (!hotelWasFound) {
+                setSelectedCardIndex(null);
             }
 
             if (sessionExists && bookingCompleteStatus === 'true') {
@@ -366,18 +397,24 @@ export default function HotelsBookingScreen() {
     };
 
     useEffect(() => {
-
-        const getRoutes = async () => {
+        const getHotels = async () => {
 
             try {
 
                 const res = await fetch('http://localhost:8080/traveler/hotels-all')
+                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
                 if (res) {
 
                     const data = await res.json()
-                    console.log(data)
                     setHotels(data)
+
+                    const minimalHotles = data.map((hotel: x) => ({
+                        id: hotel._id,
+                        singlePrice: hotel.singlePrice,
+                        doublePrice: hotel.doublePrice,
+                    }));
+                    await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
 
                 }
 
@@ -388,14 +425,29 @@ export default function HotelsBookingScreen() {
             }
 
         }
-        getRoutes();
+
+        getHotels();
     }, [])
+
+    useEffect(() => {
+
+        if (hotes) {
+
+            loadBookingData()
+
+        }
+
+    }, [hotes])
 
     useFocusEffect(
         useCallback(() => {
-            loadBookingData();
+            if (hotes) {
+
+                loadBookingData();
+
+            }
             count()
-        }, [])
+        }, [hotes])
     );
 
     const count = async () => {
@@ -405,7 +457,7 @@ export default function HotelsBookingScreen() {
             // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
             if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
+                const category = cars.find(cat => cat.id === carIndex);
                 if (category) {
                     total += category.price;
                 }
@@ -413,8 +465,8 @@ export default function HotelsBookingScreen() {
 
             // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex) {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex)).toString());
+            if (guideIndex && guides) {
+                const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
                     total += guide.price;
                 }
@@ -427,13 +479,18 @@ export default function HotelsBookingScreen() {
                 const selectedHotel = hotes.find(hotel => hotel._id === hotelBookingData.id); // Find hotel by its ID
 
                 if (selectedHotel) { // Null check for selectedHotel
-                    //if (selectedHotel.availableDouble > 0 && selectedHotel.availableSingle> 0) {
-                    const singleBedPrice = selectedHotel.singlePrice || 0;
-                    const doubleBedPrice = selectedHotel.doublePrice || 0;
-                    const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
-                    const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
-                    total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
-                    //}
+
+                    if (selectedHotel.availableDouble >= Number(d) && selectedHotel.availableSingle >= Number(s)) {
+                        const singleBedPrice = selectedHotel.singlePrice || 0;
+                        const doubleBedPrice = selectedHotel.doublePrice || 0;
+                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+                    } else {
+
+                        await AsyncStorage.removeItem('selectedHotelBooking')
+
+                    }
                 }
             }
 
@@ -448,7 +505,7 @@ export default function HotelsBookingScreen() {
     useFocusEffect(
         useCallback(() => {
             count()
-        }, [selectedCardIndex, s, d]) // Dependencies for recalculation, ensuring it reacts to s/d changes
+        }, [selectedCardIndex, s, d, guides, cars]) // Dependencies for recalculation, ensuring it reacts to s/d changes
     );
 
     return (
@@ -633,8 +690,8 @@ export default function HotelsBookingScreen() {
                                 contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
                                 showsVerticalScrollIndicator={false}
                             >
-                                {hotes ? hotes.map((hotel, index) => (
-                                    ((Number(adults) + Number(children)) < (hotel.availableDouble + hotel.availableSingle) && Number(input.s) < hotel.availableSingle && Number(input.d) < hotel.availableDouble) && <View key={index} className={`bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300`}>
+                                {hotes && hotes ? hotes.map((hotel, index) => (
+                                    ((Number(adults) + Number(children)) <= (hotel.availableDouble + hotel.availableSingle) && Number(s) < hotel.availableSingle && Number(d) < hotel.availableDouble) && <View key={index} className={`bg-[#fbfbfb] w-[175px] h-[155px] items-center py-1 rounded-2xl border-2 border-gray-300`}>
                                         <TouchableOpacity
                                             onPress={() => router.push(`/views/hotel/group/${hotel._id}`)} // Pass actual hotel.id (e.g., '1', '2')
                                             className="w-full"

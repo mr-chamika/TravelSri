@@ -75,6 +75,7 @@ export default function Dropdown() {
         try {
 
             const routeIdToSave = newIndex !== null ? newIndex : '';
+            console.log(routeIdToSave)
             await AsyncStorage.setItem('selectedRouteId', routeIdToSave);
         } catch (error) {
             console.error('Error saving selectedCardIndex to AsyncStorage:', error);
@@ -128,11 +129,11 @@ export default function Dropdown() {
             try {
 
                 const res = await fetch('http://localhost:8080/traveler/routes-allshow')
+                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/routes-allshow')
 
                 if (res) {
 
                     const data: Route[] = await res.json()
-                    console.log(data)
                     setRoutes(data)
 
                 }

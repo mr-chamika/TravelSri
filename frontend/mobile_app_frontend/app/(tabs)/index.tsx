@@ -16,7 +16,23 @@ const bg = require('../../assets/images/bg.jpg');
 const t = require('../../assets/images/tabbar/tower.jpg')
 const srch = require('../../assets/images/search1.png');
 
-const placesCollection = [
+interface Trip {
+
+  _id: string,
+  thumbnail: string,
+  destination: string
+
+}
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
+
+/* const placesCollection = [
   { id: '1', image: pic, title: 'Lotus Tower' },
   { id: '2', image: bg, title: 'Another Place' },
   { id: '3', image: t, title: 'Another Place' },
@@ -24,7 +40,7 @@ const placesCollection = [
   { id: '5', image: bg, title: 'Another Place' },
   { id: '6', image: t, title: 'Another Place' },
 
-];
+]; */
 const groupCollection = [
   { id: '1', image: pic, title: 'Matara to Colombo', duration: 2, date: '04 june 2020', stats: 'Confirm', price: 5000, max: 20, current: 3 },
   { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13 },
@@ -49,6 +65,7 @@ export default function Index() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [username, setUsername] = useState('')
+  const [trips, setTrips] = useState<Trip[]>([])
 
   const handler = () => {
 
@@ -67,6 +84,35 @@ export default function Index() {
       .then(data => { console.log(data) })
       .catch(err => console.log(err))
 
+  }
+
+
+  const getTrips = async () => {
+    try {
+      const keys = await AsyncStorage.getItem("token");
+      if (keys) {
+
+        const x: MyToken = jwtDecode(keys)
+
+        const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
+        //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
+
+        const data = await res.json()
+
+        if (data) {
+
+          //console.log(data)
+          setTrips(data)
+
+        }
+
+      }
+
+    } catch (err) {
+
+      console.log('Error from getting solotrip dto')
+
+    }
   }
 
 
@@ -104,6 +150,7 @@ export default function Index() {
 
       }
       getAll()
+      getTrips()
     }, [])
   );
 
@@ -167,14 +214,14 @@ export default function Index() {
 
 
   return (
-    <View className="bg-[#F2F5FA] justify-between h-full py-3">
+    <View className="bg-[#F2F5FA] justify-evenly h-full w-full">
 
       <View className="w-full items-center mt-1 ">
 
-        <Text className="text-[22px] font-semibold text-gray-400">Good Morning {username} !</Text>
+        <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
       </View>
-      <View>
+      <View className="h-[40%]">
 
         <Text className="text-[22px] font-semibold m-3">My Plans</Text>
 
@@ -182,20 +229,20 @@ export default function Index() {
           horizontal
           showsHorizontalScrollIndicator={false}
           className="px-5"
-          contentContainerStyle={{ paddingRight: 40 }}
+          contentContainerClassName={`pr-16 ${!trips || trips.length === 0 ? 'w-full' : ''}`}
         >
-          <View className=" flex-row gap-10">
-
-            {placesCollection.map((item) => {
+          <View className=" flex-row gap-10 w-full">
+            {(!trips || trips.length == 0) && <View className=" w-full h-full justify-center items-center"><Text className="text-gray-400">No plans yet</Text></View>}
+            {trips.map((item) => {
 
               return (
-                <TouchableOpacity onPress={() => router.push(`/views/plan/${item.id}`)} className="w-[83px]" key={item.id}>
+                <TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
                   <Image
                     className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                    source={item.image}
+                    source={{ uri: `data:image/jpeg;base64,${item.thumbnail}` }}
                   />
                   <Text className="mt-2 text-[10px] italic text-center">
-                    {item.title}
+                    {item.destination}
                   </Text>
                 </TouchableOpacity>
               )

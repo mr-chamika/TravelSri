@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import isValidPhoneNumber, { type CountryCode } from 'libphonenumber-js/min';
 import {
     SafeAreaView,
     View,
@@ -85,10 +86,13 @@ interface FormData {
 
     // Step 4 & Others
     nicpic: ImagePickerAsset | null;
+    nicpic2: ImagePickerAsset | null;
     locpic: ImagePickerAsset | null;
     agreeTerms: boolean;
     confirmCondition: boolean;
     status: string;
+    verified: string;
+    identified: string;
 }
 
 export default function SignupForm() {
@@ -99,19 +103,19 @@ export default function SignupForm() {
     const [generatedOtp, setGeneratedOtp] = useState({ code: '', timestamp: 0 });
     const [formData, setFormData] = useState<FormData>({
         // Step 1
-        fullName: 'W.K. Hasith Chamika Wijesinghe',//
-        mobileNumber: '771161615',//
-        whatsappNumber: '0786715765',//
-        email: 'chamikauni2001@gmail.com',//
-        username: 'chami',//
-        address: '"WIJAYAWASA",HATHTHAKA,PITIGALA.',//
-        nicPassport: '200124102989',//
-        dob: '2001-08-28',//
-        gender: 'male',//
-        country: 'SL',//
-        password: '123456789',//
-        confirmPassword: '123456789',
-        role: 'user',//
+        fullName: '',//
+        mobileNumber: '',//
+        whatsappNumber: '',//
+        email: '',//
+        username: '',//
+        address: '',//
+        nicPassport: '',//
+        dob: '',//
+        gender: '',//
+        country: '',//
+        password: '',//
+        confirmPassword: '',
+        role: '',//
         pp: null, // Profile Picture
 
         // Step 2
@@ -131,10 +135,13 @@ export default function SignupForm() {
 
         // Step 4 & Others
         nicpic: null,//
+        nicpic2: null,//
         locpic: null,//
         agreeTerms: false,//
         confirmCondition: false,//
         status: '',//
+        verified: "pending",
+        identified: "pending"
     });
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -188,7 +195,7 @@ export default function SignupForm() {
         }
     }
 
-    const validateField = (field: string, value: string | boolean) => {
+    const validateField = (field: string, value: string | boolean, currentFormData: FormData) => {
         let error = '';
         if (typeof value === 'string' && !value.trim()) {
             error = 'This field is required.';
@@ -215,10 +222,35 @@ export default function SignupForm() {
                     }
                 }
             }
-        } else if (field === 'email' && typeof value === 'string' && !/\S+@\S+\.\S+/.test(value)) {
+
+        } else if (field === 'nicPassport' && typeof value === 'string') {
+            const countryCode = currentFormData.country;
+            const nicValue = value.trim();
+
+            if (countryCode === 'LK') {
+                // This regex checks for either the old format (9 digits + V/X) OR the new 12-digit format.
+                const sriLankanNicRegex = /(^(\d{9}[VvXx]))|(^\d{12}$)/;
+                if (!sriLankanNicRegex.test(nicValue)) {
+                    error = 'Invalid SL NIC.';
+                    //error = 'Invalid SL NIC. Use 9 digits + V/X (e.g., 123456789V) or 12 digits.';
+                }
+            } else {
+                // For other countries, we apply a generic passport validation.
+                // This checks for 6-15 alphanumeric characters.
+                const passportRegex = /^[A-Za-z0-9]{6,15}$/;
+                if (!passportRegex.test(nicValue)) {
+                    error = 'Please enter a valid Passport Number.';
+                    //error = 'Please enter a valid Passport Number (6-15 letters and numbers).';
+                }
+            }
+        }
+        else if (field === 'email' && typeof value === 'string' && !/\S+@\S+\.\S+/.test(value)) {
             error = 'Please enter a valid email address.';
-        } else if (field === 'password' && typeof value === 'string' && value.length < 8) {
-            error = 'Password must be at least 8 characters long.';
+        } else if (field === 'password' && typeof value === 'string') {
+            const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
+            if (!strongPasswordRegex.test(value)) {
+                error = 'Need 8+ characters (1 uppercase,1 number,1 symbol)';
+            }
         } else if (field === 'confirmPassword' && value !== formData.password) {
             error = 'Passwords do not match.';
         } else if (field === 'daysPerWeek') {
@@ -227,6 +259,25 @@ export default function SignupForm() {
                 error = 'Please enter a valid number of days.';
             } else if (numDays > 7) {
                 error = 'Days cannot exceed 7.';
+            }
+        }
+
+        else if ((field === 'mobileNumber' || field === 'whatsappNumber') && typeof value === 'string' && value.length > 0) {
+            // Use the selected country from the form state for validation.
+            // Default to 'LK' (Sri Lanka) if no country is selected yet.
+            const countryCode = (formData.country || 'LK') as CountryCode;
+
+            if (countryCode === 'LK' && value.length !== 9) {
+                error = 'Sri Lankan numbers should (e.g., 771234567).';
+            }
+            // General length check for other countries
+            else if (countryCode !== 'LK' && (value.length < 7 || value.length > 15)) {
+                error = 'Please enter a valid number of digits.';
+            }
+            // 2. If length is plausible, then check the actual format.
+            else if (!isValidPhoneNumber(value, countryCode)) {
+                const countryName = countries.find(c => c.value === countryCode)?.label || '';
+                error = `The format is not valid for a ${countryName} phone number.`;
             }
         }
         return error;
@@ -242,6 +293,7 @@ export default function SignupForm() {
         try {
             // Replace with your actual backend endpoint for email validation
             const response = await fetch(`http://localhost:8080/user/check-email?email=${email}`);
+            //const response = await fetch(`https://travelsri-backend.onrender.com/user/check-email?email=${email}`);
             const data = await response.text();
             console.log(data)
             if (data === "Exists") {
@@ -263,8 +315,20 @@ export default function SignupForm() {
     };
 
     const handleChange = (field: keyof typeof formData, value: string | boolean) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        const error = validateField(field, value);
+        let processedValue = value;
+
+        // 1. Filter input to ONLY allow numbers for phone fields
+        if ((field === 'mobileNumber' || field === 'whatsappNumber') && typeof value === 'string') {
+            processedValue = value.replace(/\D/g, ''); // This removes any non-digit character
+            if (processedValue.startsWith('0')) {
+                processedValue = processedValue.substring(1);
+            }
+        }
+        const newState = { ...formData, [field]: processedValue };
+        //setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(newState);
+
+        const error = validateField(field, processedValue, newState);
         setErrors(prev => {
             const newErrors = { ...prev };
             if (error) {
@@ -294,7 +358,7 @@ export default function SignupForm() {
 
             const value = formData[field as keyof FormData];
             if (typeof value === 'string' || typeof value === 'boolean') {
-                const error = validateField(field, value);
+                const error = validateField(field, value, formData);
                 if (error) {
                     step1Errors[field as keyof typeof step1Errors] = error;
                 }
@@ -317,22 +381,23 @@ export default function SignupForm() {
     const validateStep2 = () => {
         const step2Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'bp', 'businessName', 'registrationNumber', 'businessType', 'description', 'businessAddress'
+            'businessName', 'registrationNumber', 'description', 'businessAddress'
         ];
         fieldsToValidate.forEach(field => {
 
             const value = formData[field as keyof FormData];
             if (typeof value === 'string' || typeof value === 'boolean') {
-                const error = validateField(field, value);
+                const error = validateField(field, value, formData);
                 if (error) {
                     step2Errors[field as keyof typeof step2Errors] = error;
                 }
             }
         });
 
-        if (!formData.bp) {
-            step2Errors.bp = 'Business photo is required.';
-        }
+        // if (!formData.bp) {
+        //     step2Errors.bp = 'Business photo is required.';
+        // }    
+        // console.log("Validation Errors for Step 2:", step2Errors);
 
         setErrors(step2Errors);
         return Object.keys(step2Errors).length === 0;
@@ -347,7 +412,7 @@ export default function SignupForm() {
 
             const value = formData[field as keyof FormData];
             if (typeof value === 'string' || typeof value === 'boolean') {
-                const error = validateField(field, value);
+                const error = validateField(field, value, formData);
                 if (error) {
                     step3Errors[field as keyof typeof step3Errors] = error;
                 }
@@ -384,7 +449,7 @@ export default function SignupForm() {
 
             const value = formData[field as keyof FormData];
             if (typeof value === 'string' || typeof value === 'boolean') {
-                const error = validateField(field, value);
+                const error = validateField(field, value, formData);
                 if (error) {
                     step4Errors[field as keyof typeof step4Errors] = error;
                 }
@@ -406,8 +471,8 @@ export default function SignupForm() {
         let isStepValid = false;
         switch (step) {
             case 1: isStepValid = validateStep1(); break;
-            case 2: isStepValid = formData.role === 'other' ? validateStep2() : true; break;
-            case 3: isStepValid = formData.role === 'other' ? validateStep3() : true; break;
+            case 2: isStepValid = (formData.role !== 'user' && formData.role !== 'vehicle') ? validateStep2() : true; break;
+            case 3: isStepValid = (formData.role !== 'user' && formData.role !== 'vehicle') ? validateStep3() : true; break;
             case 4: isStepValid = validateStep4(); break;
             default: isStepValid = true; break;
         }
@@ -420,15 +485,16 @@ export default function SignupForm() {
 
         if (!isStepValid) return;
 
-        if (step === 1 && formData.role === 'user') {
+        if (step === 1 && (formData.role === 'user' || formData.role === 'vehicle')) {
             setStep(4);
-        } else if ((step === 4 && formData.role === 'user') || step < steps.length) {
+        } else if ((step === 4 && formData.role === 'user' || formData.role === 'vehicle') || step < steps.length) {
             setStep(step + 1);
         }
+
     };
 
     const prevStep = () => {
-        if (step === 4 && formData.role === 'user') {
+        if (step === 4 && (formData.role === 'user' || formData.role === 'vehicle')) {
             setStep(1);
         } else if (step > 1) {
             setStep(step - 1);
@@ -452,10 +518,13 @@ export default function SignupForm() {
         // 3. Send the email using EmailJS
         try {
             await emailjs.send(
-                'service_ug7b6t5',      // 👈 Replace with your Service ID
-                'template_ozobnan',     // 👈 Replace with your Template ID
+                'service_h0e38l2',      // 👈 Replace with your Service ID
+                'template_crl1nc9',     // 👈 Replace with your Template ID
                 templateParams,
-                'l0b_m5wGJi-b4JhDW'       // 👈 Replace with your Public Key
+                {
+
+                    publicKey: 'Xav8YamG7K9e8q0nD'       // 👈 Replace with your Public Key
+                }       // 👈 Replace with your Public Key
             );
             alert(`A verification code has been sent to ${formData.email}.`);
             setStep(5); // Move to the OTP verification screen
@@ -492,8 +561,8 @@ export default function SignupForm() {
         }
 
         const isStep1Valid = validateStep1();
-        const isStep2Valid = formData.role === 'other' ? validateStep2() : true;
-        const isStep3Valid = formData.role === 'other' ? validateStep3() : true;
+        const isStep2Valid = formData.role !== 'user' || 'vehicle' ? validateStep2() : true;
+        const isStep3Valid = formData.role !== 'user' || 'vehicle' ? validateStep3() : true;
         const isStep4Valid = validateStep4();
 
         if (emailCheckStatus === 'taken') {
@@ -564,10 +633,15 @@ export default function SignupForm() {
                     endTime,
                     registrationNumber,
                     startTime,
+                    verified,
+                    identified,
                     ...payload
                 } = dataToSend;
 
+                console.log(payload)
+
                 await fetch('http://localhost:8080/user/signup', {
+                    //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',
                     body: JSON.stringify(payload),
@@ -592,7 +666,7 @@ export default function SignupForm() {
             try {
 
 
-                const dataToSend: any = { ...formData, status: 'pending', role: formData.businessType };
+                const dataToSend: any = { ...formData, status: 'pending', role: formData.role };
                 const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic', 'cancellationPolicyPic', 'nicpic', 'locpic'];
 
                 for (const field of imageFields) {
@@ -611,6 +685,7 @@ export default function SignupForm() {
                 const { businessType, confirmPassword, ...payload } = dataToSend
 
                 await fetch('http://localhost:8080/user/signup', {
+                    //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',
                     body: JSON.stringify(payload),
@@ -677,7 +752,7 @@ export default function SignupForm() {
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base text-black">Gender</Text>
-                            <View className="border border-gray-300 rounded-lg">
+                            <View className="border border-gray-300 rounded-lg py-3 px-3">
                                 <Picker selectedValue={formData.gender} onValueChange={v => handleChange('gender', v as string)}>
                                     <Picker.Item label="Select Gender..." value="" />
                                     <Picker.Item label="Male" value="male" />
@@ -688,7 +763,7 @@ export default function SignupForm() {
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base text-black">Country</Text>
-                            <View className="border border-gray-300 rounded-lg">
+                            <View className="border border-gray-300 rounded-lg  py-3 px-3">
                                 <Picker selectedValue={formData.country} onValueChange={v => handleChange('country', v as string)}>
                                     {countries.map(c => <Picker.Item key={c.value} label={c.label} value={c.value} />)}
                                 </Picker>
@@ -763,11 +838,14 @@ export default function SignupForm() {
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base text-black">Register As</Text>
-                            <View className="border border-gray-300 rounded-lg">
+                            <View className="border border-gray-300 rounded-lg  py-3 px-3">
                                 <Picker selectedValue={formData.role} onValueChange={v => handleChange('role', v as string)}>
                                     <Picker.Item label="Select Role..." value="" />
                                     <Picker.Item label="Traveler" value="user" />
-                                    <Picker.Item label="Other" value="other" />
+                                    <Picker.Item label="Vehicle Renter" value="vehicle" />
+                                    <Picker.Item label="Guide" value="guide" />
+                                    <Picker.Item label="Equipment Renter" value="merchant" />
+                                    {/* <Picker.Item label="Other" value="other" /> */}
                                 </Picker>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.role ? 'opacity-100' : 'opacity-0'}`}>{errors.role || ' '}</Text>
@@ -811,7 +889,7 @@ export default function SignupForm() {
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.registrationNumber} onChangeText={v => handleChange('registrationNumber', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.registrationNumber ? 'opacity-100' : 'opacity-0'}`}>{errors.registrationNumber || ' '}</Text>
                         </View>
-                        <View className="mb-4">
+                        {/* <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Business Type</Text>
                             <View className="border border-gray-300 rounded-lg">
                                 <Picker selectedValue={formData.businessType} onValueChange={v => handleChange('businessType', v as string)}>
@@ -819,10 +897,11 @@ export default function SignupForm() {
                                     <Picker.Item label="Guiding" value="guide" />
                                     <Picker.Item label="Vehicle Renting" value="vehicle renter" />
                                     <Picker.Item label="Equipment Renting" value="equipment rental" />
+                                    <Picker.Item label="Hotel Service" value="hotel service" />
                                 </Picker>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessType ? 'opacity-100' : 'opacity-0'}`}>{errors.businessType || ' '}</Text>
-                        </View>
+                        </View> */}
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Description</Text>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3 h-24" multiline value={formData.description} onChangeText={v => handleChange('description', v)} />
@@ -950,7 +1029,31 @@ export default function SignupForm() {
                                 )}
                             </TouchableOpacity>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.nicpic ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic || ' '}</Text>
-                            <Text className="text-base text-gray-600 mt-2">National Identity Card</Text>
+                            <Text className="text-base text-gray-600 mt-2">National Identity Card (side 1)</Text>
+                        </View>
+                        <View className="items-center w-full my-10">
+                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicpic} onChangeText={v => handleChange('nicpic', v)} /> */}
+                            <TouchableOpacity
+                                onPress={() => { handleChoosePhoto('nicpic2') }}
+                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.nicpic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                            >
+                                {formData.nicpic2 ? (
+                                    <Image
+                                        source={{ uri: formData.nicpic2.uri }}
+                                        className="w-full h-full border-2 border-gray-100"
+                                        resizeMode="cover"
+
+                                    />
+                                ) : (
+                                    <Image
+                                        source={plusIcon}
+                                        className="w-16 h-16 opacity-50"
+                                        resizeMode="contain"
+                                    />
+                                )}
+                            </TouchableOpacity>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.nicpic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic2 || ' '}</Text>
+                            <Text className="text-base text-gray-600 mt-2">National Identity Card (side 2)</Text>
                         </View>
                         <View className="items-center w-full my-8">
                             {/* <TextInput placeholder="URL for map location" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.locpic} onChangeText={v => handleChange('locpic', v)} /> */}
@@ -1060,7 +1163,7 @@ export default function SignupForm() {
                 <Text className="text-2xl font-bold">{steps[step - 1].title}</Text>
             </View>
             <ScrollView
-                className="flex-1 mt-5"
+                className="flex-1 mt-5 pr-2"
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >

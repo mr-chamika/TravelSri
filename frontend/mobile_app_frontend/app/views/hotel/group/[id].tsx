@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useEffect, useState } from "react";
@@ -63,6 +63,7 @@ export default function Views() {
             try {
 
                 const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
 
                 if (res1) {
 
@@ -84,6 +85,7 @@ export default function Views() {
             try {
 
                 const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
                 if (res2) {
 
@@ -105,6 +107,7 @@ export default function Views() {
             try {
 
                 const res3 = await fetch(`http://localhost:8080/traveler/facis-view?id=${id}`)
+                //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
 
                 if (res3) {
 
@@ -250,7 +253,7 @@ export default function Views() {
     } */
 
     return (
-        <View>
+        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
 
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
 
@@ -313,11 +316,12 @@ export default function Views() {
                             <ScrollView
 
                                 className="w-full h-64 border-2 border-gray-200 rounded-2xl"
-                                contentContainerClassName=" flex-col px-2 py-3 gap-5 "
+                                contentContainerClassName={`flex-col px-2 py-3 gap-5 ${!reviewv || reviewv.length == 0 ? 'h-full' : ''}`}
                                 showsVerticalScrollIndicator={false}
                                 nestedScrollEnabled={true}
 
                             >
+                                {!reviewv || reviewv.length == 0 && <View className="w-full h-full items-center justify-center"><Text>No Reviews yet</Text></View>}
                                 {reviewv.map((x, i) => {
 
                                     return (
@@ -349,7 +353,7 @@ export default function Views() {
                                 <ScrollView
                                     horizontal
                                     className="w-full rounded-2xl px-1"
-                                    contentContainerClassName="flex-row w-full px-1 py-2 bg-gray-200 gap-4"
+                                    contentContainerClassName="flex-row w-full px-1 py-2 bg-gray-200 gap-4 items-center"
                                     showsHorizontalScrollIndicator={false}
                                     nestedScrollEnabled={true}
 

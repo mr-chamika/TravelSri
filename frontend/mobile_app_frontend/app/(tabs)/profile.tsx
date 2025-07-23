@@ -19,7 +19,8 @@ interface MyToken {
     sub: string;
     roles: string[];
     username: string;
-    email: string
+    email: string;
+    id: string
 }
 
 
@@ -64,6 +65,7 @@ export default function Profile() {
                 try {
 
                     const res = await fetch(`http://localhost:8080/user/profile?email=${x.email}`)
+                    //const res = await fetch(`https://travelsri-backend.onrender.com/user/profile?email=${x.email}`)
 
                     const data = await res.json()
 
@@ -101,7 +103,20 @@ export default function Profile() {
         transform: [{ scale: scaleAnim }],
     };
 
+    const clear = async () => {
+
+        const keys = await AsyncStorage.getAllKeys();
+        try {
+
+            await AsyncStorage.multiRemove(keys);
+        } catch (e) {
+            alert(`Error clearing AsyncStorage:, ${e}`);
+        }
+    }
     const loggingout = async () => {
+
+
+        await clear();
 
         await AsyncStorage.removeItem('token')
         setUser(null)

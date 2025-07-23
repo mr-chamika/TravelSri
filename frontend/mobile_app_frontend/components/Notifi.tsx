@@ -1,6 +1,6 @@
 import { View, Modal, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { Bell, CreditCard, Users, Clock } from 'lucide-react-native';
+import { Bell, CreditCard, Users, Clock, X } from 'lucide-react-native';
 
 interface NotifyModalProps {
   isVisible: boolean;

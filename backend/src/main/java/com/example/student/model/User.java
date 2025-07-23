@@ -47,6 +47,9 @@ public class User {
     private String businessType;
     private String registrationNumber;
     private String businessName;
+    private String verified;//phone verified ("done", "pending" or "rejected" by admin)
+    private String identified;//identity verified ("done", "pending" or "rejected" by admin)
+
 
 
 
@@ -64,5 +67,6 @@ public class User {
     public String getId(){
         return _id;
     }
+
 
 }

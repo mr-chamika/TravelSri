@@ -20,101 +20,32 @@ interface Book {
     lan: string;
 }
 
-interface Guide {
-    id: string;
-    image: any;
-    title: string;
+interface Guid {
+    _id: string;
+    pp: string;
+    username: string;
     stars: number;
-    verified: boolean;
-    identified: boolean;
+    verified: string;
+    identified: string;
     price: number
 }
 
-const guides: Guide[] = [
-    {
-        id: '1',
-        image: pic,
-        title: 'Theekshana',
-        stars: 3,
-        verified: true,
-        identified: true,
-        price: 1000
-    },
-    {
-        id: '2',
-        image: pic,
-        title: 'Teshini',
-        stars: 1,
-        verified: true,
-        identified: true,
-        price: 2000
-    },
-    {
-        id: '3',
-        image: pic,
-        title: 'Sudewa',
-        stars: 2,
-        verified: true,
-        identified: true,
-        price: 3000
-    },
-    {
-        id: '4',
-        image: pic,
-        title: 'Bimsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-        price: 4000
-    },
-    {
-        id: '5',
-        image: pic,
-        title: 'Tharusha',
-        stars: 3,
-        verified: true,
-        identified: true,
-        price: 5000
-    },
-    {
-        id: '6',
-        image: pic,
-        title: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified: true,
-        price: 6000
-    },
-    {
-        id: '7',
-        image: pic,
-        title: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified: true,
-        price: 7000
-    },
-    {
-        id: '8',
-        image: pic,
-        title: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-        price: 8000
-    },
-];
+interface H {
+    id: string,
+    singlePrice: number,
+    doublePrice: number,
+}
+
+interface Car {
+
+    id: string;
+    price: number;
+
+}
 
 export default function Guide() {
 
-    const hotels = [
-        { id: '1', image: pic, title: 'Shangri-La', stars: 3, price: 1000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
-        { id: '2', image: pic, title: 'Bawana', stars: 1, price: 2000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
-        { id: '3', image: pic, title: 'Matara bath kade', stars: 2, price: 3000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
-        { id: '4', image: pic, title: 'Raheema', stars: 5, price: 4000, beds: [{ type: 'double', price: 1000 }, { type: 'single', price: 500 }] },
-    ];
-
-    const categories = [
+    /* const categories = [
         {
             id: '1',
             members: 2,
@@ -152,18 +83,21 @@ export default function Guide() {
             price: 15000
         }
     ]
-
-
+ */
     const router = useRouter();
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [fine, setFine] = useState(false);
     const [book, setBook] = useState<Book[] | null>([]);
 
     const [location, setLocation] = useState('');
     const [lan, setLan] = useState('');
+    const [guides, setGuides] = useState<Guid[]>([])
+    const [hotelx, setHotels] = useState<H[]>([])
+    const [cars, setCars] = useState<Car[]>([])
+
 
     const [showDropdown, setShowDropdown] = useState(false);
     const [show, setShow] = useState(false);
@@ -172,8 +106,8 @@ export default function Guide() {
     const [total, setTotal] = useState('');
 
 
-    const toggleCardSelection = useCallback((index: number) => {
-        let newIndex: number | null = null;
+    const toggleCardSelection = useCallback((index: string) => {
+        let newIndex: string | null = null;
         setSelectedCardIndex(prev => {
             newIndex = prev === index ? null : index;
             return newIndex;
@@ -181,7 +115,7 @@ export default function Guide() {
         // Update AsyncStorage after state change
         const updateStorage = async () => {
             try {
-                await AsyncStorage.setItem('guide', newIndex !== null ? (newIndex + 1).toString() : '');
+                await AsyncStorage.setItem('guide', newIndex !== null ? newIndex : '');
             } catch (error) {
                 console.error('Error saving selectedCardIndex to AsyncStorage:', error);
             }
@@ -216,7 +150,8 @@ export default function Guide() {
             await AsyncStorage.setItem('gbookings', JSON.stringify(newBooking));
             await AsyncStorage.setItem('gbookingComplete', 'true');
             await AsyncStorage.setItem('gbookingSession', Date.now().toString());
-            //alert('Booking saved to AsyncStorage');
+            await getGuides()
+            loadBookingData()
         } catch (error) {
             alert(`Error saving booking to AsyncStorage: ${error}`);
         }
@@ -232,25 +167,28 @@ export default function Guide() {
             const sessionExists = await AsyncStorage.getItem('gbookingSession');
             const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
             const savedIndex = await AsyncStorage.getItem('guide');
+            const hotelData = await AsyncStorage.getItem('hotels')
+            setHotels(hotelData ? JSON.parse(hotelData) : [])
 
-            // --- Explicitly reset local state before attempting to load from storage ---
+            const carData = await AsyncStorage.getItem('cars')
+            setCars(carData ? JSON.parse(carData) : []);
+
+            // --- Reset local state before loading from storage ---
             setSelectedDates({});
             setSelectedCardIndex(null);
-            setModalVisible(false); // Default to not visible
-            setFine(false); // Assume not complete until proven otherwise
+            setModalVisible(false);
+            setFine(false);
             setBook([]);
             setLocation('');
             setLan('');
             setShowDropdown(false);
             setShow(false);
-            setTotal('0'); // Reset total for this component as well
+            setTotal('0');
 
             if (savedIndex) {
-
-                setSelectedCardIndex(Number(savedIndex) - 1);
+                setSelectedCardIndex(savedIndex);
             }
 
-            // Check if there's an active session AND booking is complete
             if (sessionExists && bookingComplete === 'true') {
                 setModalVisible(false);
                 setFine(true);
@@ -267,20 +205,18 @@ export default function Guide() {
                         setSelectedDates(dates);
                         setLocation(booking.loc);
                         setLan(booking.lan);
+                        // Fetch guides now that we have location and language
+                        await getGuides(booking.loc, booking.lan);
                     }
                 }
-
             } else {
-                // If no session or booking is NOT complete, start fresh by showing modal
-                await AsyncStorage.setItem('gbookingSession', Date.now().toString()); // Start a new session
+                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
                 setModalVisible(true);
-                setFine(false); // Ensure false so modal is required
+                setFine(false);
             }
-
 
         } catch (error) {
             console.error('Error loading data from AsyncStorage (guide):', error);
-            // On error, also ensure a full reset and show modal
             setSelectedDates({});
             setSelectedCardIndex(null);
             setModalVisible(true);
@@ -294,13 +230,53 @@ export default function Guide() {
         }
     }
 
-    useEffect(() => {
-        loadBookingData();
-    }, []);
+    // UPDATED: Now accepts optional parameters to be called after loading booking data.
+    const getGuides = async (loc?: string, language?: string) => {
+        const guideLocation = loc || location;
+        const guideLanguage = language || lan;
+
+        // Prevent API call if essential data is missing
+        if (!guideLocation || !guideLanguage) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
+            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
+
+            if (res.ok) {
+                const data = await res.json()
+
+                if (data.length > 0) {
+
+
+                    const minimalGuides = data.map((guide: Guid) => ({
+                        id: guide._id,
+                        price: guide.price,
+                    }));
+
+                    await AsyncStorage.setItem('guides', JSON.stringify(minimalGuides) || '')
+                    setGuides(data)
+
+                }
+
+                else {
+
+                    setGuides([])
+                    await AsyncStorage.removeItem('guide')
+                    console.log('No guides found')
+
+                }
+            }
+        } catch (err) {
+            console.log(`Error from guide getting : ${err}`)
+        }
+    }
 
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
+            count()
         }, [])
     );
 
@@ -308,38 +284,32 @@ export default function Guide() {
         try {
             let total = 0;
 
-            // Car Booking Price
             const carIndex = await AsyncStorage.getItem('car');
-            if (carIndex) {
-                const category = categories.find(cat => cat.id === (Number(carIndex)).toString());
+            if (carIndex && cars.length > 0) {
+                const category = cars.find(cat => cat.id === carIndex);
                 if (category) {
                     total += category.price;
                 }
             }
 
-            // Guide Booking Price
             const guideIndex = await AsyncStorage.getItem('guide');
-            if (guideIndex) {
-                const guide = guides.find(guide => guide.id === (Number(guideIndex)).toString());
+            if (guideIndex && guides.length > 0) { // Ensure guides list is populated
+                const guide = guides.find(guide => guide._id === guideIndex);
                 if (guide) {
                     total += guide.price;
                 }
             }
 
-            // Hotel Booking Price
-            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
-            if (savedHotelBooking) {
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking');
+            if (savedHotelBooking && hotelx.length > 0) { // Ensure hotels list is populated
                 const hotelBookingData = JSON.parse(savedHotelBooking);
-                const selectedHotel = hotels.find(hotel => hotel.id === hotelBookingData.id); // Find hotel by its ID
-
-                if (selectedHotel) { // Null check for selectedHotel
-                    if (selectedHotel.beds && selectedHotel.beds.length >= 2) {
-                        const singleBedPrice = selectedHotel.beds.find(bed => bed.type === 'single')?.price || 0;
-                        const doubleBedPrice = selectedHotel.beds.find(bed => bed.type === 'double')?.price || 0;
-                        const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
-                        const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
-                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
-                    }
+                const selectedHotel = hotelx.find(hotel => hotel.id === hotelBookingData.id);
+                if (selectedHotel && hotelBookingData) {
+                    const singleBedPrice = selectedHotel.singlePrice || 0;
+                    const doubleBedPrice = selectedHotel.doublePrice || 0;
+                    const numSingle = Number(hotelBookingData.s || 0);
+                    const numDouble = Number(hotelBookingData.d || 0);
+                    total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
                 }
             }
 
@@ -350,14 +320,12 @@ export default function Guide() {
         }
     };
 
-
+    // UPDATED: Dependencies changed to fix calculation timing.
     useFocusEffect(
         useCallback(() => {
-
-            count()
-
-        }, [selectedCardIndex, total])
-    )
+            count();
+        }, [selectedCardIndex, cars, hotelx]) // Runs when selection or data changes
+    );
 
 
     return (
@@ -479,15 +447,15 @@ export default function Guide() {
                                 {guides.map((x, index) => (
                                     <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] py-1 rounded-2xl border-2 border-gray-300">
 
-                                        <TouchableOpacity onPress={() => router.push(`/views/guide/group/${Number(x.id) + 1}`)}>
+                                        <TouchableOpacity onPress={() => router.push(`/views/guide/group/${x._id}`)}>
 
                                             <View className='h-full py-3 justify-between'>
                                                 <View className="w-full absolute items-end pr-1 z-10">
                                                     <TouchableOpacity
                                                         className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                        onPress={() => toggleCardSelection(index)}
+                                                        onPress={() => toggleCardSelection(x._id)}
                                                     >
-                                                        {selectedCardIndex === index && (
+                                                        {selectedCardIndex === x._id && (
                                                             <Image className='w-4 h-4' source={mark} />
                                                         )}
                                                     </TouchableOpacity>
@@ -496,11 +464,11 @@ export default function Guide() {
 
                                                     <Image
                                                         className='w-[50px] h-[50px] rounded-full'
-                                                        source={x.image}
+                                                        source={{ uri: `data:image/jpeg;base64,${x.pp}` }}
                                                         contentFit="cover"
                                                     />
                                                     <View className=''>
-                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.title}</Text>
+                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.username}</Text>
                                                         <View className="flex-row justify-start mt-1">
                                                             {[...Array(x.stars)].map((_, i) => (
                                                                 <Image key={i} className="w-3 h-3 mx-0.5" source={star} />

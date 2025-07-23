@@ -5,23 +5,23 @@ export default function Feedback() {
   const reviews = [
     {
       id: 1,
-      userName: 'Екатерина Луканова',
+      userName: 'Sarah Thompson',
       rating: 5,
-      text: 'Администратор у нашей управляющей компании отвечает. Но могу сказать, я плачу большие деньги за коммунальные услуги, а вода горячая может отсутствовать по 3 дня. Блоки не промывают повидательно, что работает в очень низком Администрация, а управляющая компания не ведает на задачи Администратора до НГК.',
+      text: 'Amazing experience! The car was spotless and exactly as described. Pick-up was smooth and the staff was incredibly helpful. The vehicle performed perfectly during our 5-day road trip through the mountains. Definitely booking with them again for our next vacation!',
       avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
     },
     {
       id: 2,
-      userName: 'Екатерина Луканова',
-      rating: 5,
-      text: 'Администратор у нашей управляющей компании отвечает настолько. Но могу сказать, я плачу большие деньги за коммунальные услуги, а вода горячая может отсутствовать по 3 дня. Блоки не промывают повидательно, что работает в очень низком Администрация, а управляющая компания не ведает на задачи Администратора до НГК.',
+      userName: 'Michael Rodriguez',
+      rating: 4,
+      text: 'Great rental service overall. The SUV was comfortable for our family of four and had plenty of space for luggage. GPS worked perfectly and fuel efficiency was better than expected. Only minor issue was a small delay during pickup, but the customer service made up for it.',
       avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
     },
     {
       id: 3,
-      userName: 'Екатерина Луканова',
+      userName: 'Emily Davis',
       rating: 5,
-      text: 'Администратор у нашей управляющей компании отвечает настолько. Но могу сказать, я плачу большие деньги за коммунальные услуги, а вода горячая может отсутствовать по 3 дня. Блоки не промывают повидательно, что работает в очень низком Администрация, а управляющая компания не ведает на задачи Администратора до НГК.',
+      text: 'Exceptional service from start to finish! The compact car was perfect for city exploration and parking was a breeze. Clean interior, smooth ride, and excellent fuel economy. The 24/7 customer support was reassuring during our international trip. Highly recommend!',
       avatar: 'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop'
     }
   ];

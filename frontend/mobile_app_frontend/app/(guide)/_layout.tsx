@@ -31,7 +31,7 @@ export default function TabsLayout() {
               className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
                 }`}
             >
-              <Ionicons name="home" size={24} color="#000000" />
+              <Ionicons name="home" size={30} color="#000000" />
             </View>
           ),
         }}
@@ -44,7 +44,7 @@ export default function TabsLayout() {
               className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
                 }`}
             >
-              <Ionicons name="calendar" size={24} color="#000000" />
+              <Ionicons name="calendar" size={30} color="#000000" />
             </View>
           ),
         }}
@@ -57,7 +57,7 @@ export default function TabsLayout() {
               className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
                 }`}
             >
-              <Ionicons name="time" size={24} color="#000000" />
+              <Ionicons name="time" size={30} color="#000000" />
             </View>
           ),
         }}
@@ -70,7 +70,7 @@ export default function TabsLayout() {
               className={`p-2 rounded-full ${focused ? "bg-white" : "bg-transparent"
                 }`}
             >
-              <Ionicons name="person" size={24} color="#000000" />
+              <Ionicons name="person" size={30} color="#000000" />
             </View>
           ),
         }}
