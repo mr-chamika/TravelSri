@@ -8,14 +8,17 @@ import {
   StatusBar,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
+// Corrected type definition to match the backend
 type ListingItem = {
-  id: number;
+  _id: string;
   title: string;
-  price: string;
+  price: number;
   image: string;
   quantity: number;
   isNew?: boolean;
@@ -23,7 +26,7 @@ type ListingItem = {
 };
 
 interface AddItemProps {
-  onSave: (newItem: Omit<ListingItem, 'id'>) => void;
+  onSave: (newItem: Omit<ListingItem, '_id'>) => void;
   onBack: () => void;
 }
 
@@ -32,9 +35,9 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
-  // Image functionality temporarily removed
+  const [imageUri, setImageUri] = useState('');
 
-  const API_BASE_URL = 'http://localhost:8080'; // Change if needed
+  const API_BASE_URL = 'http://localhost:8080';
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token') || '';
@@ -56,14 +59,17 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
       Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
+    if (!imageUri) {
+      Alert.alert('Error', 'Please add an image for the item');
+      return;
+    }
 
-    // Prepare backend ShopItem object
     const shopItem = {
       itemName: itemName.trim(),
       price: Number(price),
       availableNumber: Number(quantity),
       description: description.trim() || 'This is Description',
-      // imageUrl removed temporarily
+      imageUrl: imageUri,
     };
     console.log('Sending to backend:', shopItem);
 
@@ -86,6 +92,13 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           text: 'OK',
           onPress: () => {
             onBack();
+            onSave({
+              title: itemName,
+              price: Number(price),
+              quantity: Number(quantity),
+              image: imageUri,
+              description: description,
+            });
           },
         },
       ]);
@@ -95,35 +108,56 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
     }
   };
 
-  const handleImageChange = () => {
-    // Image picker functionality temporarily removed
+  const handleImageChange = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
-
-
         <TouchableOpacity>
           <Feather name="bell" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* Page Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.pageTitle}>Add Item</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Image Section temporarily removed */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Image</Text>
+          <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.itemImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <AntDesign name="plus" size={32} color="#fff" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
-        {/* Item Name */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Item Name</Text>
           <TextInput
@@ -135,7 +169,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Price */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Price</Text>
           <TextInput
@@ -148,7 +181,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Quantity */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Quantity</Text>
           <TextInput
@@ -161,7 +193,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Description */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Description</Text>
           <TextInput
@@ -176,7 +207,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Publish Button */}
         <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
           <Text style={styles.publishButtonText}>Publish</Text>
         </TouchableOpacity>
@@ -255,6 +285,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   imagePlaceholder: {
     alignItems: 'center',

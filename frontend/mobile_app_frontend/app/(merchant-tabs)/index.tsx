@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,91 +9,23 @@ import {
   TouchableOpacity,
   StatusBar,
   Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
-import ChangeItem from './ChangeItem'; // Import the ChangeItem component
-import AddItem from './AddItem'; // Import the AddItem component
+import ChangeItem from './ChangeItem';
+import AddItem from './AddItem';
 
+// Define the correct ListingItem type to match your MongoDB backend
 type ListingItem = {
-  id: number;
-  title: string;
-  price: string;
-  image: string;
-  quantity: number;
+  _id: string;
+  itemName: string;
+  price: number;
+  imageUrl: string;
+  availableNumber: number;
   isNew?: boolean;
   description?: string;
 };
-
-const initialListings: ListingItem[] = [
-  {
-    id: 1,
-    title: 'Wood',
-    price: '500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1419640303358-44f0d27f48e7?w=300&h=200&fit=crop',
-    quantity: 20,
-    description: 'High quality wood for construction',
-  },
-  {
-    id: 2,
-    title: 'RainCoat',
-    price: '1500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5e?w=300&h=200&fit=crop',
-    quantity: 20,
-    isNew: true,
-    description: 'Waterproof raincoat for all weather',
-  },
-  {
-    id: 3,
-    title: 'Shoes',
-    price: '3000.0 LKR',
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=200&fit=crop',
-    quantity: 20,
-    description: 'Comfortable running shoes',
-  },
-  {
-    id: 4,
-    title: 'Camera',
-    price: '25000.0 LKR',
-    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=200&fit=crop',
-    quantity: 5,
-    description: 'Professional DSLR camera',
-  },
-  {
-    id: 5,
-    title: 'Backpack',
-    price: '2500.0 LKR',
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=300&h=200&fit=crop',
-    quantity: 15,
-    isNew: true,
-    description: 'Durable travel backpack',
-  },
-  {
-    id: 6,
-    title: 'Sunglasses',
-    price: '1200.0 LKR',
-    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=300&h=200&fit=crop',
-    quantity: 30,
-    description: 'UV protection sunglasses',
-  },
-  {
-    id: 7,
-    title: 'Travel Mug',
-    price: '800.0 LKR',
-    image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=300&h=200&fit=crop',
-    quantity: 25,
-    description: 'Insulated travel mug',
-  },
-  {
-    id: 8,
-    title: 'Hat',
-    price: '750.0 LKR',
-    image: 'https://images.unsplash.com/photo-1521369909029-2afed882baee?w=300&h=200&fit=crop',
-    quantity: 12,
-    isNew: true,
-    description: 'Stylish sun hat',
-  },
-];
 
 const ListingCard: React.FC<{
   item: ListingItem;
@@ -101,16 +33,16 @@ const ListingCard: React.FC<{
 }> = ({ item, onMorePress }) => (
   <View style={styles.card}>
     <View style={styles.imageContainer}>
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
       <View style={styles.quantityBadge}>
-        <Text style={styles.quantityText}>{item.quantity}</Text>
+        <Text style={styles.quantityText}>{item.availableNumber}</Text>
       </View>
       {item.isNew && <View style={styles.newBadge} />}
     </View>
     <View style={styles.cardContent}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
+      <Text style={styles.cardTitle}>{item.itemName}</Text>
       <View style={styles.cardFooter}>
-        <Text style={styles.cardPrice}>{item.price}</Text>
+        <Text style={styles.cardPrice}>{item.price} LKR</Text>
         <TouchableOpacity onPress={onMorePress}>
           <MaterialIcons name="more-horiz" size={24} color="#666" />
         </TouchableOpacity>
@@ -121,30 +53,56 @@ const ListingCard: React.FC<{
 
 const Listings: React.FC = () => {
   const [searchText, setSearchText] = useState('');
-  const [listings, setListings] = useState(initialListings);
-  const [filteredListings, setFilteredListings] = useState(initialListings);
+  const [listings, setListings] = useState<ListingItem[]>([]);
+  const [filteredListings, setFilteredListings] = useState<ListingItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
   const [showChangeItem, setShowChangeItem] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
 
+  const API_BASE_URL = 'http://localhost:8080';
+
+  const fetchListings = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/all`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch items');
+      }
+      const data: ListingItem[] = await response.json();
+      setListings(data);
+      setFilteredListings(data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
   const handleSearch = (text: string) => {
     setSearchText(text);
     const filtered = listings.filter((item) =>
-      item.title.toLowerCase().includes(text.toLowerCase())
+      item.itemName.toLowerCase().includes(text.toLowerCase())
     );
     setFilteredListings(filtered);
   };
 
-  const handleDeleteItem = () => {
+  const handleDeleteItem = async () => {
     if (selectedItem) {
-      const updatedListings = listings.filter(item => item.id !== selectedItem.id);
-      setListings(updatedListings);
-      setFilteredListings(updatedListings.filter(item =>
-        item.title.toLowerCase().includes(searchText.toLowerCase())
-      ));
-      setModalVisible(false);
-      setSelectedItem(null);
+      try {
+        const response = await fetch(`${API_BASE_URL}/shopitems/delete?id=${selectedItem._id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete item');
+        }
+        fetchListings();
+        setModalVisible(false);
+        setSelectedItem(null);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      }
     }
   };
 
@@ -153,16 +111,24 @@ const Listings: React.FC = () => {
     setShowChangeItem(true);
   };
 
-  const handleSaveChanges = (updatedItem: ListingItem) => {
-    const updatedListings = listings.map(item =>
-      item.id === updatedItem.id ? updatedItem : item
-    );
-    setListings(updatedListings);
-    setFilteredListings(updatedListings.filter(item =>
-      item.title.toLowerCase().includes(searchText.toLowerCase())
-    ));
-    setShowChangeItem(false);
-    setSelectedItem(null);
+  const handleSaveChanges = async (updatedItem: ListingItem) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedItem),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update item');
+      }
+      fetchListings();
+      setShowChangeItem(false);
+      setSelectedItem(null);
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
   };
 
   const handleBackFromChange = () => {
@@ -174,20 +140,29 @@ const Listings: React.FC = () => {
     setShowAddItem(true);
   };
 
-  const handleSaveNewItem = (newItem: Omit<ListingItem, 'id'>) => {
-    const newId = Math.max(...listings.map(item => item.id)) + 1;
-    const itemWithId: ListingItem = { ...newItem, id: newId };
-
-    const updatedListings = [...listings, itemWithId];
-    setListings(updatedListings);
-    setFilteredListings(updatedListings.filter(item =>
-      item.title.toLowerCase().includes(searchText.toLowerCase())
-    ));
-    setShowAddItem(false);
+  const handleSaveNewItem = async (newItem: Omit<ListingItem, '_id'>) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newItem),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to add item');
+      }
+      fetchListings();
+      setShowAddItem(false);
+    } catch (error) {
+      console.error('Error adding new item:', error);
+    }
   };
 
   const handleBackFromAdd = () => {
     setShowAddItem(false);
+    fetchListings();
   };
 
   if (showAddItem) {
@@ -213,27 +188,6 @@ const Listings: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header
-      <View style={styles.header}>
-        <View style={styles.menuIcon}>
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-        </View>
-
-        <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
-            <Text style={styles.logoText}>🏝️</Text>
-          </View>
-          <Text style={styles.logoTitle}>TravelSri</Text>
-        </View>
-
-        <TouchableOpacity>
-          <Feather name="bell" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>*/}
-
-      {/* Listings Header */}
       <View style={styles.listingsHeader}>
         <Text style={styles.listingsTitle}>Listings</Text>
         <TouchableOpacity onPress={handleAddItem}>
@@ -241,7 +195,6 @@ const Listings: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Feather name="search" size={20} color="#666" />
@@ -257,11 +210,10 @@ const Listings: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Listings */}
       <ScrollView style={styles.listingsContainer} showsVerticalScrollIndicator={false}>
         {filteredListings.map((item) => (
           <ListingCard
-            key={item.id}
+            key={item._id}
             item={item}
             onMorePress={() => {
               setSelectedItem(item);
@@ -271,7 +223,6 @@ const Listings: React.FC = () => {
         ))}
       </ScrollView>
 
-      {/* Modal */}
       <Modal
         transparent
         animationType="slide"
@@ -280,7 +231,7 @@ const Listings: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{selectedItem?.title}</Text>
+            <Text style={styles.modalTitle}>{selectedItem?.itemName}</Text>
 
             <TouchableOpacity
               style={styles.modalButton}

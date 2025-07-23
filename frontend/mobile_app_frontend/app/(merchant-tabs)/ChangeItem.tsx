@@ -13,10 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
 
+// Corrected type definition to match the backend
 type ListingItem = {
-  id: number;
+  _id: string;
   title: string;
-  price: string;
+  price: number;
   image: string;
   quantity: number;
   isNew?: boolean;
@@ -30,8 +31,14 @@ interface ChangeItemProps {
 }
 
 const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
+  // Add a check to prevent crashing if item is undefined
+  if (!item) {
+    console.error('ChangeItem component received an undefined item prop.');
+    return null;
+  }
+
   const [itemName, setItemName] = useState(item.title);
-  const [price, setPrice] = useState(item.price.replace(' LKR', ''));
+  const [price, setPrice] = useState(item.price.toString()); // Convert number to string for input field
   const [quantity, setQuantity] = useState(item.quantity.toString());
   const [description, setDescription] = useState(item.description || 'This is Description');
   const [imageUri, setImageUri] = useState(item.image);
@@ -55,7 +62,7 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
     const updatedItem: ListingItem = {
       ...item,
       title: itemName.trim(),
-      price: `${price.trim()} LKR`,
+      price: Number(price), // Correctly pass a number
       quantity: Number(quantity),
       description: description.trim(),
       image: imageUri,

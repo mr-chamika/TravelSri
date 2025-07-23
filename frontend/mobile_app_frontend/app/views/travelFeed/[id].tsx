@@ -11,7 +11,7 @@ import BackButton from '../../../components/ui/backButton';
 
 
 
-import Topbar from '../../../components/Topbar';
+import Topbar from '../../../components/topbar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Define a type for a single post object
