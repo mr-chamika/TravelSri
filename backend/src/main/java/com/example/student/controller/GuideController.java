@@ -1,152 +1,273 @@
 package com.example.student.controller;
 
-import com.example.student.model.TGuide;
-import com.example.student.services.IGuideService;
+import com.example.student.model.GuideQuotation;
+import com.example.student.model.Tour;
+import com.example.student.repo.GuideQuotationRepo;
+import com.example.student.repo.GuideRepo;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/guide")
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:8082")
+@RequestMapping("/guide")
 public class GuideController {
+
     @Autowired
-    public IGuideService guideService;
+    private GuideRepo guideRepo;
 
-    // Create new guide
-    @PostMapping("/create")
-    public ResponseEntity<TGuide> createGuide(@RequestBody TGuide TGuide) {
-        try {
-            if (TGuide == null) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-            TGuide createdTGuide = guideService.createGuide(TGuide);
-            return new ResponseEntity<>(createdTGuide, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @Autowired
+    private GuideQuotationRepo quotationRepo;
+
+    @GetMapping("/")
+    public void redirectToSwagger(HttpServletResponse response) throws IOException {
+        response.sendRedirect("/swagger-ui/index.html");
     }
 
-    // Get all guides
-    @GetMapping("/getall")
-    public ResponseEntity<List<TGuide>> getAllGuides() {
-        try {
-            List<TGuide> TGuides = guideService.getAllGuides();
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public List<GuideQuotation> allQuotations() {
+        return quotationRepo.findAll();
     }
 
-    // Get guide by ID
-    @GetMapping("/get/{id}")
-    public ResponseEntity<TGuide> getGuideById(@PathVariable("id") String id) {
+    private String guideid = "TEMP_GUIDE_ID_001";
+
+    @GetMapping("/groupTours")
+    public List<Tour> getUnsubmittedToursForGuide() {
+        List<Tour> allTours = guideRepo.findAll();
+        List<GuideQuotation> guideQuotations = quotationRepo.findByGuideId(guideid);
+
+        System.out.println("All Tours:");
+        allTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+
+        System.out.println("Guide Quotations:");
+        guideQuotations.forEach(q -> System.out.println("Tour ID: " + q.getTourId() + ", Guide ID: " + q.getGuideId()));
+
+        Set<String> quotedTourIds = guideQuotations.stream()
+                .map(q -> String.valueOf(q.getTourId()))
+                .collect(Collectors.toSet());
+
+        System.out.println("Quoted Tour IDs by Guide:");
+        quotedTourIds.forEach(System.out::println);
+
+        List<Tour> unsubmittedTours = allTours.stream()
+                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.get_id())))
+                .collect(Collectors.toList());
+
+        System.out.println("Unsubmitted Tours:");
+        unsubmittedTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+
+        return unsubmittedTours;
+    }
+
+    @PostMapping("/quotation")
+    public Tour addQuotation(@RequestBody Tour guide) {
+        return guideRepo.save(guide);
+    }
+
+    // Fixed endpoint to submit quotation price - now accepts tourId in path and data in body
+    @PutMapping("/submitQuotation/{tourId}")
+    public ResponseEntity<?> submitQuotationPrice(@PathVariable String tourId, @RequestBody QuotationRequest quotationRequest) {
+        System.out.println("Received quotation request for tour ID: " + tourId);
+        System.out.println("Quotation data: " + quotationRequest);
+
         try {
-            if (id == null || id.trim().isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            // Validate input
+            if (quotationRequest.getAmount() == null || quotationRequest.getAmount() <= 0) {
+                System.out.println("Invalid amount: " + quotationRequest.getAmount());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Invalid amount provided");
             }
 
-            Optional<TGuide> guide = guideService.getGuideById(id);
+            // Check if tour exists
+            Optional<Tour> optionalTour = guideRepo.findById(tourId);
+            if (optionalTour.isEmpty()) {
+                System.out.println("Tour not found with ID: " + tourId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Tour not found with id: " + tourId);
+            }
 
-            if (guide.isPresent()) {
-                return new ResponseEntity<>(guide.get(), HttpStatus.OK);
+            Tour tour = optionalTour.get();
+            System.out.println("Found tour: " + tour.getTourTitle());
+
+            // Get guide ID from request body (allows temporary guide IDs)
+            String guideId = quotationRequest.getGuideId();
+
+            // If guide ID is not in the request, try to get it from tour
+            if (guideId == null || guideId.isEmpty()) {
+                guideId = tour.getGuideId();
+            }
+
+            // If still no guide ID, use a default temporary one
+            if (guideId == null || guideId.isEmpty()) {
+                guideId = "TEMP_GUIDE_ID_001";
+                System.out.println("Using default temporary guide ID: " + guideId);
+            }
+
+            System.out.println("Using guide ID: " + guideId);
+
+            // Check if quotation already exists for this tour and guide
+            Optional<GuideQuotation> existingQuotation = quotationRepo.findByTourIdAndGuideId(tourId, guideId);
+
+            GuideQuotation quotation;
+            if (existingQuotation.isPresent()) {
+                // Update existing quotation
+                quotation = existingQuotation.get();
+                quotation.setQuotedAmount(quotationRequest.getAmount());
+                quotation.setQuotationNotes(quotationRequest.getNotes());
+                quotation.setQuotationDate(new java.util.Date());
+                quotation.setUpdatedAt(new java.util.Date());
+                quotation.setStatus("pending"); // Reset status to pending
+                System.out.println("Updating existing quotation");
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                // Create new quotation
+                quotation = new GuideQuotation(tourId, guideId, quotationRequest.getAmount(), quotationRequest.getNotes());
+                System.out.println("Creating new quotation");
             }
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            // Save the quotation to guide_quotation collection
+            GuideQuotation savedQuotation = quotationRepo.save(quotation);
+            System.out.println("Successfully saved quotation with ID: " + savedQuotation.get_id());
+
+            return ResponseEntity.ok(savedQuotation);
+
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            System.err.println("Error submitting quotation: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error submitting quotation: " + e.getMessage());
         }
     }
 
-    // Delete guide
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<HttpStatus> deleteGuide(@PathVariable("id") String id) {
+    // Fixed endpoint to get submitted quotations by guide ID
+    @GetMapping("/submittedQuotation/{guideId}")
+    public ResponseEntity<?> getSubmittedQuotationsByGuide(@PathVariable String guideId) {
+        System.out.println("Fetching submitted quotations for guide ID: " + guideId);
+
         try {
-            boolean isDeleted = guideService.deleteGuide(id);
-            if (isDeleted) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            // Step 1: Fetch all quotations submitted by this guide
+            List<GuideQuotation> quotations = quotationRepo.findByGuideId(guideId);
+
+            if (quotations.isEmpty()) {
+                System.out.println("No submitted quotations for guide ID: " + guideId);
+                return ResponseEntity.ok(Collections.emptyList());
             }
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+
+            // Step 2: Join each quotation with its corresponding tour
+            List<Map<String, Object>> resultList = new ArrayList<>();
+
+            for (GuideQuotation quotation : quotations) {
+                Optional<Tour> tourOptional = guideRepo.findById(quotation.getTourId());
+
+                if (tourOptional.isPresent()) {
+                    Tour tour = tourOptional.get();
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("quotationId", quotation.get_id());
+                    data.put("guideId", quotation.getGuideId());
+                    data.put("tourId", tour.get_id());
+                    data.put("tourDetails", tour);  // Entire Tour model
+                    data.put("quotedAmount", quotation.getQuotedAmount());
+                    data.put("quotationNotes", quotation.getQuotationNotes());
+                    data.put("quotationDate", quotation.getQuotationDate());
+                    data.put("status", quotation.getStatus());
+
+                    resultList.add(data);
+                }
+            }
+
+            System.out.println("Returning " + resultList.size() + " quotations for guide ID: " + guideId);
+            return ResponseEntity.ok(resultList);
+
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            System.err.println("Error fetching submitted quotations: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching submitted quotations");
         }
     }
 
-    // Get guides by base city
-    @GetMapping("/city/{baseCity}")
-    public ResponseEntity<List<TGuide>> getGuidesByBaseCity(@PathVariable("baseCity") String baseCity) {
+    // Get quotations by guide ID
+    @GetMapping("/quotations/{guideId}")
+    public ResponseEntity<List<GuideQuotation>> getQuotationsByGuideId(@PathVariable String guideId) {
         try {
-            List<TGuide> TGuides = guideService.getGuidesByBaseCity(baseCity);
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            List<GuideQuotation> quotations = quotationRepo.findByGuideId(guideId);
+            return ResponseEntity.ok(quotations);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            System.err.println("Error fetching quotations: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get guides by language
-    @GetMapping("/language/{language}")
-    public ResponseEntity<List<TGuide>> getGuidesByLanguage(@PathVariable("language") String language) {
+    // Get quotations by tour ID
+    @GetMapping("/quotations/tour/{tourId}")
+    public ResponseEntity<List<GuideQuotation>> getQuotationsByTourId(@PathVariable String tourId) {
         try {
-            List<TGuide> TGuides = guideService.getGuidesByLanguage(language);
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            List<GuideQuotation> quotations = quotationRepo.findByTourId(tourId);
+            return ResponseEntity.ok(quotations);
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            System.err.println("Error fetching quotations: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get guides by minimum experience
-    @GetMapping("/experience/{minExperience}")
-    public ResponseEntity<List<TGuide>> getGuidesByMinExperience(@PathVariable("minExperience") Integer minExperience) {
-        try {
-            List<TGuide> TGuides = guideService.getGuidesByMinExperience(minExperience);
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    // Inner class for quotation request with toString method
+    public static class QuotationRequest {
+        private Double amount;
+        private String notes;
+        private String guideId; // Added guideId field
+
+        // Constructors
+        public QuotationRequest() {
+        }
+
+        public QuotationRequest(Double amount, String notes) {
+            this.amount = amount;
+            this.notes = notes;
+        }
+
+        public QuotationRequest(Double amount, String notes, String guideId) {
+            this.amount = amount;
+            this.notes = notes;
+            this.guideId = guideId;
+        }
+
+        // Getters and setters
+        public Double getAmount() {
+            return amount;
+        }
+
+        public void setAmount(Double amount) {
+            this.amount = amount;
+        }
+
+        public String getNotes() {
+            return notes;
+        }
+
+        public void setNotes(String notes) {
+            this.notes = notes;
+        }
+
+        public String getGuideId() {
+            return guideId;
+        }
+
+        public void setGuideId(String guideId) {
+            this.guideId = guideId;
+        }
+
+        @Override
+        public String toString() {
+            return "QuotationRequest{" +
+                    "amount=" + amount +
+                    ", notes='" + notes + '\'' +
+                    ", guideId='" + guideId + '\'' +
+                    '}';
         }
     }
-
-    // Get guides by daily rate range
-    @GetMapping("/rate/range")
-    public ResponseEntity<List<TGuide>> getGuidesByDailyRateRange(
-            @RequestParam("min") Double minRate,
-            @RequestParam("max") Double maxRate) {
-        try {
-            List<TGuide> TGuides = guideService.getGuidesByDailyRateRange(minRate, maxRate);
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Get guides by area of service
-    @GetMapping("/area/{area}")
-    public ResponseEntity<List<TGuide>> getGuidesByAreaOfService(@PathVariable("area") String area) {
-        try {
-            List<TGuide> TGuides = guideService.getGuidesByAreaOfService(area);
-            return new ResponseEntity<>(TGuides, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
 }

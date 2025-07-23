@@ -1,5 +1,7 @@
 import { Text, View, Image, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
 
 const ProfilePic = require("../../assets/images/profile-pic.jpeg"); // Add this line
 
@@ -19,10 +21,15 @@ export default function Profile() {
 
     return (
         <ScrollView className="flex-1 bg-[#F2F0EF]">
-            <View className="w-full px-6 pt-5 pb-2 justify-between flex-row ">
-                                <TouchableOpacity className='bg-black py-1 px-3 rounded-lg pb-2' onPress={()=>router.back()}><Text className='text-white text-center'>Back</Text></TouchableOpacity>
-                              
-                            </View>
+            <View className="w-full px-6 pt-5 pb-2 flex-row items-center">
+  <TouchableOpacity
+    className="rounded-full p-2 bg-gray-100"
+    onPress={() => router.back()}
+  >
+    <Ionicons name="arrow-back" size={24} color="#000" />
+  </TouchableOpacity>
+</View>
+
             <View className="px-6 pt-6 pb-24">
                 {/* Profile Picture and Name */}
                 <View className="items-center mb-8">

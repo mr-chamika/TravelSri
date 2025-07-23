@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import BackButton from '../../components/ui/backButton';
 
 import Topbar from '../../components/ui/guideTopbar';
 
@@ -204,6 +205,7 @@ export default function AvailabilityScreen() {
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <BackButton />
         {/* Calendar Section */}
         <View style={styles.calendarSection}>
           <Calendar
@@ -357,6 +359,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
     elevation: 2,
+    marginTop:50
   },
   unavailabilitySection: {
     backgroundColor: '#ffffff',

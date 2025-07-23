@@ -233,7 +233,7 @@ public class TravelerController {
     }
 
     @Autowired
-    private VehicleRepo vehicleRepo;
+    private CVehicleRepo vehicleRepo;
 
     @GetMapping("/driver-get")
     public ResponseEntity<List<Driverdto>> VehiclesAll(String id) {
@@ -247,7 +247,7 @@ public class TravelerController {
     @GetMapping("/driver-data")
     public ResponseEntity<?> VehicleData(String id) {
 
-        Optional<Vehicle> list = vehicleRepo.findById(id);
+        Optional<CVehicle> list = vehicleRepo.findById(id);
 
         if (list.isEmpty()) {
 
@@ -345,7 +345,7 @@ r.get().getMapRoute()
         Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
         Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
         Optional<Guide> guide = repo5.findById(solotrip.get().getGuideId());
-        Optional<Vehicle> vehicle = vehicleRepo.findById(solotrip.get().getCarId());
+        Optional<CVehicle> vehicle = vehicleRepo.findById(solotrip.get().getCarId());
 
         if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
 
@@ -356,7 +356,7 @@ r.get().getMapRoute()
         SoloTrip x = solotrip.get();
         Hotel h = hotel.get();
         Guide g = guide.get();
-        Vehicle v = vehicle.get();
+        CVehicle v = vehicle.get();
 
         Optional<Category> cat = categoryRepo.findById(v.getCatId());
         Category c = cat.get();

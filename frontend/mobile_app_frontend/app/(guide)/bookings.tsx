@@ -5,6 +5,7 @@ import { BookingCalendar } from '../../components/ui/bookingCalender';
 import { RequestDetailsModal } from '../../components/ui/requestDetailModal';
 import { TabNavigation } from '../../components/ui/tabNavigation';
 import Topbar from '../../components/ui/guideTopbar';
+import BackButton from '../../components/ui/backButton';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 
 // Types
@@ -152,8 +153,11 @@ export const GuideBookingScreen = () => {
     <SafeAreaView style={styles.container}>
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
 
+       
+
       <View style={styles.content}>
         <View style={styles.header}>
+          <BackButton />
           <Text style={styles.headerTitle}>Booking Requests</Text>
         </View>
 
@@ -205,6 +209,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#111827',
+    marginLeft:50,
+    marginBottom:10
   },
   loadingContainer: {
     flex: 1,
@@ -215,6 +221,22 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
   },
+   backButtonContainer: {
+    marginRight: 10,
+    // Add custom styling here
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
 });
 
 export default GuideBookingScreen;

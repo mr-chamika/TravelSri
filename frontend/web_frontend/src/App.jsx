@@ -48,16 +48,52 @@ const QuatationRequests = lazy(() => import('./pages/SystemHotelsManagingAdmin/Q
 const CommisionRevenue = lazy(() => import('./pages/SystemHotelsManagingAdmin/CommisionRevenue'));
 const AdminProfile = lazy(() => import('./pages/SystemHotelsManagingAdmin/AdminProfile'));
 
+//guide admin
+
+import GuideDashboard from './pages/guideAdmin/Dashboard';
+import GuidePagelayout from './pages/guideAdmin/Pagelayout';
+import GuideRegistrationRequests from './pages/guideAdmin/RegistrationRequests';
+import BookingManagement from './pages/guideAdmin/BookingManagement';
+import GuideAdminProfile from './pages/guideAdmin/AdminProfile';
+
+//vehicle admin
+import VehicleDashboard from './pages/VehicleAdmin/Dashboard';
+import Pagelayout from './pages/VehicleAdmin/Pagelayout';
+import VehicleRegistrationRequests from './pages/VehicleAdmin/RegistrationRequests';
+import VehicleManagement from './pages/VehicleAdmin/VehicleManagement';
+import VehicleBookingManagement from './pages/VehicleAdmin/BookingManagement';
+import VehicleAdminProfile from './pages/VehicleAdmin/AdminProfile';
+
 function App() {
   return (
     <Router>
       <div className="app">
+
+        {/* Redirect root to dashboard */}
         <Routes>
+          <Route path="/GuideAdmin" element={<GuidePagelayout />}>
+            <Route index element={<GuideDashboard />} />
+            <Route path="RegistrationRequests" element={<GuideRegistrationRequests />} />
+            <Route path="BookingManagement" element={<BookingManagement />} />
+            <Route path="AdminProfile" element={<GuideAdminProfile />} />
+          </Route>
+
+          <Route path="/VehicleAdmin" element={<Pagelayout />}>
+            <Route index element={<VehicleDashboard />} />
+            <Route path="RegistrationRequests" element={<VehicleRegistrationRequests />} />
+            <Route path="VehicleManagement" element={<VehicleManagement />} />
+            <Route path="BookingManagement" element={<VehicleBookingManagement />} />
+            <Route path="AdminProfile" element={<VehicleAdminProfile />} />
+
+          </Route>
           {/* Login route without AdminLayout */}
+
           <Route
+
             path="/"
             element={<Login />}
           />
+          {/* <Route path="/guide" element={<VehicleAdmin/>} /> */}
 
           {/* Admin routes with AdminLayout */}
           <Route
@@ -342,6 +378,6 @@ function App() {
     </Router>
 
   );
-}
+};
 
 export default App;

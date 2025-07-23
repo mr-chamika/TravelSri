@@ -37,6 +37,13 @@ public class Hashingpw {
                                 "/traveler/facis-view",
                                 "/traveler/guides-all",
                                 "/traveler/guides-view",
+                                "/traveler/guides-reviews",
+                                "/guide/groupTours",
+                                "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
+                                "/guide/submittedQuotation/**", // Fixed: Allow all submittedQuotation endpoints
+                                "/vehicle/addVehicle",
+                                "/vehicle/all",
+                                "/vehicle/edit",
                                 "/traveler/items-top",
                                 "/traveler/shops-get",
                                 "/traveler/shop-items",
