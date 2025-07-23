@@ -61,116 +61,116 @@ const BookingsManagement = () => {
         console.error('Failed to fetch bookings:', err);
         setError('Failed to load bookings. Please try again later.');
         // Fallback to sample data if API fails
-        setBookings([
-          {
-            id: 'sample1', // Mock MongoDB ID
-            displayId: 1,  // Display ID
-            guestName: 'Theekshana Thathsara',
-            guestEmail: 'thathsara@example.com',
-            guestPhone: '+9471-555-0101',
-            roomType: 'Deluxe Room',
-            roomNumber: '101',
-            adults: 2,
-            children: 0,
-            checkIn: '2025-06-12',
-            checkOut: '2025-06-15',
-            status: 'Confirmed',
-            paymentStatus: 'Paid',
-            totalAmount: 450,
-            specialRequests: 'Early check-in if possible',
-            paymentMethod: 'Credit Card',
-          },
-          {
-            id: 'sample2', // Mock MongoDB ID
-            displayId: 2,  // Display ID
-            guestName: 'Tharusha Samarawickrama',
-            guestEmail: 'tharusha@example.com',
-            guestPhone: '+9477-585-0162',
-            roomType: 'Suite',
-            roomNumber: '103',
-            adults: 2,
-            children: 1,
-            checkIn: '2025-06-23',
-            checkOut: '2025-06-26',
-            status: 'Pending',
-            paymentStatus: 'Pending',
-            totalAmount: 750,
-            specialRequests: 'High floor with city view',
-            paymentMethod: 'Debit Card',
-          },
-          {
-            id: 'sample3', // Mock MongoDB ID
-            displayId: 3,  // Display ID
-            guestName: 'Hasith Chamika',
-            guestEmail: 'chamika@example.com',
-            guestPhone: '+9478-958-0175',
-            roomType: 'Standard Room',
-            roomNumber: '105',
-            adults: 1,
-            children: 0,
-            checkIn: '2025-06-17',
-            checkOut: '2025-06-19',
-            status: 'Confirmed',
-            paymentStatus: 'Paid',
-            totalAmount: 240,
-            specialRequests: '',
-            paymentMethod: 'Credit Card',
-          },
-          {
-            id: 'sample4', // Mock MongoDB ID
-            displayId: 4,  // Display ID
-            guestName: 'Charitha Sudewa',
-            guestEmail: 'charitha@example.com',
-            guestPhone: '+9475-963-4583',
-            roomType: 'Deluxe Room',
-            roomNumber: '201',
-            adults: 2,
-            children: 2,
-            checkIn: '2025-06-18',
-            checkOut: '2025-06-20',
-            status: 'Cancelled',
-            paymentStatus: 'Refunded',
-            totalAmount: 300,
-            specialRequests: 'Extra rollaway bed',
-            paymentMethod: 'Bank Transfer',
-          },
-          {
-            id: 'sample5', // Mock MongoDB ID
-            displayId: 5,  // Display ID
-            guestName: 'Bimsara Imash',
-            guestEmail: 'bimsara@example.com',
-            guestPhone: '+9472-852-4635',
-            roomType: 'Suite',
-            roomNumber: '202',
-            adults: 2,
-            children: 0,
-            checkIn: '2025-06-20',
-            checkOut: '2025-06-22',
-            status: 'Confirmed',
-            paymentStatus: 'Paid',
-            totalAmount: 1250,
-            specialRequests: 'Late check-out requested',
-            paymentMethod: 'Credit Card',
-          },
-          {
-            id: 'sample6', // Mock MongoDB ID
-            displayId: 6,  // Display ID
-            guestName: 'Teshini Sawidya',
-            guestEmail: 'teshini@example.com',
-            guestPhone: '+9476-450-6395',
-            roomType: 'Standard Room',
-            roomNumber: '203',
-            adults: 2,
-            children: 0,
-            checkIn: '2025-06-20',
-            checkOut: '2025-06-22',
-            status: 'Confirmed',
-            paymentStatus: 'Paid',
-            totalAmount: 1250,
-            specialRequests: 'Late check-out requested',
-            paymentMethod: 'Credit Card',
-          }
-        ]);
+        // setBookings([
+        //   {
+        //     id: 'sample1', // Mock MongoDB ID
+        //     displayId: 1,  // Display ID
+        //     guestName: 'Theekshana Thathsara',
+        //     guestEmail: 'thathsara@example.com',
+        //     guestPhone: '+9471-555-0101',
+        //     roomType: 'Deluxe Room',
+        //     roomNumber: '101',
+        //     adults: 2,
+        //     children: 0,
+        //     checkIn: '2025-06-12',
+        //     checkOut: '2025-06-15',
+        //     status: 'Confirmed',
+        //     paymentStatus: 'Paid',
+        //     totalAmount: 450,
+        //     specialRequests: 'Early check-in if possible',
+        //     paymentMethod: 'Credit Card',
+        //   },
+        //   {
+        //     id: 'sample2', // Mock MongoDB ID
+        //     displayId: 2,  // Display ID
+        //     guestName: 'Tharusha Samarawickrama',
+        //     guestEmail: 'tharusha@example.com',
+        //     guestPhone: '+9477-585-0162',
+        //     roomType: 'Suite',
+        //     roomNumber: '103',
+        //     adults: 2,
+        //     children: 1,
+        //     checkIn: '2025-06-23',
+        //     checkOut: '2025-06-26',
+        //     status: 'Pending',
+        //     paymentStatus: 'Pending',
+        //     totalAmount: 750,
+        //     specialRequests: 'High floor with city view',
+        //     paymentMethod: 'Debit Card',
+        //   },
+        //   {
+        //     id: 'sample3', // Mock MongoDB ID
+        //     displayId: 3,  // Display ID
+        //     guestName: 'Hasith Chamika',
+        //     guestEmail: 'chamika@example.com',
+        //     guestPhone: '+9478-958-0175',
+        //     roomType: 'Standard Room',
+        //     roomNumber: '105',
+        //     adults: 1,
+        //     children: 0,
+        //     checkIn: '2025-06-17',
+        //     checkOut: '2025-06-19',
+        //     status: 'Confirmed',
+        //     paymentStatus: 'Paid',
+        //     totalAmount: 240,
+        //     specialRequests: '',
+        //     paymentMethod: 'Credit Card',
+        //   },
+        //   {
+        //     id: 'sample4', // Mock MongoDB ID
+        //     displayId: 4,  // Display ID
+        //     guestName: 'Charitha Sudewa',
+        //     guestEmail: 'charitha@example.com',
+        //     guestPhone: '+9475-963-4583',
+        //     roomType: 'Deluxe Room',
+        //     roomNumber: '201',
+        //     adults: 2,
+        //     children: 2,
+        //     checkIn: '2025-06-18',
+        //     checkOut: '2025-06-20',
+        //     status: 'Cancelled',
+        //     paymentStatus: 'Refunded',
+        //     totalAmount: 300,
+        //     specialRequests: 'Extra rollaway bed',
+        //     paymentMethod: 'Bank Transfer',
+        //   },
+        //   {
+        //     id: 'sample5', // Mock MongoDB ID
+        //     displayId: 5,  // Display ID
+        //     guestName: 'Bimsara Imash',
+        //     guestEmail: 'bimsara@example.com',
+        //     guestPhone: '+9472-852-4635',
+        //     roomType: 'Suite',
+        //     roomNumber: '202',
+        //     adults: 2,
+        //     children: 0,
+        //     checkIn: '2025-06-20',
+        //     checkOut: '2025-06-22',
+        //     status: 'Confirmed',
+        //     paymentStatus: 'Paid',
+        //     totalAmount: 1250,
+        //     specialRequests: 'Late check-out requested',
+        //     paymentMethod: 'Credit Card',
+        //   },
+        //   {
+        //     id: 'sample6', // Mock MongoDB ID
+        //     displayId: 6,  // Display ID
+        //     guestName: 'Teshini Sawidya',
+        //     guestEmail: 'teshini@example.com',
+        //     guestPhone: '+9476-450-6395',
+        //     roomType: 'Standard Room',
+        //     roomNumber: '203',
+        //     adults: 2,
+        //     children: 0,
+        //     checkIn: '2025-06-20',
+        //     checkOut: '2025-06-22',
+        //     status: 'Confirmed',
+        //     paymentStatus: 'Paid',
+        //     totalAmount: 1250,
+        //     specialRequests: 'Late check-out requested',
+        //     paymentMethod: 'Credit Card',
+        //   }
+        // ]);
         setNextDisplayId(7); // Set next display ID after sample data
       }
       setIsLoading(false);
@@ -441,6 +441,11 @@ const BookingsManagement = () => {
     const booking = bookings.find(b => b.id === id);
     if (!booking) return;
     
+    // Close the view modal if it's open to ensure confirmation dialog is visible
+    if (showViewModal) {
+      setShowViewModal(false);
+    }
+    
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Booking',
@@ -667,22 +672,10 @@ const BookingsManagement = () => {
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-2">
                     <button 
-                      className="bg-yellow-300 hover:bg-yellow-400 text-black px-3 py-1 rounded-md text-xs font-medium"
-                      onClick={() => handleEdit(b)}
-                    >
-                    Edit
-                    </button>
-                    <button 
                       className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs font-medium"
                       onClick={() => handleView(b)}
                     >
-                      View
-                    </button>
-                    <button 
-                      className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-xs font-medium"
-                      onClick={() => handleDelete(b.id)}
-                    >
-                      Delete
+                      View Details
                     </button>
                   </div>
                 </td>
@@ -855,7 +848,7 @@ const BookingsManagement = () => {
                   <div className="flex justify-between">
                     <span>Total Amount:</span>
                     <span className="font-bold text-xl">
-                      ${calculateAmount(newBooking)}
+                      LKR {calculateAmount(newBooking)}
                     </span>
                   </div>
                 </div>
@@ -1123,7 +1116,7 @@ const BookingsManagement = () => {
                     </p>
                   </div>
                   <div className="ml-auto">
-                    <p className="font-bold text-xl">${selectedBooking.totalAmount}</p>
+                    <p className="font-bold text-xl">LKR {selectedBooking.totalAmount}</p>
                     <p className="text-right text-xs text-gray-500">Total Amount</p>
                   </div>
                 </div>
@@ -1206,7 +1199,7 @@ const BookingsManagement = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Total Amount</p>
-                    <p className="font-bold">${selectedBooking.totalAmount}</p>
+                    <p className="font-bold">LKR {selectedBooking.totalAmount}</p>
                   </div>
                 </div>
               </section>
@@ -1221,7 +1214,28 @@ const BookingsManagement = () => {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 border-t flex justify-end">
+            <div className="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
+              {selectedBooking.status === 'Pending' && (
+                <button
+                  onClick={() => {
+                    handleDelete(selectedBooking.id);
+                  }}
+                  className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm font-medium"
+                >
+                  Delete
+                </button>
+              )}
+              {(selectedBooking.status === 'Pending' || selectedBooking.paymentStatus === 'Pending') && (
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    handleEdit(selectedBooking);
+                  }}
+                  className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium"
+                >
+                  Edit
+                </button>
+              )}
               <button
                 onClick={() => setShowViewModal(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm font-medium"
@@ -1244,7 +1258,7 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-grey bg-opacity-80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-grey bg-opacity-80 backdrop-blur-md z-60 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fadeIn">
         <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
         <p className="text-sm text-gray-500 mb-6">{message}</p>
