@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api/hotel-quotation")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class THotelQuotationController {
 
 

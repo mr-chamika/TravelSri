@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/guide")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class GuideController {
     @Autowired
     public IGuideService guideService;

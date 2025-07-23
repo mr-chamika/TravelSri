@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "vehicles")
+@Document(collection = "tvehicles")
 public class TVehicle {
     @Id
     private String id;

@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api/guide-quotation")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class TGuideQuotationController {
 
     @Autowired

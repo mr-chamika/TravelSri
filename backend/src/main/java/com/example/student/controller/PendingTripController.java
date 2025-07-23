@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api/pendingTrip")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class PendingTripController {
     @Autowired
     private IPendingTripservice pendingTripservice; // Fixed typo

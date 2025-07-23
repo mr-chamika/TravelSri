@@ -36,6 +36,8 @@ const NotificationsPage = lazy(() => import('./pages/HotelAdmin/NotificationsPag
 const EarningsPage = lazy(() => import('./pages/HotelAdmin/EarningsPage/EarningsPage'));
 const FeedbackPage = lazy(() => import('./pages/HotelAdmin/FeedbackPage/FeedbackPage'));
 const ProfilePage = lazy(() => import('./pages/HotelAdmin/ProfilePage/ProfilePage'));
+const QuotationsManagement = lazy(() => import('./pages/HotelAdmin/QuotationsManagement/QuotationsManagement'));
+const QuotationsList = lazy(() => import('./pages/HotelAdmin/QuotationsList/QuotationsList'));
 
 // System Hotels Managing Admin components
 const SystemAdmin = lazy(() => import('./pages/SystemHotelsManagingAdmin/SystemAdmin'));
@@ -321,6 +323,16 @@ function App() {
             <Route path="profile" element={
               <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
                 <ProfilePage />
+              </Suspense>
+            } />
+            <Route path="quotations" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <QuotationsManagement />
+              </Suspense>
+            } />
+            <Route path="quotations-list" element={
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <QuotationsList />
               </Suspense>
             } />
           </Route>

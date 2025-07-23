@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("api/quotation")
-@CrossOrigin(origins = "*")
+@CrossOrigin
 public class TVehicleQuotationController {
 
     @Autowired
