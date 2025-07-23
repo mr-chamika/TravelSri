@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Chart as ChartJS,
@@ -8,6 +8,9 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+
+// Import services
+import bookingService from '../../../services/bookingService';
 
 // Import components
 import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
@@ -23,12 +26,68 @@ const HotelDashboard = () => {
   /* ------------------------------------------------------------------ */
   const [chartView, setChartView] = useState('monthly');
   const chartRef = useRef(null);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Fetch bookings data from the real database
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch real data from the AdminHotelBooking collection
+        const data = await bookingService.getAllBookings();
+        
+        // Transform data to match frontend model and add display IDs and created date
+        const transformedData = data.map((booking, index) => ({
+          id: booking.id,
+          displayId: index + 1,
+          guestName: booking.guestName,
+          guestEmail: booking.guestEmail,
+          guestPhone: booking.phone || '',
+          roomType: booking.roomType,
+          roomNumber: String(booking.roomNumber),
+          adults: booking.adults || 1,
+          children: booking.children || 0,
+          checkIn: booking.checkIn,
+          checkOut: booking.checkOut,
+          status: booking.status,
+          paymentStatus: booking.paymentStatus || (booking.status === 'Confirmed' ? 'Paid' : 'Pending'),
+          totalAmount: booking.totalCost || booking.totalAmount,
+          specialRequests: booking.specialRequests || '',
+          paymentMethod: booking.paymentMethod || 'Credit Card',
+          // Use createdAt from API or fallback to booking date
+          createdAt: booking.createdAt || booking.bookingDate || new Date().toISOString(),
+        }));
+        
+        // Sort bookings by creation date (newest first)
+        const sortedBookings = transformedData.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        setBookings(sortedBookings);
+      } catch (err) {
+        console.error('Failed to fetch bookings:', err);
+        setError('Failed to load bookings. Please try again later.');
+        // If the API call fails, set empty bookings array
+        setBookings([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchBookings();
+  }, []);
+
+  // Update dashboard stats based on bookings data
   const dashboardData = {
     availableRooms: 24,
-    totalBookings: 156,
-    earnings: 24890,
-    checkInsToday: 12,
+    totalBookings: bookings.length || 0,
+    earnings: bookings.reduce((total, booking) => total + booking.totalAmount, 0),
+    checkInsToday: bookings.filter(booking => 
+      new Date(booking.checkIn).toDateString() === new Date().toDateString()
+    ).length,
   };
 
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -157,12 +216,18 @@ const HotelDashboard = () => {
   /* 3. RENDER                                                          */
   /* ------------------------------------------------------------------ */
   
-  // Sample booking data
-  const recentBookings = [
-    { name: 'Theekshana Thathsara', room: 'Deluxe Room', in: 'Jun 12, 2025', out: 'Jun 15, 2025', status: 'Confirmed' },
-    { name: 'Tharusha Samarawickrama', room: 'Suite', in: 'Jun 23, 2025', out: 'Jun 26, 2025', status: 'Pending' },
-    { name: 'Hasith Chamika', room: 'Standard', in: 'Oct 17, 2025', out: 'Oct 19, 2025', status: 'Confirmed' },
-  ];
+  // Format bookings data for recent bookings component - show only 4 in descending order by ID
+  const recentBookings = [...bookings]
+    .sort((a, b) => b.displayId - a.displayId) // Sort by displayId in descending order
+    .slice(0, 4) // Take only 4 bookings
+    .map(booking => ({
+      id: booking.id,
+      name: booking.guestName,
+      room: booking.roomType,
+      in: format(new Date(booking.checkIn), 'MMM dd, yyyy'),
+      out: format(new Date(booking.checkOut), 'MMM dd, yyyy'),
+      status: booking.status
+  }));
   
   return (
     <div className="p-6">
