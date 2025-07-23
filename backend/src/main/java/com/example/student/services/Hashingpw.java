@@ -34,8 +34,10 @@ public class Hashingpw {
                                 "/traveler/hotels-all",
                                 "/traveler/hotels-view",
                                 "/traveler/reviews-view",
-                                "/traveler/facis-view"
-                        ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
+                                "/traveler/facis-view",
+                                "/merchant/fetchItem",
+                                "/shopitems/**"
+                        ).permitAll() // <-- Allow public access to /shopitems/** for testing
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
                 .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints

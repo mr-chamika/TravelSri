@@ -32,45 +32,71 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUri, setImageUri] = useState('https://images.unsplash.com/photo-1560472355-a9a6aa22cf26?w=300&h=200&fit=crop');
+  // Image functionality temporarily removed
 
-  const handleSave = () => {
+  const API_BASE_URL = 'http://localhost:8080'; // Change if needed
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || '';
+    }
+    return '';
+  };
+
+  const handleSave = async () => {
+    console.log('Publish button clicked');
     if (!itemName.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
     }
-
     if (!price.trim() || isNaN(Number(price))) {
       Alert.alert('Error', 'Please enter a valid price');
       return;
     }
-
     if (!quantity.trim() || isNaN(Number(quantity)) || Number(quantity) < 0) {
       Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
 
-    const newItem: Omit<ListingItem, 'id'> = {
-      title: itemName.trim(),
-      price: `${price.trim()} LKR`,
-      quantity: Number(quantity),
+    // Prepare backend ShopItem object
+    const shopItem = {
+      itemName: itemName.trim(),
+      price: Number(price),
+      availableNumber: Number(quantity),
       description: description.trim() || 'This is Description',
-      image: imageUri,
-      isNew: true, // Mark new items as "new"
+      // imageUrl removed temporarily
     };
+    console.log('Sending to backend:', shopItem);
 
-    onSave(newItem);
-    Alert.alert('Success', 'Item added successfully!', [
-      {
-        text: 'OK',
-        onPress: () => onBack(),
-      },
-    ]);
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shopItem),
+      });
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Backend error:', errorText);
+        throw new Error(errorText || 'Failed to add item');
+      }
+      Alert.alert('Success', 'Item added to database!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            onBack();
+          },
+        },
+      ]);
+    } catch (err: any) {
+      console.log('Catch error:', err);
+      Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
+    }
   };
 
   const handleImageChange = () => {
-    // In a real app, you would implement image picker here
-    Alert.alert('Image Picker', 'Image picker functionality would be implemented here');
+    // Image picker functionality temporarily removed
   };
 
   return (
@@ -95,15 +121,7 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Image</Text>
-          <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
-            <View style={styles.imagePlaceholder}>
-              <AntDesign name="plus" size={32} color="#666" />
-            </View>
-          </TouchableOpacity>
-        </View>
+      {/* Image Section temporarily removed */}
 
         {/* Item Name */}
         <View style={styles.section}>

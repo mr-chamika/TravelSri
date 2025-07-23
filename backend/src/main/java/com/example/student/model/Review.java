@@ -22,4 +22,7 @@ public class Review {
     private String dp;
     private int stars;
 
+    public Review() {
+        System.out.println("Review model loaded - MongoDB connection should be active.");
+    }
 }

@@ -121,6 +121,7 @@ export default function MerchantTabLayout() {
 
         <Tabs.Screen name="AddItem" options={{ href: null }} />
         <Tabs.Screen name="ChangeItem" options={{ href: null }} />
+        <Tabs.Screen name="ShopItemsListScreen" options={{ href: null }} />
       </Tabs>
     </View>
   );
