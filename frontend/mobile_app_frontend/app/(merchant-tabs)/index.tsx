@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
-import ChangeItem from './ChangeItem';
-import AddItem from './AddItem';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native'; // Import useFocusEffect
 
 // Define the correct ListingItem type to match your MongoDB backend
 type ListingItem = {
-  _id: string;
+  id: string; // Corrected from _id to id
   itemName: string;
   price: number;
   imageUrl: string;
@@ -52,13 +52,12 @@ const ListingCard: React.FC<{
 );
 
 const Listings: React.FC = () => {
+  const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [filteredListings, setFilteredListings] = useState<ListingItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
-  const [showChangeItem, setShowChangeItem] = useState(false);
-  const [showAddItem, setShowAddItem] = useState(false);
 
   const API_BASE_URL = 'http://localhost:8080';
 
@@ -76,9 +75,13 @@ const Listings: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchListings();
-  }, []);
+  // Replace the old useEffect with useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      fetchListings();
+      // This will run when the screen is focused and when it is re-focused
+    }, [])
+  );
 
   const handleSearch = (text: string) => {
     setSearchText(text);
@@ -91,13 +94,13 @@ const Listings: React.FC = () => {
   const handleDeleteItem = async () => {
     if (selectedItem) {
       try {
-        const response = await fetch(`${API_BASE_URL}/shopitems/delete?id=${selectedItem._id}`, {
+        const response = await fetch(`${API_BASE_URL}/shopitems/delete?id=${selectedItem.id}`, {
           method: 'DELETE',
         });
         if (!response.ok) {
           throw new Error('Failed to delete item');
         }
-        fetchListings();
+        fetchListings(); // This will now correctly re-fetch the list
         setModalVisible(false);
         setSelectedItem(null);
       } catch (error) {
@@ -108,81 +111,17 @@ const Listings: React.FC = () => {
 
   const handleChangeItem = () => {
     setModalVisible(false);
-    setShowChangeItem(true);
-  };
-
-  const handleSaveChanges = async (updatedItem: ListingItem) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/shopitems/update`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedItem),
+    if (selectedItem) {
+      router.push({
+        pathname: '/(merchant-tabs)/ChangeItem',
+        params: { id: selectedItem.id },
       });
-      if (!response.ok) {
-        throw new Error('Failed to update item');
-      }
-      fetchListings();
-      setShowChangeItem(false);
-      setSelectedItem(null);
-    } catch (error) {
-      console.error('Error updating item:', error);
     }
-  };
-
-  const handleBackFromChange = () => {
-    setShowChangeItem(false);
-    setSelectedItem(null);
   };
 
   const handleAddItem = () => {
-    setShowAddItem(true);
+    router.push('/(merchant-tabs)/AddItem');
   };
-
-  const handleSaveNewItem = async (newItem: Omit<ListingItem, '_id'>) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newItem),
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to add item');
-      }
-      fetchListings();
-      setShowAddItem(false);
-    } catch (error) {
-      console.error('Error adding new item:', error);
-    }
-  };
-
-  const handleBackFromAdd = () => {
-    setShowAddItem(false);
-    fetchListings();
-  };
-
-  if (showAddItem) {
-    return (
-      <AddItem
-        onSave={handleSaveNewItem}
-        onBack={handleBackFromAdd}
-      />
-    );
-  }
-
-  if (showChangeItem && selectedItem) {
-    return (
-      <ChangeItem
-        item={selectedItem}
-        onSave={handleSaveChanges}
-        onBack={handleBackFromChange}
-      />
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -213,7 +152,7 @@ const Listings: React.FC = () => {
       <ScrollView style={styles.listingsContainer} showsVerticalScrollIndicator={false}>
         {filteredListings.map((item) => (
           <ListingCard
-            key={item._id}
+            key={item.id}
             item={item}
             onMorePress={() => {
               setSelectedItem(item);
@@ -249,14 +188,16 @@ const Listings: React.FC = () => {
 
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: '#ccc' }]}
-              onPress={() => setModalVisible(false)}
+              onPress={() => {
+                setModalVisible(false);
+                setSelectedItem(null);
+              }}
             >
               <Text style={styles.modalButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 };
@@ -386,18 +327,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFD700',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  navItem: {
-    padding: 5,
   },
 });

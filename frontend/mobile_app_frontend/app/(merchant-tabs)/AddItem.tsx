@@ -13,24 +13,23 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router'; // Import useRouter
 
 // Corrected type definition to match the backend
 type ListingItem = {
-  _id: string;
-  title: string;
+  id: string; // Corrected to match the backend model
+  itemName: string;
   price: number;
-  image: string;
-  quantity: number;
+  imageUrl: string;
+  availableNumber: number;
   isNew?: boolean;
   description?: string;
 };
 
-interface AddItemProps {
-  onSave: (newItem: Omit<ListingItem, '_id'>) => void;
-  onBack: () => void;
-}
+// Removed the props interface as navigation will be handled internally
+const AddItem: React.FC = () => {
+  const router = useRouter(); // Use the router hook
 
-const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
   const [itemName, setItemName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -91,14 +90,7 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
         {
           text: 'OK',
           onPress: () => {
-            onBack();
-            onSave({
-              title: itemName,
-              price: Number(price),
-              quantity: Number(quantity),
-              image: imageUri,
-              description: description,
-            });
+            router.back(); // Use router.back() to navigate back
           },
         },
       ]);
@@ -132,7 +124,7 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity>
@@ -211,7 +203,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           <Text style={styles.publishButtonText}>Publish</Text>
         </TouchableOpacity>
       </ScrollView>
-
     </SafeAreaView>
   );
 };

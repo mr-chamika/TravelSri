@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,38 +12,63 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 
-// Corrected type definition to match the backend
+// Define the correct ListingItem type to match the backend
 type ListingItem = {
-  _id: string;
-  title: string;
+  id: string; // Corrected from _id to id
+  itemName: string;
   price: number;
-  image: string;
-  quantity: number;
+  imageUrl: string;
+  availableNumber: number;
   isNew?: boolean;
   description?: string;
 };
 
-interface ChangeItemProps {
-  item: ListingItem;
-  onSave: (updatedItem: ListingItem) => void;
-  onBack: () => void;
-}
+const ChangeItem: React.FC = () => {
+  const router = useRouter();
+  const { id } = useLocalSearchParams();
 
-const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
-  // Add a check to prevent crashing if item is undefined
-  if (!item) {
-    console.error('ChangeItem component received an undefined item prop.');
-    return null;
-  }
+  const [item, setItem] = useState<ListingItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [itemName, setItemName] = useState('');
+  const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageUri, setImageUri] = useState('');
 
-  const [itemName, setItemName] = useState(item.title);
-  const [price, setPrice] = useState(item.price.toString()); // Convert number to string for input field
-  const [quantity, setQuantity] = useState(item.quantity.toString());
-  const [description, setDescription] = useState(item.description || 'This is Description');
-  const [imageUri, setImageUri] = useState(item.image);
+  const API_BASE_URL = 'http://localhost:8080';
 
-  const handleSave = () => {
+  useEffect(() => {
+    const fetchItem = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const response = await fetch(`${API_BASE_URL}/shopitems/view?id=${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch item details');
+        }
+        const data: ListingItem = await response.json();
+        setItem(data);
+        setItemName(data.itemName);
+        setPrice(data.price.toString());
+        setQuantity(data.availableNumber.toString());
+        setDescription(data.description || '');
+        setImageUri(data.imageUrl);
+      } catch (error) {
+        console.error('Error fetching item:', error);
+        Alert.alert('Error', 'Failed to load item details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItem();
+  }, [id]);
+
+  const handleSave = async () => {
     if (!itemName.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
@@ -59,57 +84,110 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
       return;
     }
 
+    if (!item) return;
+
     const updatedItem: ListingItem = {
       ...item,
-      title: itemName.trim(),
-      price: Number(price), // Correctly pass a number
-      quantity: Number(quantity),
+      id: item.id,
+      itemName: itemName.trim(),
+      price: Number(price),
+      availableNumber: Number(quantity),
       description: description.trim(),
-      image: imageUri,
+      imageUrl: imageUri,
     };
 
-    onSave(updatedItem);
-    Alert.alert('Success', 'Item updated successfully!');
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/update?id=${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedItem),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update item');
+      }
+      Alert.alert('Success', 'Item updated successfully!');
+      router.back();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      Alert.alert('Error', 'Failed to update item.');
+    }
   };
 
-  const handleImageChange = () => {
-    // In a real app, you would implement image picker here
-    Alert.alert('Image Picker', 'Image picker functionality would be implemented here');
+  const handleImageChange = async () => {
+    // Request permission to access the media library
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+        return;
+    }
+
+    // Launch the image library to pick a single image
+    const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+    });
+
+    if (!result.canceled) {
+        // This is where you would handle the upload to the backend
+        setImageUri(result.assets[0].uri);
+        // You will need to add a function here to upload the image
+        // to a new backend endpoint and get a new URL
+        // Then, call handleSave to update the rest of the item details
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!item) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text>Item not found.</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
-
         <TouchableOpacity>
           <Feather name="bell" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* Page Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.pageTitle}>Change Item</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image Section */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Image</Text>
           <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
-            <Image source={{ uri: imageUri }} style={styles.itemImage} />
-            <View style={styles.imageOverlay}>
-              <AntDesign name="plus" size={32} color="#fff" />
-            </View>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.itemImage} />
+            ) : (
+              <View style={styles.imageOverlay}>
+                <AntDesign name="plus" size={32} color="#fff" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Item Name */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Item Name</Text>
           <View style={styles.inputContainer}>
@@ -124,7 +202,6 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
           </View>
         </View>
 
-        {/* Price */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Price</Text>
           <TextInput
@@ -137,7 +214,6 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
           />
         </View>
 
-        {/* Quantity */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Quantity</Text>
           <TextInput
@@ -150,7 +226,6 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
           />
         </View>
 
-        {/* Description */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Description</Text>
           <TextInput
@@ -165,12 +240,10 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
           />
         </View>
 
-        {/* Publish Button */}
         <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
           <Text style={styles.publishButtonText}>Publish</Text>
         </TouchableOpacity>
       </ScrollView>
-
     </SafeAreaView>
   );
 };
@@ -178,10 +251,7 @@ const ChangeItem: React.FC<ChangeItemProps> = ({ item, onSave, onBack }) => {
 export default ChangeItem;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,52 +261,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  backButton: {
-    padding: 5,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#FFD700',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  logoText: {
-    fontSize: 16,
-  },
-  logoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  titleContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  section: {
-    marginTop: 20,
-  },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-  },
+  backButton: { padding: 5 },
+  titleContainer: { padding: 20, backgroundColor: '#fff' },
+  pageTitle: { fontSize: 24, fontWeight: 'bold', color: '#000' },
+  content: { flex: 1, paddingHorizontal: 20 },
+  section: { marginTop: 20 },
+  sectionLabel: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 10 },
   imageContainer: {
     height: 150,
     backgroundColor: '#f1f3f4',
@@ -244,11 +274,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  itemImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  itemImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   imageOverlay: {
     position: 'absolute',
     top: 0,
@@ -259,9 +285,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  inputContainer: {
-    position: 'relative',
-  },
+  inputContainer: { position: 'relative' },
   textInput: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -272,10 +296,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e1e5e9',
   },
-  descriptionInput: {
-    height: 100,
-    paddingTop: 12,
-  },
+  descriptionInput: { height: 100, paddingTop: 12 },
   requiredDot: {
     position: 'absolute',
     right: 15,
@@ -294,22 +315,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 20,
   },
-  publishButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFD700',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  navItem: {
-    padding: 5,
-  },
+  publishButtonText: { fontSize: 16, fontWeight: '600', color: '#000' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });
