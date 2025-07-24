@@ -11,6 +11,7 @@ import {
 
 // Import services
 import bookingService from '../../../services/bookingService';
+import roomService from '../../../services/roomService';
 
 // Import components
 import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
@@ -27,11 +28,26 @@ const HotelDashboard = () => {
   const [chartView, setChartView] = useState('monthly');
   const chartRef = useRef(null);
   const [bookings, setBookings] = useState([]);
+  const [availableRoomsCount, setAvailableRoomsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Fetch bookings data from the real database
+  // Fetch available rooms count from the real database
+  const fetchAvailableRooms = async () => {
+    try {
+      const roomsData = await roomService.getRoomsByStatus('Available');
+      setAvailableRoomsCount(roomsData.length);
+    } catch (err) {
+      console.error('Failed to fetch available rooms:', err);
+      setAvailableRoomsCount(0); // Default to 0 if fetch fails
+    }
+  };
+
   useEffect(() => {
+    // Fetch available rooms when component mounts
+    fetchAvailableRooms();
+
     const fetchBookings = async () => {
       setIsLoading(true);
       setError(null);
@@ -53,7 +69,7 @@ const HotelDashboard = () => {
           checkIn: booking.checkIn,
           checkOut: booking.checkOut,
           status: booking.status,
-          paymentStatus: booking.paymentStatus || (booking.status === 'Confirmed' ? 'Paid' : 'Pending'),
+          paymentStatus: booking.paymentStatus || (booking.status === 'Confirmed' ? 'Fully Paid' : 'Partially Paid'),
           totalAmount: booking.totalCost || booking.totalAmount,
           specialRequests: booking.specialRequests || '',
           paymentMethod: booking.paymentMethod || 'Credit Card',
@@ -78,11 +94,17 @@ const HotelDashboard = () => {
     };
     
     fetchBookings();
+    
+    // Refresh available rooms count every minute to keep the dashboard updated
+    const intervalId = setInterval(fetchAvailableRooms, 60000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Update dashboard stats based on bookings data
+  // Update dashboard stats based on bookings data and available rooms data
   const dashboardData = {
-    availableRooms: 24,
+    availableRooms: availableRoomsCount,
     totalBookings: bookings.length || 0,
     earnings: bookings.reduce((total, booking) => total + booking.totalAmount, 0),
     checkInsToday: bookings.filter(booking => 

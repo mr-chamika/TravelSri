@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import bookingService from '../../../services/bookingService';
+import roomService from '../../../services/roomService';
 
 /* ------------------------------------------------------------------ */
 /*  BookingsManagement Component                                      */
@@ -26,9 +27,54 @@ const BookingsManagement = () => {
     onConfirm: () => {}, 
     bookingId: null 
   });
+  // Available rooms data
+  const [availableRoomsByType, setAvailableRoomsByType] = useState({});
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   
-  // Fetch bookings when component mounts
+  // Function to fetch available rooms and group them by type
+  const fetchAvailableRooms = async () => {
+    setIsLoadingRooms(true);
+    try {
+      const availableRooms = await roomService.getRoomsByStatus('Available');
+      
+      // Group rooms by type
+      const roomsByType = {};
+      
+      // If no available rooms, show a message
+      if (!availableRooms || availableRooms.length === 0) {
+        console.log('No available rooms found');
+        showFlashMessage('No available rooms found in the database', 'warning');
+      } else {
+        availableRooms.forEach(room => {
+          if (!roomsByType[room.type]) {
+            roomsByType[room.type] = [];
+          }
+          roomsByType[room.type].push(room.number);
+        });
+        
+        console.log('Available rooms by type:', roomsByType);
+        
+        // Extract unique room types from available rooms
+        const availableRoomTypes = Object.keys(roomsByType);
+        if (availableRoomTypes.length > 0) {
+          setRoomTypes(availableRoomTypes);
+        }
+      }
+      
+      setAvailableRoomsByType(roomsByType);
+    } catch (error) {
+      console.error('Failed to fetch available rooms:', error);
+      showFlashMessage('Failed to load available rooms.', 'error');
+    } finally {
+      setIsLoadingRooms(false);
+    }
+  };
+
+  // Fetch bookings and available rooms when component mounts
+  // Initial data load
   useEffect(() => {
+    fetchAvailableRooms();
+    fetchRoomTypes();
     const fetchBookings = async () => {
       setIsLoading(true);
       setError(null);
@@ -48,7 +94,7 @@ const BookingsManagement = () => {
           checkIn: booking.checkIn,
           checkOut: booking.checkOut,
           status: booking.status,
-          paymentStatus: booking.status === 'Confirmed' ? 'Paid' : 'Pending', // Derive from status
+          paymentStatus: booking.status === 'Confirmed' ? 'Fully Paid' : 'Partially Paid', // Derive from status
           totalAmount: booking.totalCost,
           specialRequests: '',
           paymentMethod: 'Credit Card', // Default value as backend doesn't have this
@@ -75,7 +121,7 @@ const BookingsManagement = () => {
         //     checkIn: '2025-06-12',
         //     checkOut: '2025-06-15',
         //     status: 'Confirmed',
-        //     paymentStatus: 'Paid',
+        //     paymentStatus: 'Fully Paid',
         //     totalAmount: 450,
         //     specialRequests: 'Early check-in if possible',
         //     paymentMethod: 'Credit Card',
@@ -92,8 +138,8 @@ const BookingsManagement = () => {
         //     children: 1,
         //     checkIn: '2025-06-23',
         //     checkOut: '2025-06-26',
-        //     status: 'Pending',
-        //     paymentStatus: 'Pending',
+        //     status: 'Confirmed',
+        //     paymentStatus: 'Partially Paid',
         //     totalAmount: 750,
         //     specialRequests: 'High floor with city view',
         //     paymentMethod: 'Debit Card',
@@ -111,7 +157,7 @@ const BookingsManagement = () => {
         //     checkIn: '2025-06-17',
         //     checkOut: '2025-06-19',
         //     status: 'Confirmed',
-        //     paymentStatus: 'Paid',
+        //     paymentStatus: 'Fully Paid',
         //     totalAmount: 240,
         //     specialRequests: '',
         //     paymentMethod: 'Credit Card',
@@ -147,7 +193,7 @@ const BookingsManagement = () => {
         //     checkIn: '2025-06-20',
         //     checkOut: '2025-06-22',
         //     status: 'Confirmed',
-        //     paymentStatus: 'Paid',
+        //     paymentStatus: 'Fully Paid',
         //     totalAmount: 1250,
         //     specialRequests: 'Late check-out requested',
         //     paymentMethod: 'Credit Card',
@@ -165,7 +211,7 @@ const BookingsManagement = () => {
         //     checkIn: '2025-06-20',
         //     checkOut: '2025-06-22',
         //     status: 'Confirmed',
-        //     paymentStatus: 'Paid',
+        //     paymentStatus: 'Fully Paid',
         //     totalAmount: 1250,
         //     specialRequests: 'Late check-out requested',
         //     paymentMethod: 'Credit Card',
@@ -188,12 +234,19 @@ const BookingsManagement = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  // Refresh available rooms when booking/edit modal is opened
+  useEffect(() => {
+    if (showBookingModal || showEditModal) {
+      fetchAvailableRooms();
+    }
+  }, [showBookingModal, showEditModal]);
+
   // Form state for a new booking
   const blankBooking = {
     guestName: '',
     guestEmail: '',
     guestPhone: '',
-    roomType: 'Deluxe Room',
+    roomType: '', // Start with empty so user must select
     roomNumber: '',
     adults: 1,
     children: 0,
@@ -201,8 +254,8 @@ const BookingsManagement = () => {
     checkOut: '',
     specialRequests: '',
     paymentMethod: 'Credit Card',
-    status: 'Pending',
-    paymentStatus: 'Pending',
+    status: 'Confirmed',
+    paymentStatus: 'Partially Paid',
     totalAmount: 0,
   };
   const [newBooking, setNewBooking] = useState(blankBooking);
@@ -211,21 +264,41 @@ const BookingsManagement = () => {
   /* -------------------------------------------------------------- */
   /* 2. CONSTANTS & HELPERS                                          */
   /* -------------------------------------------------------------- */
-  const roomTypes = [
-    'Standard Room',
-    'Deluxe Room',
-    'Suite',
-    'Family Room',
-    'Executive Suite',
-  ];
+  const [roomTypes, setRoomTypes] = useState([]);
+  const [isLoadingRoomTypes, setIsLoadingRoomTypes] = useState(false);
 
-  const availableRooms = {
-    'Standard Room': ['105', '107', '108', '205'],
-    'Deluxe Room': ['101', '104', '201', '204'],
-    Suite: ['103', '202', '303'],
-    'Family Room': ['106', '206'],
-    'Executive Suite': ['301', '302'],
+  const fetchRoomTypes = async () => {
+    setIsLoadingRoomTypes(true);
+    try {
+      // Get all room types from the database (all types, even if no rooms are available)
+      const allTypes = await roomService.getAllRoomTypes();
+      console.log('Fetched all room types:', allTypes);
+      
+      // Only set the room types if we haven't already populated them from available rooms
+      // This ensures we have all room types for filtering, but prioritize types with available rooms
+      if (roomTypes.length === 0) {
+        setRoomTypes(allTypes);
+      }
+    } catch (error) {
+      console.error('Error fetching room types:', error);
+      showFlashMessage('Failed to fetch room types', 'error');
+      // Fallback to default types if API fails
+      setRoomTypes([
+        'Standard Room',
+        'Deluxe Room',
+        'Suite',
+        'Family Room',
+        'Executive Suite',
+        'Presidential Suite',
+      ]);
+    } finally {
+      setIsLoadingRoomTypes(false);
+    }
   };
+
+  // Real-time available rooms data from the database
+  // If no rooms are fetched yet, provide an empty object that will be populated later
+  // This ensures the component doesn't break if rooms haven't loaded yet
 
   const roomPrices = {
     'Standard Room': 2500,
@@ -296,20 +369,42 @@ const BookingsManagement = () => {
 
   const handleRoomTypeChange = (e) => {
     const selected = e.target.value;
+    console.log('Selected room type:', selected);
+    
+    // Log available rooms for this type
+    const availableRooms = availableRoomsByType[selected] || [];
+    console.log(`Available rooms for ${selected}:`, availableRooms);
+    
     setNewBooking((prev) => ({
       ...prev,
       roomType: selected,
-      roomNumber: '',
+      roomNumber: '', // Reset room number when room type changes
     }));
+    
+    // Show a message if no rooms are available for this type
+    if (selected && (!availableRooms || availableRooms.length === 0)) {
+      showFlashMessage(`No rooms available for ${selected}`, 'warning');
+    }
   };
 
   const handleEditRoomTypeChange = (e) => {
     const selected = e.target.value;
+    console.log('Selected room type for edit:', selected);
+    
+    // Log available rooms for this type
+    const availableRooms = availableRoomsByType[selected] || [];
+    console.log(`Available rooms for ${selected}:`, availableRooms);
+    
     setEditBooking((prev) => ({
       ...prev,
       roomType: selected,
-      roomNumber: '',
+      roomNumber: '', // Reset room number when room type changes
     }));
+    
+    // Show a message if no rooms are available for this type
+    if (selected && (!availableRooms || availableRooms.length === 0)) {
+      showFlashMessage(`No rooms available for ${selected}`, 'warning');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -325,6 +420,31 @@ const BookingsManagement = () => {
       
       // Call the API to create booking
       const createdBooking = await bookingService.createBooking(bookingToAdd);
+      
+      // Update the room status in the inventory based on booking status
+      try {
+        // If booking is confirmed, mark room as Booked, if cancelled mark as Available, otherwise as Reserved
+        let newRoomStatus;
+        if (createdBooking.status === 'Confirmed') {
+          newRoomStatus = 'Booked';
+        } else if (createdBooking.status === 'Cancelled') {
+          newRoomStatus = 'Available';
+        } else {
+          newRoomStatus = 'Reserved';
+        }
+        await roomService.updateRoomStatus(
+          createdBooking.roomType,
+          createdBooking.roomNumber,
+          newRoomStatus
+        );
+        console.log(`Room status updated: ${createdBooking.roomType} ${createdBooking.roomNumber} -> ${newRoomStatus}`);
+        
+        // Refresh available rooms after status update
+        fetchAvailableRooms();
+      } catch (roomError) {
+        console.error('Failed to update room status:', roomError);
+        showFlashMessage('Booking created but room status update failed.', 'warning');
+      }
       
       // Transform the response to match our frontend model
       const frontendBooking = {
@@ -376,6 +496,31 @@ const BookingsManagement = () => {
         // Call API to update booking
         const result = await bookingService.updateBooking(updatedBooking.id, updatedBooking);
         console.log('Update result:', result);
+        
+        // Update the room status in the inventory based on booking status
+        try {
+          // If booking is confirmed, mark room as Booked, if cancelled mark as Available
+          let newRoomStatus;
+          if (updatedBooking.status === 'Confirmed') {
+            newRoomStatus = 'Booked';
+          } else if (updatedBooking.status === 'Cancelled') {
+            newRoomStatus = 'Available';
+          } else {
+            newRoomStatus = 'Reserved';
+          }
+          await roomService.updateRoomStatus(
+            updatedBooking.roomType,
+            updatedBooking.roomNumber,
+            newRoomStatus
+          );
+          console.log(`Room status updated: ${updatedBooking.roomType} ${updatedBooking.roomNumber} -> ${newRoomStatus}`);
+          
+          // Refresh available rooms after status update
+          fetchAvailableRooms();
+        } catch (roomError) {
+          console.error('Failed to update room status:', roomError);
+          showFlashMessage('Booking updated but room status update failed.', 'warning');
+        }
         
         // Show success message
         showFlashMessage('Booking updated successfully!', 'success');
@@ -462,9 +607,33 @@ const BookingsManagement = () => {
       console.log('Deleting booking with ID:', id);
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
       
+      // Find the booking to get room info before deletion
+      const bookingToDelete = bookings.find(b => b.id === id);
+      if (!bookingToDelete) {
+        console.error('Booking not found for deletion:', id);
+        return;
+      }
+      
       try {
         // Call API to delete booking
         await bookingService.deleteBooking(id);
+        
+        // Update room status to Available after booking is deleted
+        try {
+          await roomService.updateRoomStatus(
+            bookingToDelete.roomType,
+            bookingToDelete.roomNumber,
+            'Available'
+          );
+          console.log(`Room status updated: ${bookingToDelete.roomType} ${bookingToDelete.roomNumber} -> Available`);
+          
+          // Refresh available rooms after status update
+          fetchAvailableRooms();
+        } catch (roomError) {
+          console.error('Failed to update room status:', roomError);
+          showFlashMessage('Booking deleted but room status update failed.', 'warning');
+        }
+        
         // Show success message
         showFlashMessage('Booking deleted successfully!', 'success');
       } catch (apiError) {
@@ -475,10 +644,31 @@ const BookingsManagement = () => {
           isOpen: true,
           title: 'Network Error',
           message: 'Could not connect to the server. Do you want to delete this booking from your local view only? It will reappear on refresh.',
-          onConfirm: () => {
+          onConfirm: async () => {
             // Continue with local delete only
             console.log('Proceeding with local delete only');
+            
+            // Find the booking to get room info before removal from state
+            const bookingToDelete = bookings.find(b => b.id === id);
+            
+            // Remove from local state
             setBookings(bookings.filter(booking => booking.id !== id));
+            
+            // Try to update room status even for local deletion
+            if (bookingToDelete) {
+              try {
+                await roomService.updateRoomStatus(
+                  bookingToDelete.roomType,
+                  bookingToDelete.roomNumber,
+                  'Available'
+                );
+                console.log(`Room status updated locally: ${bookingToDelete.roomType} ${bookingToDelete.roomNumber} -> Available`);
+                fetchAvailableRooms();
+              } catch (roomError) {
+                console.error('Failed to update room status during local deletion:', roomError);
+              }
+            }
+            
             showFlashMessage('Booking deleted locally. Changes will not be saved on the server.', 'info');
             setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           },
@@ -564,7 +754,7 @@ const BookingsManagement = () => {
 
       {/* Filter tabs */}
       <div className="flex mb-6">
-        {['All', 'Confirmed', 'Pending', 'Cancelled'].map((status) => (
+        {['All', 'Confirmed', 'Cancelled'].map((status) => (
           <button
             key={status}
             className={`mr-4 px-4 py-2 rounded-md ${
@@ -633,11 +823,6 @@ const BookingsManagement = () => {
                           : ''
                       }
                       ${
-                        b.status === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : ''
-                      }
-                      ${
                         b.status === 'Cancelled'
                           ? 'bg-red-100 text-red-800'
                           : ''
@@ -650,12 +835,12 @@ const BookingsManagement = () => {
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${
-                        b.paymentStatus === 'Paid'
+                        b.paymentStatus === 'Fully Paid'
                           ? 'bg-green-100 text-green-800'
                           : ''
                       }
                       ${
-                        b.paymentStatus === 'Pending'
+                        b.paymentStatus === 'Partially Paid'
                           ? 'bg-yellow-100 text-yellow-800'
                           : ''
                       }
@@ -743,8 +928,20 @@ const BookingsManagement = () => {
                     name="roomType"
                     value={newBooking.roomType}
                     onChange={handleRoomTypeChange}
-                    options={roomTypes}
+                    options={['', ...roomTypes]}
+                    disabled={isLoadingRoomTypes}
+                    displayFn={(val) => {
+                      if (!val) return 'Select a room type';
+                      const availableCount = availableRoomsByType[val]?.length || 0;
+                      return `${val} (${availableCount} available)`;
+                    }}
                   />
+                  {isLoadingRoomTypes && (
+                    <div className="text-xs text-gray-500 mt-1">Loading room types...</div>
+                  )}
+                  {!isLoadingRoomTypes && roomTypes.length === 0 && (
+                    <div className="text-xs text-red-500 mt-1">No room types available</div>
+                  )}
                   <Select
                     label="Room Number*"
                     name="roomNumber"
@@ -752,11 +949,21 @@ const BookingsManagement = () => {
                     onChange={handleInputChange}
                     options={[
                       '',
-                      ...(availableRooms[newBooking.roomType] || []),
+                      ...(availableRoomsByType[newBooking.roomType] || []),
                     ]}
-                    displayFn={(val) => (val ? `Room ${val}` : 'Select')}
+                    displayFn={(val) => (val ? `Room ${val}` : 'Select a room')}
                     required
+                    disabled={isLoadingRooms || !newBooking.roomType}
                   />
+                  {isLoadingRooms && (
+                    <div className="text-xs text-gray-500 mt-1">Loading available rooms...</div>
+                  )}
+                  {!isLoadingRooms && newBooking.roomType && (!availableRoomsByType[newBooking.roomType] || availableRoomsByType[newBooking.roomType].length === 0) && (
+                    <div className="text-xs text-red-500 mt-1">No rooms available for this room type</div>
+                  )}
+                  {!newBooking.roomType && !isLoadingRooms && (
+                    <div className="text-xs text-gray-500 mt-1">Select a room type first</div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -819,7 +1026,7 @@ const BookingsManagement = () => {
                     name="status"
                     value={newBooking.status}
                     onChange={handleInputChange}
-                    options={['Pending', 'Confirmed']}
+                    options={['Confirmed', 'Cancelled']}
                   />
                 </div>
               </section>
@@ -933,8 +1140,20 @@ const BookingsManagement = () => {
                     name="roomType"
                     value={editBooking.roomType}
                     onChange={handleEditRoomTypeChange}
-                    options={roomTypes}
+                    options={['', ...roomTypes]}
+                    disabled={isLoadingRoomTypes}
+                    displayFn={(val) => {
+                      if (!val) return 'Select a room type';
+                      const availableCount = availableRoomsByType[val]?.length || 0;
+                      return `${val} (${availableCount} available)`;
+                    }}
                   />
+                  {isLoadingRoomTypes && (
+                    <div className="text-xs text-gray-500 mt-1">Loading room types...</div>
+                  )}
+                  {!isLoadingRoomTypes && roomTypes.length === 0 && (
+                    <div className="text-xs text-red-500 mt-1">No room types available</div>
+                  )}
                   <Select
                     label="Room Number*"
                     name="roomNumber"
@@ -942,11 +1161,21 @@ const BookingsManagement = () => {
                     onChange={handleEditInputChange}
                     options={[
                       '',
-                      ...(availableRooms[editBooking.roomType] || []),
+                      ...(availableRoomsByType[editBooking.roomType] || []),
                     ]}
-                    displayFn={(val) => (val ? `Room ${val}` : 'Select')}
+                    displayFn={(val) => (val ? `Room ${val}` : 'Select a room')}
                     required
+                    disabled={isLoadingRooms || !editBooking.roomType}
                   />
+                  {isLoadingRooms && (
+                    <div className="text-xs text-gray-500 mt-1">Loading available rooms...</div>
+                  )}
+                  {!isLoadingRooms && editBooking.roomType && (!availableRoomsByType[editBooking.roomType] || availableRoomsByType[editBooking.roomType].length === 0) && (
+                    <div className="text-xs text-red-500 mt-1">No rooms available for this room type</div>
+                  )}
+                  {!editBooking.roomType && !isLoadingRooms && (
+                    <div className="text-xs text-gray-500 mt-1">Select a room type first</div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -1008,14 +1237,14 @@ const BookingsManagement = () => {
                     name="status"
                     value={editBooking.status}
                     onChange={handleEditInputChange}
-                    options={['Pending', 'Confirmed', 'Cancelled']}
+                    options={['Confirmed', 'Cancelled']}
                   />
                   <Select
                     label="Payment Status*"
                     name="paymentStatus"
                     value={editBooking.paymentStatus}
                     onChange={handleEditInputChange}
-                    options={['Pending', 'Paid', 'Refunded']}
+                    options={['Partially Paid', 'Fully Paid', 'Refunded']}
                   />
                 </div>
               </section>
@@ -1091,22 +1320,18 @@ const BookingsManagement = () => {
               {/* Status Banner */}
               <div className={`px-4 py-3 rounded-md ${
                 selectedBooking.status === 'Confirmed' ? 'bg-green-50 border border-green-200' :
-                selectedBooking.status === 'Pending' ? 'bg-yellow-50 border border-yellow-200' : 
                 'bg-red-50 border border-red-200'
               }`}>
                 <div className="flex items-center">
                   <span className={`material-icons mr-2 ${
                     selectedBooking.status === 'Confirmed' ? 'text-green-500' :
-                    selectedBooking.status === 'Pending' ? 'text-yellow-500' : 
                     'text-red-500'
                   }`}>
-                    {selectedBooking.status === 'Confirmed' ? 'check_circle' : 
-                    selectedBooking.status === 'Pending' ? 'pending' : 'cancel'}
+                    {selectedBooking.status === 'Confirmed' ? 'check_circle' : 'cancel'}
                   </span>
                   <div>
                     <p className={`font-medium ${
                       selectedBooking.status === 'Confirmed' ? 'text-green-700' :
-                      selectedBooking.status === 'Pending' ? 'text-yellow-700' : 
                       'text-red-700'
                     }`}>
                       {selectedBooking.status}
@@ -1190,8 +1415,8 @@ const BookingsManagement = () => {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Payment Status</p>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium
-                      ${selectedBooking.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' : ''}
-                      ${selectedBooking.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                      ${selectedBooking.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : ''}
+                      ${selectedBooking.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : ''}
                       ${selectedBooking.paymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' : ''}
                     `}>
                       {selectedBooking.paymentStatus}
@@ -1215,7 +1440,7 @@ const BookingsManagement = () => {
 
             {/* Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
-              {selectedBooking.status === 'Pending' && (
+              {selectedBooking.status !== 'Cancelled' && (
                 <button
                   onClick={() => {
                     handleDelete(selectedBooking.id);
@@ -1225,7 +1450,7 @@ const BookingsManagement = () => {
                   Delete
                 </button>
               )}
-              {(selectedBooking.status === 'Pending' || selectedBooking.paymentStatus === 'Pending') && (
+              {selectedBooking.status !== 'Cancelled' && (
                 <button
                   onClick={() => {
                     setShowViewModal(false);
@@ -1369,11 +1594,11 @@ const Select = ({
       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
       {...rest}
     >
-      {options.map((opt) => (
+      {Array.isArray(options) ? options.map((opt) => (
         <option key={opt} value={opt}>
           {displayFn(opt)}
         </option>
-      ))}
+      )) : <option value="">No options available</option>}
     </select>
   </div>
 );
