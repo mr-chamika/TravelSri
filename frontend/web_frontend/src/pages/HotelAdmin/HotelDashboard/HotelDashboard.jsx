@@ -5,6 +5,9 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
   Tooltip,
   Legend,
 } from 'chart.js';
@@ -16,20 +19,34 @@ import roomService from '../../../services/roomService';
 // Import components
 import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
 import BookingChart from '../../../components/HotelAdminM/HotelAdmin/Dashboard/BookingChart';
+import DetailedBookingChart from '../../../components/HotelAdminM/HotelAdmin/Dashboard/DetailedBookingChart';
 import Calendar from '../../../components/HotelAdminM/HotelAdmin/Dashboard/Calendar';
 import RecentBookings from '../../../components/HotelAdminM/HotelAdmin/Dashboard/RecentBookings';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
 
 const HotelDashboard = () => {
   /* ------------------------------------------------------------------ */
   /* 1. STATE & CONSTANTS                                               */
   /* ------------------------------------------------------------------ */
   const [chartView, setChartView] = useState('monthly');
+  const [detailedChartType, setDetailedChartType] = useState('roomTypes');
   const chartRef = useRef(null);
   const [bookings, setBookings] = useState([]);
   const [availableRoomsCount, setAvailableRoomsCount] = useState(0);
+  const [totalRoomsCount, setTotalRoomsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [roomTypeData, setRoomTypeData] = useState([]);
+  const [stayLengthData, setStayLengthData] = useState([]);
   const [error, setError] = useState(null);
 
   // Fetch bookings data from the real database
@@ -43,16 +60,34 @@ const HotelDashboard = () => {
       setAvailableRoomsCount(0); // Default to 0 if fetch fails
     }
   };
+  
+  // Fetch total room count for occupancy calculations
+  const fetchTotalRooms = async () => {
+    try {
+      const allRooms = await roomService.getAllRooms();
+      setTotalRoomsCount(allRooms.length);
+      return allRooms.length;
+    } catch (err) {
+      console.error('Failed to fetch total rooms:', err);
+      setTotalRoomsCount(0);
+      return 0;
+    }
+  };
 
   useEffect(() => {
     // Fetch available rooms when component mounts
     fetchAvailableRooms();
-
-    const fetchBookings = async () => {
+    
+    // Initialize data fetching
+    const initializeData = async () => {
       setIsLoading(true);
       setError(null);
+      
       try {
-        // Fetch real data from the AdminHotelBooking collection
+        // First get the total room count for occupancy calculations
+        const totalRooms = await fetchTotalRooms();
+        
+        // Then fetch bookings data
         const data = await bookingService.getAllBookings();
         
         // Transform data to match frontend model and add display IDs and created date
@@ -83,17 +118,34 @@ const HotelDashboard = () => {
         );
         
         setBookings(sortedBookings);
+        
+        // Calculate monthly data for charts based on bookings
+        const calculatedMonthlyData = calculateMonthlyData(transformedData, totalRooms);
+        setMonthlyData(calculatedMonthlyData);
+        
+        // Calculate detailed chart data
+        const roomTypes = calculateRoomTypeData(transformedData);
+        const stayLengths = calculateStayLengthData(transformedData);
+        setRoomTypeData(roomTypes);
+        setStayLengthData(stayLengths);
+        
+        console.log('Monthly data calculated:', calculatedMonthlyData);
+        console.log('Room type data:', roomTypes);
+        console.log('Stay length data:', stayLengths);
+        
       } catch (err) {
-        console.error('Failed to fetch bookings:', err);
-        setError('Failed to load bookings. Please try again later.');
-        // If the API call fails, set empty bookings array
+        console.error('Failed to fetch data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+        // If the API call fails, set empty arrays
         setBookings([]);
+        setMonthlyData([]);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchBookings();
+    // Call the initialization function
+    initializeData();
     
     // Refresh available rooms count every minute to keep the dashboard updated
     const intervalId = setInterval(fetchAvailableRooms, 60000);
@@ -160,35 +212,161 @@ const HotelDashboard = () => {
       (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
     );
 
-  // Dummy monthly dataset
-  const [monthlyData] = useState([
-    { month: 'Sep', percentage: 85, bookings: 132, revenue: 19750, occupancyRate: 78 },
-    { month: 'Oct', percentage: 65, bookings: 98,  revenue: 15200, occupancyRate: 62 },
-    { month: 'Nov', percentage: 80, bookings: 121, revenue: 18300, occupancyRate: 75 },
-    { month: 'Dec', percentage: 45, bookings: 78,  revenue: 12450, occupancyRate: 42 },
-    { month: 'Jan', percentage: 95, bookings: 145, revenue: 22800, occupancyRate: 88 },
-    { month: 'Feb', percentage: 85, bookings: 135, revenue: 19850, occupancyRate: 79 },
-    { month: 'Mar', percentage: 85, bookings: 137, revenue: 20200, occupancyRate: 80 },
-    { month: 'Apr', percentage: 85, bookings: 139, revenue: 22450, occupancyRate: 82 },
-    { month: 'May', percentage: 95, bookings: 148, revenue: 24890, occupancyRate: 90 },
-    { month: 'Jun', percentage: 90, bookings: 143, revenue: 23700, occupancyRate: 85 },
-  ]);
+  // State for monthly data calculated from real bookings
+  const [monthlyData, setMonthlyData] = useState([]);
+  
+  // Calculate room type distribution data for the detailed chart
+  const calculateRoomTypeData = (bookingsData) => {
+    // Group bookings by room type
+    const roomTypeCounts = {};
+    
+    bookingsData.forEach(booking => {
+      if (!roomTypeCounts[booking.roomType]) {
+        roomTypeCounts[booking.roomType] = 0;
+      }
+      roomTypeCounts[booking.roomType]++;
+    });
+    
+    // Convert to format needed for charts
+    return {
+      labels: Object.keys(roomTypeCounts),
+      counts: Object.values(roomTypeCounts),
+    };
+  };
+  
+  // Calculate stay length distribution
+  const calculateStayLengthData = (bookingsData) => {
+    // Define stay length categories
+    const stayLengths = {
+      '1 Night': 0,
+      '2-3 Nights': 0,
+      '4-7 Nights': 0,
+      '1-2 Weeks': 0,
+      '2+ Weeks': 0
+    };
+    
+    bookingsData.forEach(booking => {
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+      
+      if (nights === 1) {
+        stayLengths['1 Night']++;
+      } else if (nights <= 3) {
+        stayLengths['2-3 Nights']++;
+      } else if (nights <= 7) {
+        stayLengths['4-7 Nights']++;
+      } else if (nights <= 14) {
+        stayLengths['1-2 Weeks']++;
+      } else {
+        stayLengths['2+ Weeks']++;
+      }
+    });
+    
+    return {
+      labels: Object.keys(stayLengths),
+      counts: Object.values(stayLengths),
+    };
+  };
+
+  // Function to calculate monthly data from bookings
+  const calculateMonthlyData = (bookingsData, totalRoomsCount) => {
+    // Get the last 10 months (including current month)
+    const months = [];
+    const today = new Date();
+    for (let i = 9; i >= 0; i--) {
+      const month = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      months.push({
+        month: format(month, 'MMM'),
+        fullMonth: month,
+        year: month.getFullYear(),
+        monthIndex: month.getMonth()
+      });
+    }
+    
+    // Group bookings by month and calculate metrics
+    return months.map(monthData => {
+      // Filter bookings for this month
+      const monthBookings = bookingsData.filter(booking => {
+        const bookingDate = new Date(booking.checkIn);
+        return bookingDate.getMonth() === monthData.monthIndex && 
+               bookingDate.getFullYear() === monthData.year;
+      });
+      
+      // Calculate revenue for the month
+      const revenue = monthBookings.reduce((total, booking) => total + booking.totalAmount, 0);
+      
+      // Calculate total booking nights for occupancy calculation
+      let totalBookingNights = 0;
+      monthBookings.forEach(booking => {
+        const checkIn = new Date(booking.checkIn);
+        const checkOut = new Date(booking.checkOut);
+        const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+        totalBookingNights += nights;
+      });
+      
+      // Calculate days in the month for occupancy calculation
+      const daysInMonth = new Date(monthData.year, monthData.monthIndex + 1, 0).getDate();
+      
+      // Calculate occupancy rate (booking nights / total possible room nights)
+      // Total possible room nights = total rooms * days in month
+      const occupancyRate = totalRoomsCount > 0 
+        ? Math.round((totalBookingNights / (totalRoomsCount * daysInMonth)) * 100) 
+        : 0;
+      
+      // Calculate booking rate (percentage of rooms booked at least once in the month)
+      // Collect unique rooms booked in this month to avoid double counting
+      const uniqueRoomsBooked = new Set();
+      monthBookings.forEach(booking => {
+        const roomIdentifier = `${booking.roomType}-${booking.roomNumber}`;
+        uniqueRoomsBooked.add(roomIdentifier);
+      });
+      
+      const bookingRate = totalRoomsCount > 0
+        ? Math.round((uniqueRoomsBooked.size / totalRoomsCount) * 100)
+        : 0;
+      
+      return {
+        month: monthData.month,
+        bookings: monthBookings.length,
+        revenue: revenue,
+        occupancyRate: occupancyRate,
+        bookingRate: bookingRate
+      };
+    });
+  };
 
   /* ------------------------------------------------------------------ */
   /* 2. CHART CONFIG                                                    */
   /* ------------------------------------------------------------------ */
   const getChartData = () => {
+    // Handle empty data case
+    if (!monthlyData || monthlyData.length === 0) {
+      return {
+        labels: ['No Data'],
+        datasets: [
+          {
+            label: 'No data available',
+            data: [0],
+            backgroundColor: '#FEFA17',
+            borderRadius: 6,
+            barThickness: 20,
+          },
+        ],
+      };
+    }
+    
     const labels = monthlyData.map((d) => d.month);
     const points =
       chartView === 'monthly'
-        ? monthlyData.map((d) => d.occupancyRate)
+        ? monthlyData.map((d) => d.bookingRate) // Changed from occupancyRate to bookingRate
         : monthlyData.map((d) => d.revenue);
 
     return {
       labels,
       datasets: [
         {
-          label: chartView === 'monthly' ? 'Occupancy Rate (%)' : 'Revenue (LKR)',
+          label: chartView === 'monthly' ? 'Booking Rate (%)' : 'Revenue (LKR)', // Updated label
           data: points,
           backgroundColor: '#FEFA17',
           borderRadius: 6,
@@ -205,16 +383,23 @@ const HotelDashboard = () => {
       tooltip: {
         callbacks: {
           label: ({ dataIndex }) => {
+            // Handle empty data case
+            if (!monthlyData || monthlyData.length === 0 || !monthlyData[dataIndex]) {
+              return ['No data available'];
+            }
+            
             const d = monthlyData[dataIndex];
             return chartView === 'monthly'
               ? [
-                  `Occupancy: ${d.occupancyRate}%`,
+                  `Booking Rate: ${d.bookingRate}%`,
                   `Bookings: ${d.bookings}`,
-                  `Revenue: LKR ${d.revenue}`,
+                  `Occupancy: ${d.occupancyRate}%`,
+                  `Revenue: LKR ${d.revenue.toLocaleString()}`,
                 ]
               : [
-                  `Revenue: LKR ${d.revenue}`,
+                  `Revenue: LKR ${d.revenue.toLocaleString()}`,
                   `Bookings: ${d.bookings}`,
+                  `Booking Rate: ${d.bookingRate}%`,
                   `Occupancy: ${d.occupancyRate}%`,
                 ];
           },
@@ -225,17 +410,120 @@ const HotelDashboard = () => {
       y: {
         beginAtZero: true,
         ticks: {
-          callback:
-            chartView === 'monthly'
-              ? (v) => `${v}%`
-              : (v) => `LKR ${v / 1000}K`,
+          callback: (v) => {
+            if (chartView === 'monthly') {
+              return `${v}%`;
+            } else {
+              // Format revenue in a more readable way based on size
+              if (v >= 1000000) {
+                return `LKR ${(v / 1000000).toFixed(1)}M`;
+              } else if (v >= 1000) {
+                return `LKR ${(v / 1000).toFixed(1)}K`;
+              } else {
+                return `LKR ${v}`;
+              }
+            }
+          }
         },
       },
     },
   });
 
   /* ------------------------------------------------------------------ */
-  /* 3. RENDER                                                          */
+  /* 3. DETAILED CHART CONFIG                                           */
+  /* ------------------------------------------------------------------ */
+  const getDetailedChartData = () => {
+    if (detailedChartType === 'roomTypes') {
+      // For room types we use a doughnut chart
+      return {
+        labels: roomTypeData.labels || [],
+        datasets: [
+          {
+            label: 'Bookings by Room Type',
+            data: roomTypeData.counts || [],
+            backgroundColor: [
+              '#FEFA17', // Yellow (primary)
+              '#FFC107', // Amber
+              '#FF9800', // Orange
+              '#FFD54F', // Light Amber
+              '#FFE082', // Very Light Amber
+              '#FFECB3', // Pale Amber
+            ],
+            borderWidth: 1,
+          },
+        ],
+      };
+    } else {
+      // For stay length we use a bar chart
+      return {
+        labels: stayLengthData.labels || [],
+        datasets: [
+          {
+            label: 'Stay Length Distribution',
+            data: stayLengthData.counts || [],
+            backgroundColor: '#FEFA17',
+            borderRadius: 6,
+            barThickness: 30,
+          },
+        ],
+      };
+    }
+  };
+
+  const getDetailedChartOptions = () => {
+    if (detailedChartType === 'roomTypes') {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+          },
+          tooltip: {
+            callbacks: {
+              label: (tooltipItem) => {
+                const dataset = tooltipItem.dataset;
+                const total = dataset.data.reduce((acc, data) => acc + data, 0);
+                const currentValue = dataset.data[tooltipItem.dataIndex];
+                const percentage = ((currentValue / total) * 100).toFixed(1);
+                return ` ${tooltipItem.label}: ${currentValue} (${percentage}%)`;
+              },
+            },
+          },
+        },
+      };
+    } else {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (tooltipItem) => {
+                const value = tooltipItem.raw;
+                return `Bookings: ${value}`;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Bookings',
+            },
+          },
+        },
+      };
+    }
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* 4. RENDER                                                          */
   /* ------------------------------------------------------------------ */
   
   // Format bookings data for recent bookings component - show only 4 in descending order by ID
@@ -258,16 +546,23 @@ const HotelDashboard = () => {
       {/* ---- Stats Cards ---- */}
       <StatsCards dashboardData={dashboardData} />
 
-      {/* ---- Chart & Calendar ---- */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Chart */}
-        <BookingChart 
-          chartView={chartView}
-          setChartView={setChartView}
-          getChartData={getChartData}
-          getChartOptions={getChartOptions}
-          chartRef={chartRef}
-        />
+      {/* ---- Charts Row 1 ---- */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-4">
+        {/* Booking Trends Chart */}
+        {isLoading ? (
+          <div className="bg-white p-6 rounded-lg shadow-sm flex-1 flex flex-col items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
+            <p className="text-gray-600">Loading chart data...</p>
+          </div>
+        ) : (
+          <BookingChart 
+            chartView={chartView}
+            setChartView={setChartView}
+            getChartData={getChartData}
+            getChartOptions={getChartOptions}
+            chartRef={chartRef}
+          />
+        )}
 
         {/* Calendar */}
         <Calendar 
@@ -276,9 +571,27 @@ const HotelDashboard = () => {
           today={today}
         />
       </div>
+      
+      {/* ---- Charts Row 2 ---- */}
+      <div className="mb-4">
+        {/* Detailed Booking Analysis Chart */}
+        {isLoading ? (
+          <div className="bg-white p-6 rounded-lg shadow-sm flex-1 flex flex-col items-center justify-center h-80">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
+            <p className="text-gray-600">Loading detailed analytics...</p>
+          </div>
+        ) : (
+          <DetailedBookingChart
+            chartType={detailedChartType}
+            getDetailedChartData={getDetailedChartData}
+            getDetailedChartOptions={getDetailedChartOptions}
+            onChartTypeChange={setDetailedChartType}
+          />
+        )}
+      </div>
 
       {/* ---- Recent Bookings Table ---- */}
-      <div className="mt-6">
+      <div>
         <RecentBookings bookings={recentBookings} />
       </div>
     </div>
