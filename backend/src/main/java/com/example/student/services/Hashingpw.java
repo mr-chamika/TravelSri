@@ -122,7 +122,14 @@ public class Hashingpw {
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}"
+                                "/api/admin-hotel-bookings/{id}",
+                                "/auth/**",
+                                "/shopitems/all",
+                                "/shopitems/view",
+                                "/shopitems/search",
+                                "/shopitems/add",
+                                "/shopitems/update",
+                                "/shopitems/delete"
 
 
 
