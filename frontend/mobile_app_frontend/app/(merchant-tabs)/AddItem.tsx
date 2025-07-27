@@ -8,104 +8,148 @@ import {
   StatusBar,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router'; // Import useRouter
 
+// Corrected type definition to match the backend
 type ListingItem = {
-  id: number;
-  title: string;
-  price: string;
-  image: string;
-  quantity: number;
+  id: string; // Corrected to match the backend model
+  itemName: string;
+  price: number;
+  imageUrl: string;
+  availableNumber: number;
   isNew?: boolean;
   description?: string;
 };
 
-interface AddItemProps {
-  onSave: (newItem: Omit<ListingItem, 'id'>) => void;
-  onBack: () => void;
-}
+// Removed the props interface as navigation will be handled internally
+const AddItem: React.FC = () => {
+  const router = useRouter(); // Use the router hook
 
-const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
   const [itemName, setItemName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUri, setImageUri] = useState('https://images.unsplash.com/photo-1560472355-a9a6aa22cf26?w=300&h=200&fit=crop');
+  const [imageUri, setImageUri] = useState('');
 
-  const handleSave = () => {
+  const API_BASE_URL = 'http://localhost:8080';
+  const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token') || '';
+    }
+    return '';
+  };
+
+  const handleSave = async () => {
+    console.log('Publish button clicked');
     if (!itemName.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
     }
-
     if (!price.trim() || isNaN(Number(price))) {
       Alert.alert('Error', 'Please enter a valid price');
       return;
     }
-
     if (!quantity.trim() || isNaN(Number(quantity)) || Number(quantity) < 0) {
       Alert.alert('Error', 'Please enter a valid quantity');
       return;
     }
+    if (!imageUri) {
+      Alert.alert('Error', 'Please add an image for the item');
+      return;
+    }
 
-    const newItem: Omit<ListingItem, 'id'> = {
-      title: itemName.trim(),
-      price: `${price.trim()} LKR`,
-      quantity: Number(quantity),
+    const shopItem = {
+      itemName: itemName.trim(),
+      price: Number(price),
+      availableNumber: Number(quantity),
       description: description.trim() || 'This is Description',
-      image: imageUri,
-      isNew: true, // Mark new items as "new"
+      imageUrl: imageUri,
     };
+    console.log('Sending to backend:', shopItem);
 
-    onSave(newItem);
-    Alert.alert('Success', 'Item added successfully!', [
-      {
-        text: 'OK',
-        onPress: () => onBack(),
-      },
-    ]);
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shopItem),
+      });
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Backend error:', errorText);
+        throw new Error(errorText || 'Failed to add item');
+      }
+      Alert.alert('Success', 'Item added to database!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.back(); // Use router.back() to navigate back
+          },
+        },
+      ]);
+    } catch (err: any) {
+      console.log('Catch error:', err);
+      Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
+    }
   };
 
-  const handleImageChange = () => {
-    // In a real app, you would implement image picker here
-    Alert.alert('Image Picker', 'Image picker functionality would be implemented here');
+  const handleImageChange = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
-
-
         <TouchableOpacity>
           <Feather name="bell" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* Page Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.pageTitle}>Add Item</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image Section */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Image</Text>
           <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
-            <View style={styles.imagePlaceholder}>
-              <AntDesign name="plus" size={32} color="#666" />
-            </View>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.itemImage} />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <AntDesign name="plus" size={32} color="#fff" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Item Name */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Item Name</Text>
           <TextInput
@@ -117,7 +161,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Price */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Price</Text>
           <TextInput
@@ -130,7 +173,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Quantity */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Quantity</Text>
           <TextInput
@@ -143,7 +185,6 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Description */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Description</Text>
           <TextInput
@@ -158,12 +199,10 @@ const AddItem: React.FC<AddItemProps> = ({ onSave, onBack }) => {
           />
         </View>
 
-        {/* Publish Button */}
         <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
           <Text style={styles.publishButtonText}>Publish</Text>
         </TouchableOpacity>
       </ScrollView>
-
     </SafeAreaView>
   );
 };
@@ -237,6 +276,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   imagePlaceholder: {
     alignItems: 'center',
