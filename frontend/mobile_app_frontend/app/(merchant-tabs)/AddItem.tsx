@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router'; // Import useRouter
 // Corrected type definition to match the backend
 type ListingItem = {
   id: string; // Corrected to match the backend model
-  itemName: string;
+  name: string;
   price: number;
   imageUrl: string;
   availableNumber: number;
@@ -30,11 +30,11 @@ type ListingItem = {
 const AddItem: React.FC = () => {
   const router = useRouter(); // Use the router hook
 
-  const [itemName, setItemName] = useState('');
+  const [name, setItemName] = useState('');
   const [price, setPrice] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [count, setQuantity] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUri, setImageUri] = useState('');
+  const [image, setImageUri] = useState('');
 
   const API_BASE_URL = 'http://localhost:8080';
   const getAuthToken = () => {
@@ -45,8 +45,9 @@ const AddItem: React.FC = () => {
   };
 
   const handleSave = async () => {
+
     console.log('Publish button clicked');
-    if (!itemName.trim()) {
+    if (!name.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
     }
@@ -54,21 +55,21 @@ const AddItem: React.FC = () => {
       Alert.alert('Error', 'Please enter a valid price');
       return;
     }
-    if (!quantity.trim() || isNaN(Number(quantity)) || Number(quantity) < 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+    if (!count.trim() || isNaN(Number(count)) || Number(count) < 0) {
+      Alert.alert('Error', 'Please enter a valid count');
       return;
     }
-    if (!imageUri) {
+    if (!image) {
       Alert.alert('Error', 'Please add an image for the item');
       return;
     }
 
     const shopItem = {
-      itemName: itemName.trim(),
+      name: name.trim(),
       price: Number(price),
-      availableNumber: Number(quantity),
+      count: Number(count),
       description: description.trim() || 'This is Description',
-      imageUrl: imageUri,
+      image: image,
     };
     console.log('Sending to backend:', shopItem);
 
@@ -86,6 +87,7 @@ const AddItem: React.FC = () => {
         console.log('Backend error:', errorText);
         throw new Error(errorText || 'Failed to add item');
       }
+
       Alert.alert('Success', 'Item added to database!', [
         {
           text: 'OK',
@@ -112,10 +114,11 @@ const AddItem: React.FC = () => {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      base64: true
     });
 
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+    if (!result.canceled && result.assets[0].base64) {
+      setImageUri(result.assets[0].base64);
     }
   };
 
@@ -140,8 +143,8 @@ const AddItem: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Image</Text>
           <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
-            {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.itemImage} />
+            {image ? (
+              <Image source={{ uri: `data:image/jpeg;base64,${image}` }} style={styles.itemImage} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <AntDesign name="plus" size={32} color="#fff" />
@@ -154,7 +157,7 @@ const AddItem: React.FC = () => {
           <Text style={styles.sectionLabel}>Item Name</Text>
           <TextInput
             style={styles.textInput}
-            value={itemName}
+            value={name}
             onChangeText={setItemName}
             placeholder="Item Name"
             placeholderTextColor="#999"
@@ -177,7 +180,7 @@ const AddItem: React.FC = () => {
           <Text style={styles.sectionLabel}>Quantity</Text>
           <TextInput
             style={styles.textInput}
-            value={quantity}
+            value={count}
             onChangeText={setQuantity}
             placeholder="Quantity"
             placeholderTextColor="#999"

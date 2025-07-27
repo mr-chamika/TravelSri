@@ -11,7 +11,7 @@ import Animated, {
     Easing,
 } from "react-native-reanimated";
 
-import Topbar from "../../components/topbar"
+import Topbar from "../../components/Topbar"
 import Sidebar from "../../components/Sidebar";
 
 const HomeA = require("../../assets/images/home2.png");

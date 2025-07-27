@@ -18,12 +18,12 @@ import { useFocusEffect } from '@react-navigation/native'; // Import useFocusEff
 
 // Define the correct ListingItem type to match your MongoDB backend
 type ListingItem = {
-  id: string; // Corrected from _id to id
-  itemName: string;
+  _id: string; // Corrected from _id to id
+  name: string;
   price: number;
-  imageUrl: string;
-  availableNumber: number;
-  isNew?: boolean;
+  image: string;
+  count: number;
+  /* isNew?: boolean; */
   description?: string;
 };
 
@@ -33,14 +33,15 @@ const ListingCard: React.FC<{
 }> = ({ item, onMorePress }) => (
   <View style={styles.card}>
     <View style={styles.imageContainer}>
-      <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
+      {/* <Image source={{ uri: item.image }} style={styles.cardImage} /> */}
+      <Image source={{ uri: `data:image/jpeg;base64,${item.image}` }} style={styles.cardImage} />
       <View style={styles.quantityBadge}>
-        <Text style={styles.quantityText}>{item.availableNumber}</Text>
+        <Text style={styles.quantityText}>{item.count}</Text>
       </View>
-      {item.isNew && <View style={styles.newBadge} />}
+      {/* {item.isNew && <View style={styles.newBadge} />} */}
     </View>
     <View style={styles.cardContent}>
-      <Text style={styles.cardTitle}>{item.itemName}</Text>
+      <Text style={styles.cardTitle}>{item.name}</Text>
       <View style={styles.cardFooter}>
         <Text style={styles.cardPrice}>{item.price} LKR</Text>
         <TouchableOpacity onPress={onMorePress}>
@@ -86,7 +87,7 @@ const Listings: React.FC = () => {
   const handleSearch = (text: string) => {
     setSearchText(text);
     const filtered = listings.filter((item) =>
-      item.itemName.toLowerCase().includes(text.toLowerCase())
+      item.name?.toLowerCase().includes(text.toLowerCase())
     );
     setFilteredListings(filtered);
   };
@@ -94,7 +95,7 @@ const Listings: React.FC = () => {
   const handleDeleteItem = async () => {
     if (selectedItem) {
       try {
-        const response = await fetch(`${API_BASE_URL}/shopitems/delete?id=${selectedItem.id}`, {
+        const response = await fetch(`${API_BASE_URL}/shopitems/delete?id=${selectedItem._id}`, {
           method: 'DELETE',
         });
         if (!response.ok) {
@@ -114,7 +115,7 @@ const Listings: React.FC = () => {
     if (selectedItem) {
       router.push({
         pathname: '/(merchant-tabs)/ChangeItem',
-        params: { id: selectedItem.id },
+        params: { id: selectedItem._id },
       });
     }
   };
@@ -152,7 +153,7 @@ const Listings: React.FC = () => {
       <ScrollView style={styles.listingsContainer} showsVerticalScrollIndicator={false}>
         {filteredListings.map((item) => (
           <ListingCard
-            key={item.id}
+            key={item._id}
             item={item}
             onMorePress={() => {
               setSelectedItem(item);
@@ -170,7 +171,7 @@ const Listings: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{selectedItem?.itemName}</Text>
+            <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
 
             <TouchableOpacity
               style={styles.modalButton}

@@ -18,11 +18,11 @@ import * as ImagePicker from 'expo-image-picker';
 // Define the correct ListingItem type to match the backend
 type ListingItem = {
   id: string; // Corrected from _id to id
-  itemName: string;
+  name: string;
   price: number;
-  imageUrl: string;
-  availableNumber: number;
-  isNew?: boolean;
+  image: string;
+  count: number;
+  // isNew?: boolean;
   description?: string;
 };
 
@@ -32,7 +32,7 @@ const ChangeItem: React.FC = () => {
 
   const [item, setItem] = useState<ListingItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [itemName, setItemName] = useState('');
+  const [name, setItemName] = useState('');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
@@ -53,11 +53,11 @@ const ChangeItem: React.FC = () => {
         }
         const data: ListingItem = await response.json();
         setItem(data);
-        setItemName(data.itemName);
+        setItemName(data.name);
         setPrice(data.price.toString());
-        setQuantity(data.availableNumber.toString());
+        setQuantity(data.count.toString());
         setDescription(data.description || '');
-        setImageUri(data.imageUrl);
+        setImageUri(data.image);
       } catch (error) {
         console.error('Error fetching item:', error);
         Alert.alert('Error', 'Failed to load item details.');
@@ -69,7 +69,7 @@ const ChangeItem: React.FC = () => {
   }, [id]);
 
   const handleSave = async () => {
-    if (!itemName.trim()) {
+    if (!name.trim()) {
       Alert.alert('Error', 'Item name is required');
       return;
     }
@@ -89,11 +89,11 @@ const ChangeItem: React.FC = () => {
     const updatedItem: ListingItem = {
       ...item,
       id: item.id,
-      itemName: itemName.trim(),
+      name: name.trim(),
       price: Number(price),
-      availableNumber: Number(quantity),
+      count: Number(quantity),
       description: description.trim(),
-      imageUrl: imageUri,
+      image: imageUri,
     };
 
     try {
@@ -120,24 +120,25 @@ const ChangeItem: React.FC = () => {
     // Request permission to access the media library
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
-        return;
+      Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
     }
 
     // Launch the image library to pick a single image
     const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
     });
 
-    if (!result.canceled) {
-        // This is where you would handle the upload to the backend
-        setImageUri(result.assets[0].uri);
-        // You will need to add a function here to upload the image
-        // to a new backend endpoint and get a new URL
-        // Then, call handleSave to update the rest of the item details
+    if (!result.canceled && result.assets[0].base64) {
+      // This is where you would handle the upload to the backend
+      //setImageUri(result.assets[0].uri);
+      setImageUri(result.assets[0].base64);
+      // You will need to add a function here to upload the image
+      // to a new backend endpoint and get a new URL
+      // Then, call handleSave to update the rest of the item details
     }
   };
 
@@ -179,7 +180,7 @@ const ChangeItem: React.FC = () => {
           <Text style={styles.sectionLabel}>Image</Text>
           <TouchableOpacity style={styles.imageContainer} onPress={handleImageChange}>
             {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.itemImage} />
+              <Image source={{ uri: `data:image/jpeg;base64,${imageUri}` }} style={styles.itemImage} />
             ) : (
               <View style={styles.imageOverlay}>
                 <AntDesign name="plus" size={32} color="#fff" />
@@ -193,7 +194,7 @@ const ChangeItem: React.FC = () => {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.textInput}
-              value={itemName}
+              value={name}
               onChangeText={setItemName}
               placeholder="Enter item name"
               placeholderTextColor="#999"
