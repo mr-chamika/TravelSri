@@ -11,7 +11,7 @@ const PendingTripDetails02 = () => {
             icon: "bg-blue-400",
             type: "Hotel",
             name: "Marriot",
-            price: "Rs: 100,000",
+            price: "Rs: 110,000",
             href: "/allhotelquotation",
             action: "Edit",
             iconSvg: (
@@ -25,7 +25,7 @@ const PendingTripDetails02 = () => {
             icon: "bg-purple-400",
             type: "Vehicle",
             name: "AAB-1289",
-            price: "Rs: 80,000",
+            price: "Rs: 100,000",
             href: "/allvehiclequotation",
             action: "Edit",
             iconSvg: (
@@ -63,11 +63,11 @@ const PendingTripDetails02 = () => {
 
     return (
         <div className="flex min-h-screen bg-gray-100">
-           
+
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
-               
+
                 {/* Page Content */}
                 <div className="flex-1 bg-gray-100 p-4 md:p-8">
                     <div className="bg-white rounded-3xl shadow-lg flex flex-col lg:flex-row w-full max-w-6xl mx-auto min-h-[600px] p-6 md:p-8 gap-6">
@@ -99,15 +99,15 @@ const PendingTripDetails02 = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-3">
-                                           
-                                                <button 
-                                                    onClick={() => handleNavigate(item.href)}
-                                                    className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200 cursor-pointer">
-                                                    Edit
-                                                </button>
-                                            
+
+                                            <button
+                                                onClick={() => handleNavigate(item.href)}
+                                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200 cursor-pointer">
+                                                Edit
+                                            </button>
+
                                             <span className="font-medium text-gray-700">
                                                 {item.price}
                                             </span>
@@ -128,20 +128,20 @@ const PendingTripDetails02 = () => {
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-t border-gray-200 pt-3">
                                     <span className="text-gray-700 font-medium">Total Amount</span>
-                                    <span className="font-semibold">Rs: 209,000</span>
+                                    <span className="font-semibold">Rs: 220,000</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 text-lg">
                                     <span className="text-gray-700 font-bold">Amount per person</span>
-                                    <span className="font-bold text-gray-900">Rs: 7,500</span>
+                                    <span className="font-bold text-gray-900">Rs: 8,000</span>
                                 </div>
                             </div>
 
                             {/* Next Button */}
                             <div className="flex justify-center mt-auto">
                                 <a href="/pendingtripdetails03" className="w-full md:w-auto">
-                                    <button 
-                                    onClick={handleNext}
-                                    className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer"
+                                    <button
+                                        onClick={handleNext}
+                                        className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer"
                                     >
                                         Next
                                     </button>

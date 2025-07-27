@@ -19,14 +19,14 @@ const BookingsManagement = () => {
   // Flash message state
   const [flashMessage, setFlashMessage] = useState({ visible: false, message: '', type: 'success' });
   // Confirmation dialog state
-  const [confirmDialog, setConfirmDialog] = useState({ 
-    isOpen: false, 
-    title: '', 
-    message: '', 
-    onConfirm: () => {}, 
-    bookingId: null 
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => { },
+    bookingId: null
   });
-  
+
   // Fetch bookings when component mounts
   useEffect(() => {
     const fetchBookings = async () => {
@@ -53,13 +53,13 @@ const BookingsManagement = () => {
           specialRequests: '',
           paymentMethod: 'Credit Card', // Default value as backend doesn't have this
         }));
-        
+
         // Update the next display ID
         setNextDisplayId(data.length + 1);
         setBookings(transformedData);
       } catch (err) {
         console.error('Failed to fetch bookings:', err);
-        setError('Failed to load bookings. Please try again later.');
+        // setError('Failed to load bookings. Please try again later.');
         // Fallback to sample data if API fails
         setBookings([
           {
@@ -175,7 +175,7 @@ const BookingsManagement = () => {
       }
       setIsLoading(false);
     };
-    
+
     fetchBookings();
   }, []);
 
@@ -266,7 +266,7 @@ const BookingsManagement = () => {
     filterStatus === 'All'
       ? bookings
       : bookings.filter((b) => b.status === filterStatus);
-      
+
   // Sort bookings by displayId (ascending order)
   filteredBookings.sort((a, b) => a.displayId - b.displayId);
 
@@ -275,7 +275,7 @@ const BookingsManagement = () => {
     const nights = calculateNights(booking.checkIn, booking.checkOut);
     return nights * roomPrices[booking.roomType];
   };
-  
+
   // Helper function to show flash messages
   const showFlashMessage = (message, type = 'success') => {
     setFlashMessage({ visible: true, message, type });
@@ -314,7 +314,7 @@ const BookingsManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       // Calculate total amount before sending
       const calculatedAmount = calculateAmount(newBooking);
@@ -322,10 +322,10 @@ const BookingsManagement = () => {
         ...newBooking,
         totalAmount: calculatedAmount
       };
-      
+
       // Call the API to create booking
       const createdBooking = await bookingService.createBooking(bookingToAdd);
-      
+
       // Transform the response to match our frontend model
       const frontendBooking = {
         id: createdBooking.id,
@@ -334,7 +334,7 @@ const BookingsManagement = () => {
         guestEmail: createdBooking.guestEmail,
         guestPhone: newBooking.guestPhone, // Keep frontend data that's not in backend
         roomType: createdBooking.roomType,
-        roomNumber: String(createdBooking.roomNumber), 
+        roomNumber: String(createdBooking.roomNumber),
         adults: newBooking.adults,
         children: newBooking.children,
         checkIn: createdBooking.checkIn,
@@ -345,7 +345,7 @@ const BookingsManagement = () => {
         specialRequests: newBooking.specialRequests,
         paymentMethod: newBooking.paymentMethod
       };
-      
+
       // Update local state
       setBookings((prev) => [...prev, frontendBooking]);
       // Increment the next display ID for future bookings
@@ -369,27 +369,27 @@ const BookingsManagement = () => {
         ...editBooking,
         totalAmount: calculatedAmount,
       };
-      
+
       console.log('Updating booking:', updatedBooking);
-      
+
       try {
         // Call API to update booking
         const result = await bookingService.updateBooking(updatedBooking.id, updatedBooking);
         console.log('Update result:', result);
-        
+
         // Show success message
         showFlashMessage('Booking updated successfully!', 'success');
-        
+
         // Update local state but preserve the displayId
         setBookings((prev) =>
-          prev.map((b) => (b.id === updatedBooking.id ? 
+          prev.map((b) => (b.id === updatedBooking.id ?
             { ...updatedBooking, displayId: b.displayId } : b))
         );
         setShowEditModal(false);
         setEditBooking(null);
       } catch (error) {
         console.error('API error updating booking:', error);
-        
+
         // Use confirmation dialog for network errors
         setConfirmDialog({
           isOpen: true,
@@ -398,15 +398,15 @@ const BookingsManagement = () => {
           onConfirm: () => {
             // Continue with local update even if API call fails
             console.log('Proceeding with local update only');
-            
+
             // Update local state but preserve the displayId
             setBookings((prev) =>
-              prev.map((b) => (b.id === updatedBooking.id ? 
+              prev.map((b) => (b.id === updatedBooking.id ?
                 { ...updatedBooking, displayId: b.displayId } : b))
             );
             setShowEditModal(false);
             setEditBooking(null);
-            
+
             showFlashMessage('Booking updated locally. Changes will not be saved on the server.', 'info');
             setConfirmDialog(prev => ({ ...prev, isOpen: false }));
           },
@@ -434,13 +434,13 @@ const BookingsManagement = () => {
     setSelectedBooking(booking);
     setShowViewModal(true);
   };
-  
+
   // Show confirmation dialog for deletion
   const showDeleteConfirmation = (id) => {
     // Find the booking to show in confirmation message
     const booking = bookings.find(b => b.id === id);
     if (!booking) return;
-    
+
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Booking',
@@ -450,13 +450,13 @@ const BookingsManagement = () => {
       bookingId: id
     });
   };
-  
+
   // Actual deletion function after confirmation
   const confirmDelete = async (id) => {
     try {
       console.log('Deleting booking with ID:', id);
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-      
+
       try {
         // Call API to delete booking
         await bookingService.deleteBooking(id);
@@ -464,7 +464,7 @@ const BookingsManagement = () => {
         showFlashMessage('Booking deleted successfully!', 'success');
       } catch (apiError) {
         console.error('API error deleting booking:', apiError);
-        
+
         // Show another confirmation for local-only deletion
         setConfirmDialog({
           isOpen: true,
@@ -486,10 +486,10 @@ const BookingsManagement = () => {
         });
         return; // Exit here to wait for user confirmation
       }
-      
+
       // Remove from local state
       setBookings(bookings.filter(booking => booking.id !== id));
-      
+
       // Note: We don't need to adjust display IDs of remaining bookings here
       // as they already have assigned display IDs. When we fetch bookings again,
       // new display IDs will be assigned sequentially.
@@ -498,7 +498,7 @@ const BookingsManagement = () => {
       showFlashMessage('Failed to delete booking. Please try again.', 'error');
     }
   };
-  
+
   // Handler for delete button click
   const handleDelete = (id) => {
     showDeleteConfirmation(id);
@@ -511,25 +511,25 @@ const BookingsManagement = () => {
     <div className="p-6">
       {/* Inject animation styles */}
       <style>{styles}</style>
-      
+
       {/* Flash Message */}
       {flashMessage.visible && (
-        <FlashMessage 
+        <FlashMessage
           message={flashMessage.message}
           type={flashMessage.type}
           onClose={() => setFlashMessage({ ...flashMessage, visible: false })}
         />
       )}
-      
+
       {/* Confirmation Dialog */}
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
         onConfirm={() => confirmDialog.onConfirm(confirmDialog.bookingId)}
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
-    
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Bookings Management</h2>
@@ -562,11 +562,10 @@ const BookingsManagement = () => {
         {['All', 'Confirmed', 'Pending', 'Cancelled'].map((status) => (
           <button
             key={status}
-            className={`mr-4 px-4 py-2 rounded-md ${
-              filterStatus === status
-                ? 'bg-yellow-300 text-black'
-                : 'bg-gray-200'
-            }`}
+            className={`mr-4 px-4 py-2 rounded-md ${filterStatus === status
+              ? 'bg-yellow-300 text-black'
+              : 'bg-gray-200'
+              }`}
             onClick={() => setFilterStatus(status)}
             disabled={isLoading}
           >
@@ -622,20 +621,17 @@ const BookingsManagement = () => {
                 <td className="py-3 px-4">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        b.status === 'Confirmed'
-                          ? 'bg-green-100 text-green-800'
-                          : ''
+                      ${b.status === 'Confirmed'
+                        ? 'bg-green-100 text-green-800'
+                        : ''
                       }
-                      ${
-                        b.status === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : ''
+                      ${b.status === 'Pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : ''
                       }
-                      ${
-                        b.status === 'Cancelled'
-                          ? 'bg-red-100 text-red-800'
-                          : ''
+                      ${b.status === 'Cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : ''
                       }`}
                   >
                     {b.status}
@@ -644,20 +640,17 @@ const BookingsManagement = () => {
                 <td className="py-3 px-4">
                   <span
                     className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        b.paymentStatus === 'Paid'
-                          ? 'bg-green-100 text-green-800'
-                          : ''
+                      ${b.paymentStatus === 'Paid'
+                        ? 'bg-green-100 text-green-800'
+                        : ''
                       }
-                      ${
-                        b.paymentStatus === 'Pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : ''
+                      ${b.paymentStatus === 'Pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : ''
                       }
-                      ${
-                        b.paymentStatus === 'Refunded'
-                          ? 'bg-gray-100 text-gray-800'
-                          : ''
+                      ${b.paymentStatus === 'Refunded'
+                        ? 'bg-gray-100 text-gray-800'
+                        : ''
                       }`}
                   >
                     {b.paymentStatus}
@@ -666,19 +659,19 @@ const BookingsManagement = () => {
                 <td className="py-3 px-4">LKR {b.totalAmount}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center space-x-2">
-                    <button 
+                    <button
                       className="bg-yellow-300 hover:bg-yellow-400 text-black px-3 py-1 rounded-md text-xs font-medium"
                       onClick={() => handleEdit(b)}
                     >
-                    Edit
+                      Edit
                     </button>
-                    <button 
+                    <button
                       className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs font-medium"
                       onClick={() => handleView(b)}
                     >
                       View
                     </button>
-                    <button 
+                    <button
                       className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-xs font-medium"
                       onClick={() => handleDelete(b.id)}
                     >
@@ -1096,26 +1089,23 @@ const BookingsManagement = () => {
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Status Banner */}
-              <div className={`px-4 py-3 rounded-md ${
-                selectedBooking.status === 'Confirmed' ? 'bg-green-50 border border-green-200' :
-                selectedBooking.status === 'Pending' ? 'bg-yellow-50 border border-yellow-200' : 
-                'bg-red-50 border border-red-200'
-              }`}>
+              <div className={`px-4 py-3 rounded-md ${selectedBooking.status === 'Confirmed' ? 'bg-green-50 border border-green-200' :
+                selectedBooking.status === 'Pending' ? 'bg-yellow-50 border border-yellow-200' :
+                  'bg-red-50 border border-red-200'
+                }`}>
                 <div className="flex items-center">
-                  <span className={`material-icons mr-2 ${
-                    selectedBooking.status === 'Confirmed' ? 'text-green-500' :
-                    selectedBooking.status === 'Pending' ? 'text-yellow-500' : 
-                    'text-red-500'
-                  }`}>
-                    {selectedBooking.status === 'Confirmed' ? 'check_circle' : 
-                    selectedBooking.status === 'Pending' ? 'pending' : 'cancel'}
+                  <span className={`material-icons mr-2 ${selectedBooking.status === 'Confirmed' ? 'text-green-500' :
+                    selectedBooking.status === 'Pending' ? 'text-yellow-500' :
+                      'text-red-500'
+                    }`}>
+                    {selectedBooking.status === 'Confirmed' ? 'check_circle' :
+                      selectedBooking.status === 'Pending' ? 'pending' : 'cancel'}
                   </span>
                   <div>
-                    <p className={`font-medium ${
-                      selectedBooking.status === 'Confirmed' ? 'text-green-700' :
-                      selectedBooking.status === 'Pending' ? 'text-yellow-700' : 
-                      'text-red-700'
-                    }`}>
+                    <p className={`font-medium ${selectedBooking.status === 'Confirmed' ? 'text-green-700' :
+                      selectedBooking.status === 'Pending' ? 'text-yellow-700' :
+                        'text-red-700'
+                      }`}>
                       {selectedBooking.status}
                     </p>
                     <p className="text-sm text-gray-600">
@@ -1242,27 +1232,27 @@ const BookingsManagement = () => {
 // Confirmation Dialog Component
 const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-grey bg-opacity-80 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 animate-fadeIn">
         <h3 className="text-lg font-medium text-gray-900 mb-2">{title}</h3>
         <p className="text-sm text-gray-500 mb-6">{message}</p>
-        
+
         <div className="flex justify-end space-x-3">
-          <button 
-            onClick={onCancel} 
+          <button
+            onClick={onCancel}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </button>
-          <button 
-            onClick={onConfirm} 
-            className={`px-4 py-2 ${title.includes('Delete') ? 
-              'bg-red-600 hover:bg-red-700' : 
+          <button
+            onClick={onConfirm}
+            className={`px-4 py-2 ${title.includes('Delete') ?
+              'bg-red-600 hover:bg-red-700' :
               'bg-blue-600 hover:bg-blue-700'} text-white rounded-md text-sm font-medium`}
           >
-            {title.includes('Delete') ? 'Delete' : 
+            {title.includes('Delete') ? 'Delete' :
               (title.includes('Network') ? 'Continue Anyway' : 'Confirm')}
           </button>
         </div>
@@ -1275,7 +1265,7 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel }) => {
 const FlashMessage = ({ message, type, onClose }) => {
   // Animation state
   const [animation, setAnimation] = useState('fadeIn');
-  
+
   React.useEffect(() => {
     // Auto dismiss after 5 seconds
     const dismissTimer = setTimeout(() => {
@@ -1284,22 +1274,22 @@ const FlashMessage = ({ message, type, onClose }) => {
       const closeTimer = setTimeout(() => {
         onClose();
       }, 500); // Match this to CSS animation duration
-      
+
       return () => clearTimeout(closeTimer);
     }, 4500); // Show for 4.5 seconds before starting fade out
-    
+
     return () => clearTimeout(dismissTimer);
   }, [onClose]);
-  
-  const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 
-                  type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
-                  'bg-yellow-100 border-yellow-400 text-yellow-700';
-  
-  const icon = type === 'success' ? 'check_circle' : 
-              type === 'error' ? 'error' : 'info';
-  
+
+  const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+    type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+      'bg-yellow-100 border-yellow-400 text-yellow-700';
+
+  const icon = type === 'success' ? 'check_circle' :
+    type === 'error' ? 'error' : 'info';
+
   return (
-    <div 
+    <div
       className={`fixed top-4 right-4 z-50 px-4 py-3 rounded border ${bgColor} shadow-lg flex items-center max-w-md transform`}
       style={{
         animation: `${animation === 'fadeIn' ? 'slideInRight' : 'slideOutRight'} 0.5s ease-in-out`,

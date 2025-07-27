@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-yellow-100 via-white to-yellow-50 p-4">
@@ -57,8 +60,9 @@ const LoginPage = () => {
           </div>
 
           <button
-            type="submit"
+            // type="submit"
             className="w-full py-2 mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded-md transition"
+            onClick={() => navigate('/admin')}
           >
             Sign In
           </button>

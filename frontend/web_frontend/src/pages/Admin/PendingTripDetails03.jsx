@@ -24,7 +24,7 @@ const PendingTripDetails03 = () => {
             action: "view details →"
         },
         {
-            label: "Amount per person - Rs: 7,500/=",
+            label: "Amount per person - Rs: 8,000/=",
             action: ""
         }
     ];
@@ -38,10 +38,10 @@ const PendingTripDetails03 = () => {
 
         console.log("Create & Publish clicked");
         console.log("WhatsApp Link:", whatsappLink);
-        
+
         // Show popup
         setShowPopup(true);
-        
+
         // Hide popup after 2 seconds and navigate
         setTimeout(() => {
             setShowPopup(false);
@@ -54,10 +54,10 @@ const PendingTripDetails03 = () => {
 
     return (
         <div className="flex min-h-screen bg-gray-100">
-           
+
             {/* Main Content */}
             <div className="flex-1 flex flex-col">
-              
+
 
                 {/* Page Content */}
                 <div className="flex-1 bg-gray-100 p-4 md:p-8">
@@ -85,7 +85,7 @@ const PendingTripDetails03 = () => {
                                                 {detail.label}
                                             </span>
                                         </div>
-                                        
+
                                         {detail.action && (
                                             <button className="text-gray-500 text-sm hover:text-gray-700 transition-colors duration-200 sm:ml-auto">
                                                 {detail.action}
@@ -105,11 +105,10 @@ const PendingTripDetails03 = () => {
                                     value={whatsappLink}
                                     onChange={(e) => setWhatsappLink(e.target.value)}
                                     placeholder="https://chat.whatsapp.com/ABC123XyZ456DeFgHiJkLm"
-                                    className={`w-full px-4 py-3 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                                        whatsappLink.trim() 
-                                            ? 'border-gray-300 focus:ring-blue-500 focus:border-transparent text-gray-600' 
+                                    className={`w-full px-4 py-3 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 transition-colors duration-200 ${whatsappLink.trim()
+                                            ? 'border-gray-300 focus:ring-blue-500 focus:border-transparent text-gray-600'
                                             : 'border-red-300 focus:ring-red-500 focus:border-transparent text-gray-600'
-                                    }`}
+                                        }`}
                                     required
                                 />
                                 {!whatsappLink.trim() && (
@@ -119,14 +118,13 @@ const PendingTripDetails03 = () => {
 
                             {/* Create & Publish Button */}
                             <div className="flex justify-center mt-auto">
-                                <button 
+                                <button
                                     onClick={handleCreateAndPublish}
                                     disabled={!isFormValid}
-                                    className={`rounded-lg px-8 py-2 font-semibold transition-colors duration-200 ${
-                                        isFormValid 
-                                            ? 'bg-yellow-300 hover:bg-yellow-400 text-gray-900 cursor-pointer' 
+                                    className={`rounded-lg px-8 py-2 font-semibold transition-colors duration-200 ${isFormValid
+                                            ? 'bg-yellow-300 hover:bg-yellow-400 text-gray-900 cursor-pointer'
                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
+                                        }`}
                                 >
                                     Create & Publish
                                 </button>

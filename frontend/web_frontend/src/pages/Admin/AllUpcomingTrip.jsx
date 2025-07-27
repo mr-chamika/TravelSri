@@ -16,14 +16,10 @@ const upcomingTrips = [
     date: "2025/06/30",
     remaining: 20,
   },
+
   {
-    name: "Anuradhapura Trip",
-    date: "2025/07/02",
-    remaining: 23,
-  },
-  {
-    name: "Polonnaruwa Trip",
-    date: "2025/07/18",
+    name: "Trip to Anuradhapura",
+    date: "2025/08/31",
     remaining: 39,
   },
 ];
@@ -54,7 +50,7 @@ const AllUpcomingTrips = () => {
               </div>
               <a href="/upcomingtripdetails" className="w-full md:w-auto">
                 <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-4 md:px-6 py-1 mt-3 md:mt-0 md:ml-6 transition-colors duration-200 cursor-pointer w-full md:w-auto">
-                    View
+                  View
                 </button>
               </a>
             </div>

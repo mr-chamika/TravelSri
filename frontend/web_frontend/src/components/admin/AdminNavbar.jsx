@@ -277,7 +277,7 @@ export default function AdminNavbar() {
             "&:hover": { bgcolor: "#ffe600" },
           }}
         >
-          Login
+          Logout
         </Button>
       </MenuItem>
     </Menu>
@@ -374,7 +374,7 @@ export default function AdminNavbar() {
                   "&:hover": { bgcolor: "#ffe600", backgroundColor: "#fffde7" },
                 }}
               >
-                Login
+                Logout
               </Button>
             </Box>
           )}
