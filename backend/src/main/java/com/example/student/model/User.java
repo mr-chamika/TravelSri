@@ -16,7 +16,7 @@ public class User {
 
     @Id
     private String _id;
-    private String fullName;
+    private String fullName;// firstname last name
     private String email;
     private String pp;
     private String locpic;
@@ -33,12 +33,12 @@ public class User {
     private String Country;
     private String status;
     private boolean isDarkMode;//theme
-    private boolean isVisible;//account visible for other users or not
+    private boolean isVisible;//account visible for other users or not//remv
     private boolean enterCredentials;//should enter username and pw every time login to app or not
-    private boolean agreeTerms;
-    private Boolean confirmCondition;
-    private String cancellationPolicyPic;
-    private String businessRegPic;
+    private boolean agreeTerms;//remv
+    private Boolean confirmCondition;//remv/
+    private String cancellationPolicyPic;//remv
+    private String businessRegPic;//frnt and rear
     private String endTime;
     private String startTime;
     private String daysPerWeek;

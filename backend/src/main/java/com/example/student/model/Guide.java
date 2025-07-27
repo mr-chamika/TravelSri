@@ -54,5 +54,10 @@ public class Guide {
     private String[] languages;
     private String location;
     private String images[];
+    //guidetype
+    //xp
+    //specializatio(historical)
+    //about me
+    //daily rate
 
 }

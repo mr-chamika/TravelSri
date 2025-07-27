@@ -16,19 +16,21 @@ import java.time.LocalDateTime;
 @Builder
 public class AccommodationQuotation {
     @Id
-    private String id;
+
+    private String id;//private String quotationId;
     private String quoteNumber; // Unique quotation number
-    private String packageName;
-    private String contactPersonName;
-    private String contactEmail;
-    private String contactPhone;
-    private String accommodationType;
+    private String quotationId;//private String pendingTripId;
+    private String packageName;//private String pendingTripName;
+//    private String contactPersonName;
+//    private String contactEmail;
+//    private String contactPhone;
+//    private String accommodationType; hotelId
     private int groupSize;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
-    private int roomsRequired;
+    private int roomsRequired;//must include for all room types
     private String mealPlan;
-    private boolean airportTransfer;
+    private boolean airportTransfer;//rmv
     private double discountOffered;
     private String specialRequirements;
     private double totalAmount;
@@ -37,7 +39,7 @@ public class AccommodationQuotation {
     // Additional fields for status tracking
     private String status = "Pending"; // Default status: Pending, Approved, Rejected, Under Review
     private String adminNotes; // Notes from admin when approving/rejecting
-    private String roomAvailability = "Available"; // Available, Limited, Unavailable
+    private String roomAvailability = "Available"; // Available, Limited, Unavailable//rmv
     
     // Audit fields
     @CreatedDate

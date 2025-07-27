@@ -18,30 +18,39 @@ public class Vehicle {
     private String _id;
     private String additionalComments;
     private String driverDateOfBirth;
-    private String driverMobileNumber;
+    private String driverMobileNumber;//phone
     private String drivingLicenseNumber;
-    private String emergencyContact;
+    private String emergencyContact;//remv
     private String firstName;
     private String gender;
-    private String age;
+    private String age;//driverAge
     private String location;
-    private String driverPhoto;
+    private String driverPhoto;//image
     private String insuranceDocument;
+    //private String insuranceDocument2;
     private String languagesSpoken;
     private String lastName;
     private String licenseExpiryDate;
     private String licensePhoto;
+    //private String licensePhoto2;
     private String licenseYearsOfExperience;
-    private String memberPlate;
     private String nicNumber;
-    private String numberPlate;
-    private String vehicleImage;
+    private String numberPlate;//vehicleNumber
+    private String vehicleImage;// images
     private String vehicleLicenseCopy;
     private String vehicleModel;
     private String ac;
     private String fuelType;
-    private String vehicleOwner;
+    private String vehicleOwner;//id
     private String vehicleSeatingCapacity;
-    private String vehicleType;
+    private String vehicleType;//catId
     private String vehicleYearOfManufacture;
-}
+}//auto or manual
+//daily(chek bx,input)
+//perkm(chek bx,input)boolean
+//private String location;
+//private String verified;
+//nic1
+//nic2
+//private int stars;
+

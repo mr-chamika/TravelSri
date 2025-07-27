@@ -1,16 +1,11 @@
 package com.example.student.controller;
 
-import com.example.student.model.ShopItem;
+import com.example.student.model.Item;
 import com.example.student.services.ShopItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,15 +19,15 @@ public class ShopItemController {
 
     // Endpoint to get all shop items
     @GetMapping("/all")
-    public ResponseEntity<List<ShopItem>> getAllShopItems() {
-        List<ShopItem> shopItems = service.getAllShopItems();
+    public ResponseEntity<List<Item>> getAllShopItems() {
+        List<Item> shopItems = service.getAllShopItems();
         return ResponseEntity.ok(shopItems);
     }
 
     // Endpoint to get a single shop item by ID
     @GetMapping("/view")
-    public ResponseEntity<ShopItem> getShopItemById(@RequestParam String id) {
-        Optional<ShopItem> shopItem = service.getShopItemById(id);
+    public ResponseEntity<Item> getShopItemById(@RequestParam String id) {
+        Optional<Item> shopItem = service.getShopItemById(id);
         if (shopItem.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -41,19 +36,20 @@ public class ShopItemController {
 
     // Endpoint to add a new shop item (image upload temporarily removed)
     @PostMapping("/add")
-    public ResponseEntity<ShopItem> addShopItem(@RequestBody ShopItem shopItem) {
-        ShopItem savedShopItem = service.saveShopItem(shopItem);
+    public ResponseEntity<Item> addShopItem(@RequestBody Item shopItem) {
+        Item savedShopItem = service.saveShopItem(shopItem);
         return ResponseEntity.ok(savedShopItem);
     }
 
     // Endpoint to update an existing shop item (image upload temporarily removed)
     @PutMapping("/update")
-    public ResponseEntity<ShopItem> updateShopItem(@RequestParam String id, @RequestBody ShopItem shopItem) {
+    public ResponseEntity<Item> updateShopItem(@RequestParam String id, @RequestBody Item shopItem) {
         if (service.getShopItemById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        shopItem.setId(id);
-        ShopItem updatedShopItem = service.saveShopItem(shopItem);
+        //shopItem.setId(id);
+        shopItem.setShopId(id);
+        Item updatedShopItem = service.saveShopItem(shopItem);
         return ResponseEntity.ok(updatedShopItem);
     }
 
@@ -69,8 +65,8 @@ public class ShopItemController {
 
     // Search endpoint for itemName (case-insensitive)
     @GetMapping("/search")
-    public ResponseEntity<List<ShopItem>> searchShopItems(@RequestParam String name) {
-        List<ShopItem> results = service.searchShopItemsByName(name);
+    public ResponseEntity<List<Item>> searchShopItems(@RequestParam String name) {
+        List<Item> results = service.searchShopItemsByName(name);
         return ResponseEntity.ok(results);
     }
 }

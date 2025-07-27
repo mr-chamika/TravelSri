@@ -15,13 +15,13 @@ import java.util.Date;
 public class GuideQuotation {
     @Id
     private String _id;
-    private String tourId;
+    private String tourId;//pendingTripId
     private String guideId;
     private Double quotedAmount;
     private String quotationNotes;
     private Date quotationDate;
     private String status; // "pending", "accepted", "rejected", "expired"
-    private Date validUntil;
+    private Date validUntil;//remv
     private Date createdAt;
     private Date updatedAt;
 

@@ -25,7 +25,7 @@ public class CVehicle {
     private List<String> images;
     private String location;
     private String phone;
-    private int price;
+    private int price;//rmv
     private int stars;
     private String vehicleNumber;
 
