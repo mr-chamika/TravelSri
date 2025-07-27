@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document(collection = "vehicles")
+@Document(collection = "vehicle_renter")
 public class Vehicle {
 
     @Id

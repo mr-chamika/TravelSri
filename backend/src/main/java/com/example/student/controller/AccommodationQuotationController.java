@@ -10,7 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quotations")
-@CrossOrigin(origins = "*") // Enable CORS for development
+@CrossOrigin// Enable CORS for development
 public class AccommodationQuotationController {
 
     @Autowired
