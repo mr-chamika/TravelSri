@@ -1,11 +1,11 @@
 import { Text, TouchableOpacity, View, Animated } from 'react-native' // 1. Import Animated
-import { cssInterop } from 'nativewind'
-import { Image } from 'expo-image'
 import { useState, useRef, useEffect } from 'react'; // 2. Import useRef
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'expo-router';
 import { keys } from 'lodash';
+import { cssInterop } from 'nativewind'
+import { Image } from 'expo-image'
 
 cssInterop(Image, { className: "style" });
 
@@ -105,12 +105,23 @@ export default function Profile() {
 
     const clear = async () => {
 
-        const keys = await AsyncStorage.getAllKeys();
         try {
 
-            await AsyncStorage.multiRemove(keys);
+            const allKeys = await AsyncStorage.getAllKeys();
+
+            const keysToRemove = allKeys.filter(
+                (key) => key !== 'hasViewedOnboarding'
+            );
+
+            if (keysToRemove.length > 0) {
+                await AsyncStorage.multiRemove(keysToRemove);
+                //alert('Storage cleared successfully (except onboarding status).');
+            } else {
+                alert('No keys to clear.');
+            }
+
         } catch (e) {
-            alert(`Error clearing AsyncStorage:, ${e}`);
+            alert(`Error clearing AsyncStorage: ${e}`);
         }
     }
     const loggingout = async () => {

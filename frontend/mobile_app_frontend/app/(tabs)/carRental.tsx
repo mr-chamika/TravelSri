@@ -1,11 +1,11 @@
 import { Text, View, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
 import { Calendar } from 'react-native-calendars';
-import { cssInterop } from 'nativewind';
-import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SimpleTimePicker from '../../components/TimeSelector';
+import { cssInterop } from 'nativewind';
+import { Image } from 'expo-image';
 
 
 cssInterop(Image, { className: "style" });

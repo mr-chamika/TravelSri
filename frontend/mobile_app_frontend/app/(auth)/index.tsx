@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import * as SecureStore from 'expo-secure-store';
 import { AuthScreenProps } from '../../lib/navigation.types';
+import { cssInterop } from 'nativewind'
+import { Image } from 'expo-image'
+
+cssInterop(Image, { className: "style" });
+
+
 const logo = require('../../assets/images/logo.png');
 
 const windowHeight = Dimensions.get('window').height;
@@ -49,19 +55,19 @@ export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
             return;
         }
 
-        if (email == 'merchant@gmail.com' && password == '1234') {
+        if (email == 'merchant@gmail.com' && password == '12345678') {
 
             return router.replace('/(merchant-tabs)')
 
-        } else if (email == 'traveler@gmail.com' && password == '1234') {
+        } else if (email == 'traveler@gmail.com' && password == '12345678') {
 
             return router.replace('/(tabs)')
 
-        } else if (email == 'vehicle@gmail.com' && password == '1234') {
+        } else if (email == 'vehicle@gmail.com' && password == '12345678') {
 
             return router.replace('/(vehicle)')
 
-        } else if (email == 'guide@gmail.com' && password == '1234') {
+        } else if (email == 'guide@gmail.com' && password == '12345678') {
 
             return router.replace('/(guide)')
 
@@ -88,8 +94,16 @@ export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
                     //await SecureStore.setItemAsync("token", data.token)
                     await AsyncStorage.setItem("token", data.token)
+                    const x = await AsyncStorage.getItem('hasViewedOnboarding');
+                    if (x == 'true') {
 
-                    return router.replace('/(tabs)')
+                        return router.replace('/(tabs)')
+
+                    } else {
+
+                        return router.replace('/GetStarted')
+
+                    }
                 } else {
 
                     alert('No token')

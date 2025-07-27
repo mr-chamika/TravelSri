@@ -190,7 +190,7 @@ export default function MultiStepForm() {
   // const requestPermissions = async () => {
   //   const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
   //   const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
   //   if (cameraStatus !== 'granted' || mediaLibraryStatus !== 'granted') {
   //     Alert.alert(
   //       'Permissions Required',
@@ -271,45 +271,45 @@ export default function MultiStepForm() {
    */
 
   const handleImageUpload = async (field: keyof FormData) => {
-  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (status !== 'granted') {
-    Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to make this work!');
-    return;
-  }
-
-  try {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      const base64Data = result.assets[0];
-
-      if (base64Data) {
-        setFormData(prevState => ({
-          ...prevState,
-          [field]: base64Data, // ✅ Store only the base64 string
-        }));
-
-        if (errors[field]) {
-          setErrors(prevErrors => {
-            const newErrors = { ...prevErrors };
-            delete newErrors[field];
-            return newErrors;
-          });
-        }
-      } else {
-        Alert.alert('Error', 'Base64 data not found.');
-      }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to make this work!');
+      return;
     }
-  } catch (error) {
-    console.error("Image picker error:", error);
-    Alert.alert("Error", "An error occurred while picking the image.");
-  }
-};
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const base64Data = result.assets[0];
+
+        if (base64Data) {
+          setFormData(prevState => ({
+            ...prevState,
+            [field]: base64Data, // ✅ Store only the base64 string
+          }));
+
+          if (errors[field]) {
+            setErrors(prevErrors => {
+              const newErrors = { ...prevErrors };
+              delete newErrors[field];
+              return newErrors;
+            });
+          }
+        } else {
+          Alert.alert('Error', 'Base64 data not found.');
+        }
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "An error occurred while picking the image.");
+    }
+  };
 
 
 
@@ -325,95 +325,95 @@ export default function MultiStepForm() {
       const cleanedNumber = formData.driverMobileNumber.replace(/\D/g, ''); // remove non-digits
       const cleaneddNumber = formData.emergencyContact.replace(/\D/g, '');
 
-  // First Name Validation
-  if (!formData.firstName.trim()) {
-    newErrors.firstName = 'First name is required';
-    isValid = false;
-  } else if (!nameRegex.test(formData.firstName.trim())) {
-    newErrors.firstName = 'First name must contain only letters';
-    isValid = false;
-  }
-
-  // Last Name Validation
-  if (!formData.lastName.trim()) {
-    newErrors.lastName = 'Last name is required';
-    isValid = false;
-  } else if (!nameRegex.test(formData.lastName.trim())) {
-    newErrors.lastName = 'Last name must contain only letters';
-    isValid = false;
-  }
-      if (!formData.nicNumber.trim()) {
-  newErrors.nicNumber = 'NIC number is required';
-  isValid = false;
-} else if (
-  !oldNICRegex.test(formData.nicNumber.trim()) &&
-  !newNICRegex.test(formData.nicNumber.trim())
-) {
-  newErrors.nicNumber = 'Enter a valid  NIC number';
-  isValid = false;
-}
-      if (!formData.driverDateOfBirth.trim()) {
-  newErrors.driverDateOfBirth = 'Date of birth is required';
-  isValid = false;
-} else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.driverDateOfBirth)) {
-  newErrors.driverDateOfBirth = 'Please enter date in DD/MM/YYYY format';
-  isValid = false;
-} else {
-  // Split the date into components
-  const [day, month, year] = formData.driverDateOfBirth.split('/').map(Number);
-  const currentYear = new Date().getFullYear();
-  const currentDate = new Date();
-  
-  // Validate year
-  if (year < 1900 || year > currentYear) {
-    newErrors.driverDateOfBirth = 'Please enter a valid year between 1900 and ' + currentYear;
-    isValid = false;
-  }
-  // Validate month
-  else if (month < 1 || month > 12) {
-    newErrors.driverDateOfBirth = 'Please enter a valid month (01-12)';
-    isValid = false;
-  }
-  // Validate day
-  else if (day < 1 || day > 31) {
-    newErrors.driverDateOfBirth = 'Please enter a valid day (01-31)';
-    isValid = false;
-  }
-  // Validate days in specific months
-  else if ((month === 4 || month === 6 || month === 9 || month === 11) && day > 30) {
-    newErrors.driverDateOfBirth = 'This month only has 30 days';
-    isValid = false;
-  }
-  // Validate February
-  else if (month === 2) {
-    const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-    const maxDaysInFeb = isLeapYear ? 29 : 28;
-    if (day > maxDaysInFeb) {
-      newErrors.driverDateOfBirth = `February ${year} only has ${maxDaysInFeb} days`;
-      isValid = false;
-    }
-  }
-  // Check if date is not in the future
-  else {
-    const inputDate = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
-    if (inputDate > currentDate) {
-      newErrors.driverDateOfBirth = 'Date of birth cannot be in the future';
-      isValid = false;
-    }
-    // Optional: Check if person is at least a certain age (e.g., 16 for driving)
-    else {
-      const age = currentYear - year;
-      const hasHadBirthdayThisYear = new Date(currentYear, month - 1, day) <= currentDate;
-      const actualAge = hasHadBirthdayThisYear ? age : age - 1;
-
-      
-      if (actualAge < 16) {
-        newErrors.driverDateOfBirth = 'Driver must be at least 16 years old';
+      // First Name Validation
+      if (!formData.firstName.trim()) {
+        newErrors.firstName = 'First name is required';
+        isValid = false;
+      } else if (!nameRegex.test(formData.firstName.trim())) {
+        newErrors.firstName = 'First name must contain only letters';
         isValid = false;
       }
-    }
-  }
-}
+
+      // Last Name Validation
+      if (!formData.lastName.trim()) {
+        newErrors.lastName = 'Last name is required';
+        isValid = false;
+      } else if (!nameRegex.test(formData.lastName.trim())) {
+        newErrors.lastName = 'Last name must contain only letters';
+        isValid = false;
+      }
+      if (!formData.nicNumber.trim()) {
+        newErrors.nicNumber = 'NIC number is required';
+        isValid = false;
+      } else if (
+        !oldNICRegex.test(formData.nicNumber.trim()) &&
+        !newNICRegex.test(formData.nicNumber.trim())
+      ) {
+        newErrors.nicNumber = 'Enter a valid  NIC number';
+        isValid = false;
+      }
+      if (!formData.driverDateOfBirth.trim()) {
+        newErrors.driverDateOfBirth = 'Date of birth is required';
+        isValid = false;
+      } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.driverDateOfBirth)) {
+        newErrors.driverDateOfBirth = 'Please enter date in DD/MM/YYYY format';
+        isValid = false;
+      } else {
+        // Split the date into components
+        const [day, month, year] = formData.driverDateOfBirth.split('/').map(Number);
+        const currentYear = new Date().getFullYear();
+        const currentDate = new Date();
+
+        // Validate year
+        if (year < 1900 || year > currentYear) {
+          newErrors.driverDateOfBirth = 'Please enter a valid year between 1900 and ' + currentYear;
+          isValid = false;
+        }
+        // Validate month
+        else if (month < 1 || month > 12) {
+          newErrors.driverDateOfBirth = 'Please enter a valid month (01-12)';
+          isValid = false;
+        }
+        // Validate day
+        else if (day < 1 || day > 31) {
+          newErrors.driverDateOfBirth = 'Please enter a valid day (01-31)';
+          isValid = false;
+        }
+        // Validate days in specific months
+        else if ((month === 4 || month === 6 || month === 9 || month === 11) && day > 30) {
+          newErrors.driverDateOfBirth = 'This month only has 30 days';
+          isValid = false;
+        }
+        // Validate February
+        else if (month === 2) {
+          const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+          const maxDaysInFeb = isLeapYear ? 29 : 28;
+          if (day > maxDaysInFeb) {
+            newErrors.driverDateOfBirth = `February ${year} only has ${maxDaysInFeb} days`;
+            isValid = false;
+          }
+        }
+        // Check if date is not in the future
+        else {
+          const inputDate = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
+          if (inputDate > currentDate) {
+            newErrors.driverDateOfBirth = 'Date of birth cannot be in the future';
+            isValid = false;
+          }
+          // Optional: Check if person is at least a certain age (e.g., 16 for driving)
+          else {
+            const age = currentYear - year;
+            const hasHadBirthdayThisYear = new Date(currentYear, month - 1, day) <= currentDate;
+            const actualAge = hasHadBirthdayThisYear ? age : age - 1;
+
+
+            if (actualAge < 16) {
+              newErrors.driverDateOfBirth = 'Driver must be at least 16 years old';
+              isValid = false;
+            }
+          }
+        }
+      }
       if (!formData.gender) {
         newErrors.gender = 'Gender is required';
         isValid = false;
@@ -427,34 +427,34 @@ export default function MultiStepForm() {
         isValid = false;
       }
       if (!formData.driverMobileNumber.trim()) {
-  newErrors.driverMobileNumber = 'Mobile number is required';
-  isValid = false;
-} else if (
-  !(
-    // 07xxxxxxxx
-    /^07\d{8}$/.test(cleanedNumber) ||
-    // 947xxxxxxxx (country code without +)
-    /^947\d{8}$/.test(cleanedNumber) ||
-    // +947xxxxxxxx (country code with +) - optional if you want to allow +
-    formData.driverMobileNumber.startsWith('+') && /^947\d{8}$/.test(cleanedNumber)
-  )
-) {
-  newErrors.driverMobileNumber = 'Please enter a valid Sri Lankan mobile number';
-  isValid = false;
-}
+        newErrors.driverMobileNumber = 'Mobile number is required';
+        isValid = false;
+      } else if (
+        !(
+          // 07xxxxxxxx
+          /^07\d{8}$/.test(cleanedNumber) ||
+          // 947xxxxxxxx (country code without +)
+          /^947\d{8}$/.test(cleanedNumber) ||
+          // +947xxxxxxxx (country code with +) - optional if you want to allow +
+          formData.driverMobileNumber.startsWith('+') && /^947\d{8}$/.test(cleanedNumber)
+        )
+      ) {
+        newErrors.driverMobileNumber = 'Please enter a valid Sri Lankan mobile number';
+        isValid = false;
+      }
       if (formData.emergencyContact.trim()) {
-  // Only validate if something is entered
-  if (
-    !(
-      /^07\d{8}$/.test(cleaneddNumber) ||
-      /^947\d{8}$/.test(cleaneddNumber) ||
-      (formData.emergencyContact.startsWith('+') && /^947\d{8}$/.test(cleaneddNumber))
-    )
-  ) {
-    newErrors.emergencyContact = 'Please enter a valid Sri Lankan mobile number';
-    isValid = false;
-  }
-}
+        // Only validate if something is entered
+        if (
+          !(
+            /^07\d{8}$/.test(cleaneddNumber) ||
+            /^947\d{8}$/.test(cleaneddNumber) ||
+            (formData.emergencyContact.startsWith('+') && /^947\d{8}$/.test(cleaneddNumber))
+          )
+        ) {
+          newErrors.emergencyContact = 'Please enter a valid Sri Lankan mobile number';
+          isValid = false;
+        }
+      }
       if (!formData.driverPhoto) {
         newErrors.driverPhoto = 'Driver photo is required';
         isValid = false;
@@ -594,35 +594,35 @@ export default function MultiStepForm() {
    */
   const [isValidating, setIsValidating] = useState(false);
 
-// Enhanced handleNext with loading state
-const handleNext = async () => {
-  setIsValidating(true);
-  
-  try {
-    // Small delay to show loading state (optional)
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const isFormValid = validateForm();
-    
-    if (!isFormValid) {
-      Alert.alert(
-        'Validation Error',
-        'Please fill in all required fields correctly before proceeding.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+  // Enhanced handleNext with loading state
+  const handleNext = async () => {
+    setIsValidating(true);
 
-    if (step < 3) {
-      setStep(prevStep => prevStep + 1);
-      setErrors({});
-    } else {
-      await submitForm();
+    try {
+      // Small delay to show loading state (optional)
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const isFormValid = validateForm();
+
+      if (!isFormValid) {
+        Alert.alert(
+          'Validation Error',
+          'Please fill in all required fields correctly before proceeding.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      if (step < 3) {
+        setStep(prevStep => prevStep + 1);
+        setErrors({});
+      } else {
+        await submitForm();
+      }
+    } finally {
+      setIsValidating(false);
     }
-  } finally {
-    setIsValidating(false);
-  }
-};
+  };
 
   /**
    * Handles the "Previous" button press.
@@ -642,25 +642,25 @@ const handleNext = async () => {
 
     try {
 
-const x ={
-...formData,
-vehicleImage:formData.vehicleImage?.base64,
-driverPhoto:formData.driverPhoto?.base64,
-vehicleLicenseCopy:formData.vehicleLicenseCopy?.base64,
-insuranceDocument:formData.insuranceDocument?.base64,
-licensePhoto:formData.licensePhoto?.base64,
-}
-      
+      const x = {
+        ...formData,
+        vehicleImage: formData.vehicleImage?.base64,
+        driverPhoto: formData.driverPhoto?.base64,
+        vehicleLicenseCopy: formData.vehicleLicenseCopy?.base64,
+        insuranceDocument: formData.insuranceDocument?.base64,
+        licensePhoto: formData.licensePhoto?.base64,
+      }
+
 
       const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
         method: "POST",
         headers: { 'Content-Type': "application/json" },
         body: JSON.stringify(x),
       });
-      
+
       const data = await response.text();
       console.log(data);
-      
+      router.push('/(vehicle)/myVehicles')
       Alert.alert(
         'Registration Complete!',
         'Your driver registration has been submitted successfully.',
@@ -786,8 +786,8 @@ licensePhoto:formData.licensePhoto?.base64,
         onPress={() => handleImageUpload(type)}
       >
         {formData[type] ? (
-          <Image 
-            source={{uri:formData[type].uri }} 
+          <Image
+            source={{ uri: formData[type].uri }}
             className="w-full h-[100px] rounded-sm"
             style={{ resizeMode: 'cover' }}
           />
@@ -824,14 +824,14 @@ licensePhoto:formData.licensePhoto?.base64,
                 <View className="w-full px-6 pt-5 pb-2 justify-center items-center relative">
                   <TouchableOpacity
                     className="absolute left-6 top-5 z-10"
-                   onPress={() => {
-                     console.log('Back button pressed');
-                     if (router.canGoBack()) {
-                       router.back();
-                     } else {
-                       router.push('/(tabs)');
-                     }
-                   }}
+                    onPress={() => {
+                      console.log('Back button pressed');
+                      if (router.canGoBack()) {
+                        router.back();
+                      } else {
+                        router.push('/(tabs)');
+                      }
+                    }}
                   >
                     <Ionicons name="arrow-back" size={24} color="#000" />
                   </TouchableOpacity>
@@ -902,7 +902,7 @@ licensePhoto:formData.licensePhoto?.base64,
 
                   {renderInput('driverMobileNumber', 'Mobile Number', true, 'phone-pad')}
                   {renderInput('emergencyContact', 'Emergency Contact Number', false, 'phone-pad')}
-                  
+
                   {renderImageUpload('driverPhoto', "Driver's Photo", 'Tap to upload driver photo')}
                 </View>
               </ScrollView>
@@ -923,7 +923,7 @@ licensePhoto:formData.licensePhoto?.base64,
               >
                 <View className="px-6 pt-5 pb-2 items-center">
                   <Text className="text-sm font-medium text-gray-500 text-center">
-                    Section 2 of 3 
+                    Section 2 of 3
                   </Text>
                 </View>
 
@@ -945,11 +945,11 @@ licensePhoto:formData.licensePhoto?.base64,
                   {renderInput('vehicleModel', 'Vehicle Model', true)}
 
                   {renderDropdown(
-                  'ac',
-                  'AC Type',
-                  acOptions,
-                  showAcPicker,            // ✅ correct variable defined at the top
-                  setShowAcPicker          // ✅ correct setter
+                    'ac',
+                    'AC Type',
+                    acOptions,
+                    showAcPicker,            // ✅ correct variable defined at the top
+                    setShowAcPicker          // ✅ correct setter
                   )}
 
                   {renderInput('fuelType', 'Fuel Type', true)}
@@ -988,7 +988,7 @@ licensePhoto:formData.licensePhoto?.base64,
               >
                 <View className="px-6 pt-5 pb-2 items-center">
                   <Text className="text-sm font-medium text-gray-500 text-center">
-                    Section 3 of 3 
+                    Section 3 of 3
                   </Text>
                 </View>
 
@@ -1000,7 +1000,7 @@ licensePhoto:formData.licensePhoto?.base64,
                   {renderInput('drivingLicenseNumber', 'Driving License Number', true)}
                   {renderInput('licenseExpiryDate', 'License Expiry Date (DD/MM/YYYY)', true)}
 
-                  
+
 
                   {renderImageUpload('licensePhoto', 'License Photo', 'Upload the driving license photo')}
 
@@ -1032,26 +1032,25 @@ licensePhoto:formData.licensePhoto?.base64,
           </TouchableOpacity>
         )}
         <TouchableOpacity
-  className={`rounded-lg py-4 items-center shadow-md ${step === 1 ? 'w-full' : 'flex-1'} ${
-    isValidating ? 'opacity-70' : ''
-  }`}
-  style={{
-    backgroundColor: step < 3 ? '#FEFA17' : '#22C55E',
-  }}
-  onPress={handleNext}
-  activeOpacity={0.8}
-  disabled={isValidating}
->
-  {isValidating ? (
-    <Text className="text-base font-semibold text-gray-900">
-      Validating...
-    </Text>
-  ) : (
-    <Text className="text-base font-semibold text-gray-900">
-      {step < 3 ? 'Next' : 'Submit'}
-    </Text>
-  )}
-</TouchableOpacity>
+          className={`rounded-lg py-4 items-center shadow-md ${step === 1 ? 'w-full' : 'flex-1'} ${isValidating ? 'opacity-70' : ''
+            }`}
+          style={{
+            backgroundColor: step < 3 ? '#FEFA17' : '#22C55E',
+          }}
+          onPress={handleNext}
+          activeOpacity={0.8}
+          disabled={isValidating}
+        >
+          {isValidating ? (
+            <Text className="text-base font-semibold text-gray-900">
+              Validating...
+            </Text>
+          ) : (
+            <Text className="text-base font-semibold text-gray-900">
+              {step < 3 ? 'Next' : 'Submit'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );

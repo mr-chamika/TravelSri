@@ -16,16 +16,16 @@ import {
   FlatList,
   ActivityIndicator
 } from 'react-native';
-import { 
-  MapPin, 
-  Calendar, 
-  Users, 
-  Clock, 
-  DollarSign, 
-  FileText, 
-  Send, 
-  Eye, 
-  Edit3, 
+import {
+  MapPin,
+  Calendar,
+  Users,
+  Clock,
+  DollarSign,
+  FileText,
+  Send,
+  Eye,
+  Edit3,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -38,7 +38,7 @@ import { useRouter } from 'expo-router';
 const { width } = Dimensions.get('window');
 
 interface TourDetails {
-  id:string,
+  id: string,
   destination: string;
   startDate: Date;
   endDate: Date;
@@ -122,39 +122,39 @@ const QuotationsScreen = () => {
 
   const [backendData, setBackendData] = useState<BackendTourData[]>([]);
 
-const [showEditModal, setShowEditModal] = useState(false);
-const [editingQuote, setEditingQuote] = useState<SubmittedQuotation | null>(null);
-const [editFormData, setEditFormData] = useState({
-  quotedAmount: '',
-  notes: ''
-});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<SubmittedQuotation | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    quotedAmount: '',
+    notes: ''
+  });
 
   // Function to convert backend data to frontend format
   // Function to convert backend data to frontend format
-const convertBackendDataToRequests = (backendData: BackendTourData[]): QuotationRequest[] => {
-  return backendData.map((tour) => ({
-    id: tour._id,
-    clientName: tour.tourTitle,
-    clientPhone: '',
-    clientEmail: '',
-    tourDetails: {
-      id: tour._id, // Add the missing id property
-      destination: tour.destination,
-      startDate: new Date(tour.startDate),
-      endDate: new Date(tour.endDate),
-      duration: `${tour.durationInDays} days`,
-      groupSize: tour.groupSize,
-      tourType: tour.tourTitle,
-      specialRequests: tour.description,
-      budget: '',
-      accommodation: '',
-      transportation: '',
-    },
-    requestDate: new Date(tour.createdAt),
-    status: tour.status === 'active' ? 'pending' : 'expired',
-    priority: tour.groupSize > 6 ? 'high' : tour.groupSize > 3 ? 'medium' : 'low'
-  }));
-};
+  const convertBackendDataToRequests = (backendData: BackendTourData[]): QuotationRequest[] => {
+    return backendData.map((tour) => ({
+      id: tour._id,
+      clientName: tour.tourTitle,
+      clientPhone: '',
+      clientEmail: '',
+      tourDetails: {
+        id: tour._id, // Add the missing id property
+        destination: tour.destination,
+        startDate: new Date(tour.startDate),
+        endDate: new Date(tour.endDate),
+        duration: `${tour.durationInDays} days`,
+        groupSize: tour.groupSize,
+        tourType: tour.tourTitle,
+        specialRequests: tour.description,
+        budget: '',
+        accommodation: '',
+        transportation: '',
+      },
+      requestDate: new Date(tour.createdAt),
+      status: tour.status === 'active' ? 'pending' : 'expired',
+      priority: tour.groupSize > 6 ? 'high' : tour.groupSize > 3 ? 'medium' : 'low'
+    }));
+  };
 
   // Fetch quotation requests
   const fetchRequests = async () => {
@@ -165,7 +165,7 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
       if (data) {
         console.log('Backend data:', data);
         setBackendData(data);
-        
+
         // Convert backend data to frontend format
         const convertedRequests = convertBackendDataToRequests(data);
         setRequests(convertedRequests);
@@ -197,10 +197,10 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
         },
         signal: AbortSignal.timeout(10000),
       });
-      
+
       if (!res.ok) {
-        const errorMessage = res.status === 404 
-          ? 'No quotations found' 
+        const errorMessage = res.status === 404
+          ? 'No quotations found'
           : `Failed to fetch quotations (${res.status})`;
         throw new Error(errorMessage);
       }
@@ -221,14 +221,14 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
         submittedDate: item.quotationDate || item.submittedDate || new Date().toISOString(),
         validUntil: item.validUntil || '',
         currency: item.currency || 'LKR',
-        clientName: item.tourDetails?.clientName || item.clientName || 'Unknown Client',
+        clientName: item.tourDetails?.clientName || item.clientName || 'TravelSri Group Tour',
         tourDetails: {
           destination: item.tourDetails?.destination || 'Unknown Destination',
           startDate: item.tourDetails?.startDate || '',
           endDate: item.tourDetails?.endDate || '',
           groupSize: item.tourDetails?.groupSize || 1,
-          duration: item.tourDetails?.durationInDays 
-            ? `${item.tourDetails.durationInDays} days` 
+          duration: item.tourDetails?.durationInDays
+            ? `${item.tourDetails.durationInDays} days`
             : 'Duration not specified',
           tourType: item.tourDetails?.tourType || 'Standard',
         }
@@ -339,161 +339,161 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
     setModalVisible(true);
   };
 
- const submitQuotation = async () => {
-  console.log('Submit quotation called');
-  console.log('Quotation form:', quotationForm);
-  console.log('Selected request:', selectedRequest);
+  const submitQuotation = async () => {
+    console.log('Submit quotation called');
+    console.log('Quotation form:', quotationForm);
+    console.log('Selected request:', selectedRequest);
 
-  try {
-    // Step 1: Validate form
-    if (!quotationForm.amount || quotationForm.amount.trim() === '') {
-      console.log('Amount validation failed - empty amount');
-      Alert.alert('Error', 'Please fill in the total amount');
-      return;
-    }
-
-    const parsedAmount = parseFloat(quotationForm.amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      console.log('Amount validation failed - invalid number:', parsedAmount);
-      Alert.alert('Error', 'Please enter a valid amount greater than 0');
-      return;
-    }
-
-    if (!selectedRequest) {
-      console.log('Selected request validation failed');
-      Alert.alert('Error', 'No request selected');
-      return;
-    }
-
-    console.log('Form validation passed');
-
-    // Step 2: Get guide ID
-    console.log('Attempting to get guideId from AsyncStorage...');
-    let guideId = await AsyncStorage.getItem('guideId');
-
-    if (!guideId) {
-      console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
-      guideId = 'TEMP_GUIDE_ID_001'; // This should match your backend's temporary guide ID
-    }
-    console.log('Guide ID:', guideId);
-
-    // Step 3: Prepare quotation data with exact field names expected by backend
-    const quotationData = {
-      amount: parseFloat(quotationForm.amount), // Backend expects 'amount' field
-      notes: quotationForm.notes || '', // Backend expects 'notes' field
-      guideId: guideId, // Backend expects 'guideId' field
-    };
-
-    console.log('Quotation data prepared:', quotationData);
-
-    // Step 4: Prepare request URL - make sure the ID format is correct
-    const requestUrl = `http://localhost:8080/guide/submitQuotation/${selectedRequest.id}`;
-    console.log('Request URL:', requestUrl);
-    console.log('Selected request ID type:', typeof selectedRequest.id);
-    console.log('Selected request ID value:', selectedRequest.id);
-
-    // Step 5: Prepare request headers
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-    };
-    console.log('Request headers:', requestHeaders);
-
-    // Step 6: Make the API call
-    console.log('Making API call...');
-    const response = await fetch(requestUrl, {
-      method: 'PUT',
-      headers: requestHeaders,
-      body: JSON.stringify(quotationData),
-    });
-
-    console.log('Response received - Status:', response.status);
-    console.log('Response OK:', response.ok);
-
-    // Step 7: Handle response
-    if (!response.ok) {
-      console.log('Response not OK - Status:', response.status);
-      const errorText = await response.text();
-      console.error('Error response text:', errorText);
-
-      // Handle specific error cases
-      if (response.status === 400) {
-        Alert.alert('Validation Error', errorText || 'Invalid data provided');
-      } else if (response.status === 404) {
-        Alert.alert('Error', 'Tour request not found');
-      } else if (response.status === 401) {
-        Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('guideId');
-      } else {
-        Alert.alert('Error', `Failed to submit quotation: ${response.status} - ${errorText}`);
-      }
-      return;
-    }
-
-    // Step 8: Parse successful response
-    console.log('Attempting to parse response...');
-    let updatedQuotation;
     try {
-      updatedQuotation = await response.json();
-      console.log('Response parsed successfully:', updatedQuotation);
-    } catch (jsonError) {
-      console.error('JSON parsing error:', jsonError);
-      Alert.alert('Error', 'Invalid response format from server');
-      return;
+      // Step 1: Validate form
+      if (!quotationForm.amount || quotationForm.amount.trim() === '') {
+        console.log('Amount validation failed - empty amount');
+        Alert.alert('Error', 'Please fill in the total amount');
+        return;
+      }
+
+      const parsedAmount = parseFloat(quotationForm.amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        console.log('Amount validation failed - invalid number:', parsedAmount);
+        Alert.alert('Error', 'Please enter a valid amount greater than 0');
+        return;
+      }
+
+      if (!selectedRequest) {
+        console.log('Selected request validation failed');
+        Alert.alert('Error', 'No request selected');
+        return;
+      }
+
+      console.log('Form validation passed');
+
+      // Step 2: Get guide ID
+      console.log('Attempting to get guideId from AsyncStorage...');
+      let guideId = await AsyncStorage.getItem('guideId');
+
+      if (!guideId) {
+        console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
+        guideId = 'TEMP_GUIDE_ID_001'; // This should match your backend's temporary guide ID
+      }
+      console.log('Guide ID:', guideId);
+
+      // Step 3: Prepare quotation data with exact field names expected by backend
+      const quotationData = {
+        amount: parseFloat(quotationForm.amount), // Backend expects 'amount' field
+        notes: quotationForm.notes || '', // Backend expects 'notes' field
+        guideId: guideId, // Backend expects 'guideId' field
+      };
+
+      console.log('Quotation data prepared:', quotationData);
+
+      // Step 4: Prepare request URL - make sure the ID format is correct
+      const requestUrl = `http://localhost:8080/guide/submitQuotation/${selectedRequest.id}`;
+      console.log('Request URL:', requestUrl);
+      console.log('Selected request ID type:', typeof selectedRequest.id);
+      console.log('Selected request ID value:', selectedRequest.id);
+
+      // Step 5: Prepare request headers
+      const requestHeaders = {
+        'Content-Type': 'application/json',
+      };
+      console.log('Request headers:', requestHeaders);
+
+      // Step 6: Make the API call
+      console.log('Making API call...');
+      const response = await fetch(requestUrl, {
+        method: 'PUT',
+        headers: requestHeaders,
+        body: JSON.stringify(quotationData),
+      });
+
+      console.log('Response received - Status:', response.status);
+      console.log('Response OK:', response.ok);
+
+      // Step 7: Handle response
+      if (!response.ok) {
+        console.log('Response not OK - Status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response text:', errorText);
+
+        // Handle specific error cases
+        if (response.status === 400) {
+          Alert.alert('Validation Error', errorText || 'Invalid data provided');
+        } else if (response.status === 404) {
+          Alert.alert('Error', 'Tour request not found');
+        } else if (response.status === 401) {
+          Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('guideId');
+        } else {
+          Alert.alert('Error', `Failed to submit quotation: ${response.status} - ${errorText}`);
+        }
+        return;
+      }
+
+      // Step 8: Parse successful response
+      console.log('Attempting to parse response...');
+      let updatedQuotation;
+      try {
+        updatedQuotation = await response.json();
+        console.log('Response parsed successfully:', updatedQuotation);
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        Alert.alert('Error', 'Invalid response format from server');
+        return;
+      }
+
+      // Step 9: Update local state
+      console.log('Updating local state...');
+      setRequests(prevRequests =>
+        prevRequests.map(request =>
+          request.id === selectedRequest.id
+            ? { ...request, status: 'quoted' }
+            : request
+        )
+      );
+
+      // Step 10: Reset form and close modal
+      setQuotationForm({
+        amount: '',
+        notes: ''
+      });
+
+      // Step 11: Show success message and cleanup
+      console.log('Showing success message...');
+      Alert.alert('Success', 'Quotation submitted successfully!');
+
+      console.log('Closing modal...');
+      setModalVisible(false);
+
+      console.log('Refreshing data...');
+      await onRefresh();
+
+      console.log('Submit quotation completed successfully');
+
+    } catch (error) {
+      console.error('Caught error in submitQuotation:', error);
+      console.error('Error type:', typeof error);
+
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      Alert.alert('Network Error', `Failed to connect to server: ${errorMessage}`);
     }
-
-    // Step 9: Update local state
-    console.log('Updating local state...');
-    setRequests(prevRequests =>
-      prevRequests.map(request =>
-        request.id === selectedRequest.id
-          ? { ...request, status: 'quoted' }
-          : request
-      )
-    );
-
-    // Step 10: Reset form and close modal
-    setQuotationForm({
-      amount: '',
-      notes: ''
-    });
-
-    // Step 11: Show success message and cleanup
-    console.log('Showing success message...');
-    Alert.alert('Success', 'Quotation submitted successfully!');
-
-    console.log('Closing modal...');
-    setModalVisible(false);
-
-    console.log('Refreshing data...');
-    await onRefresh();
-
-    console.log('Submit quotation completed successfully');
-
-  } catch (error) {
-    console.error('Caught error in submitQuotation:', error);
-    console.error('Error type:', typeof error);
-
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    Alert.alert('Network Error', `Failed to connect to server: ${errorMessage}`);
-  }
-};
+  };
 
   const formatTimeAgo = (date: Date | string): string => {
     const now = new Date();
     const requestDate = new Date(date);
     const diffInMs = now.getTime() - requestDate.getTime();
-    
+
     const minutes = Math.floor(diffInMs / (1000 * 60));
     const hours = Math.floor(diffInMs / (1000 * 60 * 60));
     const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
     const weeks = Math.floor(days / 7);
-    
+
     if (minutes < 60) {
       return minutes <= 1 ? 'Just now' : `${minutes} minutes ago`;
     } else if (hours < 24) {
@@ -549,8 +549,8 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
 
       <View style={styles.cardActions}>
         {request.status === 'pending' && (
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.primaryButton]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.primaryButton]}
             onPress={() => handleSubmitQuotation(request)}
           >
             <Send size={18} color="#FFFFFF" />
@@ -568,70 +568,70 @@ const convertBackendDataToRequests = (backendData: BackendTourData[]): Quotation
 
 
 
-const handleEditQuote = (quotationId: string) => {
-  console.log('handleEditQuote called with ID:', quotationId);
-  console.log('Available quotations:', submittedQuotations);
-  
-  const quotationToEdit = submittedQuotations.find((q: SubmittedQuotation) => q.id === quotationId);
-  console.log('Found quotation to edit:', quotationToEdit);
-  
-  if (quotationToEdit) {
-    setEditingQuote(quotationToEdit);
-    setEditFormData({
-      quotedAmount: quotationToEdit.quotedAmount.toString(),
-      notes: quotationToEdit.notes
-    });
-    console.log('Setting modal visible to true');
-    setShowEditModal(true);
-  } else {
-    console.log('Quotation not found with ID:', quotationId);
-    Alert.alert('Error', 'Quotation not found');
-  }
-};
+  const handleEditQuote = (quotationId: string) => {
+    console.log('handleEditQuote called with ID:', quotationId);
+    console.log('Available quotations:', submittedQuotations);
 
-const handleSaveEdit = async (quotationId: string) => {
-  try {
-    if (!editFormData.quotedAmount) {
-      Alert.alert('Error', 'Please enter a valid amount');
-      return;
-    }
+    const quotationToEdit = submittedQuotations.find((q: SubmittedQuotation) => q.id === quotationId);
+    console.log('Found quotation to edit:', quotationToEdit);
 
-    const updateData = {
-      quotedAmount: parseFloat(editFormData.quotedAmount),
-      notes: editFormData.notes
-    };
-
-    /* const response = await fetch(`http://localhost:8080/guide/editQuotation/${quotationId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    }); */
-
-    /* if (response.ok) {
-      // Update local state
-      setSubmittedQuotations(prev => prev.map(q => 
-        q.id === quotationId ? { ...q, ...updateData } : q
-      ));
-      setShowEditModal(false);
-      setEditingQuote(null);
-      setEditFormData({ quotedAmount: '', notes: '' });
-      Alert.alert('Success', 'Quotation updated successfully!');
+    if (quotationToEdit) {
+      setEditingQuote(quotationToEdit);
+      setEditFormData({
+        quotedAmount: quotationToEdit.quotedAmount.toString(),
+        notes: quotationToEdit.notes
+      });
+      console.log('Setting modal visible to true');
+      setShowEditModal(true);
     } else {
-      throw new Error('Failed to update quotation');
-    } */
-  } catch (error) {
-    console.error('Error updating quotation:', error);
-    Alert.alert('Error', 'Failed to update quotation');
-  }
-};
+      console.log('Quotation not found with ID:', quotationId);
+      Alert.alert('Error', 'Quotation not found');
+    }
+  };
 
-const handleCancelEdit = () => {
-  setShowEditModal(false);
-  setEditingQuote(null);
-  setEditFormData({ quotedAmount: '', notes: '' });
-};
+  const handleSaveEdit = async (quotationId: string) => {
+    try {
+      if (!editFormData.quotedAmount) {
+        Alert.alert('Error', 'Please enter a valid amount');
+        return;
+      }
+
+      const updateData = {
+        quotedAmount: parseFloat(editFormData.quotedAmount),
+        notes: editFormData.notes
+      };
+
+      /* const response = await fetch(`http://localhost:8080/guide/editQuotation/${quotationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      }); */
+
+      /* if (response.ok) {
+        // Update local state
+        setSubmittedQuotations(prev => prev.map(q => 
+          q.id === quotationId ? { ...q, ...updateData } : q
+        ));
+        setShowEditModal(false);
+        setEditingQuote(null);
+        setEditFormData({ quotedAmount: '', notes: '' });
+        Alert.alert('Success', 'Quotation updated successfully!');
+      } else {
+        throw new Error('Failed to update quotation');
+      } */
+    } catch (error) {
+      console.error('Error updating quotation:', error);
+      Alert.alert('Error', 'Failed to update quotation');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingQuote(null);
+    setEditFormData({ quotedAmount: '', notes: '' });
+  };
 
   const handleGenerateInvoice = (quotationId: string) => {
     Alert.alert(
@@ -644,7 +644,7 @@ const handleCancelEdit = () => {
     );
   };
 
-  
+
 
   const renderSubmittedCard = (quotation: SubmittedQuotation) => (
     <View key={quotation.id} style={styles.card}>
@@ -726,24 +726,24 @@ const handleCancelEdit = () => {
           <Eye size={18} color="#6B7280" />
           <Text style={styles.actionText}>View Breakdown</Text>
         </TouchableOpacity> */}
-        
+
         {(quotation.status === 'pending' || quotation.status === 'quoted') && (
-  <TouchableOpacity 
-  style={styles.actionButton} 
-  onPress={() => {
-    console.log('Edit button pressed - ID:', quotation.id);
-    console.log('Status:', quotation.status);
-    handleEditQuote(quotation.id);
-  }}
->
-  <Edit3 size={18} color="#6B7280" />
-  <Text style={styles.actionText}>Edit Quote (Test)</Text>
-</TouchableOpacity>
-)}
-        
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              console.log('Edit button pressed - ID:', quotation.id);
+              console.log('Status:', quotation.status);
+              handleEditQuote(quotation.id);
+            }}
+          >
+            <Edit3 size={18} color="#6B7280" />
+            <Text style={styles.actionText}>Edit Quote (Test)</Text>
+          </TouchableOpacity>
+        )}
+
         {quotation.status === 'accepted' && (
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.primaryButton]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.primaryButton]}
             onPress={() => handleGenerateInvoice(quotation.id)}
             accessible={true}
             accessibilityLabel="Generate invoice"
@@ -756,7 +756,7 @@ const handleCancelEdit = () => {
     </View>
   );
 
-   const renderEditModal = () => (
+  const renderEditModal = () => (
     <Modal
       visible={showEditModal}
       animationType="slide"
@@ -771,7 +771,7 @@ const handleCancelEdit = () => {
               <XCircle size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.modalContent}>
             {editingQuote && (
               <View style={styles.requestSummary}>
@@ -790,7 +790,7 @@ const handleCancelEdit = () => {
                 </Text>
               </View>
             )}
-            
+
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Total Amount ({editingQuote?.currency || 'LKR'}) *</Text>
               <TextInput
@@ -799,7 +799,7 @@ const handleCancelEdit = () => {
                 onChangeText={(text) => {
                   // Only allow numeric input
                   const numericText = text.replace(/[^0-9.]/g, '');
-                  setEditFormData({...editFormData, quotedAmount: numericText});
+                  setEditFormData({ ...editFormData, quotedAmount: numericText });
                 }}
                 placeholder="Enter total amount"
                 keyboardType="numeric"
@@ -811,7 +811,7 @@ const handleCancelEdit = () => {
               <TextInput
                 style={[styles.formInput, styles.textArea]}
                 value={editFormData.notes}
-                onChangeText={(text) => setEditFormData({...editFormData, notes: text})}
+                onChangeText={(text) => setEditFormData({ ...editFormData, notes: text })}
                 placeholder="Additional notes or terms"
                 multiline
                 numberOfLines={4}
@@ -840,14 +840,14 @@ const handleCancelEdit = () => {
           </ScrollView>
 
           <View style={styles.modalActions}>
-            <TouchableOpacity 
-              style={styles.cancelButton} 
+            <TouchableOpacity
+              style={styles.cancelButton}
               onPress={handleCancelEdit}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.submitButton} 
+            <TouchableOpacity
+              style={styles.submitButton}
               onPress={() => {
                 if (editingQuote) {
                   handleSaveEdit(editingQuote.id);
@@ -878,8 +878,8 @@ const handleCancelEdit = () => {
         <View style={styles.centerContainer}>
           <AlertCircle size={48} color="#EF4444" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton} 
+          <TouchableOpacity
+            style={styles.retryButton}
             onPress={fetchSubmittedQuotations}
           >
             <RefreshCw size={18} color="#FFFFFF" />
@@ -907,11 +907,11 @@ const handleCancelEdit = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FEFA17" barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={handleGoBack}
           >
@@ -976,7 +976,7 @@ const handleCancelEdit = () => {
                 <XCircle size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalContent}>
               {selectedRequest && (
                 <View style={styles.requestSummary}>
@@ -989,13 +989,13 @@ const handleCancelEdit = () => {
                   </Text>
                 </View>
               )}
-              
+
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Total Amount (LKR) *</Text>
                 <TextInput
                   style={styles.formInput}
                   value={quotationForm.amount}
-                  onChangeText={(text) => setQuotationForm({...quotationForm, amount: text})}
+                  onChangeText={(text) => setQuotationForm({ ...quotationForm, amount: text })}
                   placeholder="Enter total amount"
                   keyboardType="numeric"
                 />
@@ -1015,14 +1015,14 @@ const handleCancelEdit = () => {
             </ScrollView>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
+              <TouchableOpacity
+                style={styles.cancelButton}
                 onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.submitButton} 
+              <TouchableOpacity
+                style={styles.submitButton}
                 onPress={submitQuotation}
               >
                 <Text style={styles.submitButtonText}>Submit Quotation</Text>
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 30,
   },
-   editContainer: {
+  editContainer: {
     backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 8,
@@ -1498,24 +1498,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   editInfo: {
-      marginTop: 16,
-      padding: 12,
-      backgroundColor: '#F9FAFB',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
-    editInfoTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#374151',
-      marginBottom: 8,
-    },
-    editInfoText: {
-      fontSize: 12,
-      color: '#6B7280',
-      marginBottom: 4,
-    },
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  editInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  editInfoText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
 
 });
 
