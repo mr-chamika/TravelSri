@@ -16,9 +16,11 @@ public class Item {
     private String _id;
     private String shopId;
     private String name;
-    private int price;
+    private double price;
     private String contact;
     private int buyCount;
     private String image;
+    private int count;
+    private String description;
 
 }

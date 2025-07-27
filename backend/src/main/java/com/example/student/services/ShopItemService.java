@@ -1,7 +1,7 @@
 package com.example.student.services;
 
-import com.example.student.model.ShopItem;
-import com.example.student.repo.ShopItemRepo; // Import the new ShopItemRepo
+import com.example.student.model.Item;
+import com.example.student.repo.ItemsRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,27 +12,27 @@ import java.util.Optional;
 public class ShopItemService {
 
     @Autowired
-    private ShopItemRepo shopItemRepo; // Autowire the new ShopItemRepo
+    private ItemsRepo shopItemRepo; // Autowire the new ShopItemRepo
 
     // Method to get all shop items
-    public List<ShopItem> getAllShopItems() {
+    public List<Item> getAllShopItems() {
         return shopItemRepo.findAll();
     }
 
     // Method to get a single shop item by ID
-    public Optional<ShopItem> getShopItemById(String id) {
+    public Optional<Item> getShopItemById(String id) {
         return shopItemRepo.findById(id);
     }
 
 
     // Method to save (create or update) a shop item
-    public ShopItem saveShopItem(ShopItem shopItem) {
+    public Item saveShopItem(Item shopItem) {
         return shopItemRepo.save(shopItem);
     }
 
     // Method to search shop items by name (case-insensitive)
-    public List<ShopItem> searchShopItemsByName(String name) {
-        return shopItemRepo.findByItemNameContainingIgnoreCase(name);
+    public List<Item> searchShopItemsByName(String name) {
+        return shopItemRepo.findByNameContainingIgnoreCase(name);
     }
 
     // Method to delete a shop item by ID
