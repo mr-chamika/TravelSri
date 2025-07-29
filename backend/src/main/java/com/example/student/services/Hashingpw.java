@@ -119,10 +119,9 @@ public class Hashingpw {
                                 "/api/vehicle/capacity/range",
                                 "/api/vehicle/city/{baseCity}/capacity/min/{minCapacity}",
                                 "/api/vehicle/update/{id}",
-                                "/api/quotations/{id}",
+                                "/api/quotations",
                                 "/api/quotations/{id}/status",
-                                "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}"
+                                "/api/admin-hotel-bookings"
 
 
 

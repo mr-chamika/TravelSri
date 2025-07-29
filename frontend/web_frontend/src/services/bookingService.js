@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
   (config) => {
     // Get token from local storage with safety check for SSR or testing environments
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('token');
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }

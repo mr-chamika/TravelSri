@@ -69,7 +69,14 @@ class BookingService {
   async getAuthToken() {
     // Implement your authentication token retrieval logic
     // This could be from AsyncStorage, Keychain, etc.
-    return 'your-auth-token';
+    //return 'your-auth-token';
+
+    const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Authentication token not found");
+  }
+  return token;
+
   }
 
   // Mock data for development/testing

@@ -114,7 +114,7 @@ const quotationService = {
       const response = await apiClient.get('/quotations');
       return response.data;
     } catch (error) {
-      console.error('Error fetching quotations:', error);
+      console.error('Error fetching h:', error);
       // Fallback to mock data if API call fails
       return generateMockQuotations();
     }
