@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from 'react';
 //import './App.css';
 import Login from './pages/Login/Login';
+import SignupPage from './pages/SignUp/SignUp';
 import AdminLayout from "./layouts/AdminLayout";
 import DashboardPage from './pages/Admin/DashboardPage';
 import AllHotelRequests from './pages/Admin/AllHotelRequests';
@@ -52,8 +53,14 @@ function App() {
         <Routes>
           {/* Login route without AdminLayout */}
           <Route 
-            path="/" 
+            path="/login" 
             element={<Login />}
+          />
+          
+          {/* Signup route */}
+          <Route 
+            path="/signup" 
+            element={<SignupPage />}
           />
           
           {/* Admin routes with AdminLayout */}

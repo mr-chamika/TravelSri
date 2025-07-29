@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
-
+  
+  // Function to handle redirect to signup page
+  const handleSignupRedirect = (e) => {
+    e.preventDefault();
+    // Navigate to the signup page
+    window.location.href = '/signup';
+  };
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-yellow-100 via-white to-yellow-50 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
@@ -66,8 +73,10 @@ const LoginPage = () => {
 
         {/* Footer */}
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don’t have an account?{' '}
-          <a href="#" className="text-yellow-500 hover:underline font-medium">Create one</a>
+          Don't have an account?{' '}
+          <a href="#" onClick={handleSignupRedirect} className="text-yellow-500 hover:underline font-medium">
+            Create one
+          </a>
         </p>
       </div>
     </div>
