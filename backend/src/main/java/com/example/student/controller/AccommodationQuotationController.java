@@ -33,7 +33,7 @@ public class AccommodationQuotationController {
 
     @PutMapping("/{id}")
     public AccommodationQuotation updateQuotation(@PathVariable String id, @RequestBody AccommodationQuotation quotation) {
-        quotation.setId(id); // Ensure ID is set correctly
+        quotation.setQuotationId(id); // Ensure ID is set correctly
         return service.saveQuotation(quotation);
     }
     

@@ -45,10 +45,10 @@ public class GuideController {
         allTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
 
         System.out.println("Guide Quotations:");
-        guideQuotations.forEach(q -> System.out.println("Tour ID: " + q.getTourId() + ", Guide ID: " + q.getGuideId()));
+        guideQuotations.forEach(q -> System.out.println("Tour ID: " + q.getPendingTripId() + ", Guide ID: " + q.getGuideId()));
 
         Set<String> quotedTourIds = guideQuotations.stream()
-                .map(q -> String.valueOf(q.getTourId()))
+                .map(q -> String.valueOf(q.getPendingTripId()))
                 .collect(Collectors.toSet());
 
         System.out.println("Quoted Tour IDs by Guide:");
@@ -111,7 +111,7 @@ public class GuideController {
             System.out.println("Using guide ID: " + guideId);
 
             // Check if quotation already exists for this tour and guide
-            Optional<GuideQuotation> existingQuotation = quotationRepo.findByTourIdAndGuideId(tourId, guideId);
+            Optional<GuideQuotation> existingQuotation = quotationRepo.findByPendingTripIdAndGuideId(tourId, guideId);
 
             GuideQuotation quotation;
             if (existingQuotation.isPresent()) {
@@ -161,7 +161,7 @@ public class GuideController {
             List<Map<String, Object>> resultList = new ArrayList<>();
 
             for (GuideQuotation quotation : quotations) {
-                Optional<Tour> tourOptional = guideRepo.findById(quotation.getTourId());
+                Optional<Tour> tourOptional = guideRepo.findById(quotation.getPendingTripId());
 
                 if (tourOptional.isPresent()) {
                     Tour tour = tourOptional.get();
@@ -207,7 +207,7 @@ public class GuideController {
     @GetMapping("/quotations/tour/{tourId}")
     public ResponseEntity<List<GuideQuotation>> getQuotationsByTourId(@PathVariable String tourId) {
         try {
-            List<GuideQuotation> quotations = quotationRepo.findByTourId(tourId);
+            List<GuideQuotation> quotations = quotationRepo.findByPendingTripId(tourId);
             return ResponseEntity.ok(quotations);
         } catch (Exception e) {
             System.err.println("Error fetching quotations: " + e.getMessage());

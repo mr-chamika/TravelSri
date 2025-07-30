@@ -11,13 +11,13 @@ import java.util.Optional;
 public interface GuideQuotationRepo extends MongoRepository<GuideQuotation, String> {
 
     // Find quotations by tour ID
-    List<GuideQuotation> findByTourId(String tourId);
+    List<GuideQuotation> findByPendingTripId(String tourId);
 
     // Find quotations by guide ID
     List<GuideQuotation> findByGuideId(String guideId);
 
     // Find quotations by tour ID and guide ID
-    Optional<GuideQuotation> findByTourIdAndGuideId(String tourId, String guideId);
+    Optional<GuideQuotation> findByPendingTripIdAndGuideId(String tourId, String guideId);
 
     // Find quotations by status
     List<GuideQuotation> findByStatus(String status);

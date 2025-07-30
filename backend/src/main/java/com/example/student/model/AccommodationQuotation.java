@@ -17,20 +17,25 @@ import java.time.LocalDateTime;
 public class AccommodationQuotation {
     @Id
 
-    private String id;//private String quotationId;
+    //private String id;
+    private String quotationId;
     private String quoteNumber; // Unique quotation number
-    private String quotationId;//private String pendingTripId;
-    private String packageName;//private String pendingTripName;
+    private String pendingTripId;//private String quotationId;
+    private String pendingTripName;//private String packageName;
 //    private String contactPersonName;
 //    private String contactEmail;
 //    private String contactPhone;
 //    private String accommodationType; hotelId
+    private String hotelId;
     private int groupSize;
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
-    private int roomsRequired;//must include for all room types
+    //private int roomsRequired;must include for all room types
+    private int standardRooms;
+    private int deluxRooms;
+    private int familyRooms;
+    private int suites;
     private String mealPlan;
-    private boolean airportTransfer;//rmv
     private double discountOffered;
     private String specialRequirements;
     private double totalAmount;
@@ -39,7 +44,6 @@ public class AccommodationQuotation {
     // Additional fields for status tracking
     private String status = "Pending"; // Default status: Pending, Approved, Rejected, Under Review
     private String adminNotes; // Notes from admin when approving/rejecting
-    private String roomAvailability = "Available"; // Available, Limited, Unavailable//rmv
     
     // Audit fields
     @CreatedDate

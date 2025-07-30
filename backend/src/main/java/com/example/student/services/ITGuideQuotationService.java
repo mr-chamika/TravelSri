@@ -1,6 +1,6 @@
 package com.example.student.services;
 
-import com.example.student.model.TGuideQuotation;
+import com.example.student.model.GuideQuotation;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,20 +8,20 @@ import java.util.Optional;
 public interface ITGuideQuotationService {
 
     // Create quotation
-    TGuideQuotation createQuotation(TGuideQuotation quotation);
+    GuideQuotation createQuotation(GuideQuotation quotation);
 
     // Find all quotations
-    List<TGuideQuotation> getAllQuotations();
+    List<GuideQuotation> getAllQuotations();
 
     // Find by quotation id
-    Optional<TGuideQuotation> getQuotationById(String quotationId);
+    Optional<GuideQuotation> getQuotationById(String quotationId);
 
     // Find by pending trip id
-    List<TGuideQuotation> getQuotationsByPendingTripId(String pendingTripId);
+    List<GuideQuotation> getQuotationsByPendingTripId(String pendingTripId);
 
     // Find by guide id
-    List<TGuideQuotation> getQuotationsByGuideId(String guideId);
+    List<GuideQuotation> getQuotationsByGuideId(String guideId);
 
     // Find by pending trip id and guide id
-    List<TGuideQuotation> getQuotationsByPendingTripIdAndGuideId(String pendingTripId, String guideId);
+    List<GuideQuotation> getQuotationsByPendingTripIdAndGuideId(String pendingTripId, String guideId);
 }
