@@ -11,7 +11,6 @@ import BackButton from '../../../components/ui/backButton';
 
 
 
-import Topbar from '../../../components/topbar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 // Define a type for a single post object
@@ -45,31 +44,31 @@ const posts: Post[] = [
 
 
 
-  const [show, setShow] = useState(false);
-  const translateX = useSharedValue(-1000);
-  const opacity = useSharedValue(0);
+const [show, setShow] = useState(false);
+const translateX = useSharedValue(-1000);
+const opacity = useSharedValue(0);
 
- const menuStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-    opacity: opacity.value,
-  }));
+const menuStyle = useAnimatedStyle(() => ({
+  transform: [{ translateX: translateX.value }],
+  opacity: opacity.value,
+}));
 
-  const toggleMenu = () => {
-    setShow(!show);
-    if (!show) {
-      translateX.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.inOut(Easing.ease),
-      });
-      opacity.value = withTiming(1, { duration: 400 });
-    } else {
-      translateX.value = withTiming(-1000, {
-        duration: 300,
-        easing: Easing.inOut(Easing.ease),
-      });
-      opacity.value = withTiming(0, { duration: 300 });
-    }
-  };
+const toggleMenu = () => {
+  setShow(!show);
+  if (!show) {
+    translateX.value = withTiming(0, {
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+    });
+    opacity.value = withTiming(1, { duration: 400 });
+  } else {
+    translateX.value = withTiming(-1000, {
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+    });
+    opacity.value = withTiming(0, { duration: 300 });
+  }
+};
 
 // Post Item Component
 const PostItem = ({ item }: { item: Post }) => {
@@ -95,43 +94,43 @@ const PostItem = ({ item }: { item: Post }) => {
 };
 
 const [notify, setNotify] = useState(false);
-  
-    const toggling = () => {
-          setNotify(!notify);
-      };
+
+const toggling = () => {
+  setNotify(!notify);
+};
 
 // Main Screen Component
 export default function TravelFeedScreen() {
-  
+
   return (
     <SafeAreaView>
-                                  {/* <Topbar pressing={toggleMenu} notifying={toggling} on={notify} /> */}
-      
-    <View style={styles.container}>
-      <BackButton />
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Where did you travel?</Text>
-        <View style={styles.headerIcons}>
-          <Image
-            source={require('../../../assets/images/share.png')} // Make sure this path is correct
-            style={styles.icon}
-          />
-          <Image
-            source={require('../../../assets/images/more.png')} // Make sure this path is correct
-            style={styles.icon}
-          />
-        </View>
-      </View>
+      {/* <Topbar pressing={toggleMenu} notifying={toggling} on={notify} /> */}
 
-      {/* Posts List */}
-      <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <PostItem item={item} />}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+      <View style={styles.container}>
+        <BackButton />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Where did you travel?</Text>
+          <View style={styles.headerIcons}>
+            <Image
+              source={require('../../../assets/images/share.png')} // Make sure this path is correct
+              style={styles.icon}
+            />
+            <Image
+              source={require('../../../assets/images/more.png')} // Make sure this path is correct
+              style={styles.icon}
+            />
+          </View>
+        </View>
+
+        {/* Posts List */}
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => <PostItem item={item} />}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </SafeAreaView>
   );
 }

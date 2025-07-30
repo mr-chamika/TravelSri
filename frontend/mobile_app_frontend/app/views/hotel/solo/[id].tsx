@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useEffect, useState } from "react";
-
+import { useCallback } from "react";
 cssInterop(Image, { className: "style" });
 
 const pic = require('../../../../assets/images/tabbar/towert.png');
@@ -21,6 +21,8 @@ export default function Views() {
     const [item, setItem] = useState<{ id: string, image: any[], title: string, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { type: any, capacity: number, pricePerRoom: number }[] }>({ id: '1', image: [], title: 'Matara to Colombo', stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
     const [totalPrice, setTotalPrice] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [carouselWidth, setCarouselWidth] = useState(0);
 
     const groupCollection = [
         {
@@ -170,8 +172,22 @@ export default function Views() {
         setTotalPrice(total);
     };
 
+    const handleScroll = useCallback((event: any) => {
+        if (carouselWidth > 0) {
+            // Calculate the index based on scroll position and width
+            const newIndex = Math.round(event.nativeEvent.contentOffset.x / carouselWidth);
+            setActiveIndex(newIndex);
+        }
+    }, [carouselWidth]);
+
     return (
-        <View>
+        <View
+            className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}
+            onLayout={(event) => {
+                setCarouselWidth(event.nativeEvent.layout.width);
+            }}
+
+        >
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
 
             <ScrollView
@@ -184,15 +200,21 @@ export default function Views() {
                         <View className="w-full items-center">
                             <ScrollView
                                 horizontal
-                                className=" h-50 border-black rounded-2xl border-2 w-[89%]"
-                                contentContainerClassName=" py-3 pl-3"
+                                pagingEnabled // 👑 Snaps to each image
+                                onScroll={handleScroll} // We will create this function next
+                                scrollEventThrottle={16} // Ensures onScroll fires smoothly
                                 showsHorizontalScrollIndicator={false}
-                                nestedScrollEnabled={true}
                             >
-                                {item.image.map((x, i) => (
-                                    <View key={i} className=" w-[310px] h-40">
-                                        <Image className=" w-[300px] h-full" source={x} />
-                                    </View>
+                                {item.image.map((x, index) => (
+
+                                    <Image
+                                        key={index}
+                                        source={x}
+                                        className="h-full"
+                                        style={{ width: carouselWidth }} // Each image takes the full carousel width
+                                        contentFit="cover"
+                                    />
+
                                 ))}
                             </ScrollView>
                         </View>

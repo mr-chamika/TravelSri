@@ -12,6 +12,7 @@ const equipments = require('../assets/images/sideTabs/equips.png')
 const hotel = require('../assets/images/sideTabs/bed.png')
 const guide = require('../assets/images/sideTabs/guid.png')
 const translator = require('../assets/images/sideTabs/translator.png')
+const vehicle = require('../assets/images/tabbar/carr.png')
 
 interface TopbarProps {
     close: () => void;
@@ -45,27 +46,31 @@ export default function Sidebar({ close }: TopbarProps) {
             </View>
 
             <View className='flex-1 justify-center'>
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/groupTravel') }}>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/groupTravel') }}>
                     <Image source={group} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Group Travel</Text>
                 </TouchableOpacity>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/carRental') }}>
+                    <Image source={vehicle} className='justify-center items-center w-[35px] h-[35px]'></Image>
+                    <Text className='flex justify-start items-center text-[20px] font-black w-96'>Vehicle Booking</Text>
+                </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/equipmentHire') }}>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/equipmentHire') }}>
                     <Image source={equipments} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Equipments Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/hotelBooking') }}>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/hotelBooking') }}>
                     <Image source={hotel} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Hotel Booking</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/guideHire') }}>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/guideHire') }}>
                     <Image source={guide} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Guide Hiring</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className='my-8 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/translator') }}>
+                <TouchableOpacity className='my-7 flex flex-row gap-24 w-80' onPress={() => { handleNavigation('/sideTabs/translator') }}>
                     <Image source={translator} className='justify-center items-center w-[35px] h-[35px]'></Image>
                     <Text className='flex justify-start items-center text-[20px] font-black w-96'>Translator</Text>
                 </TouchableOpacity>
