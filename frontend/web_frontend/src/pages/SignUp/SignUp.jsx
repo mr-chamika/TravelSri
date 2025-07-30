@@ -152,9 +152,30 @@ const SignupPage = () => {
       const lngValue = typeof lng === 'function' ? lng() : (lng || 80.7718);
   
       // Update form data with location information
+      // Try to extract area name from address components or formatted address
+      let baseArea = '';
+      if (place.address_components && Array.isArray(place.address_components)) {
+        // Look for neighborhood, sublocality, or landmark in address components
+        const areaComponent = place.address_components.find(component => 
+          component.types.some(type => ['neighborhood', 'sublocality', 'sublocality_level_1', 'landmark'].includes(type))
+        );
+        if (areaComponent) {
+          baseArea = areaComponent.long_name;
+        }
+      }
+      
+      // If no specific area found, try to use the formatted address parts
+      if (!baseArea && place.formatted_address) {
+        const addressParts = place.formatted_address.split(',');
+        if (addressParts.length > 1) {
+          baseArea = addressParts[1].trim();
+        }
+      }
+      
       setFormData(prev => ({
         ...prev,
         hotelAddress: address || place.formatted_address.split(',')[0] || prev.hotelAddress || '',
+        baseAreaLocation: baseArea || prev.baseAreaLocation || '',
         city: city || prev.city || '',
         district: district || prev.district || '',
         postalCode: postalCode || prev.postalCode || '',
@@ -537,11 +558,13 @@ const SignupPage = () => {
   };
   
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
     hotelName: '',
     hotelAddress: '',
+    baseAreaLocation: '',
     contactPerson: '',
     contactPosition: '',
     contactEmail: '',
@@ -592,6 +615,15 @@ const SignupPage = () => {
   const validateForm = () => {
     const newErrors = {};
     
+    // Username validation
+    if (!formData.username) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username = 'Username can only contain letters, numbers and underscores';
+    }
+    
     // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -614,6 +646,7 @@ const SignupPage = () => {
     // Hotel details validation
     if (!formData.hotelName) newErrors.hotelName = 'Hotel name is required';
     if (!formData.hotelAddress) newErrors.hotelAddress = 'Hotel address is required';
+    if (!formData.baseAreaLocation) newErrors.baseAreaLocation = 'Base area location is required';
     if (!formData.city) newErrors.city = 'City is required';
     if (!formData.district) newErrors.district = 'District is required';
     
@@ -1159,6 +1192,7 @@ const SignupPage = () => {
                 </div>
               )}
             </div>
+            
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1203,6 +1237,26 @@ const SignupPage = () => {
                 placeholder="Postal Code"
               />
             </div>
+          </div>
+          <div className="mt-4">
+            <label className="block mb-1 text-sm font-medium text-gray-700">Base Area Location*</label>
+            <div className="relative">
+              <input
+                type="text"
+                name="baseAreaLocation"
+                value={formData.baseAreaLocation || ''}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 pl-10 border ${
+                  errors.baseAreaLocation ? 'border-red-500' : 'border-gray-300'
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
+                placeholder="Nearby landmark or popular area"
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">place</span>
+            </div>
+            {errors.baseAreaLocation && <p className="mt-1 text-xs text-red-500">{errors.baseAreaLocation}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              Enter a well-known area or landmark near your hotel to help guests understand your location better.
+            </p>
           </div>
 
            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2 pt-4">Room Information</h2>
@@ -1982,6 +2036,28 @@ const SignupPage = () => {
 
            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Account Information</h2>
           
+          {/* Username field */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Username*</label>
+            <div className="relative">
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 pl-10 border ${
+                  errors.username ? 'border-red-500' : 'border-gray-300'
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
+                placeholder="Choose a username"
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">person</span>
+            </div>
+            {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
+            <p className="mt-1 text-xs text-gray-500">
+              This will be your unique identifier for logging into your account
+            </p>
+          </div>
+          
           {/* Email field */}
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">Email Address*</label>
@@ -1991,6 +2067,7 @@ const SignupPage = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
+                autoComplete="off"
                 className={`w-full px-4 py-2 pl-10 border ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
@@ -2011,10 +2088,11 @@ const SignupPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  autoComplete="new-password"
                   className={`w-full px-4 py-2 pl-10 pr-10 border ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                  placeholder="••••••••"
+                  placeholder="Password"
                 />
                 <span className="absolute left-3 top-2.5 text-gray-400 material-icons">lock</span>
                 <button
@@ -2039,7 +2117,7 @@ const SignupPage = () => {
                   className={`w-full px-4 py-2 pl-10 pr-10 border ${
                     errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                   } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                  placeholder="••••••••"
+                  placeholder="Confirm Password"
                 />
                 <span className="absolute left-3 top-2.5 text-gray-400 material-icons">lock</span>
                 <button
