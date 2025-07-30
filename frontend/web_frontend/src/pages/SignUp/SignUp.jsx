@@ -1726,7 +1726,7 @@ const SignupPage = () => {
                   <input
                     type="tel"
                     name="alternatePhoneNumber"
-                    value={formData.alternatePhoneNumber}
+                    value={formData.alternatePhoneNumber} 
                     onChange={handleChange}
                     className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     placeholder="+94 123 456 7890"
@@ -2048,7 +2048,7 @@ const SignupPage = () => {
                 className={`w-full px-4 py-2 pl-10 border ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
                 } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                placeholder="Choose a username"
+                placeholder="Type a username"
               />
               <span className="absolute left-3 top-2.5 text-gray-400 material-icons">person</span>
             </div>
