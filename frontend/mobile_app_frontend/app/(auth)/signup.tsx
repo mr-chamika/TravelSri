@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import isValidPhoneNumber, { type CountryCode } from 'libphonenumber-js/min';
-import {
-    SafeAreaView,
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    Alert,
-    Image
-} from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -54,7 +45,8 @@ const timeOptions = [
 
 interface FormData {
     // Step 1
-    fullName: string;
+    firstName: string;
+    lastName: string;
     mobileNumber: string;
     whatsappNumber: string;
     email: string;
@@ -78,15 +70,15 @@ interface FormData {
     bp: ImagePickerAsset | null; // Business Photo
 
     // Step 3
-    daysPerWeek: string;
+    daysPerWeek: string[];
     startTime: string;
     endTime: string;
-    businessRegPic: ImagePickerAsset | null;
-    cancellationPolicyPic: ImagePickerAsset | null;
+    businessRegPic1: ImagePickerAsset | null;
+    businessRegPic2: ImagePickerAsset | null;
 
     // Step 4 & Others
-    nicpic: ImagePickerAsset | null;
-    nicpic2: ImagePickerAsset | null;
+    identitypic1: ImagePickerAsset | null;
+    identitypic2: ImagePickerAsset | null;
     locpic: ImagePickerAsset | null;
     agreeTerms: boolean;
     confirmCondition: boolean;
@@ -103,18 +95,19 @@ export default function SignupForm() {
     const [generatedOtp, setGeneratedOtp] = useState({ code: '', timestamp: 0 });
     const [formData, setFormData] = useState<FormData>({
         // Step 1
-        fullName: '',//
-        mobileNumber: '',//
-        whatsappNumber: '',//
-        email: '',//
-        username: '',//
-        address: '',//
-        nicPassport: '',//
-        dob: '',//
-        gender: '',//
-        country: '',//
-        password: '',//
-        confirmPassword: '',
+        firstName: 'hasith',//
+        lastName: 'wijesinghe',
+        mobileNumber: '771161615',//
+        whatsappNumber: '0786715765',//
+        email: 'hasithchamika2001@gmail.com',//
+        username: 'chmai',//
+        address: 'Colombo',//
+        nicPassport: '200124102989',//
+        dob: '2001-08-28',//
+        gender: 'male',//
+        country: 'SL',//
+        password: '1234$Rweq',//
+        confirmPassword: '1234$Rweq',
         role: '',//
         pp: null, // Profile Picture
 
@@ -127,15 +120,15 @@ export default function SignupForm() {
         bp: null, // Business Photo
 
         // Step 3
-        daysPerWeek: '',//
+        daysPerWeek: [],//
         startTime: '',//
         endTime: '',//
-        businessRegPic: null,//
-        cancellationPolicyPic: null,//
+        businessRegPic1: null,//
+        businessRegPic2: null,//
 
         // Step 4 & Others
-        nicpic: null,//
-        nicpic2: null,//
+        identitypic1: null,//
+        identitypic2: null,//
         locpic: null,//
         agreeTerms: false,//
         confirmCondition: false,//
@@ -147,6 +140,8 @@ export default function SignupForm() {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [emailCheckStatus, setEmailCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [selectedImage, setSelectedImage] = useState(null)
+
+    const [isCalendarVisible, setIsCalendarVisible] = useState(false)
 
     const handleChoosePhoto = async (field: keyof FormData) => {
         // 1. Request permission
@@ -195,6 +190,26 @@ export default function SignupForm() {
         }
     }
 
+    // ✅ Replace your old function with this corrected version
+    // In your SignupForm component...
+
+    const sanitizeNicInput = (text: string): string => {
+        // Rule 1: The first 9 characters can ONLY be digits.
+        // We take the first 9 characters of the input and strip all non-digits.
+        const first9 = text.substring(0, 9).replace(/[^0-9]/g, '');
+
+        // Rule 2: The 10th character can be a digit OR 'V'.
+        // We take the 10th character and strip anything that isn't a digit or 'V'.
+        const char10 = text.substring(9, 10).replace(/[^0-9Vv]/g, '');
+
+        // Rule 3: Any characters after the 10th can ONLY be digits.
+        // We take the rest of the string and strip all non-digits.
+        const rest = text.substring(10).replace(/[^0-9]/g, '');
+
+        // Combine the sanitized parts and limit the total length to 12.
+        const finalSanitized = first9 + char10 + rest;
+        return finalSanitized.substring(0, 12);
+    };
     const validateField = (field: string, value: string | boolean, currentFormData: FormData) => {
         let error = '';
         if (typeof value === 'string' && !value.trim()) {
@@ -224,36 +239,73 @@ export default function SignupForm() {
             }
 
         } else if (field === 'nicPassport' && typeof value === 'string') {
-            const countryCode = currentFormData.country;
-            const nicValue = value.trim();
 
-            if (countryCode === 'LK') {
-                // This regex checks for either the old format (9 digits + V/X) OR the new 12-digit format.
-                const sriLankanNicRegex = /(^(\d{9}[VvXx]))|(^\d{12}$)/;
-                if (!sriLankanNicRegex.test(nicValue)) {
-                    error = 'Invalid SL NIC.';
-                    //error = 'Invalid SL NIC. Use 9 digits + V/X (e.g., 123456789V) or 12 digits.';
-                }
-            } else {
-                // For other countries, we apply a generic passport validation.
-                // This checks for 6-15 alphanumeric characters.
-                const passportRegex = /^[A-Za-z0-9]{6,15}$/;
-                if (!passportRegex.test(nicValue)) {
-                    error = 'Please enter a valid Passport Number.';
-                    //error = 'Please enter a valid Passport Number (6-15 letters and numbers).';
+            const countryCode = currentFormData.country;
+            const nicValue = value.trim().toUpperCase(); // Force to uppercase for easier 'V' check
+
+            // 1. Ensure a country is selected before proceeding.
+            if (!countryCode) {
+                error = 'Please select a country first.';
+            }
+            // 2. Apply Sri Lankan validation if country is 'LK'
+            else if (countryCode === 'LK') {
+                const oldNicRegex = /^\d{9}V$/; // 9 digits ending in 'V'
+                const newNicRegex = /^\d{12}$/; // 12 digits
+
+                if (oldNicRegex.test(nicValue)) {
+                    // Valid old format, no error
+                } else if (newNicRegex.test(nicValue)) {
+                    // New format is structurally valid, now check the year
+                    const year = parseInt(nicValue.substring(0, 4), 10);
+                    if (year <= 1900) {
+                        error = 'Invalid NIC';
+                    }
+                } else {
+                    // Does not match either valid format
+                    error = 'Invalid NIC. Use 999999999V or a valid 12-digit format.';
                 }
             }
+            // 3. Apply generic passport validation for all other countries
+            else {
+                const passportRegex = /^[A-Z0-9]{6,15}$/;
+                if (!passportRegex.test(nicValue)) {
+                    error = 'Please enter a valid Passport Number.';
+                }
+            }
+
         }
         else if (field === 'email' && typeof value === 'string' && !/\S+@\S+\.\S+/.test(value)) {
             error = 'Please enter a valid email address.';
-        } else if (field === 'password' && typeof value === 'string') {
+        }
+
+        else if (field === 'password' && typeof value === 'string') {
             const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
             if (!strongPasswordRegex.test(value)) {
                 error = 'Need 8+ characters (1 uppercase,1 number,1 symbol)';
             }
         } else if (field === 'confirmPassword' && value !== formData.password) {
             error = 'Passwords do not match.';
-        } else if (field === 'daysPerWeek') {
+        }
+
+        // ✅ NEW VALIDATION RULE FOR GUIDE REGISTRATION NUMBER
+        else if (field === 'registrationNumber' && currentFormData.role === 'guide') {
+            const guideRegRegex = /^N-\d{4}$/;
+            if (typeof value === 'string' && !guideRegRegex.test(value)) {
+                error = 'Format must be N-XXXX (e.g., N-0464).';
+            }
+
+
+        }
+
+        else if (field === 'registrationNumber' && currentFormData.role === 'merchant') {
+            // This regex accepts formats like: PV 12345, W12345, BR123456, or 123456789
+            const storeRegRegex = /\b([A-Z]{1,2}\s?\d{5,}|\d{9,})\b/g;
+            if (typeof value === 'string' && !storeRegRegex.test(value)) {
+                error = 'Invalid Reg. No. Use formats like PV12345, W12345, or a 9-digit Tax ID.';
+            }
+        }
+
+        else if (field === 'daysPerWeek') {
             const numDays = parseInt(value as string, 10);
             if (isNaN(numDays) || numDays <= 0) {
                 error = 'Please enter a valid number of days.';
@@ -323,6 +375,8 @@ export default function SignupForm() {
             if (processedValue.startsWith('0')) {
                 processedValue = processedValue.substring(1);
             }
+        } else if ((field === 'registrationNumber') && typeof value === 'string') {
+            processedValue = value.toUpperCase();
         }
         const newState = { ...formData, [field]: processedValue };
         //setFormData(prev => ({ ...prev, [field]: value }));
@@ -351,7 +405,7 @@ export default function SignupForm() {
     const validateStep1 = () => {
         const step1Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'pp', 'fullName', 'dob', 'gender', 'country', 'mobileNumber', 'whatsappNumber',
+            'pp', 'lastName', 'firstName', 'dob', 'gender', 'country', 'mobileNumber', 'whatsappNumber',
             'email', 'username', 'address', 'nicPassport', 'password', 'confirmPassword', 'role'
         ];
         fieldsToValidate.forEach(field => {
@@ -381,8 +435,18 @@ export default function SignupForm() {
     const validateStep2 = () => {
         const step2Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'businessName', 'registrationNumber', 'description', 'businessAddress'
+            'registrationNumber', 'description'
         ];
+
+        if (formData.role !== 'guide') {
+            fieldsToValidate.push('businessAddress');
+            fieldsToValidate.push('businessName');
+
+            if (!formData.bp) {
+                step2Errors.bp = 'Business photo is required.';
+            }
+        }
+
         fieldsToValidate.forEach(field => {
 
             const value = formData[field as keyof FormData];
@@ -406,7 +470,7 @@ export default function SignupForm() {
     const validateStep3 = () => {
         const step3Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'daysPerWeek', 'startTime', 'endTime', 'businessRegPic', 'cancellationPolicyPic'
+            'startTime', 'endTime', 'businessRegPic1', 'businessRegPic2'
         ];
         fieldsToValidate.forEach(field => {
 
@@ -425,12 +489,15 @@ export default function SignupForm() {
         if (startIndex !== -1 && endIndex !== -1 && endIndex <= startIndex) {
             step3Errors['endTime'] = 'End time must be after start time.';
         }
-
-        if (!formData.businessRegPic) {
-            step3Errors.businessRegPic = 'This photo is required.';
+        if (formData.daysPerWeek.length === 0) {
+            step3Errors.daysPerWeek = 'Please select at least one available day.';
         }
-        if (!formData.cancellationPolicyPic) {
-            step3Errors.cancellationPolicyPic = 'This photo is required.';
+
+        if (!formData.businessRegPic1) {
+            step3Errors.businessRegPic1 = 'This photo is required.';
+        }
+        if (!formData.businessRegPic2) {
+            step3Errors.businessRegPic2 = 'This photo is required.';
         }
 
         setErrors(step3Errors);
@@ -440,7 +507,7 @@ export default function SignupForm() {
     const validateStep4 = () => {
         const step4Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'nicpic', 'locpic', 'agreeTerms'
+            'identitypic1', 'locpic', 'agreeTerms'
         ];
         if (formData.role !== 'user') {
             fieldsToValidate.push('confirmCondition');
@@ -456,8 +523,8 @@ export default function SignupForm() {
             }
         });
 
-        if (!formData.nicpic) {
-            step4Errors.nicpic = 'NIC photo is required.';
+        if (!formData.identitypic1) {
+            step4Errors.identitypic1 = 'NIC photo is required.';
         }
         if (!formData.locpic) {
             step4Errors.locpic = 'Location is required.';
@@ -489,6 +556,7 @@ export default function SignupForm() {
             setStep(4);
         } else if ((step === 4 && formData.role === 'user' || formData.role === 'vehicle') || step < steps.length) {
             setStep(step + 1);
+            //console.log(formData)
         }
 
     };
@@ -510,7 +578,7 @@ export default function SignupForm() {
         setGeneratedOtp({ code: newOtp, timestamp: Date.now() });
         // 2. Prepare the template parameters
         const templateParams = {
-            to_name: formData.fullName,
+            to_name: formData.firstName,
             email: formData.email, // Make sure you collect the email
             otp_code: newOtp,
         };
@@ -561,19 +629,29 @@ export default function SignupForm() {
         }
 
         const isStep1Valid = validateStep1();
-        const isStep2Valid = formData.role !== 'user' || 'vehicle' ? validateStep2() : true;
-        const isStep3Valid = formData.role !== 'user' || 'vehicle' ? validateStep3() : true;
+        const isStep2Valid = (formData.role !== 'user' && formData.role !== 'vehicle') ? validateStep2() : true;
+        const isStep3Valid = (formData.role !== 'user' && formData.role !== 'vehicle') ? validateStep3() : true;
         const isStep4Valid = validateStep4();
 
-        if (emailCheckStatus === 'taken') {
-            Alert.alert("Validation Error", "The email is already registered. Please use a different email.");
-            return;
+        const formDatax = { ...formData };
+
+        // 1. Convert empty strings to null
+        for (const key in formDatax) {
+            if (Object.prototype.hasOwnProperty.call(formDatax, key)) {
+                const value = formDatax[key as keyof FormData];
+                if (value === '') {
+                    (formDatax as any)[key] = null;
+                }
+            }
+        }
+
+        if (formDatax.daysPerWeek && formDatax.daysPerWeek.length === 0) {
+            (formDatax as any).daysPerWeek = null;
         }
 
 
-
         //console.log(submit)
-        if (formData.role == 'user' && isStep1Valid && isStep4Valid) {
+        if (formDatax.role == 'user' && isStep1Valid && isStep4Valid) {
 
             try {
                 //to mobile
@@ -585,7 +663,7 @@ export default function SignupForm() {
                     businessName,
                     businessRegPic,
                     businessType,
-                    cancellationPolicyPic,
+                    businessRegPic2,
                     confirmPassword,
                     daysPerWeek,
                     description,
@@ -603,11 +681,11 @@ export default function SignupForm() {
                     submit = { ...payload, status: 'active', pp: pps }
                 }*/
 
-                const dataToSend: any = { ...formData, status: 'active' };
-                const imageFields: (keyof FormData)[] = ['pp'/* , 'bp', 'businessRegPic', 'cancellationPolicyPic'*/, 'nicpic', 'locpic'];
+                const dataToSend: any = { ...formDatax, status: 'active' };
+                const imageFields: (keyof FormData)[] = ['pp'/* , 'bp', 'businessRegPic', 'businessRegPic2'*/, 'identitypic1', 'identitypic2', 'locpic'];
 
                 for (const field of imageFields) {
-                    const imageAsset = formData[field] as ImagePickerAsset | null;
+                    const imageAsset = formDatax[field] as ImagePickerAsset | null;
 
                     // USE THIS LOGIC
                     // The 'base64' property is provided by the picker on all platforms
@@ -624,9 +702,7 @@ export default function SignupForm() {
                     bp,
                     businessAddress,
                     businessName,
-                    businessRegPic,
                     businessType,
-                    cancellationPolicyPic,
                     confirmPassword,
                     daysPerWeek,
                     description,
@@ -666,11 +742,11 @@ export default function SignupForm() {
             try {
 
 
-                const dataToSend: any = { ...formData, status: 'pending', role: formData.role };
-                const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic', 'cancellationPolicyPic', 'nicpic', 'locpic'];
+                const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role };
+                const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic1', 'businessRegPic2', 'identitypic1', 'identitypic2', 'locpic'];
 
                 for (const field of imageFields) {
-                    const imageAsset = formData[field] as ImagePickerAsset | null;
+                    const imageAsset = formDatax[field] as ImagePickerAsset | null;
 
                     // USE THIS LOGIC
                     // The 'base64' property is provided by the picker on all platforms
@@ -704,6 +780,36 @@ export default function SignupForm() {
             catch (err) {
                 console.log(err)
             }
+        }
+    };
+
+    // Inside your SignupForm component, before the return statement...
+
+    const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const handleDayToggle = (day: string) => {
+        const currentSelectedDays = formData.daysPerWeek;
+        let newSelectedDays: string[];
+
+        // If the day is already selected, remove it. Otherwise, add it.
+        if (currentSelectedDays.includes(day)) {
+            newSelectedDays = currentSelectedDays.filter(d => d !== day);
+        } else {
+            newSelectedDays = [...currentSelectedDays, day];
+        }
+
+        setFormData(prevState => ({
+            ...prevState,
+            daysPerWeek: newSelectedDays,
+        }));
+
+        // Clear any previous errors for this field when the user interacts with it
+        if (errors.daysPerWeek) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.daysPerWeek;
+                return newErrors;
+            });
         }
     };
 
@@ -741,9 +847,14 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.pp ? 'opacity-100' : 'opacity-0'}`}>{errors.pp || ' '}</Text>
                         </View>
                         <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Full Name</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.fullName} onChangeText={v => handleChange('fullName', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.fullName ? 'opacity-100' : 'opacity-0'}`}>{errors.fullName || ' '}</Text>
+                            <Text className="mb-1 font-semibold text-base">First Name</Text>
+                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.firstName} onChangeText={v => handleChange('firstName', v)} />
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.firstName ? 'opacity-100' : 'opacity-0'}`}>{errors.firstName || ' '}</Text>
+                        </View>
+                        <View className="mb-4">
+                            <Text className="mb-1 font-semibold text-base">Last Name</Text>
+                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.lastName} onChangeText={v => handleChange('lastName', v)} />
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.lastName ? 'opacity-100' : 'opacity-0'}`}>{errors.lastName || ' '}</Text>
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Date of Birth</Text>
@@ -807,7 +918,7 @@ export default function SignupForm() {
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Username</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.username} onChangeText={v => handleChange('username', v)} autoCapitalize="none" />
+                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.username} onChangeText={text => handleChange('username', text.replace(/\s/g, ''))} autoCapitalize="none" />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.username ? 'opacity-100' : 'opacity-0'}`}>{errors.username || ' '}</Text>
                         </View>
                         <View className="mb-4">
@@ -817,7 +928,7 @@ export default function SignupForm() {
                         </View>
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">NIC / Passport Number</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicPassport} onChangeText={v => handleChange('nicPassport', v)} />
+                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicPassport} onChangeText={text => handleChange('nicPassport', sanitizeNicInput(text))} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.nicPassport ? 'opacity-100' : 'opacity-0'}`}>{errors.nicPassport || ' '}</Text>
                         </View>
                         <View className="mb-4">
@@ -876,11 +987,12 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
+                            {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
                             <Text className={`text-red-500 text-sm mt-1 ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">Business Photo</Text>
                         </View>
                         <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Business Name</Text>
+                            <Text className="mb-1 font-semibold text-base">Business Name</Text>{formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessName} onChangeText={v => handleChange('businessName', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessName ? 'opacity-100' : 'opacity-0'}`}>{errors.businessName || ' '}</Text>
                         </View>
@@ -908,7 +1020,7 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.description ? 'opacity-100' : 'opacity-0'}`}>{errors.description || ' '}</Text>
                         </View>
                         <View className="mb-8">
-                            <Text className="mb-1 font-semibold text-base">Business Address</Text>
+                            <Text className="mb-1 font-semibold text-base">Business Address</Text>{formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessAddress} onChangeText={v => handleChange('businessAddress', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessAddress ? 'opacity-100' : 'opacity-0'}`}>{errors.businessAddress || ' '}</Text>
                         </View>
@@ -918,17 +1030,24 @@ export default function SignupForm() {
                 {step === 3 && (
                     <View>
                         <View className="mb-4 pt-10">
-                            <Text className="mb-1 font-semibold text-base">🗓️ Days Available (Max 7)</Text>
-                            <TextInput
-                                className="w-full text-black border border-gray-300 rounded-lg p-3"
-                                placeholder="e.g., 2"
-                                keyboardType="numeric"
-                                maxLength={1}
-                                value={formData.daysPerWeek}
-                                onChangeText={v => handleChange('daysPerWeek', v)}
-                            />
+                            <Text className="mb-2 font-semibold text-base">🗓️ Select Available Days</Text>
+                            <View className="flex-row flex-wrap justify-center">
+                                {weekDays.map(day => {
+                                    const isSelected = formData.daysPerWeek.includes(day);
+                                    return (
+                                        <TouchableOpacity
+                                            key={day}
+                                            onPress={() => handleDayToggle(day)}
+                                            className={`py-2 m-1 w-10 items-center rounded-full border-2 ${isSelected ? 'bg-blue-500 border-blue-500' : 'bg-gray-100 border-gray-300'}`}
+                                        >
+                                            <Text className={`${isSelected ? 'text-white font-bold' : 'text-gray-700'}`}>{day.substring(0, 3)}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.daysPerWeek ? 'opacity-100' : 'opacity-0'}`}>{errors.daysPerWeek || ' '}</Text>
                         </View>
+
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">⏰ Time Slot</Text>
                             <View className="flex-row justify-between">
@@ -955,15 +1074,15 @@ export default function SignupForm() {
                             </View>
                         </View>
                         <View className="items-center w-full my-8">
-                            <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate</Text>
+                            <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 1)</Text>
                             {/* <TextInput placeholder="URL for registration certificate" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic} onChangeText={v => handleChange('businessRegPic', v)} /> */}
                             <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('businessRegPic') }}
-                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                onPress={() => { handleChoosePhoto('businessRegPic1') }}
+                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic1 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
                             >
-                                {formData.businessRegPic ? (
+                                {formData.businessRegPic1 ? (
                                     <Image
-                                        source={{ uri: formData.businessRegPic.uri }}
+                                        source={{ uri: formData.businessRegPic1.uri }}
                                         className="w-full h-full rounded-lg border-2 border-gray-100"
                                         resizeMode="cover"
 
@@ -976,18 +1095,18 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic || ' '}</Text>
+                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic1 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic1 || ' '}</Text>
                         </View>
                         <View className="items-center w-full my-8">
-                            <Text className="w-full mb-1 font-semibold text-base">Cancellation Policy</Text>
-                            {/* <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.cancellationPolicyPic} onChangeText={v => handleChange('cancellationPolicyPic', v)} /> */}
+                            <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 2)</Text>
+                            {/* <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic2} onChangeText={v => handleChange('businessRegPic2', v)} /> */}
                             <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('cancellationPolicyPic') }}
-                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.cancellationPolicyPic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                onPress={() => { handleChoosePhoto('businessRegPic2') }}
+                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
                             >
-                                {formData.cancellationPolicyPic ? (
+                                {formData.businessRegPic2 ? (
                                     <Image
-                                        source={{ uri: formData.cancellationPolicyPic.uri }}
+                                        source={{ uri: formData.businessRegPic2.uri }}
                                         className="w-full h-full rounded-lg border-2 border-gray-100"
                                         resizeMode="cover"
 
@@ -1000,7 +1119,7 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.cancellationPolicyPic ? 'opacity-100' : 'opacity-0'}`}>{errors.cancellationPolicyPic || ' '}</Text>
+                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic2 || ' '}</Text>
                         </View>
                     </View>
                 )}
@@ -1008,14 +1127,14 @@ export default function SignupForm() {
                 {step === 4 && (
                     <View>
                         <View className="items-center w-full my-10">
-                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicpic} onChangeText={v => handleChange('nicpic', v)} /> */}
+                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.identitypic1} onChangeText={v => handleChange('identitypic1', v)} /> */}
                             <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('nicpic') }}
-                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.nicpic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                onPress={() => { handleChoosePhoto('identitypic1') }}
+                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.identitypic1 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
                             >
-                                {formData.nicpic ? (
+                                {formData.identitypic1 ? (
                                     <Image
-                                        source={{ uri: formData.nicpic.uri }}
+                                        source={{ uri: formData.identitypic1.uri }}
                                         className="w-full h-full border-2 border-gray-100"
                                         resizeMode="cover"
 
@@ -1028,18 +1147,18 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.nicpic ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic || ' '}</Text>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic1 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic1 || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">National Identity Card (side 1)</Text>
                         </View>
                         <View className="items-center w-full my-10">
-                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicpic} onChangeText={v => handleChange('nicpic', v)} /> */}
+                            {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.identitypic1} onChangeText={v => handleChange('identitypic1', v)} /> */}
                             <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('nicpic2') }}
-                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.nicpic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                onPress={() => { handleChoosePhoto('identitypic2') }}
+                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.identitypic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
                             >
-                                {formData.nicpic2 ? (
+                                {formData.identitypic2 ? (
                                     <Image
-                                        source={{ uri: formData.nicpic2.uri }}
+                                        source={{ uri: formData.identitypic2.uri }}
                                         className="w-full h-full border-2 border-gray-100"
                                         resizeMode="cover"
 
@@ -1052,7 +1171,7 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.nicpic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.nicpic2 || ' '}</Text>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic12 || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">National Identity Card (side 2)</Text>
                         </View>
                         <View className="items-center w-full my-8">
@@ -1141,7 +1260,7 @@ export default function SignupForm() {
                             </View>
                             <View className="mt-14 flex-row justify-center items-center">
                                 <Text className="text-base text-gray-500">Didn't receive the code?</Text>
-                                <TouchableOpacity onPress={() => Alert.alert("Resending OTP...")} className="py-2 ml-1">
+                                <TouchableOpacity onPress={handleSendOtp} className="py-2 ml-1">
                                     <Text className="font-semibold text-blue-500 text-base">Resend</Text>
                                 </TouchableOpacity>
                             </View>
