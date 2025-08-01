@@ -3,7 +3,6 @@ package com.example.student.controller;
 import com.example.student.model.*;
 import com.example.student.model.dto.*;
 import com.example.student.repo.*;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -113,7 +112,7 @@ public class TravelerController {
     }
 
     @Autowired
-    private GuidesRepo repo5;
+    private GuideRepo repo5;
 
 
     @GetMapping("/guides-all")
@@ -157,9 +156,9 @@ public class TravelerController {
     private StoresRepo storesRepo;
 
     @GetMapping("/shops-get")
-    public ResponseEntity<List<Store>> StoreGet() {
+    public ResponseEntity<List<User>> StoreGet() {
 
-        List<Store> list = storesRepo.findAll();
+        List<User> list = storesRepo.findAll();
 
         return ResponseEntity.ok(list);
 
@@ -175,9 +174,9 @@ public class TravelerController {
     }
 
     @GetMapping("/shop-get")
-    public ResponseEntity<Optional<Store>> StoreGet(@RequestParam String id) {
+    public ResponseEntity<Optional<User>> StoreGet(@RequestParam String id) {
 
-        Optional<Store> x = storesRepo.findById(id);
+        Optional<User> x = storesRepo.findStoreById(id);
 
         return ResponseEntity.ok(x);
 
@@ -210,7 +209,7 @@ public class TravelerController {
 
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> search(@RequestParam String keyword) {
-        List<Store> matchingStores = storesRepo.findByNameContainingIgnoreCase(keyword);
+        List<User> matchingStores = storesRepo.findByBusinessNameContainingIgnoreCase(keyword);
         List<Item> matchingItems = itemrepo.findByNameContainingIgnoreCase(keyword);
 
         Map<String, Object> response = new HashMap<>();
@@ -233,7 +232,7 @@ public class TravelerController {
     }
 
     @Autowired
-    private CVehicleRepo vehicleRepo;
+    private VehicleRepo vehicleRepo;
 
     @GetMapping("/driver-get")
     public ResponseEntity<List<Driverdto>> VehiclesAll(String id) {
@@ -247,7 +246,7 @@ public class TravelerController {
     @GetMapping("/driver-data")
     public ResponseEntity<?> VehicleData(String id) {
 
-        Optional<CVehicle> list = vehicleRepo.findById(id);
+        Optional<Vehicledto> list = vehicleRepo.findVehicleById(id);
 
         if (list.isEmpty()) {
 
@@ -344,8 +343,8 @@ r.get().getMapRoute()
 
         Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
         Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
-        Optional<Guide> guide = repo5.findById(solotrip.get().getGuideId());
-        Optional<CVehicle> vehicle = vehicleRepo.findById(solotrip.get().getCarId());
+        Optional<User> guide = repo5.findById(solotrip.get().getGuideId());
+        Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.get().getCarId());
 
         if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
 
@@ -355,8 +354,8 @@ r.get().getMapRoute()
 
         SoloTrip x = solotrip.get();
         Hotel h = hotel.get();
-        Guide g = guide.get();
-        CVehicle v = vehicle.get();
+        User g = guide.get();
+        Vehicledto v = vehicle.get();
 
         Optional<Category> cat = categoryRepo.findById(v.getCatId());
         Category c = cat.get();

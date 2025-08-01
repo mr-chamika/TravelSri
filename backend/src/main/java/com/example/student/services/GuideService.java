@@ -1,7 +1,7 @@
 package com.example.student.services;
 
-import com.example.student.model.Guide;
-import com.example.student.repo.TGuideRepo;
+import com.example.student.model.User;
+import com.example.student.repo.GuideRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +11,10 @@ import java.util.Optional;
 @Service
 public class GuideService implements IGuideService{
     @Autowired
-    private TGuideRepo TGuideRepo;
+    private GuideRepo GuideRepo;
 
     @Override
-    public Guide createGuide(Guide TGuide) {
+    public User createGuide(User TGuide) {
         if (TGuide == null) {
             throw new IllegalArgumentException("Guide cannot be null");
         }
@@ -28,25 +28,25 @@ public class GuideService implements IGuideService{
         if (TGuide.getLocation() == null || TGuide.getLocation().trim().isEmpty()) {
             throw new IllegalArgumentException("Base city is required");
         }
-        return TGuideRepo.save(TGuide);
+        return GuideRepo.save(TGuide);
     }
 
 
     @Override
-    public Optional<Guide> getGuideById(String id) {
+    public Optional<User> getGuideById(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Guide ID cannot be null or empty");
         }
-        return TGuideRepo.findById(id);
+        return GuideRepo.findById(id);
     }
 
     @Override
-    public List<Guide> getAllGuides() {
-        return TGuideRepo.findAll();
+    public List<User> getAllGuides() {
+        return GuideRepo.findAll();
     }
 
     @Override
-    public Guide updateGuide(String id, Guide TGuide) {
+    public User updateGuide(String id, User TGuide) {
         if (TGuide == null) {
             throw new IllegalArgumentException("Guide cannot be null");
         }
@@ -54,9 +54,9 @@ public class GuideService implements IGuideService{
             throw new IllegalArgumentException("Guide ID cannot be null or empty");
         }
 
-        Optional<Guide> existingGuide = TGuideRepo.findById(id);
+        Optional<User> existingGuide = GuideRepo.findById(id);
         if (existingGuide.isPresent()) {
-            Guide TGuideToUpdate = existingGuide.get();
+            User TGuideToUpdate = existingGuide.get();
 
             // Update all fields
             TGuideToUpdate.setFirstName(TGuide.getFirstName());
@@ -68,7 +68,7 @@ public class GuideService implements IGuideService{
             TGuideToUpdate.setLocation(TGuide.getLocation());
             TGuideToUpdate.setDailyRate(TGuide.getDailyRate());
 
-            return TGuideRepo.save(TGuideToUpdate);
+            return GuideRepo.save(TGuideToUpdate);
         }
         throw new RuntimeException("Guide not found with id: " + id);
     }
@@ -78,30 +78,30 @@ public class GuideService implements IGuideService{
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Guide ID cannot be null or empty");
         }
-        if (TGuideRepo.existsById(id)) {
-            TGuideRepo.deleteById(id);
+        if (GuideRepo.existsById(id)) {
+            GuideRepo.deleteById(id);
             return true;
         }
         return false;
     }
 
     @Override
-    public List<Guide> getGuidesByBaseCity(String baseCity) {
-        return TGuideRepo.safeFindByBaseCity(baseCity);
+    public List<User> getGuidesByBaseCity(String baseCity) {
+        return GuideRepo.safeFindByBaseCity(baseCity);
     }
 
     @Override
-    public List<Guide> getGuidesByLanguage(String language) {
-        return TGuideRepo.safeFindByLanguage(language);
+    public List<User> getGuidesByLanguage(String language) {
+        return GuideRepo.safeFindByLanguage(language);
     }
 
     @Override
-    public List<Guide> getGuidesByMinExperience(Integer minExperience) {
-        return TGuideRepo.safeFindByMinExperienceYears(minExperience);
+    public List<User> getGuidesByMinExperience(Integer minExperience) {
+        return GuideRepo.safeFindByMinExperienceYears(minExperience);
     }
 
     @Override
-    public List<Guide> getGuidesByDailyRateRange(Double minRate, Double maxRate) {
+    public List<User> getGuidesByDailyRateRange(Double minRate, Double maxRate) {
         if (minRate == null || minRate < 0) {
             throw new IllegalArgumentException("Minimum rate must be a non-negative number");
         }
@@ -111,15 +111,15 @@ public class GuideService implements IGuideService{
         if (minRate > maxRate) {
             throw new IllegalArgumentException("Minimum rate cannot be greater than maximum rate");
         }
-        return TGuideRepo.findByDailyRateRange(minRate, maxRate);
+        return GuideRepo.findByDailyRateRange(minRate, maxRate);
     }
 
     @Override
-    public List<Guide> getGuidesByAreaOfService(String area) {
+    public List<User> getGuidesByAreaOfService(String area) {
         if (area == null || area.trim().isEmpty()) {
             throw new IllegalArgumentException("Area of service cannot be null or empty");
         }
-        return TGuideRepo.findByAreaOfService(area);
+        return GuideRepo.findByAreaOfService(area);
     }
 
 }

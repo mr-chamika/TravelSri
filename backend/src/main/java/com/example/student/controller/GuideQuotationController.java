@@ -1,9 +1,9 @@
 package com.example.student.controller;
 
 import com.example.student.model.GuideQuotation;
-import com.example.student.model.Tour;
+import com.example.student.model.PendingTrip;
 import com.example.student.repo.GuideQuotationRepo;
-import com.example.student.repo.GuideRepo;
+import com.example.student.repo.PendingTripRepo;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,10 +17,10 @@ import java.util.stream.Collectors;
 @RestController
 @CrossOrigin(origins = "http://localhost:8082")
 @RequestMapping("/guide")
-public class GuideController {
+public class GuideQuotationController {
 
     @Autowired
-    private GuideRepo guideRepo;
+    private PendingTripRepo guideTourRepo;
 
     @Autowired
     private GuideQuotationRepo quotationRepo;
@@ -37,12 +37,12 @@ public class GuideController {
     private String guideid = "TEMP_GUIDE_ID_001";
 
     @GetMapping("/groupTours")
-    public List<Tour> getUnsubmittedToursForGuide() {
-        List<Tour> allTours = guideRepo.findAll();
+    public List<PendingTrip> getUnsubmittedToursForGuide() {
+        List<PendingTrip> allTours = guideTourRepo.findAll();
         List<GuideQuotation> guideQuotations = quotationRepo.findByGuideId(guideid);
 
         System.out.println("All Tours:");
-        allTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+        allTours.forEach(t -> System.out.println("Tour ID: " + t.getPtId()));
 
         System.out.println("Guide Quotations:");
         guideQuotations.forEach(q -> System.out.println("Tour ID: " + q.getPendingTripId() + ", Guide ID: " + q.getGuideId()));
@@ -54,19 +54,19 @@ public class GuideController {
         System.out.println("Quoted Tour IDs by Guide:");
         quotedTourIds.forEach(System.out::println);
 
-        List<Tour> unsubmittedTours = allTours.stream()
-                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.get_id())))
+        List<PendingTrip> unsubmittedTours = allTours.stream()
+                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.getPtId())))
                 .collect(Collectors.toList());
 
         System.out.println("Unsubmitted Tours:");
-        unsubmittedTours.forEach(t -> System.out.println("Tour ID: " + t.get_id()));
+        unsubmittedTours.forEach(t -> System.out.println("Tour ID: " + t.getPtId()));
 
         return unsubmittedTours;
     }
 
     @PostMapping("/quotation")
-    public Tour addQuotation(@RequestBody Tour guide) {
-        return guideRepo.save(guide);
+    public PendingTrip addQuotation(@RequestBody PendingTrip guide) {
+        return guideTourRepo.save(guide);
     }
 
     // Fixed endpoint to submit quotation price - now accepts tourId in path and data in body
@@ -84,15 +84,15 @@ public class GuideController {
             }
 
             // Check if tour exists
-            Optional<Tour> optionalTour = guideRepo.findById(tourId);
+            Optional<PendingTrip> optionalTour = guideTourRepo.findById(tourId);
             if (optionalTour.isEmpty()) {
                 System.out.println("Tour not found with ID: " + tourId);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Tour not found with id: " + tourId);
             }
 
-            Tour tour = optionalTour.get();
-            System.out.println("Found tour: " + tour.getTourTitle());
+            PendingTrip tour = optionalTour.get();
+            System.out.println("Found tour: " + tour.getTitle());
 
             // Get guide ID from request body (allows temporary guide IDs)
             String guideId = quotationRequest.getGuideId();
@@ -161,15 +161,15 @@ public class GuideController {
             List<Map<String, Object>> resultList = new ArrayList<>();
 
             for (GuideQuotation quotation : quotations) {
-                Optional<Tour> tourOptional = guideRepo.findById(quotation.getPendingTripId());
+                Optional<PendingTrip> tourOptional = guideTourRepo.findById(quotation.getPendingTripId());
 
                 if (tourOptional.isPresent()) {
-                    Tour tour = tourOptional.get();
+                    PendingTrip tour = tourOptional.get();
 
                     Map<String, Object> data = new HashMap<>();
                     data.put("quotationId", quotation.get_id());
                     data.put("guideId", quotation.getGuideId());
-                    data.put("tourId", tour.get_id());
+                    data.put("tourId", tour.getPtId());
                     data.put("tourDetails", tour);  // Entire Tour model
                     data.put("quotedAmount", quotation.getQuotedAmount());
                     data.put("quotationNotes", quotation.getQuotationNotes());

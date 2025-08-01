@@ -1,6 +1,7 @@
 package com.example.student.controller;
 
 import com.example.student.model.User;
+import com.example.student.model.dto.Resetpwdto;
 import com.example.student.repo.UserRepo;
 import com.example.student.services.Emailtaken;
 import com.example.student.services.JwtUtil;
@@ -125,12 +126,12 @@ public class UserController {
 
     @GetMapping("/profile")
 
-    public ResponseEntity<Map<String, String>> proPic(@RequestParam String email) {
+    public ResponseEntity<Map<String, User>> proPic(@RequestParam String email) {
 
         Optional<User> x = userRepo.findByEmail(email);
 
-        Map<String, String> j = new HashMap<>();
-        j.put("pp", x.get().getPp());
+        Map<String, User> j = new HashMap<>();
+        j.put("user", x.get());
 
         return ResponseEntity.ok(j);
 
@@ -141,7 +142,7 @@ public class UserController {
 
     @PostMapping("/reset-password")
 
-    public String resetPassword(@RequestBody User user) {
+    public String resetPassword(@RequestBody Resetpwdto user) {
 
         Optional<User> y = repo1.findByEmail(user.getEmail());
 

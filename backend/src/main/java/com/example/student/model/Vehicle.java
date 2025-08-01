@@ -5,6 +5,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Data
@@ -18,39 +20,38 @@ public class Vehicle {
     private String _id;
     private String additionalComments;
     private String driverDateOfBirth;
-    private String driverMobileNumber;//phone
+    private String phone;
     private String drivingLicenseNumber;
-    private String emergencyContact;//remv
     private String firstName;
     private String gender;
-    private String age;//driverAge
+    private String driverAge;
     private String location;
-    private String driverPhoto;//image
+    private String image;
     private String insuranceDocument;
-    //private String insuranceDocument2;
+    private String insuranceDocument2;
     private String languagesSpoken;
     private String lastName;
     private String licenseExpiryDate;
     private String licensePhoto;
-    //private String licensePhoto2;
+    private String licensePhoto2;
     private String licenseYearsOfExperience;
     private String nicNumber;
-    private String numberPlate;//vehicleNumber
-    private String vehicleImage;// images
+    private String vehicleNumber;
+    private List<String> images;
     private String vehicleLicenseCopy;
     private String vehicleModel;
     private String ac;
     private String fuelType;
-    private String vehicleOwner;//id
+    private String vehicleOwnerId;
     private String vehicleSeatingCapacity;
-    private String vehicleType;//catId
+    private String catId;
     private String vehicleYearOfManufacture;
-}//auto or manual
-//daily(chek bx,input)
-//perkm(chek bx,input)boolean
-//private String location;
-//private String verified;
-//nic1
-//nic2
-//private int stars;
-
+    private boolean gearType;//auto or manual
+    private boolean perKm;
+    private int perKmPrice;
+    private boolean dailyRate;
+    private int dailyRatePrice;
+    private String verified;
+    private String driverNicpic1;
+    private String driverNicpic2;
+}

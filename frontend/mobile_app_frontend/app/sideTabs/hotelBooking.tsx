@@ -30,16 +30,15 @@ interface Hotel {
     name: string;
     location: string;
     distance: string;
-    rating: number;
-    reviewCount: number;
-    reviewScore: string;
-    genius: boolean;
+    // rating: number;
+    stars: number,
+    reviewCount: number
     image: string;
     originalPrice: number;
     currentPrice: number;
     taxes: string;
-    features: string[];
-    rooms: string;
+    /* rooms: string; */
+    priceDescription: string;
     beds: string;
     specialOffer?: string;
     freeFeatures: string[];
@@ -51,16 +50,15 @@ const hotels: Hotel[] = [
         name: "Mandara Rosen Yala",
         location: "Kataragama",
         distance: "1.2 miles",
-        rating: 8.2,
+        // rating: 8.2,
+        stars: 600,
         reviewCount: 269,
-        reviewScore: "Very good",
-        genius: true,
         image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
         originalPrice: 48804,
         currentPrice: 38878,
         taxes: "+ LKR 12,044 taxes and charges",
-        features: ["2 beds"],
-        rooms: "Price for 1 night, 2 adults",
+        // rooms: "Price for 1 night, 2 adults",
+        priceDescription: '1 Night',
         beds: "2 beds",
         freeFeatures: ["Free cancellation", "No prepayment needed"]
     },
@@ -69,16 +67,15 @@ const hotels: Hotel[] = [
         name: "Hotel Sunflower",
         location: "Kataragama",
         distance: "0.6 miles",
-        rating: 2,
+        // rating: 2,
+        stars: 400,
         reviewCount: 71,
-        reviewScore: "Normal",
-        genius: true,
         image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop",
         originalPrice: 15839,
         currentPrice: 13830,
         taxes: "Includes taxes and charges",
-        features: ["2 hotel rooms", "2 beds"],
-        rooms: "Price for 1 night, 2 adults",
+        // rooms: "Price for 1 night, 2 adults",
+        priceDescription: '2 nights',
         beds: "2 beds",
         freeFeatures: ["Free cancellation", "No prepayment needed"]
     },
@@ -87,17 +84,16 @@ const hotels: Hotel[] = [
         name: "Funky Leopard Safari Lodge Bordering Yala National Park",
         location: "Yala",
         distance: "2.3 miles",
-        rating: 3,
+        // rating: 3,
+        stars: 400,
         reviewCount: 111,
-        reviewScore: "Good",
-        genius: true,
         image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=300&fit=crop",
         originalPrice: 39650,
         currentPrice: 31047,
         taxes: "Includes taxes and charges",
-        features: ["1 hotel room", "1 entire chalet", "4 beds", "2 bedrooms", "1 bathroom"],
-        rooms: "Price for 1 night, 2 adults",
+        // rooms: "Price for 1 night, 2 adults",
         beds: "4 beds",
+        priceDescription: 'Upto',
         specialOffer: "Breakfast included",
         freeFeatures: ["Secret Deal"]
     }
@@ -499,37 +495,37 @@ export default function HotelsBookingScreen() {
                     <View className="flex-1 flex-col">
 
                         <View className=" p-4">
-                            <TouchableOpacity
-                                onPress={() => setModalVisible(true)}
-                                className="items-end justify-center"
-                            >
-                                <Text className="font-semibold text-blue-600 bg-gray-200 py-2 px-4 rounded-lg">Change</Text>
-                            </TouchableOpacity>
-                            <View className="w-full pt-4">
-                                <View className="flex-row justify-evenly">
-                                    <View className="flex-row gap-3">
+                            <View className="w-full pt-4 flex-row items-start justify-between">
+                                <View className="w-[50%] flex-col justify-evenly">
+                                    <View className="flex-row justify-between">
                                         <Text className="text-sm font-medium text-center self-center">Check-in</Text>
                                         <Text className="text-lg font-medium">{book.selectedDates}</Text>
                                     </View>
-                                    <View className="flex-row gap-3">
+                                    <View className="flex-row justify-between">
                                         <Text className="text-sm font-medium text-center self-center">Check-out</Text>
                                         <Text className="text-lg font-medium">{book.selectedoutDates}</Text>
                                     </View>
-                                </View>
-                                <View className="flex-row justify-evenly">
-                                    <View className="flex-row gap-3">
+
+
+                                    <View className="flex-row justify-between">
                                         <Text className="text-sm font-medium text-center self-center">Location</Text>
-                                        <Text className="text-lg font-medium">{book.location}</Text>
+                                        <Text className="text-lg font-medium w-[50%]">{book.location}</Text>
                                     </View>
-                                    <View className="flex-row gap-3">
+                                    <View className="flex-row justify-between">
                                         <Text className="text-sm font-medium text-center self-center">Adults</Text>
-                                        <Text className="text-lg font-medium">{book.adults}</Text>
+                                        <Text className="text-lg font-medium w-[50%]">{book.adults}</Text>
                                     </View>
-                                    <View className="flex-row gap-3">
+                                    <View className="flex-row justify-between">
                                         <Text className="text-sm font-medium text-center self-center">Children</Text>
-                                        <Text className="text-lg font-medium">{book.children}</Text>
+                                        <Text className="text-lg font-medium w-[50%]">{book.children}</Text>
                                     </View>
                                 </View>
+                                <TouchableOpacity
+                                    onPress={() => setModalVisible(true)}
+                                    className="items-end justify-center"
+                                >
+                                    <Text className="font-semibold text-blue-600 bg-gray-200 py-2 px-4 rounded-lg">Change</Text>
+                                </TouchableOpacity>
                             </View>
 
                         </View>
@@ -587,8 +583,20 @@ export default function HotelsBookingScreen() {
                                 </View>
                             ))}*/}
 
-                            {hotels.map((hotel) => (
-                                <TouchableOpacity
+                            {hotels.map((hotel) => {
+
+                                const getReviewLabel = (score: number): string => {
+                                    if (score >= 9) return 'Excellent';
+                                    if (score >= 8) return 'Very Good';
+                                    if (score >= 7) return 'Good';
+                                    if (score >= 5) return 'Average';
+                                    return 'Poor';
+                                };
+                                const rating = hotel.reviewCount > 0
+                                    ? parseFloat(((hotel.stars / hotel.reviewCount) * 2).toFixed(1))
+                                    : 0;
+
+                                return (<TouchableOpacity
                                     key={hotel.id}
                                     className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-hidden shadow-md w-[95%]"
                                     onPress={() => router.push(`/views/hotel/solo/${Number(hotel.id) + 1}`)}
@@ -638,7 +646,7 @@ export default function HotelsBookingScreen() {
                                                                 <View className="flex-row items-center gap-2">
 
                                                                     <View className="flex-row justify-center mt-1">
-                                                                        {[...Array(Math.floor((hotel.rating) / 2))].map((_, i) => (
+                                                                        {[...Array(Math.floor((rating) / 2))].map((_, i) => (
                                                                             <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
                                                                         ))}
                                                                     </View>
@@ -653,12 +661,20 @@ export default function HotelsBookingScreen() {
 
                                                         {/* Rating Score */}
                                                         <View className="flex-row items-center mb-2 gap-2">
-                                                            <View className={`rounded-sm px-2 py-1 ${hotel.rating < 3 ? 'bg-red-500' : hotel.rating < 5 ? 'bg-yellow-300' : 'bg-blue-500'
+                                                            <View className={`rounded-sm px-2 py-1 ${rating >= 9 ? 'bg-green-500' :
+                                                                rating >= 8 ? 'bg-emerald-400' :
+                                                                    rating >= 7 ? 'bg-yellow-400' :
+                                                                        rating >= 5 ? 'bg-orange-400' :
+                                                                            'bg-red-500'
                                                                 }`}>
-                                                                <Text className="text-white text-xs font-semibold">{hotel.rating}</Text>
+                                                                <Text className="text-white text-xs font-semibold">{rating}</Text>
                                                             </View>
                                                             <View className="flex-1">
-                                                                <Text className="text-xs font-semibold text-gray-800">{hotel.reviewScore}</Text>
+                                                                <Text
+                                                                    className={`text-xs font-semibold`}
+                                                                >
+                                                                    {getReviewLabel(rating)}
+                                                                </Text>
                                                                 <Text className="text-xs text-gray-600">{hotel.reviewCount} reviews</Text>
                                                             </View>
                                                         </View>
@@ -675,9 +691,10 @@ export default function HotelsBookingScreen() {
                                                         <Text className="text-xs text-gray-600">{hotel.features.join(" • ")}</Text>
                                                         </View>*/}
                                                     </View>
-                                                    <View className="border-t border-gray-200">
+                                                    <View className=" border-gray-200">
                                                         <View className="items-end">
-                                                            <Text className="text-xs text-gray-600 mb-1">{hotel.rooms}</Text>
+                                                            {/* <Text className="text-xs text-gray-600 mb-1">{hotel.rooms}</Text> */}
+                                                            <Text className="text-xs font-semibold text-gray-600 mb-1">{hotel.priceDescription}</Text>
                                                             {hotel.originalPrice !== hotel.currentPrice && (
                                                                 <Text className="text-xs text-gray-400 line-through mb-0.5">
                                                                     {formatPrice(hotel.originalPrice)}
@@ -705,8 +722,8 @@ export default function HotelsBookingScreen() {
                                         {/* Price Section */}
 
                                     </View>
-                                </TouchableOpacity>
-                            ))}
+                                </TouchableOpacity>)
+                            })}
                         </ScrollView>
 
 

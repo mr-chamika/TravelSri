@@ -15,14 +15,13 @@ import java.util.Date;
 public class VehicleOwnerQuotation {
     @Id
     private String _id;
-    private String tourId;//pendingTripId
+    private String pendingTripId;
     private String ownerId;
-   // private String vehicleId;
+   private String vehicleId;
     private Double quotedAmount;
     private String quotationNotes;
     private Date quotationDate;
     private String status; // "pending", "accepted", "rejected", "expired"
-    private Date validUntil;//rmv
     private Date createdAt;
     private Date updatedAt;
 
@@ -33,8 +32,8 @@ public class VehicleOwnerQuotation {
     }
 
     // Constructor with parameters
-    public VehicleOwnerQuotation(String tourId, String ownerId, Double quotedAmount, String quotationNotes) {
-        this.tourId = tourId;
+    public VehicleOwnerQuotation(String pendingTripId, String ownerId, Double quotedAmount, String quotationNotes) {
+        this.pendingTripId = pendingTripId;
         this.ownerId = ownerId;
         this.quotedAmount = quotedAmount;
         this.quotationNotes = quotationNotes;
@@ -43,7 +42,5 @@ public class VehicleOwnerQuotation {
         this.createdAt = new Date();
         this.updatedAt = new Date();
 
-        // Set valid until date (e.g., 30 days from now)
-        this.validUntil = new Date(System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000));
     }
 }

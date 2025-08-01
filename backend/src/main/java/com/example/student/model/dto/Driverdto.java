@@ -18,16 +18,14 @@ public class Driverdto {
     private String verified;
     private String name;
     private String identified;
-    private int stars;
 
-    Driverdto( String _id,String image,String verified,String name,String identified,int stars) {
+    Driverdto( String _id,String image,String verified,String name,String identified) {
 
         this._id=_id;
 this.image=image;
 this.verified=verified;
 this.name=name;
 this.identified=identified;
-this.stars=stars;
 
     }
 

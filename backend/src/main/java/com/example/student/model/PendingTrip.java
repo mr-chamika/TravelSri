@@ -45,4 +45,11 @@ public class PendingTrip {
 
     @Field("path")
     private String path;
+
+    @Field("guide_id")
+    private String guideId;
+
+    @Field("vehicle_id")
+    private String vehicleId;
+
 }
