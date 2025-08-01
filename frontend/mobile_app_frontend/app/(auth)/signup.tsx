@@ -1207,7 +1207,7 @@ export default function SignupForm() {
                                 </TouchableOpacity>
                                 <Text className="text-base text-gray-700 flex-1 font-bold">I agree to the terms and conditions</Text>
                             </View>
-                            {formData.role !== 'user' && (
+                            {formData.role == 'merchant' && (
                                 <>
                                     <View className='flex-row items-center mb-4'>
                                         <TouchableOpacity onPress={() => handleChange('confirmCondition', !formData.confirmCondition)}>
