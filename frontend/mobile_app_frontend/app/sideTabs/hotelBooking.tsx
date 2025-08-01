@@ -5,6 +5,7 @@ import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { Calendar } from 'react-native-calendars';
 import { send } from "@emailjs/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 cssInterop(Image, { className: "style" });
 
@@ -21,17 +22,17 @@ const LOCATIONS = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
 //     id: string;
 //     image: any;
 //     title: string;
-//     stars: number;
+//     ratings: number;
 
 // }
 
 interface Hotel {
-    id: number;
+    id: string;
     name: string;
     location: string;
     distance: string;
     // rating: number;
-    stars: number,
+    ratings: number,
     reviewCount: number
     image: string;
     originalPrice: number;
@@ -39,19 +40,19 @@ interface Hotel {
     taxes: string;
     /* rooms: string; */
     priceDescription: string;
-    beds: string;
+    //beds: string;
     specialOffer?: string;
     freeFeatures: string[];
 }
 
 const hotels: Hotel[] = [
     {
-        id: 1,
+        id: '1',
         name: "Mandara Rosen Yala",
         location: "Kataragama",
         distance: "1.2 miles",
         // rating: 8.2,
-        stars: 600,
+        ratings: 600,
         reviewCount: 269,
         image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop",
         originalPrice: 48804,
@@ -59,16 +60,16 @@ const hotels: Hotel[] = [
         taxes: "+ LKR 12,044 taxes and charges",
         // rooms: "Price for 1 night, 2 adults",
         priceDescription: '1 Night',
-        beds: "2 beds",
+        //beds: "2 beds",
         freeFeatures: ["Free cancellation", "No prepayment needed"]
     },
     {
-        id: 2,
+        id: '2',
         name: "Hotel Sunflower",
         location: "Kataragama",
         distance: "0.6 miles",
         // rating: 2,
-        stars: 400,
+        ratings: 400,
         reviewCount: 71,
         image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=300&fit=crop",
         originalPrice: 15839,
@@ -76,23 +77,23 @@ const hotels: Hotel[] = [
         taxes: "Includes taxes and charges",
         // rooms: "Price for 1 night, 2 adults",
         priceDescription: '2 nights',
-        beds: "2 beds",
+        //beds: "2 beds",
         freeFeatures: ["Free cancellation", "No prepayment needed"]
     },
     {
-        id: 3,
+        id: '3',
         name: "Funky Leopard Safari Lodge Bordering Yala National Park",
         location: "Yala",
         distance: "2.3 miles",
         // rating: 3,
-        stars: 400,
+        ratings: 400,
         reviewCount: 111,
         image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&h=300&fit=crop",
         originalPrice: 39650,
         currentPrice: 31047,
         taxes: "Includes taxes and charges",
         // rooms: "Price for 1 night, 2 adults",
-        beds: "4 beds",
+        //beds: "4 beds",
         priceDescription: 'Upto',
         specialOffer: "Breakfast included",
         freeFeatures: ["Secret Deal"]
@@ -104,61 +105,61 @@ const hotels: Hotel[] = [
         id: '1',
         image: pic,
         title: 'Shangri-La',
-        stars: 3,
+        ratings: 3,
     },
     {
         id: '2',
         image: pic,
         title: 'Bawana',
-        stars: 1,
+        ratings: 1,
     },
     {
         id: '1',
         image: pic,
         title: 'Shangri-La',
-        stars: 3,
+        ratings: 3,
     },
     {
         id: '2',
         image: pic,
         title: 'Bawana',
-        stars: 1,
+        ratings: 1,
     },
     {
         id: '3',
         image: pic,
         title: 'Matara bath kade',
-        stars: 2,
+        ratings: 2,
     },
     {
         id: '4',
         image: pic,
         title: 'Raheema',
-        stars: 5,
+        ratings: 5,
     },
     {
         id: '1',
         image: pic,
         title: 'Shangri-La',
-        stars: 3,
+        ratings: 3,
     },
     {
         id: '2',
         image: pic,
         title: 'Bawana',
-        stars: 1,
+        ratings: 1,
     },
     {
         id: '3',
         image: pic,
         title: 'Matara bath kade',
-        stars: 2,
+        ratings: 2,
     },
     {
         id: '4',
         image: pic,
         title: 'Raheema',
-        stars: 5,
+        ratings: 5,
     },
     // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
     // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
@@ -252,7 +253,7 @@ export default function HotelsBookingScreen() {
         setShowDropdown(false);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         //if (Object.keys(selectedDates).length === 0 || !location || !adults || !children || !nights) {
         if (selectedoutDates === '' || selectedDates === '' || !location || !adults || !children || nights < 0) {
             alert('Please fill in all fields.');
@@ -272,6 +273,13 @@ export default function HotelsBookingScreen() {
         setBookingComplete(true);
 
         setbook(sending)
+
+        try {
+            await AsyncStorage.setItem("soloHotelBook", JSON.stringify(sending));
+        } catch (e) {
+            // Handle saving error
+            console.error("Failed to save data to AsyncStorage", e);
+        }
 
     };
 
@@ -593,13 +601,13 @@ export default function HotelsBookingScreen() {
                                     return 'Poor';
                                 };
                                 const rating = hotel.reviewCount > 0
-                                    ? parseFloat(((hotel.stars / hotel.reviewCount) * 2).toFixed(1))
+                                    ? parseFloat(((hotel.ratings / hotel.reviewCount) * 2).toFixed(1))
                                     : 0;
 
                                 return (<TouchableOpacity
                                     key={hotel.id}
                                     className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-hidden shadow-md w-[95%]"
-                                    onPress={() => router.push(`/views/hotel/solo/${Number(hotel.id) + 1}`)}
+                                    onPress={() => router.push(`/views/hotel/solo/${hotel.id}`)}
                                     activeOpacity={0.7}
                                 >
                                     {/* Hotel Image */}

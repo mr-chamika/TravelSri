@@ -17,6 +17,7 @@ public class Hotel{
     private String _id;
     private String thumbnail;
     private int stars;//no of stars the hotel got
+    private int ratings;//stars users give
     private int reviewCount;//reviewer can both post a review and give star rating when review
 
     //ratings = (stars/reviewCount)*(10/5) 5 is no of stars we offer
@@ -37,4 +38,5 @@ public class Hotel{
     private String taxes;
     private String priceDescription;//priceDescription: '1 Night',
     private String[] freeFeatures;//freeFeatures: ["Free cancellation", "No prepayment needed"]
+    private String[] policies;
 }
