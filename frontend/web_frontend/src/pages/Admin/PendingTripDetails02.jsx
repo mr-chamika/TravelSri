@@ -11,7 +11,7 @@ const PendingTripDetails02 = () => {
             icon: "bg-blue-400",
             type: "Hotel",
             name: "Marriot",
-            price: "Rs: 100,000",
+            price: "Rs: 110,000",
             href: "/allhotelquotation",
             action: "Edit",
             iconSvg: (
@@ -25,7 +25,7 @@ const PendingTripDetails02 = () => {
             icon: "bg-purple-400",
             type: "Vehicle",
             name: "AAB-1289",
-            price: "Rs: 80,000",
+            price: "Rs: 100,000",
             href: "/allvehiclequotation",
             action: "Edit",
             iconSvg: (
@@ -128,11 +128,11 @@ const PendingTripDetails02 = () => {
                                 </div>
                                 <div className="flex justify-between items-center py-2 border-t border-gray-200 pt-3">
                                     <span className="text-gray-700 font-medium">Total Amount</span>
-                                    <span className="font-semibold">Rs: 209,000</span>
+                                    <span className="font-semibold">Rs: 220,000</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2 text-lg">
                                     <span className="text-gray-700 font-bold">Amount per person</span>
-                                    <span className="font-bold text-gray-900">Rs: 7,500</span>
+                                    <span className="font-bold text-gray-900">Rs: 8,000</span>
                                 </div>
                             </div>
 

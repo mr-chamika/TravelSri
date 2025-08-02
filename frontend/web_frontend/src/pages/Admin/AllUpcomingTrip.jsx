@@ -3,29 +3,25 @@ import React from "react";
 const upcomingTrips = [
   {
     name: "Kandy Trip",
-    date: "2025/06/17",
+    date: "2025/07/31",
     remaining: 7,
   },
   {
     name: "Kandy Trip",
-    date: "2025/06/20",
+    date: "2025/08/02",
     remaining: 10,
   },
   {
     name: "Nuwara Eliya Trip",
-    date: "2025/06/30",
+    date: "2025/08/22",
     remaining: 20,
   },
   {
     name: "Anuradhapura Trip",
-    date: "2025/07/02",
-    remaining: 23,
-  },
-  {
-    name: "Polonnaruwa Trip",
-    date: "2025/07/18",
-    remaining: 39,
-  },
+    date: "2025/08/31",
+    remaining: 37,
+  }
+ 
 ];
 
 const AllUpcomingTrips = () => {
