@@ -60,7 +60,7 @@ const Listings: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.43.208:8080';
 
   const fetchListings = async () => {
     try {

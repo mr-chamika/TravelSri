@@ -38,7 +38,7 @@ const ChangeItem: React.FC = () => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState('');
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.43.208:8080';
 
   useEffect(() => {
     const fetchItem = async () => {

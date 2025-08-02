@@ -36,7 +36,7 @@ const AddItem: React.FC = () => {
   const [description, setDescription] = useState('');
   const [image, setImageUri] = useState('');
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.43.208:8080';
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token') || '';
@@ -92,7 +92,7 @@ const AddItem: React.FC = () => {
         {
           text: 'OK',
           onPress: () => {
-            router.back(); // Use router.back() to navigate back
+            router.back(); // This navigates back to the previous screen
           },
         },
       ]);
