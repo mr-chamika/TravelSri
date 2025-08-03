@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View, Animated, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native' // 1. Import Animated
+import { Text, TouchableOpacity, View, Animated, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native' // 1. Import Animated
 import { useState, useRef, useEffect } from 'react'; // 2. Import useRef
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
@@ -56,6 +56,7 @@ export default function Profile() {
     const [user, setUser] = useState<User | null>(null)
     const [isPasswordVisible, setIsPasswordVisible] = useState(false)
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false)
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
     // 3. Create one animated value for the press interaction.
     // We can reuse this for all buttons.
@@ -243,33 +244,28 @@ export default function Profile() {
     }
     const loggingout = async () => {
 
-        Alert.alert(
-            // 1. Title of the dialog
-            "Confirm Logout",
-
-            // 2. Message to the user
-            "Are you sure you want to log out?",
-
-            // 3. Buttons array
-            [
-                {
-                    text: "Cancel",
-                    onPress: () => console.log("Logout canceled"),
-                    style: "cancel" // This is a standard button style
-                },
-                {
-                    text: "Logout",
-                    onPress: async () => {
-                        // This is your original logout logic
-                        await clear();
-                        await AsyncStorage.removeItem('token');
-                        setUser(null);
-                        router.replace('/(auth)');
-                    },
-                    style: "destructive" // This makes the button red on iOS for emphasis
-                }
-            ]
-        );
+        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+            Alert.alert(
+                "Confirm Logout",
+                "Are you sure you want to log out?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Logout",
+                        onPress: async () => {
+                            await clear();
+                            await AsyncStorage.removeItem('token');
+                            setUser(null);
+                            router.replace('/(auth)');
+                        },
+                        style: "destructive"
+                    }
+                ]
+            );
+        } else {
+            // For web, show the custom modal
+            setIsLogoutModalVisible(true);
+        }
     };
 
 
@@ -278,6 +274,41 @@ export default function Profile() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             className='flex-1'
         >
+            <Modal
+                transparent={true}
+                visible={isLogoutModalVisible}
+                animationType="fade"
+                onRequestClose={() => setIsLogoutModalVisible(false)}
+            >
+                <View className="flex-1 justify-center items-center bg-black/50">
+                    <View className="bg-white rounded-lg p-6 w-80 shadow-lg">
+                        <Text className="text-lg font-bold text-gray-800">Confirm Logout</Text>
+                        <Text className="text-base text-gray-600 my-4">Are you sure you want to log out?</Text>
+                        <View className="flex-row justify-center gap-3">
+                            <TouchableOpacity
+                                onPress={() => setIsLogoutModalVisible(false)}
+                                className="px-4 py-2 rounded"
+                            >
+                                <Text className="font-semibold text-red-500">Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setIsLogoutModalVisible(false); // Close modal first
+                                    await clear();
+                                    await AsyncStorage.removeItem('token');
+                                    setUser(null);
+                                    router.replace('/(auth)');
+                                }}
+                                className="bg-red-600 px-4 py-2 rounded"
+                            >
+                                <Text className="font-semibold text-blue-500">Logout</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+
             <ScrollView className='bg-[#F2F5FA] w-full flex-1'>
                 {/* --- Profile and Personal Details Sections (Unchanged) --- */}
                 <View className='items-center mb-5'>

@@ -25,7 +25,9 @@ export default function RootLayout() {
           'gbookingComplete',
           'gbookingSession',
           'cbookings',
+          'solocbookings',
           'cbookingComplete',
+          'solocbookingComplete',
           'bookingSession',
           'total', // Ensure total is cleared
           'route', // Assuming 'route' might also need to be reset

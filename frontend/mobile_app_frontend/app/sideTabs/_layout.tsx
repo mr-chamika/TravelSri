@@ -54,6 +54,7 @@ export default function _Layout() {
                     </View>
                     <Stack>
                         <Stack.Screen name="groupTravel" options={{ headerShown: false }} />
+                        <Stack.Screen name="carRental" options={{ headerShown: false }} />
                         <Stack.Screen name="equipmentHire" options={{ headerShown: false }} />
                         <Stack.Screen name="hotelBooking" options={{ headerShown: false }} />
                         <Stack.Screen name="guideHire" options={{ headerShown: false }} />
