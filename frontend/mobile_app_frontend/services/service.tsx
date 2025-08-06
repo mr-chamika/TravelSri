@@ -1,0 +1,1 @@
+// const DB_PATH = mongodb+srv://hasithchamika2001:Atlas@1234@database.wszfuyj.mongodb.net/?retryWrites=true&w=majority&appName=Database
