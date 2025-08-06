@@ -1599,7 +1599,7 @@ const SignupPage = () => {
                             onClick={() => removeImage(index)}
                             className="absolute top-1 right-1 p-1 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
                           >
-                            <span className="material-icons text-sm text-red-500">delete</span>
+                            <span className="material-icons text-sm text-red-500">Delete</span>
                           </button>
                           <div className="absolute bottom-1 left-1 right-1 text-xs bg-white bg-opacity-75 p-1 truncate">
                             {image.name}
