@@ -299,7 +299,7 @@ export default function Profile() {
                                     setUser(null);
                                     router.replace('/(auth)');
                                 }}
-                                className="bg-red-600 px-4 py-2 rounded"
+                                className=" px-4 py-2"
                             >
                                 <Text className="font-semibold text-blue-500">Logout</Text>
                             </TouchableOpacity>

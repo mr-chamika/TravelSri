@@ -396,7 +396,7 @@ export default function HotelsBookingScreen() {
         }
     };
 
-    useEffect(() => {
+    /* useEffect(() => {
         const getHotels = async () => {
 
             try {
@@ -428,7 +428,7 @@ export default function HotelsBookingScreen() {
 
         getHotels();
     }, [])
-
+ */
     useEffect(() => {
 
         if (hotes) {

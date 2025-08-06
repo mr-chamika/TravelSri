@@ -45,6 +45,9 @@ public class User {
     private String registrationNumber;
     private String businessRegPic1;
     private String businessRegPic2;
+    private int reviewCount;
+    private int stars;
+    private String currency;
 
     //store
     private String businessName;
@@ -56,11 +59,13 @@ public class User {
     private String[] languages;
     private String location;
     private String[] images;
-    private String guideType;
+    private String guideType;//travel with me or visit
     private Integer experience;
     private String specialization;
     private Integer dailyRate;//charge per day
-    private String bio;
+    private String bio;//about me
+    private String responseTime;
+    private int ResponseRate;
 
 
 

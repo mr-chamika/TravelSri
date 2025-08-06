@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Document(collection = "vehicle_renter")
+@Document(collection = "vehicles")
 public class Vehicle {
 
     @Id
@@ -37,13 +37,12 @@ public class Vehicle {
     private String licenseYearsOfExperience;
     private String nicNumber;
     private String vehicleNumber;
-    private List<String> images;
+    private String[] images;
     private String vehicleLicenseCopy;
     private String vehicleModel;
-    private String ac;
+    private boolean ac;
     private String fuelType;
     private String vehicleOwnerId;
-    private String vehicleSeatingCapacity;
     private String catId;
     private String vehicleYearOfManufacture;
     private boolean gearType;//auto or manual
@@ -54,4 +53,12 @@ public class Vehicle {
     private String verified;
     private String driverNicpic1;
     private String driverNicpic2;
+
+    private int doors;
+    private int seats;
+    private String mileage;
+    private String[] whatsIncluded;
+    private String[] languages;
+    private int experience;
+
 }

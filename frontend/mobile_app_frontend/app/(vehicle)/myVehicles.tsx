@@ -11,27 +11,67 @@ cssInterop(Image, { className: "style" });
 // 1. Define the interface for a single vehicle object
 interface Vehicle {
   _id: string;
+  additionalComments?: string;
+  driverDateOfBirth?: string;
+  phone: string;
+  drivingLicenseNumber?: string;
+  firstName: string;
+  gender?: string;
+  driverAge?: string;
+  location?: string;
+  image?: string; // driver photo
+  insuranceDocument?: string;
+  insuranceDocument2?: string;
+  languagesSpoken?: string;
+  lastName: string;
+  licenseExpiryDate?: string;
+  licensePhoto?: string;
+  licensePhoto2?: string;
+  licenseYearsOfExperience: string;
+  nicNumber?: string;
+  vehicleNumber: string;
+  images?: string[]; // vehicle images array
+  vehicleLicenseCopy?: string;
   vehicleModel: string;
-  vehicleType: string;
-  vehicleSeatingCapacity: string;
-  numberPlate: string;
   ac: string;
   fuelType: string;
-  rating: string;
-  // trips: number | null;
-
-    firstName: string;
-    lastName: string;
-    licenseYearsOfExperience: string;
-    driverPhoto: string;
-    driverMobileNumber: string;
- 
-  vehicleImage: string;
-  // available: boolean;
+  vehicleOwnerId?: string;
+  vehicleSeatingCapacity: string;
+  catId?: string;
+  vehicleYearOfManufacture?: string;
+  gearType?: boolean;
+  perKm?: boolean;
+  perKmPrice?: number;
+  dailyRate?: boolean;
+  dailyRatePrice?: number;
+  verified?: string;
+  driverNicpic1?: string;
+  driverNicpic2?: string;
 }
 
 // 2. Apply the Vehicle type to the component's prop
 const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (vehicle: Vehicle) => void }) => {
+  // Helper to get vehicle image URI from images array
+  const getVehicleImageUri = () => {
+    if (vehicle.images && vehicle.images.length > 0) {
+      const img = vehicle.images[0];
+      if (img.startsWith('data:image')) return img;
+      if (/^[A-Za-z0-9+/=]+$/.test(img)) return `data:image/jpeg;base64,${img}`;
+      return img;
+    }
+    return undefined;
+  };
+
+  // Helper to get driver photo URI from image field
+  const getDriverPhotoUri = () => {
+    if (vehicle.image) {
+      if (vehicle.image.startsWith('data:image')) return vehicle.image;
+      if (/^[A-Za-z0-9+/=]+$/.test(vehicle.image)) return `data:image/jpeg;base64,${vehicle.image}`;
+      return vehicle.image;
+    }
+    return undefined;
+  };
+
   return (
     <View className="bg-white rounded-2xl p-5 mb-4 mx-4 shadow-sm border border-gray-100">
       {/* Header with Vehicle Info */}
@@ -43,41 +83,51 @@ const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (v
         </View>
       </View>
 
-      
-
       {/* Vehicle Image and Details */}
-       <View className="flex-row mb-5">
+      <View className="flex-row mb-5">
         <View className="w-36 h-24 rounded-xl justify-center items-center mr-6 p-2">
-          <Image
-            source={{ uri: `data:image/jpeg;base64,${vehicle.vehicleImage}` }}
-            className="w-full h-full rounded-lg"
-            contentFit="cover"
-          />
+          {getVehicleImageUri() ? (
+            <Image
+              source={{ uri: getVehicleImageUri() }}
+              className="w-full h-full rounded-lg"
+              contentFit="cover"
+            />
+          ) : (
+            <View className="w-full h-full rounded-lg bg-gray-200 justify-center items-center">
+              <FontAwesome name="car" size={32} color="#999" />
+            </View>
+          )}
         </View>
 
         <View className="flex-1 justify-center">
           <View className="mb-3">
-            <Text className="text-base font-semibold text-gray-900 mb-1">{vehicle.vehicleType}</Text>
+            {/* vehicleType not present in Vehicle.java, so skip or use catId if needed */}
             <Text className="text-sm text-gray-600 mb-1">No Of Seats: {vehicle.vehicleSeatingCapacity}</Text>
-            <Text className="text-sm text-gray-600 mb-1">Number Plate: {vehicle.numberPlate}</Text>
+            <Text className="text-sm text-gray-600 mb-1">Number Plate: {vehicle.vehicleNumber}</Text>
             <Text className="text-sm text-gray-600 mb-1">Fuel Type: {vehicle.fuelType}</Text>
             <Text className="text-sm text-gray-600 mb-1">{vehicle.ac?.toLowerCase() === 'ac' ? 'AC' : 'Non-AC'}</Text>
           </View>
         </View>
       </View>
 
-
       {/* Driver Info Section */}
       <View className="flex-row items-center mb-4 bg-gray-50 p-3 rounded-xl">
-        <Image
-          source={{ uri: `data:image/jpeg;base64,${vehicle.driverPhoto}` }}
-          className="w-12 h-12 rounded-full mr-3"
-          resizeMode="cover"
-        />
+        {/* Driver photo from 'image' field */}
+        <View className="w-12 h-12 rounded-full mr-3 bg-gray-300 justify-center items-center overflow-hidden">
+          {getDriverPhotoUri() ? (
+            <Image
+              source={{ uri: getDriverPhotoUri() }}
+              className="w-full h-full rounded-full"
+              contentFit="cover"
+            />
+          ) : (
+            <FontAwesome name="user" size={24} color="#666" />
+          )}
+        </View>
         <View className="flex-1">
           <Text className="text-base font-semibold text-gray-900">{vehicle.firstName} {vehicle.lastName}</Text>
           <Text className="text-sm text-gray-600">{vehicle.licenseYearsOfExperience} years experience</Text>
-          <Text className="text-sm text-gray-600">Phone No: {vehicle.driverMobileNumber}</Text>
+          <Text className="text-sm text-gray-600">Phone No: {vehicle.phone}</Text>
         </View>
       </View>
 
@@ -104,39 +154,39 @@ export default function App() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const [vehicleData, setVehicleData] = useState<Vehicle[] >([]);
+  const [vehicleData, setVehicleData] = useState<Vehicle[]>([]);
 
   const handleSchedule = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setIsModalVisible(true);
   };
 
-const getData = async()=>{
+  const getData = async () => {
 
-  try{
+    try {
 
-    const response = await fetch(`http://localhost:8080/vehicle/all`)
+      const response = await fetch(`http://localhost:8080/vehicle/all`)
 
-    const data = await response.json()
+      const data = await response.json()
 
-    //console.log(data)
-    setVehicleData(data)
+      //console.log(data)
+      setVehicleData(data)
 
-  }catch(err){
-console.log(err)
+    } catch (err) {
+      console.log(err)
 
+    }
   }
-}
 
-useEffect(()=>{
+  useEffect(() => {
 
-  getData()
+    getData()
 
-},[])
+  }, [])
 
   const handleDateSelect = (day: any) => {
     const dateString = day.dateString;
-    
+
     setSelectedDates(prevDates => {
       if (prevDates.includes(dateString)) {
         // Remove date if already selected
@@ -222,13 +272,13 @@ useEffect(()=>{
                   {selectedVehicle.vehicleModel}
                 </Text>
                 <Text className="text-sm text-gray-600">
-                  {selectedVehicle.vehicleType}
+                  {selectedVehicle.vehicleModel}
                 </Text>
               </View>
             )}
 
             <Text className="text-base font-medium text-gray-900 mb-3">Select Dates:</Text>
-            
+
             <Calendar
               onDayPress={handleDateSelect}
               markedDates={selectedDates.reduce((acc, date) => {

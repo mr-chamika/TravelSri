@@ -26,7 +26,9 @@ const back = require('../../../../assets/images/back.png');
 
 export default function Views() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    //const { id } = useLocalSearchParams();
+
+    const id = '1';
 
     const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { persons: number, type: any, capacity: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});

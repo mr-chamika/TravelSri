@@ -1148,7 +1148,7 @@ export default function SignupForm() {
                                 )}
                             </TouchableOpacity>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic1 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic1 || ' '}</Text>
-                            <Text className="text-base text-gray-600 mt-2">National Identity Card (side 1)</Text>
+                            <Text className="text-base text-gray-600 mt-2">National Identity Card / Passport (side 1)</Text>
                         </View>
                         <View className="items-center w-full my-10">
                             {/* <TextInput placeholder="URL for National ID" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.identitypic1} onChangeText={v => handleChange('identitypic1', v)} /> */}
@@ -1172,7 +1172,7 @@ export default function SignupForm() {
                                 )}
                             </TouchableOpacity>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic12 || ' '}</Text>
-                            <Text className="text-base text-gray-600 mt-2">National Identity Card (side 2)</Text>
+                            <Text className="text-base text-gray-600 mt-2">National Identity Card / Passport (side 2)</Text>
                         </View>
                         <View className="items-center w-full my-8">
                             {/* <TextInput placeholder="URL for map location" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.locpic} onChangeText={v => handleChange('locpic', v)} /> */}

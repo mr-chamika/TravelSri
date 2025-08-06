@@ -57,7 +57,7 @@ public class Hashingpw {
                                 "/traveler/create-trip",
                                 "/traveler/trips-view",
                                 "/traveler/map",
-                                "/traveler/trip-one",
+                                "/traveler/*",
                                 "/api/pendingTrip/getall",
                                 "/api/pendingTrip/create",
                                 "/api/pendingTrip/update/{id}",

@@ -31,7 +31,9 @@ import {
   AlertCircle,
   ArrowLeft,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Route,
+  Navigation
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
@@ -49,6 +51,10 @@ interface TourDetails {
   budget?: string;
   accommodation?: string;
   transportation?: string;
+  startLocation?: string;
+  endLocation?: string;
+  path?: string;
+  pickupTime?: Date;
 }
 
 interface QuotationRequest {
@@ -78,22 +84,25 @@ interface SubmittedQuotation {
     groupSize: number;
     duration: string;
     tourType?: string;
+    startLocation?: string;
+    endLocation?: string;
+    path?: string;
   };
   clientName: string;
 }
 
 interface BackendTourData {
-  _id: string;
-  description: string;
-  destination: string;
-  durationInDays: number;
-  endDate: string;
-  groupSize: number;
-  guideId: string;
-  startDate: string;
-  status: string;
-  tourTitle: string;
-  createdAt: string;
+  _id: { $oid: string }; // Your exact format: { "$oid": "6877415deb564b0b5336a378" }
+  title: string;
+  start_location: string;
+  end_location: string;
+  number_of_seats: number;
+  date: { $date: string }; // Your format: { "$date": "2025-08-12T18:30:00.000Z" }
+  number_of_dates: number;
+  description_about_start_location: string;
+  pickup_time: { $date: string }; // Your format: { "$date": "2025-07-16T00:30:00.000Z" }
+  path: string;
+  _class: string;
 }
 
 interface EditableQuotation {
@@ -102,8 +111,6 @@ interface EditableQuotation {
   notes: string;
   status: string;
 }
-
-
 
 const QuotationsScreen = () => {
   const router = useRouter();
@@ -129,52 +136,220 @@ const QuotationsScreen = () => {
     notes: ''
   });
 
-  // Function to convert backend data to frontend format
-  // Function to convert backend data to frontend format
-  const convertBackendDataToRequests = (backendData: BackendTourData[]): QuotationRequest[] => {
-    return backendData.map((tour) => ({
-      id: tour._id,
-      clientName: tour.tourTitle,
-      clientPhone: '',
-      clientEmail: '',
-      tourDetails: {
-        id: tour._id, // Add the missing id property
-        destination: tour.destination,
-        startDate: new Date(tour.startDate),
-        endDate: new Date(tour.endDate),
-        duration: `${tour.durationInDays} days`,
-        groupSize: tour.groupSize,
-        tourType: tour.tourTitle,
-        specialRequests: tour.description,
-        budget: '',
-        accommodation: '',
-        transportation: '',
-      },
-      requestDate: new Date(tour.createdAt),
-      status: tour.status === 'active' ? 'pending' : 'expired',
-      priority: tour.groupSize > 6 ? 'high' : tour.groupSize > 3 ? 'medium' : 'low'
-    }));
+  // Simple function to extract MongoDB ObjectId from any format
+  const extractObjectId = (idField: any): string => {
+    console.log('🔍 Extracting ID from:', JSON.stringify(idField), 'Type:', typeof idField);
+
+    if (!idField) {
+      console.log('❌ ID field is null/undefined');
+      return `FALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // Case 1: Already a string (most common in Spring Boot)
+    if (typeof idField === 'string' && idField.length === 24 && /^[a-f0-9]{24}$/i.test(idField)) {
+      console.log('✅ Valid ObjectId string:', idField);
+      return idField;
+    }
+
+    // Case 2: Spring Boot returns { $oid: "..." } - THIS IS YOUR CASE!
+    if (idField && typeof idField === 'object' && idField.$oid) {
+      const objectId = idField.$oid;
+      console.log('✅ ObjectId from $oid:', objectId);
+      // Validate it's a proper ObjectId
+      if (typeof objectId === 'string' && objectId.length === 24 && /^[a-f0-9]{24}$/i.test(objectId)) {
+        return objectId;
+      } else {
+        console.log('❌ Invalid ObjectId format in $oid:', objectId);
+      }
+    }
+
+    // Case 3: Try converting object to string and look for ObjectId pattern
+    if (typeof idField === 'object') {
+      const stringified = JSON.stringify(idField);
+      console.log('🔍 Searching in stringified object:', stringified);
+
+      // Look for ObjectId pattern in the JSON - matches your format exactly
+      const match = stringified.match(/"?\$oid"?\s*:\s*"([a-f0-9]{24})"/i);
+      if (match && match[1]) {
+        console.log('✅ ObjectId found via regex:', match[1]);
+        return match[1];
+      }
+    }
+
+    // Case 4: Try direct string conversion
+    const stringVersion = String(idField);
+    if (stringVersion.length === 24 && /^[a-f0-9]{24}$/i.test(stringVersion)) {
+      console.log('✅ ObjectId from String():', stringVersion);
+      return stringVersion;
+    }
+
+    console.log('❌ Could not extract valid ObjectId, creating fallback');
+    console.log('❌ Original data was:', idField);
+    return `FALLBACK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Fetch quotation requests
+  // Function to convert backend data to frontend format
+  const convertBackendDataToRequests = (backendData: BackendTourData[]): QuotationRequest[] => {
+    console.log('🔄 Converting backend data to requests...');
+    console.log('📊 Backend data sample:', JSON.stringify(backendData[0], null, 2));
+
+    const converted = backendData.map((trip, index) => {
+      console.log(`\n--- Converting Trip ${index + 1} ---`);
+      console.log('Raw trip:', JSON.stringify(trip, null, 2));
+
+      try {
+        // Use the robust ID extraction function
+        const tourId = extractObjectId(trip._id);
+        console.log('✅ Final Tour ID:', tourId);
+
+        // Handle MongoDB date format with error handling
+        let tripDate: Date;
+        let pickupTime: Date;
+
+        try {
+          tripDate = new Date(trip.date.$date);
+          console.log('✅ Trip date parsed:', tripDate);
+        } catch (dateError) {
+          console.error('❌ Error parsing trip date:', dateError);
+          tripDate = new Date(); // Fallback to current date
+        }
+
+        try {
+          pickupTime = new Date(trip.pickup_time.$date);
+          console.log('✅ Pickup time parsed:', pickupTime);
+        } catch (timeError) {
+          console.error('❌ Error parsing pickup time:', timeError);
+          pickupTime = new Date(); // Fallback to current time
+        }
+
+        // Calculate end date based on number_of_dates
+        const endDate = new Date(tripDate);
+        endDate.setDate(endDate.getDate() + (trip.number_of_dates - 1));
+
+        const priority: 'high' | 'medium' | 'low' = trip.number_of_seats > 6 ? 'high' : trip.number_of_seats > 3 ? 'medium' : 'low';
+
+        const converted = {
+          id: tourId, // Use the extracted string ID
+          clientName: trip.title,
+          clientPhone: '',
+          clientEmail: '',
+          tourDetails: {
+            id: tourId,
+            destination: trip.end_location,
+            startDate: tripDate,
+            endDate: endDate,
+            duration: `${trip.number_of_dates} day${trip.number_of_dates > 1 ? 's' : ''}`,
+            groupSize: trip.number_of_seats,
+            tourType: trip.title,
+            specialRequests: trip.description_about_start_location,
+            budget: '',
+            accommodation: '',
+            transportation: '',
+            startLocation: trip.start_location,
+            endLocation: trip.end_location,
+            path: trip.path,
+            pickupTime: pickupTime,
+          },
+          requestDate: tripDate,
+          status: 'pending' as const,
+          priority: priority
+        };
+
+        console.log(`✅ Trip ${index + 1} converted successfully`);
+        return converted;
+
+      } catch (error) {
+        console.error(`❌ Error converting trip ${index + 1}:`, error);
+        console.error('❌ Failed trip data:', trip);
+
+        // Return a fallback object to prevent the whole conversion from failing
+        return {
+          id: `ERROR_TRIP_${index}`,
+          clientName: trip.title || 'Unknown Trip',
+          clientPhone: '',
+          clientEmail: '',
+          tourDetails: {
+            id: `ERROR_TRIP_${index}`,
+            destination: trip.end_location || 'Unknown',
+            startDate: new Date(),
+            endDate: new Date(),
+            duration: '1 day',
+            groupSize: trip.number_of_seats || 1,
+            tourType: trip.title || 'Unknown',
+            specialRequests: trip.description_about_start_location || '',
+            budget: '',
+            accommodation: '',
+            transportation: '',
+            startLocation: trip.start_location || 'Unknown',
+            endLocation: trip.end_location || 'Unknown',
+            path: trip.path || '',
+            pickupTime: new Date(),
+          },
+          requestDate: new Date(),
+          status: 'pending' as const,
+          priority: 'medium' as const
+        };
+      }
+    });
+
+    // Log all extracted IDs for verification
+    const extractedIds = converted.map(c => c.id);
+    console.log('\n🆔 All extracted Tour IDs:', extractedIds);
+    console.log('❗ FALLBACK IDs detected:', extractedIds.filter(id => id.startsWith('FALLBACK')).length);
+    console.log('❗ ERROR IDs detected:', extractedIds.filter(id => id.startsWith('ERROR_TRIP')).length);
+
+    console.log('✅ Conversion complete. Total converted:', converted.length);
+    return converted;
+  };
+
+  // Fetch quotation requests - Updated to match your working endpoint
   const fetchRequests = async () => {
+    console.log('🚀 Starting fetchRequests...');
     try {
-      const res = await fetch('http://localhost:8080/guide/groupTours');
+      // First, let's try the original endpoint you mentioned
+      console.log('📡 Fetching from: http://localhost:8080/guide/groupTours');
+      const res = await fetch('http://localhost:8080/guide/groupTours', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📥 Response status:', res.status);
+      console.log('📥 Response ok:', res.ok);
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
       const data = await res.json();
 
-      if (data) {
-        console.log('Backend data:', data);
+      console.log('=== RAW BACKEND RESPONSE ===');
+      console.log('Response type:', typeof data);
+      console.log('Is array:', Array.isArray(data));
+      console.log('Length:', data?.length);
+      console.log('First item (raw):', data?.[0]);
+      console.log('=============================');
+
+      if (data && Array.isArray(data) && data.length > 0) {
+        console.log('✅ Data received, converting...');
         setBackendData(data);
 
         // Convert backend data to frontend format
         const convertedRequests = convertBackendDataToRequests(data);
+        console.log('✅ Conversion complete. Converted count:', convertedRequests.length);
         setRequests(convertedRequests);
+      } else if (data && Array.isArray(data) && data.length === 0) {
+        console.log("ℹ️ Empty array - No pending trips found");
+        setRequests([]);
       } else {
-        console.log("Error");
+        console.log("⚠️ Invalid data format received. Data:", data);
+        setRequests([]);
       }
     } catch (err) {
-      console.log('error in quotation getting : ', err);
-      Alert.alert('Error', 'Failed to load quotations');
+      console.error('❌ Error in fetchRequests:', err);
+      Alert.alert('Error', `Failed to load quotations: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setRequests([]);
     }
   };
 
@@ -231,6 +406,9 @@ const QuotationsScreen = () => {
             ? `${item.tourDetails.durationInDays} days`
             : 'Duration not specified',
           tourType: item.tourDetails?.tourType || 'Standard',
+          startLocation: item.tourDetails?.startLocation || '',
+          endLocation: item.tourDetails?.endLocation || '',
+          path: item.tourDetails?.path || '',
         }
       }));
 
@@ -293,6 +471,16 @@ const QuotationsScreen = () => {
     });
   };
 
+  const formatTime = (date: Date | string): string => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return 'Invalid Time';
+    return d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -335,152 +523,96 @@ const QuotationsScreen = () => {
   };
 
   const handleSubmitQuotation = (request: QuotationRequest) => {
+    console.log('🎯 Opening quotation form for tour ID:', request.id);
     setSelectedRequest(request);
     setModalVisible(true);
   };
 
   const submitQuotation = async () => {
-    console.log('Submit quotation called');
-    console.log('Quotation form:', quotationForm);
-    console.log('Selected request:', selectedRequest);
+    console.log('=== SUBMIT QUOTATION START ===');
 
     try {
-      // Step 1: Validate form
+      // Validate form
       if (!quotationForm.amount || quotationForm.amount.trim() === '') {
-        console.log('Amount validation failed - empty amount');
         Alert.alert('Error', 'Please fill in the total amount');
         return;
       }
 
       const parsedAmount = parseFloat(quotationForm.amount);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
-        console.log('Amount validation failed - invalid number:', parsedAmount);
         Alert.alert('Error', 'Please enter a valid amount greater than 0');
         return;
       }
 
-      if (!selectedRequest) {
-        console.log('Selected request validation failed');
-        Alert.alert('Error', 'No request selected');
+      if (!selectedRequest || !selectedRequest.id) {
+        Alert.alert('Error', 'No tour selected');
         return;
       }
 
-      console.log('Form validation passed');
+      // Get the Tour ID from the selected request
+      const tourId = selectedRequest.id;
+      console.log('🆔 Tour ID for submission:', tourId);
 
-      // Step 2: Get guide ID
-      console.log('Attempting to get guideId from AsyncStorage...');
-      let guideId = await AsyncStorage.getItem('guideId');
-
-      if (!guideId) {
-        console.warn('Guide ID not found in AsyncStorage. Using temporary guide ID...');
-        guideId = 'TEMP_GUIDE_ID_001'; // This should match your backend's temporary guide ID
-      }
-      console.log('Guide ID:', guideId);
-
-      // Step 3: Prepare quotation data with exact field names expected by backend
+      // Prepare the request body (this is what your backend expects)
       const quotationData = {
-        amount: parseFloat(quotationForm.amount), // Backend expects 'amount' field
-        notes: quotationForm.notes || '', // Backend expects 'notes' field
-        guideId: guideId, // Backend expects 'guideId' field
+        amount: parsedAmount,
+        notes: quotationForm.notes || '',
+        guideId: 'TEMP_GUIDE_ID_001' // This should come from your auth system
       };
 
-      console.log('Quotation data prepared:', quotationData);
+      console.log('📦 Quotation data:', JSON.stringify(quotationData, null, 2));
 
-      // Step 4: Prepare request URL - make sure the ID format is correct
-      const requestUrl = `http://localhost:8080/guide/submitQuotation/${selectedRequest.id}`;
-      console.log('Request URL:', requestUrl);
-      console.log('Selected request ID type:', typeof selectedRequest.id);
-      console.log('Selected request ID value:', selectedRequest.id);
+      // Build the API URL with the tour ID
+      const apiUrl = `http://localhost:8080/guide/submitQuotation/${tourId}`;
+      console.log('🌐 API URL:', apiUrl);
 
-      // Step 5: Prepare request headers
-      const requestHeaders = {
-        'Content-Type': 'application/json',
-      };
-      console.log('Request headers:', requestHeaders);
-
-      // Step 6: Make the API call
-      console.log('Making API call...');
-      const response = await fetch(requestUrl, {
+      // Make the API call
+      console.log('🚀 Submitting quotation...');
+      const response = await fetch(apiUrl, {
         method: 'PUT',
-        headers: requestHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(quotationData),
       });
 
-      console.log('Response received - Status:', response.status);
-      console.log('Response OK:', response.ok);
+      console.log('📥 Response status:', response.status);
 
-      // Step 7: Handle response
       if (!response.ok) {
-        console.log('Response not OK - Status:', response.status);
         const errorText = await response.text();
-        console.error('Error response text:', errorText);
+        console.error('❌ Error response:', errorText);
 
-        // Handle specific error cases
-        if (response.status === 400) {
-          Alert.alert('Validation Error', errorText || 'Invalid data provided');
-        } else if (response.status === 404) {
-          Alert.alert('Error', 'Tour request not found');
-        } else if (response.status === 401) {
-          Alert.alert('Authentication Error', 'Your session has expired. Please log in again.');
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('guideId');
+        if (response.status === 404) {
+          Alert.alert('Error', `Tour not found with ID: ${tourId}`);
+        } else if (response.status === 400) {
+          Alert.alert('Validation Error', errorText);
         } else {
-          Alert.alert('Error', `Failed to submit quotation: ${response.status} - ${errorText}`);
+          Alert.alert('Error', `Failed to submit quotation: ${response.status}`);
         }
         return;
       }
 
-      // Step 8: Parse successful response
-      console.log('Attempting to parse response...');
-      let updatedQuotation;
-      try {
-        updatedQuotation = await response.json();
-        console.log('Response parsed successfully:', updatedQuotation);
-      } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError);
-        Alert.alert('Error', 'Invalid response format from server');
-        return;
-      }
+      // Success
+      const result = await response.json();
+      console.log('✅ Quotation submitted successfully:', result);
 
-      // Step 9: Update local state
-      console.log('Updating local state...');
-      setRequests(prevRequests =>
-        prevRequests.map(request =>
-          request.id === selectedRequest.id
-            ? { ...request, status: 'quoted' }
-            : request
-        )
-      );
+      // Update the local state to show the tour as "quoted"
+      setRequests(prev => prev.map(req =>
+        req.id === tourId ? { ...req, status: 'quoted' } : req
+      ));
 
-      // Step 10: Reset form and close modal
-      setQuotationForm({
-        amount: '',
-        notes: ''
-      });
-
-      // Step 11: Show success message and cleanup
-      console.log('Showing success message...');
-      Alert.alert('Success', 'Quotation submitted successfully!');
-
-      console.log('Closing modal...');
+      // Reset form and close modal
+      setQuotationForm({ amount: '', notes: '' });
       setModalVisible(false);
 
-      console.log('Refreshing data...');
+      Alert.alert('Success', 'Quotation submitted successfully!');
+
+      // Refresh data
       await onRefresh();
 
-      console.log('Submit quotation completed successfully');
-
     } catch (error) {
-      console.error('Caught error in submitQuotation:', error);
-      console.error('Error type:', typeof error);
-
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      Alert.alert('Network Error', `Failed to connect to server: ${errorMessage}`);
+      console.error('❌ Network error:', error);
+      Alert.alert('Network Error', 'Failed to connect to server. Please check your connection.');
     }
   };
 
@@ -516,34 +648,64 @@ const QuotationsScreen = () => {
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
             <Text style={styles.statusText}>{request.status.toUpperCase()}</Text>
           </View>
+          <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(request.priority) }]}>
+            <Text style={styles.priorityText}>{request.priority.toUpperCase()}</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.tourDetails}>
+        {/* Route Information */}
         <View style={styles.detailRow}>
-          <MapPin size={18} color="#6B7280" />
-          <Text style={styles.detailText}>{request.tourDetails.destination}</Text>
+          <Navigation size={18} color="#6B7280" />
+          <Text style={styles.detailText}>
+            {request.tourDetails.startLocation} → {request.tourDetails.endLocation}
+          </Text>
         </View>
+
+        {/* Route Path */}
+        {request.tourDetails.path && (
+          <View style={styles.detailRow}>
+            <Route size={18} color="#6B7280" />
+            <Text style={styles.detailText}>{request.tourDetails.path}</Text>
+          </View>
+        )}
+
+        {/* Date and Time */}
         <View style={styles.detailRow}>
           <Calendar size={18} color="#6B7280" />
           <Text style={styles.detailText}>
-            {formatDate(request.tourDetails.startDate)} - {formatDate(request.tourDetails.endDate)}
+            {formatDate(request.tourDetails.startDate)}
+            {request.tourDetails.endDate &&
+              formatDate(request.tourDetails.startDate) !== formatDate(request.tourDetails.endDate) &&
+              ` - ${formatDate(request.tourDetails.endDate)}`}
           </Text>
         </View>
+
+        {/* Pickup Time */}
+        {request.tourDetails.pickupTime && (
+          <View style={styles.detailRow}>
+            <Clock size={18} color="#6B7280" />
+            <Text style={styles.detailText}>
+              Pickup: {formatTime(request.tourDetails.pickupTime)}
+            </Text>
+          </View>
+        )}
+
+        {/* Group Size and Duration */}
         <View style={styles.detailRow}>
           <Users size={18} color="#6B7280" />
-          <Text style={styles.detailText}>{request.tourDetails.groupSize} people</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Clock size={18} color="#6B7280" />
-          <Text style={styles.detailText}>{request.tourDetails.duration}</Text>
+          <Text style={styles.detailText}>
+            {request.tourDetails.groupSize} seats • {request.tourDetails.duration}
+          </Text>
         </View>
       </View>
 
+      {/* Pickup Instructions */}
       {request.tourDetails.specialRequests && (
-        <View style={styles.specialRequests}>
-          <Text style={styles.specialRequestsLabel}>Special Requests:</Text>
-          <Text style={styles.specialRequestsText}>{request.tourDetails.specialRequests}</Text>
+        <View style={styles.pickupInstructions}>
+          <Text style={styles.pickupInstructionsLabel}>Pickup Instructions:</Text>
+          <Text style={styles.pickupInstructionsText}>{request.tourDetails.specialRequests}</Text>
         </View>
       )}
 
@@ -565,8 +727,6 @@ const QuotationsScreen = () => {
   const handleViewBreakdown = (quotationId: string) => {
     Alert.alert('View Breakdown', `Viewing breakdown for quotation ${quotationId}`);
   };
-
-
 
   const handleEditQuote = (quotationId: string) => {
     console.log('handleEditQuote called with ID:', quotationId);
@@ -601,26 +761,15 @@ const QuotationsScreen = () => {
         notes: editFormData.notes
       };
 
-      /* const response = await fetch(`http://localhost:8080/guide/editQuotation/${quotationId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      }); */
+      // Simulate successful update for now
+      setSubmittedQuotations(prev => prev.map(q =>
+        q.id === quotationId ? { ...q, ...updateData } : q
+      ));
+      setShowEditModal(false);
+      setEditingQuote(null);
+      setEditFormData({ quotedAmount: '', notes: '' });
+      Alert.alert('Success', 'Quotation updated successfully!');
 
-      /* if (response.ok) {
-        // Update local state
-        setSubmittedQuotations(prev => prev.map(q => 
-          q.id === quotationId ? { ...q, ...updateData } : q
-        ));
-        setShowEditModal(false);
-        setEditingQuote(null);
-        setEditFormData({ quotedAmount: '', notes: '' });
-        Alert.alert('Success', 'Quotation updated successfully!');
-      } else {
-        throw new Error('Failed to update quotation');
-      } */
     } catch (error) {
       console.error('Error updating quotation:', error);
       Alert.alert('Error', 'Failed to update quotation');
@@ -643,8 +792,6 @@ const QuotationsScreen = () => {
       ]
     );
   };
-
-
 
   const renderSubmittedCard = (quotation: SubmittedQuotation) => (
     <View key={quotation.id} style={styles.card}>
@@ -671,6 +818,24 @@ const QuotationsScreen = () => {
       </View>
 
       <View style={styles.tourDetails}>
+        {/* Route Information */}
+        {quotation.tourDetails.startLocation && quotation.tourDetails.endLocation && (
+          <View style={styles.detailRow}>
+            <Navigation size={18} color="#6B7280" />
+            <Text style={styles.detailText}>
+              {quotation.tourDetails.startLocation} → {quotation.tourDetails.endLocation}
+            </Text>
+          </View>
+        )}
+
+        {/* Route Path */}
+        {quotation.tourDetails.path && (
+          <View style={styles.detailRow}>
+            <Route size={18} color="#6B7280" />
+            <Text style={styles.detailText}>{quotation.tourDetails.path}</Text>
+          </View>
+        )}
+
         <View style={styles.detailRow}>
           <MapPin size={18} color="#6B7280" />
           <Text style={styles.detailText} numberOfLines={2}>
@@ -717,16 +882,6 @@ const QuotationsScreen = () => {
       )}
 
       <View style={styles.cardActions}>
-        {/* <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => handleViewBreakdown(quotation.id)}
-          accessible={true}
-          accessibilityLabel="View quotation breakdown"
-        >
-          <Eye size={18} color="#6B7280" />
-          <Text style={styles.actionText}>View Breakdown</Text>
-        </TouchableOpacity> */}
-
         {(quotation.status === 'pending' || quotation.status === 'quoted') && (
           <TouchableOpacity
             style={styles.actionButton}
@@ -737,7 +892,7 @@ const QuotationsScreen = () => {
             }}
           >
             <Edit3 size={18} color="#6B7280" />
-            <Text style={styles.actionText}>Edit Quote (Test)</Text>
+            <Text style={styles.actionText}>Edit Quote</Text>
           </TouchableOpacity>
         )}
 
@@ -982,11 +1137,19 @@ const QuotationsScreen = () => {
                 <View style={styles.requestSummary}>
                   <Text style={styles.requestSummaryTitle}>Request Summary:</Text>
                   <Text style={styles.requestSummaryText}>
-                    {selectedRequest.tourDetails.destination} - {selectedRequest.tourDetails.duration}
+                    {selectedRequest.tourDetails.startLocation} → {selectedRequest.tourDetails.endLocation}
                   </Text>
                   <Text style={styles.requestSummaryText}>
-                    {selectedRequest.tourDetails.groupSize} people
+                    {selectedRequest.tourDetails.groupSize} seats • {selectedRequest.tourDetails.duration}
                   </Text>
+                  <Text style={styles.requestSummaryText}>
+                    Date: {formatDate(selectedRequest.tourDetails.startDate)}
+                  </Text>
+                  {selectedRequest.tourDetails.pickupTime && (
+                    <Text style={styles.requestSummaryText}>
+                      Pickup: {formatTime(selectedRequest.tourDetails.pickupTime)}
+                    </Text>
+                  )}
                 </View>
               )}
 
@@ -1001,17 +1164,17 @@ const QuotationsScreen = () => {
                 />
               </View>
 
-              {/* <View style={styles.formGroup}>
+              <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Notes</Text>
                 <TextInput
                   style={[styles.formInput, styles.textArea]}
                   value={quotationForm.notes}
-                  onChangeText={(text) => setQuotationForm({...quotationForm, notes: text})}
+                  onChangeText={(text) => setQuotationForm({ ...quotationForm, notes: text })}
                   placeholder="Additional notes or terms"
                   multiline
                   numberOfLines={4}
                 />
-              </View> */}
+              </View>
             </ScrollView>
 
             <View style={styles.modalActions}>
@@ -1031,11 +1194,12 @@ const QuotationsScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Modal */}
+      {renderEditModal()}
     </SafeAreaView>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -1050,6 +1214,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+    marginTop: 8,
   },
   header: {
     backgroundColor: '#FEFA17',
@@ -1193,6 +1358,24 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: '600',
   },
+  pickupInstructions: {
+    marginBottom: 12,
+    padding: 12,
+    backgroundColor: '#EBF8FF',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3B82F6',
+  },
+  pickupInstructionsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1E40AF',
+    marginBottom: 4,
+  },
+  pickupInstructionsText: {
+    fontSize: 14,
+    color: '#1E40AF',
+  },
   specialRequests: {
     marginBottom: 12,
     padding: 12,
@@ -1224,7 +1407,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   validUntil: {
-    marginBottom: 12,
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
   },
   validUntilText: {
     fontSize: 12,
@@ -1412,14 +1597,14 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#EF4444', // Tailwind red-500
+    color: '#EF4444',
     textAlign: 'center',
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 15,
-    backgroundColor: '#3B82F6', // Tailwind blue-500
+    backgroundColor: '#3B82F6',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -1434,68 +1619,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#6B7280', // Tailwind gray-500
+    color: '#6B7280',
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: '#9CA3AF', // Tailwind gray-400
+    color: '#9CA3AF',
     textAlign: 'center',
     paddingHorizontal: 30,
-  },
-  editContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  editInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-  },
-  editActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  saveButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalSaveButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginRight: 5,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f44336',
-    padding: 12,
-    borderRadius: 5,
-    flex: 1,
-    marginLeft: 5,
-  },
-  modalSaveText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalCancelText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
   },
   editInfo: {
     marginTop: 16,
@@ -1516,7 +1647,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 4,
   },
-
 });
 
 export default QuotationsScreen;

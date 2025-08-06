@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from 'react';
 //import './App.css';
 import Login from './pages/Login/Login';
+import SignUp from './pages/SignUp/SignUp'
 import AdminLayout from "./layouts/AdminLayout";
 import DashboardPage from './pages/Admin/DashboardPage';
 import AllHotelRequests from './pages/Admin/AllHotelRequests';
@@ -92,6 +93,11 @@ function App() {
 
             path="/"
             element={<Login />}
+          />
+          <Route
+
+            path="/signup"
+            element={<SignUp />}
           />
           {/* <Route path="/guide" element={<VehicleAdmin/>} /> */}
 

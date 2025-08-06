@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthScreenProps } from '../../lib/navigation.types';
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
+import { jwtDecode } from 'jwt-decode';
 
 cssInterop(Image, { className: "style" });
 
@@ -14,6 +15,14 @@ cssInterop(Image, { className: "style" });
 const logo = require('../../assets/images/logo.png');
 
 const windowHeight = Dimensions.get('window').height;
+
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
 
 export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
@@ -95,22 +104,43 @@ export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
                     //await SecureStore.setItemAsync("token", data.token)
                     await AsyncStorage.setItem("token", data.token)
-                    const x = await AsyncStorage.getItem('hasViewedOnboarding');
-                    if (x == 'true') {
 
-                        return router.replace('/(tabs)')
+                    const token: MyToken = jwtDecode(data.token);
+
+                    if (token.roles.includes('user')) {
+                        const x = await AsyncStorage.getItem('hasViewedOnboarding');
+                        if (x == 'true') {
+
+                            return router.replace('/(tabs)')
+
+                        } else {
+
+                            return router.replace('/GetStarted')
+
+                        }
+                    } else if (token.roles.includes('guide')) {
+
+                        return router.replace('/(guide)')
+
+                    } else if (token.roles.includes('merchant')) {
+
+                        return router.replace('/(merchant-tabs)')
+
+                    } else if (token.roles.includes('vehicle')) {
+
+                        return router.replace('/(vehicle)')
 
                     } else {
 
-                        return router.replace('/GetStarted')
+                        alert('Unauthorized access attempt detected !!!!!!')
 
                     }
+
                 } else {
 
-                    alert('No token')
+                    alert('Register First...')
 
                 }
-
 
             } else {
 

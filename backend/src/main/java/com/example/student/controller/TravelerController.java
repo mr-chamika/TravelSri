@@ -52,9 +52,18 @@ public class TravelerController {
     private HotelsRepo repo2;
 
     @GetMapping("/hotels-all")
-    public ResponseEntity<List<Hoteldto>> HotelsAll() {
+    public ResponseEntity<List<THoteldto>> HotelsAll(@RequestParam String location,@RequestParam int guests ) {
 
-        List<Hoteldto> list = repo2.findAllHoteldtos();
+        List<THoteldto> list = repo2.findAllHoteldtos(location,guests);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/hotel-all")
+    public ResponseEntity<List<THoteldto>> HotelsAllSuggest(@RequestParam int guests ) {
+
+        List<THoteldto> list = repo2.findAllSuggestHoteldtos(guests);
 
         return ResponseEntity.ok(list);
 
