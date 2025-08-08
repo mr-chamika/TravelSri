@@ -40,7 +40,7 @@ public class Hashingpw {
                                 "/traveler/guides-reviews",
                                 "/guide/groupTours",
                                 "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
-                                "/guide/submittedQuotation/**", // Fixed: Allow all submittedQuotation endpoints
+                                "/guide/submittedQuotation/{guideId}", // Fixed: Allow all submittedQuotation endpoints
                                 "/vehicle/addVehicle",
                                 "/vehicle/all",
                                 "/vehicle/edit",
@@ -129,7 +129,20 @@ public class Hashingpw {
                                 "/shopitems/search",
                                 "/shopitems/add",
                                 "/shopitems/update",
-                                "/shopitems/delete"
+                                "/shopitems/delete",
+                                "/api/bookings/create",
+                                "/api/bookings/get/{Id}",
+                                "/api/bookings/traveler/{travelerId}",
+                                "/api/bookings/provider/{providerId}",
+                                "/api/payments/payhere/create-checkout",
+                                "api/payments/payhere/notify",
+                                "/api/payments/payhere/status/{orderId}",
+                                "/api/bookings/{bookingId}/accept",
+                                "api/bookings/{bookingId}/reject",
+                                "/api/bookings/{bookingId}/cancel",
+                                "/api/bookings/{bookingId}/complete",
+                                "/api/payhere/test/generate-hash",
+                                "/api/payhere/test/verify-hash"
 
 
 
