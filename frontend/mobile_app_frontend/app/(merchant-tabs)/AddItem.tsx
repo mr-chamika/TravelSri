@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router'; // Import useRouter
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 
 // Corrected type definition to match the backend
 type ListingItem = {
@@ -64,12 +66,35 @@ const AddItem: React.FC = () => {
       return;
     }
 
+    // 🆕 Retrieve and decode the token to get the shopId
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+        Alert.alert('Error', 'Authentication token not found. Please log in again.');
+        return;
+    }
+
+    let decodedToken: any;
+    try {
+        decodedToken = jwtDecode(token);
+    } catch (err) {
+        console.error('Error decoding token:', err);
+        Alert.alert('Error', 'Invalid authentication token. Please log in again.');
+        return;
+    }
+
+    const shopId = decodedToken.id;
+    if (!shopId) {
+        Alert.alert('Error', 'Shop ID not found in token.');
+        return;
+    }
+
     const shopItem = {
       name: name.trim(),
       price: Number(price),
       count: Number(count),
       description: description.trim() || 'This is Description',
       image: image,
+      shopId: shopId, 
     };
     console.log('Sending to backend:', shopItem);
 

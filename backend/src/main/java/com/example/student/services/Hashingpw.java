@@ -107,8 +107,8 @@ public class Hashingpw {
                                 "/shopitems/search",
                                 "/shopitems/add",
                                 "/shopitems/update",
-                                "/shopitems/delete"
-
+                                "/shopitems/delete",
+                                "/shopitems/by-shop"
 
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC

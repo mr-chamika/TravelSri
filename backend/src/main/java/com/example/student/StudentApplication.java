@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @EnableMongoRepositories(basePackages = "com.example.student")
 @EnableMongoAuditing // Enable automatic date auditing
 public class StudentApplication {
-	
+
 	public static void main(String[] args) {
 
 		// Load the .env file before starting Spring
@@ -25,5 +25,4 @@ public class StudentApplication {
 		System.out.println("Application running ......");
 
 	}
-
 }
