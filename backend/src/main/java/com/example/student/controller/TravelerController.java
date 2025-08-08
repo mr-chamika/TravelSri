@@ -418,4 +418,9 @@ SolotripViewdto s = new SolotripViewdto(
 
     }
 
+//    @Autowired
+//    private TravelerBookingRepo travelerBookingRepo;
+//
+//    @PostMapping()
+
 }

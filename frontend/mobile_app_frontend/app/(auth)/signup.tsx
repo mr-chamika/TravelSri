@@ -714,7 +714,7 @@ export default function SignupForm() {
                     ...payload
                 } = dataToSend;
 
-                console.log(payload)
+                //console.log(payload)
 
                 await fetch('http://localhost:8080/user/signup', {
                     //await fetch('https://travelsri-backend.onrender.com/user/signup', {
