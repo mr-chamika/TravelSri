@@ -74,10 +74,9 @@ public class TravelerController {
     public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
 
         Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
-
         if (list.isEmpty()) {
-            return ResponseEntity.notFound().build();
 
+            return ResponseEntity.notFound().build();
 
         }
 
@@ -418,9 +417,35 @@ SolotripViewdto s = new SolotripViewdto(
 
     }
 
-//    @Autowired
-//    private TravelerBookingRepo travelerBookingRepo;
-//
-//    @PostMapping()
+    @Autowired
+    private TravelerBookingRepo travelerBookingRepo;
+
+    @PostMapping("/create-booking")
+    public String CreateBooking(@RequestBody TravelerBooking obj) {
+
+        TravelerBooking x = travelerBookingRepo.save(obj);
+
+        if (x == null) {
+
+            return "Booking is Failed";
+
+        }
+
+        return "Success";
+    }
+
+    @GetMapping("/bookings-all")
+    public ResponseEntity<?> GetAllBookings(@RequestParam String userId) {
+
+         List<TravelerBooking> list = travelerBookingRepo.findAllByUserId(userId);
+
+        if(list.isEmpty()) {
+
+            return ResponseEntity.badRequest().body("No Bookings Found");
+
+        }
+
+        return ResponseEntity.ok(list);
+    }
 
 }

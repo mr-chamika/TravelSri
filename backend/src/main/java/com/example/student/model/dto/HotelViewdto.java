@@ -1,13 +1,14 @@
 package com.example.student.model.dto;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
-
-@Setter
-@Getter
+@Data
+@Document(collection = "hotels")
 public class HotelViewdto {
 
     private String _id;
@@ -24,8 +25,9 @@ public class HotelViewdto {
     private List<String> facilities;
     private int availableSingle;//free single bed room slots
     private int availableDouble;//free double bed room slots
+    private String mobileNumber;
 
-    public HotelViewdto(String _id, List<String> images, int stars, int ratings,int reviewCount,int price, String name,String location,String description,List<String> policies,List<String> roomTypes,List<String> facilities,int availableSingle,int availableDouble) {
+    public HotelViewdto(String _id, List<String> images, int stars, int ratings,int reviewCount,int price, String name,String location,String description,List<String> policies,List<String> roomTypes,List<String> facilities,int availableSingle,int availableDouble,String mobileNumber ) {
 
         this._id = _id;
         this.images = images;
@@ -41,6 +43,7 @@ public class HotelViewdto {
         this.facilities = facilities;
         this.availableSingle = availableSingle;
         this.availableDouble = availableDouble;
+        this.mobileNumber = mobileNumber;
 
     }
 

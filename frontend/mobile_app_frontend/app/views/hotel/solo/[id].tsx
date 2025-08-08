@@ -6,7 +6,14 @@ import { useEffect, useState } from "react";
 import { useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 cssInterop(Image, { className: "style" });
-
+import { jwtDecode } from "jwt-decode";
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
 interface BookingData {
     selectedDates: string;
     selectedoutDates: string;
@@ -31,6 +38,7 @@ export interface HotelView {
     facilities: string[];
     availableSingle: number;
     availableDouble: number;
+    mobileNumber: string;
 }
 
 interface Review {
@@ -61,6 +69,24 @@ interface RoomType {
 
 }
 
+export interface Booking {
+    _id: string;
+    userId: string;
+    type: string;
+    thumbnail: string;
+    title: string;
+    subtitle: string[];
+    location: string;
+    bookingDates: string[];
+    stars: number;
+    ratings: number;
+    paymentStatus: boolean;
+    guests: number;
+    facilities: string[];
+    price: number;
+    status: string;
+    mobileNumber: string;
+}
 
 const pic = require('../../../../assets/images/tabbar/towert.png');
 const location = require('../../../../assets/images/pin.png');
@@ -86,6 +112,7 @@ export default function Views() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+    const [booking, setBooking] = useState<Booking | null>(null)
 
 
     useEffect(() => {
@@ -405,6 +432,64 @@ export default function Views() {
         }
     }, [carouselWidth]);
 
+    const handleBooking = async () => {
+
+        const keys = await AsyncStorage.getItem("token");
+
+        if (keys) {
+
+            const token: MyToken = jwtDecode(keys)
+
+
+            const book = { ...booking }
+            book.userId = token.id
+            book.type = 'hotel';
+            book.thumbnail = hotelv?.images[0];
+            book.title = hotelv?.name;
+
+            var x = new Array();
+
+            Object.entries(selectedRoomCounts).forEach(n => { if (n[1] > 0) x.push(n[0] == '0' ? n[1] + ` Single bed room ${n[1] > 1 ? 's' : ''}` : n[1] + ` Double bed room ${n[1] > 1 ? 's' : ''}`) })
+
+            book.subtitle = x;
+            book.location = hotelv?.location;
+            if (bookingData) {
+
+                book.bookingDates = [bookingData.selectedDates, bookingData.selectedoutDates];
+                book.guests = bookingData?.adults + bookingData?.children;
+            }
+            book.stars = hotelv?.stars;
+            book.ratings = rating;
+            book.paymentStatus = false;
+
+            var y = new Array();
+
+            facilities.map((x, i) => {
+
+                y.push(x.title);
+
+            })
+
+            book.facilities = y;
+            book.price = totalPrice;
+            book.status = 'active';
+            book.mobileNumber = hotelv?.mobileNumber;
+
+            await fetch(`http://localhost:8080/traveler/create-booking`, {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(book)
+
+            })
+                .then(res => res.text())
+                .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
+                .catch(err => console.log("Error from booking create " + err))
+
+        }
+
+    }
+
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
@@ -473,7 +558,7 @@ export default function Views() {
                             </View>
                             <View className="flex-row items-start">
                                 {/* <Image className="w-5 h-5" source={star} /> */}
-                                <Text className="text-sm rounded-lg bg-yellow-300 py-1 px-2 font-medium">{rating}</Text>
+                                <Text className="text-sm rounded-lg bg-yellow-300 py-1 px-2 font-medium">{rating.toFixed(1)}</Text>
                             </View>
                         </View>
                     </View>
@@ -624,7 +709,8 @@ export default function Views() {
                     <Text className="px-3 font-extrabold text-xl">{totalPrice}.00 LKR/day</Text>
                     <TouchableOpacity
                         className=" bg-[#84848460] rounded-xl w-[30%]"
-                        onPress={() => router.push(`/views/payment/${hotelv?._id}`)}
+                        // onPress={() => router.push(`/views/payment/${hotelv?._id}`)}
+                        onPress={handleBooking}
                     >
                         <View className="py-2 px-3 flex-row justify-between items-center w-full" >
                             <Text>Book Now</Text>

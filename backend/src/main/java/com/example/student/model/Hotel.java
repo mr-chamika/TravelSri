@@ -35,6 +35,7 @@ public class Hotel{
     private int maxSingle;//maximum single bed rooms
     private int maxDouble;//maximum double bed rooms
     private  String description;
+    private String mobileNumber;
 
     private String taxes;
     private String priceDescription;//priceDescription: '1 Night',

@@ -461,7 +461,7 @@ export default function HotelsBookingScreen() {
                                                                                             rating >= 5 ? 'bg-orange-400' :
                                                                                                 'bg-red-500'
                                                                                     }`}>
-                                                                                    <Text className="text-white text-xs font-semibold">{rating}</Text>
+                                                                                    <Text className="text-white text-xs font-semibold">{rating.toFixed(1)}</Text>
                                                                                 </View>
                                                                                 <View className="flex-1">
                                                                                     <Text
