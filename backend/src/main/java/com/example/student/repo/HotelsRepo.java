@@ -22,7 +22,10 @@ public interface HotelsRepo extends MongoRepository<Hotel,String> {
     )List<THoteldto> findAllHoteldtos(String location, int guests);
 
     // In HotelsRepo.java
-    @Query("{ '_id' : ?0 }")
+    @Query(
+            value = "{ '_id' : ?0 }",
+            fields = "{ '_id':1,'images': 1, 'stars': 1, 'ratings': 1, 'reviewCount': 1, 'price': 1, 'name': 1, 'location': 1, 'description': 1, 'policies': 1, 'roomTypes': 1,'facilities': 1,'availableSingle': 1,'availableDouble': 1 }"
+    )
     Optional<HotelViewdto> findHotelViewdtoById(String id);
 
 

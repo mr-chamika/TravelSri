@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+
 import java.util.*;
 
 @RestController
@@ -106,9 +107,27 @@ public class TravelerController {
     private FaciRepo repo4;
 
     @GetMapping("/facis-view")
-    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
+    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam List<String> ids) {
 
-        List<Faci> list = repo4.findByHotelIdContaining(id);
+        List<Faci> list = repo4.findAllById(ids);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private RoomTypeRepo roomtypeRepo;
+
+    @GetMapping("/roomtypes-view")
+    public ResponseEntity<List<RoomType>> HotelRoomType(@RequestParam List<String> ids) {
+
+        List<RoomType> list = roomtypeRepo.findAllById(ids);
 
         if (list.isEmpty()) {
 

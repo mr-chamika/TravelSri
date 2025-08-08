@@ -40,7 +40,10 @@ public class Hotel{
     private String priceDescription;//priceDescription: '1 Night',
     private String[] freeFeatures;//freeFeatures: ["Free cancellation", "No prepayment needed"]
     private String[] policies;
-    String specialOffer;//if available
+    private String specialOffer;//if available
+    private String[] roomTypes;//["id for singlebedroom","id for double bedroom"]
+    private String[] facilities;//["id for facility pool","id for sea view"]
+
     //theekshana
 
 
