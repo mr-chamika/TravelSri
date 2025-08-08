@@ -45,8 +45,8 @@ public class User {
     private String registrationNumber;
     private String businessRegPic1;
     private String businessRegPic2;
-    private int reviewCount;
-    private int stars;
+    private Integer reviewCount;
+    private Integer stars;
     private String currency;
 
     //store
@@ -65,7 +65,7 @@ public class User {
     private Integer dailyRate;//charge per day
     private String bio;//about me
     private String responseTime;
-    private int ResponseRate;
+    private Integer ResponseRate;
 
 
 

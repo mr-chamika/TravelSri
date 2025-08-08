@@ -22,7 +22,7 @@ import { Button } from '../../../components/ui/buttons';
 import { ImageUpload } from '../../../components/ui/imageUpload';
 import DropDownPicker from 'react-native-dropdown-picker';
 import MultiSelect from 'react-native-multiple-select';
-import Topbar from "../../../components/topbar";
+import Topbar from "../../../components/Topbar";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, } from "react-native-reanimated";
 
 
