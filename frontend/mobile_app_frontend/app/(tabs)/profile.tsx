@@ -96,7 +96,7 @@ export default function Profile() {
 
                     const data = await res.json()
 
-                    console.log(data.user)
+                    //console.log(data.user)
                     setUser(data.user)
 
 

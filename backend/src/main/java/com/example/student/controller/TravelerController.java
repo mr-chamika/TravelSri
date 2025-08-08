@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+
 import java.util.*;
 
 @RestController
@@ -73,10 +74,9 @@ public class TravelerController {
     public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
 
         Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
-
         if (list.isEmpty()) {
-            return ResponseEntity.notFound().build();
 
+            return ResponseEntity.notFound().build();
 
         }
 
@@ -106,9 +106,27 @@ public class TravelerController {
     private FaciRepo repo4;
 
     @GetMapping("/facis-view")
-    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
+    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam List<String> ids) {
 
-        List<Faci> list = repo4.findByHotelIdContaining(id);
+        List<Faci> list = repo4.findAllById(ids);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @Autowired
+    private RoomTypeRepo roomtypeRepo;
+
+    @GetMapping("/roomtypes-view")
+    public ResponseEntity<List<RoomType>> HotelRoomType(@RequestParam List<String> ids) {
+
+        List<RoomType> list = roomtypeRepo.findAllById(ids);
 
         if (list.isEmpty()) {
 
@@ -397,6 +415,37 @@ SolotripViewdto s = new SolotripViewdto(
 
         return ResponseEntity.ok(s);
 
+    }
+
+    @Autowired
+    private TravelerBookingRepo travelerBookingRepo;
+
+    @PostMapping("/create-booking")
+    public String CreateBooking(@RequestBody TravelerBooking obj) {
+
+        TravelerBooking x = travelerBookingRepo.save(obj);
+
+        if (x == null) {
+
+            return "Booking is Failed";
+
+        }
+
+        return "Success";
+    }
+
+    @GetMapping("/bookings-all")
+    public ResponseEntity<?> GetAllBookings(@RequestParam String userId) {
+
+         List<TravelerBooking> list = travelerBookingRepo.findAllByUserId(userId);
+
+        if(list.isEmpty()) {
+
+            return ResponseEntity.badRequest().body("No Bookings Found");
+
+        }
+
+        return ResponseEntity.ok(list);
     }
 
 }
