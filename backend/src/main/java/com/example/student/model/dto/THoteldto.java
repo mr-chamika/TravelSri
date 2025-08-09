@@ -1,13 +1,15 @@
 package com.example.student.model.dto;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
 
-@Setter
-@Getter
+@Data
+@Document(collection="hotels")
 public class THoteldto {
 
     private String _id;
@@ -17,12 +19,13 @@ public class THoteldto {
     private int ratings;
     private int reviewCount;
     private String thumbnail;
-    int originalPrice;
-    int currentPrice;
-    String taxes;
-    String priceDescription;
-    String specialOffer;//if available
-    List<String> freeFeatures;
+    private int originalPrice;
+    private int currentPrice;
+    private String taxes;
+    private String priceDescription;
+    private String specialOffer;//if available
+    private List<String> freeFeatures;
+    private String mobileNumber;
 
     public THoteldto(
             String _id,
@@ -37,7 +40,8 @@ public class THoteldto {
             String taxes,
             String priceDescription,
             String specialOffer,//if available
-            List<String> freeFeatures
+            List<String> freeFeatures,
+            String mobileNumber
 
     ) {
 
@@ -54,6 +58,7 @@ public class THoteldto {
         this.priceDescription = priceDescription;
         this.specialOffer = specialOffer;
         this.freeFeatures = freeFeatures;
+        this.mobileNumber = mobileNumber;
 
     }
 

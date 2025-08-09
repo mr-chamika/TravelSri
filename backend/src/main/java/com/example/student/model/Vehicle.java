@@ -29,12 +29,10 @@ public class Vehicle {
     private String image;
     private String insuranceDocument;
     private String insuranceDocument2;
-    private String languagesSpoken;
     private String lastName;
     private String licenseExpiryDate;
     private String licensePhoto;
     private String licensePhoto2;
-    private String licenseYearsOfExperience;
     private String nicNumber;
     private String vehicleNumber;
     private String[] images;
