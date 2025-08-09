@@ -193,6 +193,11 @@ const Listings: React.FC = () => {
 
   const handleDeleteItem = async () => {
     if (!selectedItem) return;
+    
+    // Close the modal immediately
+    setModalVisible(false);
+    setSelectedItem(null);
+    
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -208,18 +213,11 @@ const Listings: React.FC = () => {
       if (!response.ok) {
         throw new Error(`Failed to delete item: ${response.status}`);
       }
-      Alert.alert('Success', 'Item deleted successfully.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            if (shopId) {
-              fetchShopListings(shopId);
-            }
-            setModalVisible(false);
-            setSelectedItem(null);
-          },
-        },
-      ]);
+      
+      // Refresh the listings after successful deletion
+      if (shopId) {
+        fetchShopListings(shopId);
+      }
     } catch (error) {
       console.error('Error deleting item:', error);
       Alert.alert('Error', 'Failed to delete item. Please try again.');
@@ -350,22 +348,19 @@ const Listings: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
-            <Text style={styles.modalSubtitle}>What would you like to do?</Text>
-
-            <TouchableOpacity
-              style={[styles.modalButton, styles.editButton]}
-              onPress={handleChangeItem}
-            >
-              <MaterialIcons name="edit" size={20} color="#fff" />
-              <Text style={styles.modalButtonText}>Edit Item</Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.modalButton, styles.deleteButton]}
               onPress={handleDeleteItem}
             >
-              <MaterialIcons name="delete" size={20} color="#fff" />
-              <Text style={styles.modalButtonText}>Delete Item</Text>
+              <Text style={styles.modalButtonText}>Delete</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.changeButton]}
+              onPress={handleChangeItem}
+            >
+              <Text style={styles.modalButtonText}>Change</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -507,9 +502,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardPrice: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#000'  // Changed from '#FFD700' to black
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000'
   },
   moreButton: {
     padding: 4,
@@ -584,15 +579,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 24,
     textAlign: 'center',
     color: '#333',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   modalButton: {
     flexDirection: 'row',
@@ -602,11 +591,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 6,
   },
-  editButton: {
-    backgroundColor: '#4CAF50',
-  },
   deleteButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: '#FFD700',
+  },
+  changeButton: {
+    backgroundColor: '#FFD700',
   },
   cancelButton: {
     backgroundColor: '#f5f5f5',
@@ -615,7 +604,6 @@ const styles = StyleSheet.create({
   modalButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
-    marginLeft: 8,
+    color: '#000',
   },
 });

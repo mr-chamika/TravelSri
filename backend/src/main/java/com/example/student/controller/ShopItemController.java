@@ -42,15 +42,25 @@ public class ShopItemController {
         return ResponseEntity.ok(savedShopItem);
     }
 
-    // Endpoint to update an existing shop item (image upload temporarily removed)
     @PutMapping("/update")
     public ResponseEntity<Item> updateShopItem(@RequestParam String id, @RequestBody Item shopItem) {
-        if (service.getShopItemById(id).isEmpty()) {
+        Optional<Item> existingItemOpt = service.getShopItemById(id);
+        if (existingItemOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        //shopItem.setId(id);
-        shopItem.setShopId(id);
-        Item updatedShopItem = service.saveShopItem(shopItem);
+
+        Item existingItem = existingItemOpt.get();
+
+        // Update only the changeable fields, preserve ID and shopId
+        existingItem.setName(shopItem.getName());
+        existingItem.setPrice(shopItem.getPrice());
+        existingItem.setCount(shopItem.getCount());
+        existingItem.setDescription(shopItem.getDescription());
+        existingItem.setImage(shopItem.getImage());
+
+        // Don't touch ID or shopId - they remain unchanged
+
+        Item updatedShopItem = service.saveShopItem(existingItem);
         return ResponseEntity.ok(updatedShopItem);
     }
 
