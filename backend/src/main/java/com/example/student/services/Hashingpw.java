@@ -122,6 +122,8 @@ public class Hashingpw {
                                 "/api/payhere/test/generate-hash",
                                 "/api/payhere/test/verify-hash"
 
+                                "/shopitems/delete",
+                                "/shopitems/by-shop"
 
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC

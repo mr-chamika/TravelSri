@@ -3,6 +3,7 @@ package com.example.student.controller;
 import com.example.student.model.Item;
 import com.example.student.services.ShopItemService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,4 +70,19 @@ public class ShopItemController {
         List<Item> results = service.searchShopItemsByName(name);
         return ResponseEntity.ok(results);
     }
+
+    @GetMapping("/by-shop")
+    public ResponseEntity<List<Item>> getItemsByShopId(@RequestParam String shopid) {
+        System.out.println("🔥 ENDPOINT CALLED - Shop ID: " + shopid);
+        System.out.println("🔥 Request reached controller successfully!");
+
+        List<Item> items = service.getItemsByShopId(shopid);
+        System.out.println("🔥 Found " + items.size() + " items");
+
+        if (items.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(items);
+    }
+
 }
