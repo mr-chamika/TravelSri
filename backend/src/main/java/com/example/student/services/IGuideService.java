@@ -31,4 +31,7 @@ public interface IGuideService {
     List<User> getGuidesByDailyRateRange(Double minRate, Double maxRate);
 
     List<User> getGuidesByAreaOfService(String area);
+
+    List<User> searchGuides(String location, String language, String guideType,
+                            String verified, Integer minExperience, Double maxDailyRate, Double minRating);
 }
