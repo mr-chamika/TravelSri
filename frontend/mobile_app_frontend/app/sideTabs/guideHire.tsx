@@ -29,7 +29,7 @@ const xp = require('../../assets/images/xp.png')
 
 } */
 interface Guide {
-    id: string;
+    _id: string;
     firstName: string;
     lastName: string;
     description: string;
@@ -38,7 +38,6 @@ interface Guide {
     stars: number;
     reviewCount: number
     dailyRate: number;
-    currency: string;
     pp: string;
     verified: boolean;
     identified: boolean;
@@ -58,106 +57,6 @@ interface BookingDetails {
 
 /* const guides: Guide[] = [
     {
-        id: '1''',
-        pp: pic,
-        description: 'Theekshana',
-        stars: 3,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '2''',
-        pp: pic,
-        description: 'Teshini',
-        stars: 1,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '3''',
-        pp: pic,
-        description: 'Sudewa',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '4''',
-        pp: pic,
-        description: 'Bimsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '5''',
-        pp: pic,
-        description: 'Tharusha',
-        stars: 3,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '6''',
-        pp: pic,
-        description: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '7''',
-        pp: pic,
-        description: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '8''',
-        pp: pic,
-        description: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '7''',
-        pp: pic,
-        description: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '8''',
-        pp: pic,
-        description: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    // { id: '2', pp: bg, description: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '3', pp: t, description: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '4', pp: pic, description: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '5', pp: bg, description: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '6', pp: t, description: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-
-];
- */
-
-const guides: Guide[] = [
-    {
         id: '1',
         firstName: "Ravi",
         lastName: "Perera",
@@ -167,7 +66,6 @@ const guides: Guide[] = [
         stars: 600,
         reviewCount: 156,
         dailyRate: 8500,
-        currency: "LKR",
         pp: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
         verified: true,
         identified: true,
@@ -188,7 +86,6 @@ const guides: Guide[] = [
         stars: 100,
         reviewCount: 89,
         dailyRate: 6500,
-        currency: "LKR",
         pp: "https://images.unsplash.com/photo-1494790108755-2616b612b524?w=400&h=400&fit=crop",
         verified: true,
         identified: true,
@@ -208,7 +105,6 @@ const guides: Guide[] = [
         stars: 900,
         reviewCount: 203,
         dailyRate: 12000,
-        currency: "LKR",
         pp: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
         verified: true,
         identified: false,
@@ -228,7 +124,6 @@ const guides: Guide[] = [
         stars: 250,
         reviewCount: 74,
         dailyRate: 7500,
-        currency: "LKR",
         pp: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
         verified: false,
         identified: true,
@@ -239,7 +134,7 @@ const guides: Guide[] = [
         mobileNumber: "075 1234567"
     }
 ];
-
+ */
 
 export default function Guide() {
 
@@ -250,21 +145,10 @@ export default function Guide() {
     const [lan, setLan] = useState('');
 
     const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
-
-
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [show, setShow] = useState(false);
-    const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
-    const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala', 'Tamil'];
+    const [guides, setGuides] = useState<Guide[]>([])
 
     const [destination, setDestination] = useState('');
     const [bookingType, setBookingType] = useState('visit')
-
-    const starCounts = [2, 2, 2, 5, 1, 0, 3];
-
-    const toggleCardSelection = (index: number) => {
-        setSelectedCardIndex(prev => (prev === index ? null : index));
-    };
 
     const onDayPress = (day: { dateString: string }) => {
         const date = day.dateString;
@@ -279,7 +163,7 @@ export default function Guide() {
         });
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
             alert('Please fill in all fields.');
             return;
@@ -295,6 +179,29 @@ export default function Guide() {
         setBookingDetails(book);
         setModalVisible(false);
         setFine(true)
+
+        try {
+
+            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination}&language=${lan}`)
+
+            if (res.ok) {
+
+                const data = await res.json();
+
+                //console.log(data);
+                setGuides(data)
+
+            } else {
+
+                console.log(await res.text());
+
+            }
+
+        } catch (err) {
+
+            console.log(err)
+
+        }
 
     };
 
@@ -531,22 +438,22 @@ export default function Guide() {
                         <ScrollView
                             className="flex-1"
                             showsVerticalScrollIndicator={false}>
-                            {guides.map((guide, index) => {
+                            {guides.length > 0 && guides.map((guide, index) => {
 
                                 const rating = guide.reviewCount > 0
                                     ? parseFloat(((guide.stars / guide.reviewCount) * 2).toFixed(1))
                                     : 0;
 
                                 return (<TouchableOpacity
-                                    key={guide.id}
+                                    key={guide._id}
                                     className={`bg-white mx-4 my-2 rounded-lg border p-4 shadow-sm border-gray-100`}
-                                    onPress={() => router.push(`/views/guide/solo/${guide.id}`)}
+                                    onPress={() => router.push(`/views/guide/solo/${guide._id}`)}
                                     activeOpacity={0.7}
                                 >
                                     {/* Guide Header */}
                                     <View className="flex-row mb-2 gap-2">
                                         {/* Guide Image and Basic Info */}
-                                        <Image source={guide.pp} className='w-20 h-20 rounded-full' />
+                                        <Image source={{ uri: `data:image/jpeg;base64,${guide.pp}` }} className='w-20 h-20 rounded-full' />
 
                                         <View className="flex-1">
 
@@ -655,7 +562,7 @@ export default function Guide() {
                                         <View className="flex-1">
                                             <Text className="text-sm text-gray-500 mb-0.5">Starting from</Text>
                                             {/* <Text className="text-sm font-semibold text-red-600">{guide.currency} {formatPrice(guide.hourlyRate)}/hour</Text> */}
-                                            <Text className="text-xl font-extrabold text-gray-600">{guide.currency} {(guide.dailyRate)}/day</Text>
+                                            <Text className="text-xl font-extrabold text-gray-600">LKR {(guide.dailyRate)}/day</Text>
                                         </View>
 
                                         <View className="flex-row gap-2">

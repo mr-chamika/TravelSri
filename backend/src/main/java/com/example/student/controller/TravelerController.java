@@ -138,25 +138,21 @@ public class TravelerController {
 
     }
 
-    @Autowired
-    private GuideRepo repo5;
-
-
     @GetMapping("/guides-all")
-            public ResponseEntity<List<Guidedto>> GuidesAll(String location,String language) {
-        List<Guidedto> list = repo5.findAllGuidedtos(location,language);
+            public ResponseEntity<?> GuidesAll(String location,String language) {
+        List<Guidedto> list = userRepo.findAllGuidedtos(location,language);
 
 
-//        if (list.isEmpty()) {
-//            return ResponseEntity.notFound().build();
-//        }
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body("No guides found");
+        }
 
         return ResponseEntity.ok(list);
     }
 
     @GetMapping("/guides-view")
     public ResponseEntity<Optional<GuideViewdto>> Guide(@RequestParam String id) {
-        Optional<GuideViewdto> list = repo5.findData(id);
+        Optional<GuideViewdto> list = userRepo.findData(id);
 
 
         if (list.isEmpty()) {
@@ -370,7 +366,7 @@ r.get().getMapRoute()
 
         Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
         Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
-        Optional<User> guide = repo5.findById(solotrip.get().getGuideId());
+        Optional<User> guide = userRepo.findById(solotrip.get().getGuideId());
         Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.get().getCarId());
 
         if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {

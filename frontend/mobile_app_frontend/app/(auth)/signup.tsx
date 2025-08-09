@@ -742,7 +742,7 @@ export default function SignupForm() {
             try {
 
 
-                const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role };
+                const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role, reviewCount: 0, stars: 0, responseRate: 0 };
                 const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic1', 'businessRegPic2', 'identitypic1', 'identitypic2', 'locpic'];
 
                 for (const field of imageFields) {
