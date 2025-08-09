@@ -140,7 +140,8 @@ public class Hashingpw {
                                 "/api/wallet/platform",
                                 "/api/wallet/money-flow/summary",
                                 "/api/wallet/money-flow/booking/{bookingId}",
-                                "/api/payments/payhere/summary/{bookingId}"
+                                "/api/payments/payhere/summary/{bookingId}",
+                                "/api/guide/search"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

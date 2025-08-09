@@ -1,10 +1,8 @@
-import { Text, View, ScrollView, TouchableOpacity, KeyboardAvoidingView, Modal, TextInput, Platform } from 'react-native';
-import { useState, useCallback, useMemo } from 'react';
-import { Calendar } from 'react-native-calendars';
+import { Text, View, ScrollView, TouchableOpacity, KeyboardAvoidingView, Modal, TextInput, Platform, FlatList } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Phone } from 'lucide-react-native';
 
 cssInterop(Image, { className: "style" });
 
@@ -18,35 +16,45 @@ const tele = require('../../assets/images/tabbar/create/guide/telephones.png')
 const pin = require('../../assets/images/tabbar/create/pin.png')
 const xp = require('../../assets/images/xp.png')
 
-/* interface Guide {
-    id: strin'g';
-    pp: any;
-    description: string;
-    stars: number;
-    verified: boolean;
-    identified:true,
-    identified: boolean
+// Replace with your Node.js backend URL for Places API
+const PLACES_API_URL = __DEV__ 
+    ? 'http://localhost:3000/api'  // Development - Node.js Places API
+    : 'https://your-places-api.com/api'; // Production
 
-} */
+// Replace with your Spring Boot backend URL for Guides
+const SPRING_BACKEND_URL = __DEV__
+    ? 'http://localhost:8080'  // Development - Spring Boot API
+    : 'https://your-spring-backend.com'; // Production
+
+interface PlacePrediction {
+    place_id: string;
+    description: string;
+    main_text: string;
+    secondary_text: string;
+    types: string[];
+}
+
 interface Guide {
-    id: string;
+    _id: string;
     firstName: string;
     lastName: string;
     description: string;
     location: string;
-    experience: string;
+    experience: number;
     stars: number;
-    reviewCount: number
+    reviewCount: number;
     dailyRate: number;
     currency: string;
     pp: string;
-    verified: boolean;
-    identified: boolean;
-    specializations: string[];
+    verified: string; // "done", "pending", "rejected"
+    identified: string; // "done", "pending", "rejected"
+    specialization: string;
     responseTime: string;
-    responseRate: string;
+    ResponseRate: number;
     bio: string;
-    mobileNumber: string
+    mobileNumber: string;
+    languages: string[];
+    guideType: string; // "visit" or "travel"
 }
 
 interface BookingDetails {
@@ -56,229 +64,263 @@ interface BookingDetails {
     language: string;
 }
 
-/* const guides: Guide[] = [
-    {
-        id: '1''',
-        pp: pic,
-        description: 'Theekshana',
-        stars: 3,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '2''',
-        pp: pic,
-        description: 'Teshini',
-        stars: 1,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '3''',
-        pp: pic,
-        description: 'Sudewa',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '4''',
-        pp: pic,
-        description: 'Bimsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '5''',
-        pp: pic,
-        description: 'Tharusha',
-        stars: 3,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '6''',
-        pp: pic,
-        description: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '7''',
-        pp: pic,
-        description: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '8''',
-        pp: pic,
-        description: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '7''',
-        pp: pic,
-        description: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    {
-        id: '8''',
-        pp: pic,
-        description: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified:true,
-        identified: true,
-    },
-    // { id: '2', pp: bg, description: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '3', pp: t, description: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '4', pp: pic, description: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '5', pp: bg, description: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-    // { id: '6', pp: t, description: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] '}',
-
+const languages = [
+    'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Russian', 'Chinese (Mandarin)', 'Chinese (Cantonese)', 'Japanese', 'Korean', 'Arabic',
+    'Dutch', 'Swedish', 'Norwegian', 'Danish', 'Finnish', 'Polish', 'Czech', 'Hungarian', 'Romanian', 'Bulgarian', 'Croatian', 'Serbian', 'Slovak', 'Slovenian', 'Estonian', 'Latvian', 'Lithuanian', 'Greek', 'Turkish', 'Albanian', 'Macedonian', 'Bosnian', 'Montenegrin', 'Maltese', 'Irish', 'Welsh', 'Scottish Gaelic', 'Basque', 'Catalan', 'Galician', 'Icelandic', 'Faroese', 'Luxembourgish', 'Romansh', 'Corsican', 'Sardinian', 'Friulian', 'Ladin', 'Occitan', 'Breton', 'Cornish', 'Manx',
+    'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil', 'Urdu', 'Gujarati', 'Kannada', 'Malayalam', 'Odia', 'Punjabi', 'Assamese', 'Nepali', 'Sinhala', 'Dhivehi', 'Kashmiri', 'Sanskrit', 'Pali', 'Sindhi', 'Konkani', 'Manipuri', 'Bodo', 'Santali', 'Maithili', 'Dogri', 'Bhojpuri', 'Magahi', 'Awadhi', 'Chhattisgarhi', 'Rajasthani', 'Haryanvi', 'Bhili', 'Gondi', 'Khasi', 'Garo', 'Mizo', 'Tripuri', 'Balochi', 'Brahui', 'Pashto', 'Dari', 'Hazaragi',
+    'Thai', 'Vietnamese', 'Indonesian', 'Malay', 'Tagalog', 'Cebuano', 'Ilocano', 'Hiligaynon', 'Waray', 'Bikol', 'Kapampangan', 'Pangasinan', 'Maranao', 'Maguindanao', 'Tausug', 'Burmese', 'Khmer', 'Lao', 'Javanese', 'Sundanese', 'Batak', 'Minangkabau', 'Acehnese', 'Balinese', 'Sasak', 'Tetum', 'Shan', 'Karen', 'Mon', 'Kachin', 'Chin', 'Rakhine', 'Rohingya', 'Hmong', 'Mien', 'Akha', 'Lisu', 'Wa', 'Dai', 'Zhuang', 'Uyghur', 'Kazakh', 'Kyrgyz', 'Tajik', 'Turkmen', 'Uzbek', 'Mongolian',
+    'Tibetan', 'Dzongkha', 'Sherpa', 'Tamang', 'Gurung', 'Magar', 'Tharu', 'Newari', 'Limbu', 'Rai', 'Sunuwar', 'Yolmo', 'Lepcha', 'Bhutia', 'Monpa', 'Tshangla', 'Lhokpu', 'Gongduk', 'Chali', 'Lish', 'Toto', 'Koch', 'Rabha', 'Dimasa', 'Karbi', 'Tiwa', 'Deori', 'Sonowal Kachari', 'Thengal Kachari', 'Hajong', 'Hmar', 'Paite', 'Vaiphei', 'Simte', 'Zou', 'Gangte', 'Kom', 'Aimol', 'Anal', 'Chothe', 'Koireng', 'Lamkang', 'Maram', 'Monsang', 'Moyon', 'Purum', 'Ralte', 'Tarao', 'Tangkhul', 'Thadou', 'Chiru', 'Kharam', 'Koirao', 'Thangal',
+    'Hebrew', 'Persian (Farsi)', 'Kurdish', 'Azerbaijani', 'Armenian', 'Georgian', 'Chechen', 'Ingush', 'Ossetian', 'Abkhazian', 'Adyghe', 'Kabardian', 'Lezgian', 'Avar', 'Dargin', 'Lak', 'Tabasaran', 'Agul', 'Rutul', 'Tsakhur', 'Kryz', 'Budukh', 'Khinalugh', 'Udi', 'Tsova-Tush', 'Mingrelian', 'Laz', 'Svan', 'Assyrian', 'Aramaic', 'Coptic', 'Maltese Arabic', 'Moroccan Arabic', 'Egyptian Arabic', 'Levantine Arabic', 'Gulf Arabic', 'Iraqi Arabic', 'Sudanese Arabic', 'Tunisian Arabic', 'Algerian Arabic', 'Libyan Arabic', 'Yemeni Arabic', 'Hassaniya Arabic',
+    'Swahili', 'Hausa', 'Yoruba', 'Igbo', 'Amharic', 'Oromo', 'Tigrinya', 'Somali', 'Malagasy', 'Zulu', 'Xhosa', 'Afrikaans', 'Shona', 'Ndebele', 'Sesotho', 'Setswana', 'Sepedi', 'Xitsonga', 'Tshivenda', 'Siswati', 'Chichewa', 'Bemba', 'Nyanja', 'Tonga', 'Lozi', 'Kaonde', 'Luvale', 'Lunda', 'Kikongo', 'Lingala', 'Tshiluba', 'Kinyarwanda', 'Kirundi', 'Luganda', 'Runyankole', 'Rukiga', 'Lusoga', 'Lugbara', 'Acholi', 'Langi', 'Alur', 'Kakwa', 'Madi', 'Dinka', 'Nuer', 'Shilluk', 'Bari', 'Kuku', 'Mundari', 'Toposa', 'Turkana', 'Pokot', 'Karamojong', 'Teso', 'Kumam', 'Sebei', 'Pokomo', 'Mijikenda', 'Luo', 'Kalenjin', 'Kamba', 'Meru', 'Embu', 'Kikuyu', 'Maasai', 'Samburu', 'Rendille', 'Borana', 'Gabra', 'Burji', 'Konso', 'Gedeo', 'Sidama', 'Wolayta', 'Gamo', 'Gofa', 'Dawro', 'Kafa', 'Sheko', 'Dizin', 'Suri', 'Mursi', 'Hamer', 'Banna', 'Karo', 'Kwegu', 'Nyangatom', 'Daasanach', 'Arbore', 'Tsamai'
 ];
- */
-
-const guides: Guide[] = [
-    {
-        id: '1',
-        firstName: "Ravi",
-        lastName: "Perera",
-        description: "Cultural Heritage Specialist",
-        location: "Kandy",
-        experience: "8 years",
-        stars: 600,
-        reviewCount: 156,
-        dailyRate: 8500,
-        currency: "LKR",
-        pp: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-        verified: true,
-        identified: true,
-        specializations: ["Cultural Heritage", "Historical Sites", "Religious Sites"],
-        responseTime: "Within 1 hour",
-        responseRate: "98",
-        bio: "Expert in Sri Lankan cultural heritage with deep knowledge of ancient temples and traditional practices.",
-        mobileNumber: "012 3456789"
-
-    },
-    {
-        id: '2',
-        firstName: "Priya",
-        lastName: "Fernando",
-        description: "City & Urban Explorer",
-        location: "Colombo",
-        experience: "5 years",
-        stars: 100,
-        reviewCount: 89,
-        dailyRate: 6500,
-        currency: "LKR",
-        pp: "https://images.unsplash.com/photo-1494790108755-2616b612b524?w=400&h=400&fit=crop",
-        verified: true,
-        identified: true,
-        specializations: ["City Tours", "Food & Cuisine", "Photography Tours"],
-        responseTime: "Within 2 hours",
-        responseRate: "95",
-        bio: "Passionate about showcasing Colombo's vibrant culture, hidden gems, and diverse culinary scene.",
-        mobileNumber: "078 1234567"
-    },
-    {
-        id: '3',
-        firstName: "Samantha",
-        lastName: "Silva",
-        description: "Wildlife & Adventure Guide",
-        location: "Yala",
-        experience: "12 years",
-        stars: 900,
-        reviewCount: 203,
-        dailyRate: 12000,
-        currency: "LKR",
-        pp: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-        verified: true,
-        identified: false,
-        specializations: ["Nature & Wildlife", "Adventure Tours"],
-        responseTime: "Within 30 minutes",
-        responseRate: "99",
-        bio: "Experienced wildlife guide with extensive knowledge of Sri Lankan fauna and conservation efforts.",
-        mobileNumber: "076 1234567"
-    },
-    {
-        id: '4',
-        firstName: "Kamala",
-        lastName: "Wijesinghe",
-        description: "Culinary Arts Expert",
-        location: "Galle",
-        experience: "6 years",
-        stars: 250,
-        reviewCount: 74,
-        dailyRate: 7500,
-        currency: "LKR",
-        pp: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-        verified: false,
-        identified: true,
-        specializations: ["Food & Cuisine", "Cultural Heritage"],
-        responseTime: "Within 3 hours",
-        responseRate: "92",
-        bio: "Culinary expert specializing in traditional Sri Lankan cuisine and cooking techniques.",
-        mobileNumber: "075 1234567"
-    }
-];
-
 
 export default function Guide() {
-
     const [selectedDates, setSelectedDates] = useState<string[]>([]);
-    const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
     const [isModalVisible, setModalVisible] = useState(true);
     const [fine, setFine] = useState(false);
     const [lan, setLan] = useState('');
-
     const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
-
-
-    const [showDropdown, setShowDropdown] = useState(false);
-    const [show, setShow] = useState(false);
-    const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
-    const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala', 'Tamil'];
-
     const [destination, setDestination] = useState('');
-    const [bookingType, setBookingType] = useState('visit')
+    const [bookingType, setBookingType] = useState('visit');
 
-    const starCounts = [2, 2, 2, 5, 1, 0, 3];
+    // Guide data states (NEW)
+    const [guides, setGuides] = useState<Guide[]>([]);
+    const [isLoadingGuides, setIsLoadingGuides] = useState(false);
+    const [guideError, setGuideError] = useState<string | null>(null);
 
-    const toggleCardSelection = (index: number) => {
-        setSelectedCardIndex(prev => (prev === index ? null : index));
+    // Google Places states (UNCHANGED)
+    const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
+    const [showPlaceSuggestions, setShowPlaceSuggestions] = useState(false);
+    const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
+    const [popularPlaces, setPopularPlaces] = useState<any[]>([]);
+
+    // Date picker states
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    // Language dropdown states
+    const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+    const [languageSearch, setLanguageSearch] = useState('');
+
+    const filteredLanguages = languages.filter(lang => 
+        lang.toLowerCase().includes(languageSearch.toLowerCase())
+    );
+
+    // Node.js backend API integration for Places (UNCHANGED)
+    const searchPlaces = async (input: string) => {
+        if (input.length < 2) {
+            setPlacePredictions([]);
+            setShowPlaceSuggestions(false);
+            return;
+        }
+
+        setIsLoadingPlaces(true);
+        try {
+            const response = await fetch(
+                `${PLACES_API_URL}/places/search?query=${encodeURIComponent(input)}&country=lk`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(5000),
+                }
+            );
+
+            const data = await response.json();
+            
+            if (data.success && data.predictions) {
+                setPlacePredictions(data.predictions);
+                setShowPlaceSuggestions(true);
+            } else {
+                console.error('Backend API error:', data.error);
+                setPlacePredictions([]);
+                setShowPlaceSuggestions(false);
+            }
+        } catch (error: unknown) {
+            console.error('Error fetching places:', error);
+            setPlacePredictions([]);
+            setShowPlaceSuggestions(false);
+            
+            if (error instanceof Error) {
+                if (error.name === 'TimeoutError') {
+                    console.log('Request timed out - please check your connection');
+                } else if (error.name === 'TypeError') {
+                    console.log('Network error - please check your backend server');
+                }
+            }
+        } finally {
+            setIsLoadingPlaces(false);
+        }
     };
 
-    const onDayPress = (day: { dateString: string }) => {
-        const date = day.dateString;
+    // Load popular places from Node.js API (UNCHANGED)
+    const loadPopularPlaces = async () => {
+        try {
+            const response = await fetch(`${PLACES_API_URL}/places/popular?country=lk`);
+            const data = await response.json();
+            
+            if (data.success && data.places) {
+                setPopularPlaces(data.places);
+            }
+        } catch (error: unknown) {
+            console.error('Error loading popular places:', error);
+            setPopularPlaces([
+                { name: 'Kandy', description: 'Kandy, Sri Lanka' },
+                { name: 'Galle', description: 'Galle, Sri Lanka' },
+                { name: 'Ella', description: 'Ella, Sri Lanka' },
+                { name: 'Sigiriya', description: 'Sigiriya, Sri Lanka' },
+                { name: 'Nuwara Eliya', description: 'Nuwara Eliya, Sri Lanka' },
+                { name: 'Yala National Park', description: 'Yala National Park, Sri Lanka' }
+            ]);
+        }
+    };
+
+    // NEW: Fetch filtered guides from Spring Boot backend
+    const fetchFilteredGuides = async (filters: BookingDetails) => {
+    setIsLoadingGuides(true);
+    setGuideError(null);
+    
+    try {
+        // Build query parameters for filtering
+        const queryParams = new URLSearchParams();
+        
+        // Extract location from destination (remove ", Sri Lanka" if present)
+        const cleanLocation = filters.destination.replace(', Sri Lanka', '').trim();
+        
+        // Add filters - CORRECTED PARAMETER NAMES
+        if (cleanLocation) {
+            queryParams.append('location', cleanLocation);
+        }
+        if (filters.language) {
+            queryParams.append('language', filters.language);
+        }
+        if (filters.type) {
+            // Changed from 'guideType' to 'type' to match your API
+            queryParams.append('type', filters.type);
+        }
+        
+        // Add verified status filter
+        queryParams.append('verified', 'done');
+        
+        console.log('API URL:', `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`);
+        
+        const response = await fetch(
+            // CORRECTED URL - using the constant and correct endpoint
+            `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+            }
+        );
+
+        console.log('Response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const guidesData = await response.json();
+        console.log('Guides data:', guidesData);
+        setGuides(guidesData);
+        
+    } catch (error: unknown) {
+        console.error('Error fetching guides:', error);
+        if (error instanceof Error) {
+            setGuideError(`Failed to load guides: ${error.message}`);
+        } else {
+            setGuideError('Failed to load guides. Please try again.');
+        }
+        setGuides([]);
+    } finally {
+        setIsLoadingGuides(false);
+    }
+};
+
+    // Debounced search to avoid too many API calls (UNCHANGED)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (destination) {
+                searchPlaces(destination);
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [destination]);
+
+    // Load popular places on mount (UNCHANGED)
+    useEffect(() => {
+        loadPopularPlaces();
+    }, []);
+
+    const handlePlaceSelect = (place: PlacePrediction) => {
+        setDestination(place.description);
+        setShowPlaceSuggestions(false);
+        setPlacePredictions([]);
+    };
+
+    const handleDestinationChange = (text: string) => {
+        setDestination(text);
+        if (text.length < 2) {
+            setShowPlaceSuggestions(false);
+            setPlacePredictions([]);
+        }
+    };
+
+    // Generate calendar days for compact date picker (UNCHANGED)
+    const generateCalendarDays = (month: Date) => {
+        const year = month.getFullYear();
+        const monthIndex = month.getMonth();
+        const firstDay = new Date(year, monthIndex, 1);
+        const lastDay = new Date(year, monthIndex + 1, 0);
+        const today = new Date();
+        
+        const days = [];
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            const date = new Date(year, monthIndex, i);
+            const dateString = date.toISOString().split('T')[0];
+            const isToday = date.toDateString() === today.toDateString();
+            const isPast = date < today && !isToday;
+            
+            days.push({
+                day: i,
+                dateString,
+                isToday,
+                isPast,
+                isSelected: selectedDates.includes(dateString)
+            });
+        }
+        return days;
+    };
+
+    const selectDate = (dateString: string, isPast: boolean) => {
+        if (isPast) return;
+        
         setSelectedDates((currentDates) => {
-            if (currentDates.includes(date)) {
-                // If the date is already in the array, remove it
-                return currentDates.filter((d) => d !== date);
+            if (currentDates.includes(dateString)) {
+                return currentDates.filter((d) => d !== dateString);
             } else {
-                // Otherwise, add the new date to the array
-                return [...currentDates, date];
+                return [...currentDates, dateString];
             }
         });
     };
 
+    const navigateMonth = (direction: 'prev' | 'next') => {
+        setCurrentMonth(prev => {
+            const newMonth = new Date(prev);
+            if (direction === 'prev') {
+                newMonth.setMonth(prev.getMonth() - 1);
+            } else {
+                newMonth.setMonth(prev.getMonth() + 1);
+            }
+            return newMonth;
+        });
+    };
+
+    // UPDATED: Now fetches guides after form submission
     const handleSubmit = () => {
         if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
             alert('Please fill in all fields.');
@@ -294,8 +336,10 @@ export default function Guide() {
 
         setBookingDetails(book);
         setModalVisible(false);
-        setFine(true)
-
+        setFine(true);
+        
+        // NEW: Fetch filtered guides based on user selections
+        fetchFilteredGuides(book);
     };
 
     const displayDates = selectedDates
@@ -305,18 +349,186 @@ export default function Guide() {
 
     useFocusEffect(
         useCallback(() => {
-            if (Object.keys(selectedDates).length === 0) {
+            if (selectedDates.length === 0) {
                 setModalVisible(true);
             }
         }, [selectedDates])
     );
 
-    const markedDates = useMemo(() => {
-        return selectedDates.reduce((acc, date) => {
-            acc[date] = { selected: true, selectedColor: '#007BFF' };
-            return acc;
-        }, {} as { [key: string]: { selected: boolean; selectedColor: string } });
-    }, [selectedDates]);
+    // Guide Card Component
+    const GuideCard = ({ guide }: { guide: Guide }) => {
+    // Calculate total cost based on selected dates
+    const numberOfDays = selectedDates.length;
+    const totalCost = guide.dailyRate * numberOfDays;
+
+    return (
+        <TouchableOpacity 
+            className="bg-white rounded-3xl shadow-lg border border-gray-50 mb-6 overflow-hidden"
+            onPress={() => {
+                // Navigate to guide detail page with guide ID and booking details
+                router.push({
+                    pathname: './guide-detail',
+                    params: { 
+                        guideId: guide._id,
+                        bookingDetails: JSON.stringify(bookingDetails)
+                    }
+                });
+            }}
+            style={{ 
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 8,
+            }}
+        >
+            {/* Header Section with Profile and Rating */}
+            <View className="p-5 pb-0">
+                <View className="flex-row items-start">
+                    {/* Profile Picture with Status */}
+                    <View className="mr-4 relative">
+                        <Image 
+                            source={{ uri: guide.pp || 'https://via.placeholder.com/80' }}
+                            className="w-20 h-20 rounded-2xl"
+                            contentFit="cover"
+                        />
+                        {/* Verification Badge */}
+                        {guide.verified === 'done' && (
+                            <View className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full items-center justify-center border-2 border-white">
+                                <Text className="text-white text-xs font-bold">✓</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Guide Info Header */}
+                    <View className="flex-1">
+                        <View className="flex-row items-start justify-between mb-1">
+                            <View className="flex-1 mr-2">
+                                <Text className="text-xl font-bold text-gray-900 mb-1">
+                                    {guide.firstName} {guide.lastName}
+                                </Text>
+                                <Text className="text-sm text-gray-500 font-medium">
+                                    {guide.specialization || "Professional Guide"}
+                                </Text>
+                            </View>
+                            
+                            {/* Rating Badge */}
+                            <View className="bg-yellow-50 border border-yellow-200 rounded-full px-3 py-1 flex-row items-center">
+                                <Text className="text-yellow-600 text-lg mr-1">⭐</Text>
+                                <Text className="text-yellow-700 font-bold text-sm">
+                                    {guide.stars.toFixed(1)}
+                                </Text>
+                                <Text className="text-yellow-600 text-xs ml-1">
+                                    ({guide.reviewCount})
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Location and Experience Row */}
+                        <View className="flex-row items-center mt-2">
+                            <View className="flex-row items-center mr-4">
+                                <Text className="text-blue-500 text-base mr-1">📍</Text>
+                                <Text className="text-sm text-gray-600 font-medium">{guide.location}</Text>
+                            </View>
+                            <View className="flex-row items-center">
+                                <Text className="text-purple-500 text-base mr-1">🎖️</Text>
+                                <Text className="text-sm text-gray-600 font-medium">
+                                    {guide.experience}y exp
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            {/* Description Section */}
+            <View className="px-5 py-3">
+                <Text className="text-gray-700 text-sm leading-5" numberOfLines={2}>
+                    {guide.description || guide.bio || "Experienced local guide ready to show you the best of Sri Lanka!"}
+                </Text>
+            </View>
+
+            {/* Languages Section */}
+            {guide.languages && guide.languages.length > 0 && (
+                <View className="px-5 pb-3">
+                    <Text className="text-gray-500 text-xs font-semibold mb-2 uppercase tracking-wide">
+                        Languages
+                    </Text>
+                    <View className="flex-row flex-wrap">
+                        {guide.languages.slice(0, 4).map((language, index) => (
+                            <View 
+                                key={index}
+                                className="bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full mr-2 mb-2"
+                            >
+                                <Text className="text-blue-700 text-xs font-medium">{language}</Text>
+                            </View>
+                        ))}
+                        {guide.languages.length > 4 && (
+                            <View className="bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full">
+                                <Text className="text-gray-600 text-xs font-medium">
+                                    +{guide.languages.length - 4} more
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            )}
+
+            {/* Pricing Section */}
+            <View className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                <View className="flex-row justify-between items-center">
+                    {/* Guide Type */}
+                    <View className="flex-1">
+                        <View className="bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl inline-block self-start">
+                            <Text className="text-blue-700 text-sm font-semibold capitalize">
+                                {guide.guideType} Guide
+                            </Text>
+                        </View>
+                    </View>
+                    
+                    {/* Pricing Details */}
+                    <View className="items-end">
+                        {/* Total Cost - Prominent */}
+                        <View className="items-end mb-1">
+                            <Text className="text-3xl font-bold text-green-600">
+                                ${totalCost}
+                            </Text>
+                            <Text className="text-gray-500 text-xs font-medium">
+                                for {numberOfDays} day{numberOfDays > 1 ? 's' : ''}
+                            </Text>
+                        </View>
+                        
+                        {/* Daily Rate - Secondary */}
+                        <View className="bg-green-50 border border-green-200 px-2 py-1 rounded-lg">
+                            <Text className="text-green-700 text-xs font-medium">
+                                ${guide.dailyRate}/day
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            {/* Action Footer */}
+            <View className="px-5 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-gray-100">
+                <View className="flex-row items-center justify-between">
+                    {/* Duration Info */}
+                    <View className="flex-row items-center">
+                        <Text className="text-blue-600 text-sm mr-1">📅</Text>
+                        <Text className="text-blue-700 text-sm font-medium">
+                            {numberOfDays} day{numberOfDays > 1 ? 's' : ''} selected
+                        </Text>
+                    </View>
+                    
+                    {/* Book Now Button */}
+                    <TouchableOpacity className="bg-blue-500 px-8 py-3 rounded-xl flex-row items-center shadow-sm">
+                        <Text className="text-white text-sm mr-1">🎯</Text>
+                        <Text className="text-white font-bold text-sm">Book Now</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+};
 
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
@@ -331,356 +543,431 @@ export default function Guide() {
                     }}
                 >
                     <View className="flex-1 justify-center items-center bg-black/60">
-                        {/* 1. Add KeyboardAvoidingView to wrap the entire modal card */}
                         <KeyboardAvoidingView
                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                             className="w-[93%] h-[97%]"
                         >
-                            <View className="flex-1 bg-white rounded-2xl">
-                                {/* Header */}
-                                <View className="p-4 border-gray-200">
-                                    <TouchableOpacity onPress={() => { setModalVisible(false); if (!fine || selectedDates.length === 0) router.back(); }}>
-                                        <Text>{(fine && selectedDates.length !== 0) ? "Cancel" : "Back"}</Text>
-                                    </TouchableOpacity>
-                                    <Text className="text-xl font-bold mt-2 text-center">Guide Booking</Text>
+                            <View className="flex-1 bg-white rounded-3xl shadow-2xl">
+                                {/* Modern Header */}
+                                <View className="px-6 py-5 border-b border-gray-100">
+                                    <View className="flex-row items-center justify-between">
+                                        <TouchableOpacity 
+                                            onPress={() => { 
+                                                setModalVisible(false); 
+                                                if (!fine || selectedDates.length === 0) router.back(); 
+                                            }}
+                                            className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                        >
+                                            <Text className="text-gray-600 font-medium">✕</Text>
+                                        </TouchableOpacity>
+                                        <Text className="text-xl font-bold text-gray-800">Guide Booking</Text>
+                                        <View className="w-10" />
+                                    </View>
                                 </View>
 
-                                {/* 2. Add a ScrollView to contain all the form elements */}
                                 <ScrollView
                                     className="flex-1"
-                                    contentContainerClassName="pt-4 px-4"
+                                    contentContainerStyle={{ padding: 24 }}
                                     keyboardShouldPersistTaps="handled"
+                                    showsVerticalScrollIndicator={false}
                                 >
-                                    <View className='h-full'>
-                                        <Text className="text-base font-medium text-gray-700 mb-2">Select Dates</Text>
-                                        {/* Calendar */}
-                                        <View className='mb-3 border border-gray-300 rounded-xl ml-3'>
-                                            <Calendar
-                                                onDayPress={onDayPress}
-                                                markedDates={markedDates}
-                                                minDate={new Date().toISOString().split('T')[0]}
-                                                theme={{
-                                                    todayTextColor: '#007BFF',
-                                                    arrowColor: '#007BFF',
-                                                }}
-                                            />
-                                        </View>
-
-                                        {/* Destination Input */}
-                                        <View className='mb-3'>
-                                            <Text className="text-base font-medium text-gray-700 mb-2">Destination or Place</Text>
-                                            <TextInput
-                                                placeholder="Galle"
-                                                value={destination}
-                                                onChangeText={setDestination}
-                                                className="text-black border border-gray-300 rounded-xl px-4 ml-3 py-3 text-base"
-                                            />
-                                        </View>
-
-                                        {/* Language Input */}
-                                        <View className='mb-3'>
-                                            <Text className="text-base font-medium text-gray-700 mb-2">Preferred Language</Text>
-                                            <TextInput
-                                                placeholder="sinhala"
-                                                value={lan} // Use your new 'language' state
-                                                onChangeText={setLan} // And 'setLanguage' setter
-                                                className="text-black border ml-3 border-gray-300 rounded-xl px-4 py-3 text-base"
-                                            />
-                                        </View>
-
-                                        {/* Booking Type Radio Buttons */}
-                                        <View>
-                                            <Text className="text-base font-medium text-gray-700 mb-3">Booking Type</Text>
-                                            <View className="gap-2 ml-3">
-                                                {/* Option 1 */}
-                                                <TouchableOpacity
-                                                    className="flex-row items-center"
-                                                    onPress={() => setBookingType('visit')}
-                                                >
-                                                    <View className={`w-6 h-6 rounded-full border-2 justify-center items-center mr-3 ${bookingType === 'visit' ? 'border-blue-500' : 'border-gray-400'}`}>
-                                                        {bookingType === 'visit' && <View className="w-3 h-3 rounded-full bg-blue-500" />}
-                                                    </View>
-                                                    <Text className="text-base text-gray-800">Guide for a place to visit</Text>
-                                                </TouchableOpacity>
-
-                                                {/* Option 2 */}
-                                                <TouchableOpacity
-                                                    className="flex-row items-center"
-                                                    onPress={() => setBookingType('travel')}
-                                                >
-                                                    <View className={`w-6 h-6 rounded-full border-2 justify-center items-center mr-3 ${bookingType === 'travel' ? 'border-blue-500' : 'border-gray-400'}`}>
-                                                        {bookingType === 'travel' && <View className="w-3 h-3 rounded-full bg-blue-500" />}
-                                                    </View>
-                                                    <Text className="text-base text-gray-800">Guide to travel with you</Text>
-                                                </TouchableOpacity>
+                                    {/* Compact Date Selection Section */}
+                                    <View className="mb-8">
+                                        <View className="flex-row items-center mb-4">
+                                            <View className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-blue-600 font-bold text-sm">📅</Text>
                                             </View>
+                                            <Text className="text-lg font-semibold text-gray-800">Select Your Dates</Text>
+                                        </View>
+                                        
+                                        {/* Date Picker Toggle */}
+                                        <TouchableOpacity
+                                            onPress={() => setShowDatePicker(!showDatePicker)}
+                                            className="bg-white rounded-2xl p-4 border-2 border-gray-200"
+                                        >
+                                            <View className="flex-row items-center justify-between">
+                                                <View className="flex-1">
+                                                    {selectedDates.length === 0 ? (
+                                                        <Text className="text-gray-400 text-base">Tap to select dates</Text>
+                                                    ) : (
+                                                        <View>
+                                                            <Text className="text-sm text-gray-500 mb-1">Selected Dates</Text>
+                                                            <Text className="text-base font-medium text-gray-800">
+                                                                {selectedDates.length} day{selectedDates.length > 1 ? 's' : ''} selected
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text className="text-blue-600 text-lg">{showDatePicker ? '▲' : '▼'}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        {/* Compact Calendar */}
+                                        {showDatePicker && (
+                                            <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200 mt-3">
+                                                {/* Month Navigation */}
+                                                <View className="flex-row items-center justify-between mb-4">
+                                                    <TouchableOpacity 
+                                                        onPress={() => navigateMonth('prev')}
+                                                        className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
+                                                    >
+                                                        <Text className="text-blue-600 font-bold">‹</Text>
+                                                    </TouchableOpacity>
+                                                    
+                                                    <Text className="text-lg font-semibold text-gray-800">
+                                                        {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                                    </Text>
+                                                    
+                                                    <TouchableOpacity 
+                                                        onPress={() => navigateMonth('next')}
+                                                        className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
+                                                    >
+                                                        <Text className="text-blue-600 font-bold">›</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                {/* Days Grid */}
+                                                <View className="flex-row flex-wrap justify-between">
+                                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                                                        <View key={index} className="w-10 h-8 items-center justify-center">
+                                                            <Text className="text-xs font-medium text-gray-500">{day}</Text>
+                                                        </View>
+                                                    ))}
+                                                    
+                                                    {generateCalendarDays(currentMonth).map((dateObj, index) => (
+                                                        <TouchableOpacity
+                                                            key={index}
+                                                            onPress={() => selectDate(dateObj.dateString, dateObj.isPast)}
+                                                            disabled={dateObj.isPast}
+                                                            className={`w-10 h-10 items-center justify-center rounded-full m-0.5 ${
+                                                                dateObj.isSelected 
+                                                                    ? 'bg-blue-500' 
+                                                                    : dateObj.isToday 
+                                                                        ? 'bg-blue-100 border border-blue-300' 
+                                                                        : dateObj.isPast 
+                                                                            ? 'bg-gray-100' 
+                                                                            : 'bg-white hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <Text className={`text-sm ${
+                                                                dateObj.isSelected 
+                                                                    ? 'text-white font-bold' 
+                                                                    : dateObj.isPast 
+                                                                        ? 'text-gray-300' 
+                                                                        : 'text-gray-700'
+                                                            }`}>
+                                                                {dateObj.day}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                                
+                                                {selectedDates.length > 0 && (
+                                                    <View className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                                                        <Text className="text-sm font-medium text-blue-700">
+                                                            Selected: {selectedDates.map(date => 
+                                                                new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                                            ).join(', ')}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* Google Places Destination Input */}
+                                    <View className="mb-6 relative z-20">
+                                        <View className="flex-row items-center mb-3">
+                                            <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-green-600 font-bold text-sm">📍</Text>
+                                            </View>
+                                            <Text className="text-lg font-semibold text-gray-800">Destination</Text>
+                                        </View>
+                                        
+                                        <View className="relative">
+                                            <TextInput
+                                                placeholder="Search for places in Sri Lanka..."
+                                                placeholderTextColor="#9CA3AF"
+                                                value={destination}
+                                                onChangeText={handleDestinationChange}
+                                                onFocus={() => {
+                                                    if (destination.length >= 2 && placePredictions.length > 0) {
+                                                        setShowPlaceSuggestions(true);
+                                                    }
+                                                }}
+                                                className="bg-white rounded-2xl border-2 border-gray-200 px-4 py-4 text-base font-medium text-gray-800"
+                                            />
+                                            
+                                            {/* Loading indicator */}
+                                            {isLoadingPlaces && (
+                                                <View className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                                                    <Text className="text-gray-400 text-sm">🔄</Text>
+                                                </View>
+                                            )}
+                                        </View>
+
+                                        {/* Google Places Suggestions */}
+                                        {showPlaceSuggestions && placePredictions.length > 0 && (
+                                            <View className="absolute top-full left-0 right-0 bg-white rounded-2xl border border-gray-200 mt-2 shadow-lg z-30 max-h-60">
+                                                <ScrollView 
+                                                    showsVerticalScrollIndicator={false}
+                                                    keyboardShouldPersistTaps="handled"
+                                                >
+                                                    {placePredictions.map((place) => (
+                                                        <TouchableOpacity
+                                                            key={place.place_id}
+                                                            onPress={() => handlePlaceSelect(place)}
+                                                            className="px-4 py-3 border-b border-gray-100"
+                                                        >
+                                                            <Text className="text-base font-medium text-gray-800">
+                                                                {place.main_text}
+                                                            </Text>
+                                                            <Text className="text-sm text-gray-500 mt-1">
+                                                                {place.secondary_text}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+
+                                        {/* Popular Places */}
+                                        {!showPlaceSuggestions && destination.length < 2 && popularPlaces.length > 0 && (
+                                            <View className="mt-4">
+                                                <Text className="text-sm font-medium text-gray-600 mb-3">Popular Destinations</Text>
+                                                <View className="flex-row flex-wrap">
+                                                    {popularPlaces.map((place, index) => (
+                                                        <TouchableOpacity
+                                                            key={index}
+                                                            onPress={() => setDestination(place.description || place.name)}
+                                                            className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 mr-2 mb-2"
+                                                        >
+                                                            <Text className="text-blue-700 text-sm font-medium">
+                                                                {place.name}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* Guide Type Selection */}
+                                    <View className="mb-6">
+                                        <View className="flex-row items-center mb-3">
+                                            <View className="w-8 h-8 bg-purple-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-purple-600 font-bold text-sm">🎯</Text>
+                                            </View>
+                                            <Text className="text-lg font-semibold text-gray-800">Guide Type</Text>
+                                        </View>
+                                        
+                                        <View className="flex-row space-x-3">
+                                            <TouchableOpacity
+                                                onPress={() => setBookingType('visit')}
+                                                className={`flex-1 p-4 rounded-2xl border-2 ${
+                                                    bookingType === 'visit' 
+                                                        ? 'border-blue-500 bg-blue-50' 
+                                                        : 'border-gray-200 bg-white'
+                                                }`}
+                                            >
+                                                <Text className={`text-center font-semibold ${
+                                                    bookingType === 'visit' ? 'text-blue-700' : 'text-gray-600'
+                                                }`}>
+                                                    Local Guide
+                                                </Text>
+                                                <Text className={`text-center text-sm mt-1 ${
+                                                    bookingType === 'visit' ? 'text-blue-600' : 'text-gray-500'
+                                                }`}>
+                                                    Day trips & tours
+                                                </Text>
+                                            </TouchableOpacity>
+                                            
+                                            <TouchableOpacity
+                                                onPress={() => setBookingType('travel')}
+                                                className={`flex-1 p-4 rounded-2xl border-2 ${
+                                                    bookingType === 'travel' 
+                                                        ? 'border-blue-500 bg-blue-50' 
+                                                        : 'border-gray-200 bg-white'
+                                                }`}
+                                            >
+                                                <Text className={`text-center font-semibold ${
+                                                    bookingType === 'travel' ? 'text-blue-700' : 'text-gray-600'
+                                                }`}>
+                                                    Travel Guide
+                                                </Text>
+                                                <Text className={`text-center text-sm mt-1 ${
+                                                    bookingType === 'travel' ? 'text-blue-600' : 'text-gray-500'
+                                                }`}>
+                                                    Multi-day trips
+                                                </Text>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
-                                </ScrollView>
 
-                                {/* Submit Button Footer */}
-                                <View className="p-4 border-gray-200">
+                                    {/* Language Selection */}
+                                    <View className="mb-8 relative z-10">
+                                        <View className="flex-row items-center mb-3">
+                                            <View className="w-8 h-8 bg-orange-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-orange-600 font-bold text-sm">🗣️</Text>
+                                            </View>
+                                            <Text className="text-lg font-semibold text-gray-800">Preferred Language</Text>
+                                        </View>
+                                        
+                                        <TouchableOpacity
+                                            onPress={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                                            className="bg-white rounded-2xl border-2 border-gray-200 px-4 py-4"
+                                        >
+                                            <View className="flex-row items-center justify-between">
+                                                <Text className={`text-base ${lan ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+                                                    {lan || 'Select preferred language'}
+                                                </Text>
+                                                <Text className="text-blue-600 text-lg">
+                                                    {showLanguageDropdown ? '▲' : '▼'}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        {showLanguageDropdown && (
+                                            <View className="absolute top-full left-0 right-0 bg-white rounded-2xl border border-gray-200 mt-2 shadow-lg z-20 max-h-64">
+                                                <View className="p-3 border-b border-gray-100">
+                                                    <TextInput
+                                                        placeholder="Search languages..."
+                                                        placeholderTextColor="#9CA3AF"
+                                                        value={languageSearch}
+                                                        onChangeText={setLanguageSearch}
+                                                        className="bg-gray-50 rounded-xl px-3 py-2 text-sm"
+                                                    />
+                                                </View>
+                                                
+                                                <ScrollView 
+                                                    showsVerticalScrollIndicator={false}
+                                                    keyboardShouldPersistTaps="handled"
+                                                >
+                                                    {filteredLanguages.map((language, index) => (
+                                                        <TouchableOpacity
+                                                            key={index}
+                                                            onPress={() => {
+                                                                setLan(language);
+                                                                setShowLanguageDropdown(false);
+                                                                setLanguageSearch('');
+                                                            }}
+                                                            className={`px-4 py-3 border-b border-gray-50 ${
+                                                                lan === language ? 'bg-blue-50' : ''
+                                                            }`}
+                                                        >
+                                                            <Text className={`text-base ${
+                                                                lan === language ? 'text-blue-700 font-medium' : 'text-gray-700'
+                                                            }`}>
+                                                                {language}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* Submit Button */}
                                     <TouchableOpacity
                                         onPress={handleSubmit}
-                                        className="bg-[#FEFA17] py-3 rounded-xl"
+                                        className="bg-blue-600 rounded-2xl py-4 shadow-lg"
                                     >
-                                        <Text className="text-black text-center font-semibold">Submit</Text>
+                                        <Text className="text-white text-center text-lg font-bold">
+                                            Find Guides
+                                        </Text>
                                     </TouchableOpacity>
-                                </View>
+                                </ScrollView>
                             </View>
                         </KeyboardAvoidingView>
                     </View>
                 </Modal>
 
-                {Object.keys(selectedDates).length > 0 && (
-                    <>
-                        <View>
-                            <View className="flex-row justify-between items-center p-4">
-                                <Text className="text-lg font-medium">{displayDates}</Text>
-                                <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
-                                    <Text className="font-semibold text-blue-600">Change</Text>
+                {/* Main Content - Guide Results */}
+                {fine && (
+                    <View className="flex-1">
+                        {/* Header with booking summary */}
+                        <View className="bg-white px-6 py-4 border-b border-gray-100">
+                            <View className="flex-row items-center justify-between mb-3">
+                                <TouchableOpacity 
+                                    onPress={() => router.back()}
+                                    className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center"
+                                >
+                                    <Text className="text-gray-600 font-medium">←</Text>
+                                </TouchableOpacity>
+                                <Text className="text-lg font-bold text-gray-800">Available Guides</Text>
+                                <TouchableOpacity 
+                                    onPress={() => setModalVisible(true)}
+                                    className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center"
+                                >
+                                    <Text className="text-blue-600 font-medium">⚙️</Text>
                                 </TouchableOpacity>
                             </View>
+                            
                             {bookingDetails && (
-                                <View className="bg-white rounded-lg p-4 mx-4 mb-2 shadow">
-                                    <View className="justify-between flex-row">
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Destination</Text>
-                                            <Text className="text-base font-semibold text-gray-800">{bookingDetails.destination}</Text>
-                                        </View>
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Booking Type</Text>
-                                            <Text className="text-base font-semibold text-gray-800 capitalize">
-                                                {bookingDetails.type === 'visit' ? 'Place Visit' : 'Travel Along'}
-                                            </Text>
-                                        </View>
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Language</Text>
-                                            <Text className="text-base font-semibold text-gray-800">{bookingDetails.language}</Text>
-                                        </View>
-                                    </View>
+                                <View className="bg-gray-50 rounded-xl p-3">
+                                    <Text className="text-sm font-medium text-gray-700 mb-1">
+                                        📍 {bookingDetails.destination}
+                                    </Text>
+                                    <Text className="text-sm text-gray-600">
+                                        📅 {selectedDates.length} day{selectedDates.length > 1 ? 's' : ''} • 
+                                        🗣️ {bookingDetails.language} • 
+                                        🎯 {bookingDetails.type === 'visit' ? 'Local Guide' : 'Travel Guide'}
+                                    </Text>
                                 </View>
                             )}
                         </View>
-                        {/* <View className="px-4 space-y-1">
-                            <Text className="text-sm">📍 Location: {location}</Text>
-                            <Text className="text-sm">👤 Adults: {adults}</Text>
-                            <Text className="text-sm">🧒 Children: {children}</Text>
-                            <Text className="text-sm">🌙 Nights: {nights}</Text>
-                        </View> */}
-                        {/* 
-{guides.map((x, index) => (
-                                    <View key={index} className="bg-[#fbfbfb] w-[175px] h-[155px] py-1 rounded-2xl border-2 border-gray-300">
 
-                                        <TouchableOpacity onPress={() => router.push(`/views/guide/solo/${x.id}`)}>
-                                            <View className='h-full py-3 justify-between'>
-
-                                                <View className="w-full absolute items-end pr-1 z-10">
-                                                    <TouchableOpacity
-                                                        className="justify-center items-center w-6 h-6 rounded-full bg-gray-200"
-                                                        onPress={() => toggleCardSelection(index)}
-                                                    >
-                                                        {selectedCardIndex === index && (
-                                                            <Image className='w-4 h-4' source={mark} />
-                                                        )}
-                                                    </TouchableOpacity>
-                                                </View>
-                                                <View className='flex-row gap-5 px-3  w-44'>
-                                                    <Image
-                                                        className=' w-[50px] h-[50px] rounded-full'
-                                                        source={x.image}
-                                                        contentFit="cover"
-                                                    />
-                                                    <View className=''>
-                                                        <Text className="text-md font-semibold w-24 max-h-12 pt-2">{x.description}</Text>
-                                                        <View className="flex-row justify-start mt-1">
-                                                            {[...Array(x.stars)].map((_, i) => (
-                                                                <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
-                                                            ))}
-                                                        </View>
-                                                    </View>
-
-                                                </View>
-                                                <View className='w-full mt-4 gap-2'>
-                                                    <View className='gap-6 flex-row w-full  pl-5'>
-                                                        <Image className='w-5 h-5' source={tele}></Image>
-                                                        <Text className="text-md">Phone Verified</Text>
-                                                    </View>
-                                                    <View className='gap-6 flex-row w-full pl-5'>
-                                                        <Image className='w-5 h-5' source={mark}></Image>
-                                                        <Text className="text-">Identify Verified</Text>
-                                                    </View>
-
-                                                </View>
-                                                {/* <TouchableOpacity
-                                            className='mt-3 rounded-lg w-[90%] h-6 bg-[#FEFA17] self-center'
-                                            onPress={() => alert('mn guide')}
-                                        >
-                                            <Text className='text-center font-semibold'>View</Text>
-
-                                        </TouchableOpacity>
-
-                                            </View>
-                                        </TouchableOpacity>
-                                    </View>
-                                )
-                                )
-                                } */}
-
-
-                        <ScrollView
-                            className="flex-1"
-                            showsVerticalScrollIndicator={false}>
-                            {guides.map((guide, index) => {
-
-                                const rating = guide.reviewCount > 0
-                                    ? parseFloat(((guide.stars / guide.reviewCount) * 2).toFixed(1))
-                                    : 0;
-
-                                return (<TouchableOpacity
-                                    key={guide.id}
-                                    className={`bg-white mx-4 my-2 rounded-lg border p-4 shadow-sm border-gray-100`}
-                                    onPress={() => router.push(`/views/guide/solo/${guide.id}`)}
-                                    activeOpacity={0.7}
-                                >
-                                    {/* Guide Header */}
-                                    <View className="flex-row mb-2 gap-2">
-                                        {/* Guide Image and Basic Info */}
-                                        <Image source={guide.pp} className='w-20 h-20 rounded-full' />
-
-                                        <View className="flex-1">
-
-                                            <View className="flex-col items-start mb-1 ml-1">
-                                                <Text className="text-lg font-semibold text-gray-800 flex-1">{`${guide.firstName} ${guide.lastName}`}</Text>
-                                                <Text className="text-sm text-gray-500 mb-1">{guide.description}</Text>
-                                                <View className='w-[96%] flex-row justify-between'>
-                                                    <View className='gap-1 flex-row items-center'>
-                                                        <Image className='w-4 h-4' source={guide.verified ? tele : cross}></Image>
-                                                        <Text className="text-sm">Phone Verified</Text>
-                                                    </View>
-                                                    <View className='gap-1 flex-row items-center'>
-                                                        <Image className='w-4 h-4' source={guide.identified ? mark : cross}></Image>
-                                                        <Text className="text-sm">Identity Verified</Text>
-                                                    </View>
-
-                                                </View>
-                                                {/* <TouchableOpacity 
-                            className="p-1"
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(guide.id);
-                            }}
+                        {/* Guide Results */}
+                        <ScrollView 
+                            className="flex-1 px-6 py-4"
+                            showsVerticalScrollIndicator={false}
                         >
-                            <Icon 
-                                name={favorites.includes(guide.id) ? "heart-filled" : "heart"} 
-                                size={20} 
-                                color={favorites.includes(guide.id) ? "#dc2626" : "#6b7280"} 
-                            />
-                        </TouchableOpacity> */}
-                                            </View>
-                                            <View className="flex-row justify-between mb-2">
-                                                <View className="flex-row items-center gap-1 flex-1">
-                                                    <Image source={pin} className='w-5 h-5' />
-                                                    <Text className="text-xs text-gray-600">{guide.location}</Text>
-                                                </View>
-                                                <View className="flex-row items-center gap-1 flex-1">
-                                                    <Image source={xp} className='w-5 h-5' />
-                                                    <Text className="text-xs text-gray-600">{guide.experience} experience</Text>
-                                                </View>
-                                            </View>
-
-                                            {/* Rating and Response */}
-                                            <View className="flex-row items-center justify-between">
-                                                <View className="flex-row items-center gap-1">
-                                                    <View className={`rounded px-1.5 py-0.5 ${rating >= 9 ? 'bg-green-500' :
-                                                        rating >= 8 ? 'bg-emerald-400' :
-                                                            rating >= 7 ? 'bg-yellow-400' :
-                                                                rating >= 5 ? 'bg-orange-400' :
-                                                                    'bg-red-500'
-                                                        }`}>
-                                                        <Text className="text-white text-xs font-semibold">{rating}</Text>
-                                                    </View>
-                                                    {/* <View className="flex-row">
-                                                            {renderStars(guide.rating)}
-                                                        </View> */}
-                                                    <Text className="text-[10px] text-gray-500">({guide.reviewCount} Reviews)</Text>
-                                                </View>
-
-                                                <View className="items-end">
-                                                    <Text className="text-[10px] text-green-500 font-medium">{guide.responseTime}</Text>
-                                                    <Text className="text-[10px] text-gray-500">{guide.responseRate}% response rate</Text>
-                                                </View>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {/* Languages 
-                                    <View className="mb-3">
-                                        <Text className="text-xs font-semibold text-gray-700 mb-1.
-                                        <View className="flex-row flex-wrap gap-1.5">
-                                            {guide.languages.map((lang, index) => (
-                                                <View key={index} className="bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                                                    <Text className="text-blue-600 text-[11px] font-medium">{lang}</Text>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>*/}
-
-                                    {/* Specializations */}
-                                    <View className="mb-3">
-                                        <Text className="text-xs font-semibold text-gray-700 mb-1.5">Specializations:</Text>
-                                        <View className="flex-row flex-wrap gap-1.5">
-                                            {guide.specializations.map((spec, index) => (
-                                                <View key={index} className="bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-300">
-                                                    <Text className="text-yellow-800 text-[11px] font-medium">{spec}</Text>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>
-
-                                    {/* Expertise 
-                                        <View className="mb-3">
-                                            <Text className="text-xs font-semibold text-gray-700 mb-1.5">K
-                                            <Text className="text-xs text-green-600 font-medium">{guide.expertise.join(' • ')}</Text>
-                                        </View>
-                                        */}
-
-                                    {/* bio */}
-                                    <View className="mb-4">
-                                        <Text className="text-sm text-gray-600 leading-5">{guide.bio}</Text>
-                                    </View>
-
-                                    {/* Pricing and Actions */}
-                                    <View className="flex-row items-end justify-between border-t border-gray-100 pt-3">
-                                        <View className="flex-1">
-                                            <Text className="text-sm text-gray-500 mb-0.5">Starting from</Text>
-                                            {/* <Text className="text-sm font-semibold text-red-600">{guide.currency} {formatPrice(guide.hourlyRate)}/hour</Text> */}
-                                            <Text className="text-xl font-extrabold text-gray-600">{guide.currency} {(guide.dailyRate)}/day</Text>
-                                        </View>
-
-                                        <View className="flex-row gap-2">
-                                            {/* <TouchableOpacity className="flex-row items-center px-3 py-2 border border-blue-600 rounded-md gap-1">
-                                                    <Icon name="message" size={16} color="#2563eb" />
-                                                    <Text className="text-xs text-blue-600 font-medium">Message</Text>
-                                                </TouchableOpacity> */}
-                                            <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
-                                                <Image source={tele} className='w-6 h-6' />
-                                                <Text className="text-sm text-gray-800 font-semibold">{guide.mobileNumber}</Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>)
-                            })}
-
-                            {/* Bottom Padding */}
-                            <View className="h-20" />
+                            {isLoadingGuides ? (
+                                <View className="flex-1 items-center justify-center py-20">
+                                    <Text className="text-gray-400 text-lg mb-2">🔄</Text>
+                                    <Text className="text-gray-600 text-base">Finding guides...</Text>
+                                </View>
+                            ) : guideError ? (
+                                <View className="flex-1 items-center justify-center py-20">
+                                    <Text className="text-red-400 text-lg mb-2">⚠️</Text>
+                                    <Text className="text-red-600 text-base text-center mb-4">{guideError}</Text>
+                                    <TouchableOpacity 
+                                        onPress={() => bookingDetails && fetchFilteredGuides(bookingDetails)}
+                                        className="bg-blue-600 px-6 py-3 rounded-xl"
+                                    >
+                                        <Text className="text-white font-medium">Try Again</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : guides.length === 0 ? (
+                                <View className="flex-1 items-center justify-center py-20">
+                                    <Text className="text-gray-400 text-lg mb-2">🔍</Text>
+                                    <Text className="text-gray-600 text-base text-center mb-2">
+                                        No guides found for your criteria
+                                    </Text>
+                                    <Text className="text-gray-500 text-sm text-center mb-4">
+                                        Try adjusting your search filters
+                                    </Text>
+                                    <TouchableOpacity 
+                                        onPress={() => setModalVisible(true)}
+                                        className="bg-blue-600 px-6 py-3 rounded-xl"
+                                    >
+                                        <Text className="text-white font-medium">Modify Search</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <View>
+                                    <Text className="text-lg font-bold text-gray-800 mb-4">
+                                        {guides.length} Guide{guides.length > 1 ? 's' : ''} Available
+                                    </Text>
+                                    
+                                    {guides.map((guide) => (
+                                        <GuideCard key={guide._id} guide={guide} />
+                                    ))}
+                                </View>
+                            )}
                         </ScrollView>
-                        {/*  <View className="p-4 border-t border-gray-200 bg-white">
-                            <Text className="text-center font-bold text-lg">Total: 1000 LKR</Text>
-                        </View> */}
-                    </>
+                    </View>
                 )}
-
             </View>
         </View>
     );
