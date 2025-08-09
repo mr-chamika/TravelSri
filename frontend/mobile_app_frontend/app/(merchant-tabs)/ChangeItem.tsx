@@ -15,14 +15,13 @@ import { Feather, AntDesign } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-// Define the correct ListingItem type to match the backend
+// Use the SAME type as in Listings.tsx to match your MongoDB structure
 type ListingItem = {
-  id: string; // Corrected from _id to id
+  _id: string; // Changed back to _id to match MongoDB
   name: string;
   price: number;
   image: string;
   count: number;
-  // isNew?: boolean;
   description?: string;
 };
 
@@ -38,7 +37,7 @@ const ChangeItem: React.FC = () => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState('');
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.43.208:8080';
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -86,9 +85,9 @@ const ChangeItem: React.FC = () => {
 
     if (!item) return;
 
-    const updatedItem: ListingItem = {
-      ...item,
-      id: item.id,
+    // Only send the fields that should be updated, preserving shopId
+    const updatePayload = {
+      _id: item._id, // Use _id to match MongoDB structure
       name: name.trim(),
       price: Number(price),
       count: Number(quantity),
@@ -96,18 +95,26 @@ const ChangeItem: React.FC = () => {
       image: imageUri,
     };
 
+    console.log('Update payload:', updatePayload); // Debug log
+
     try {
       const response = await fetch(`${API_BASE_URL}/shopitems/update?id=${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedItem),
+        body: JSON.stringify(updatePayload),
       });
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Update failed:', errorText); // Debug log
         throw new Error(errorText || 'Failed to update item');
       }
+      
+      const result = await response.json();
+      console.log('Update result:', result); // Debug log
+      
       Alert.alert('Success', 'Item updated successfully!');
       router.back();
     } catch (error) {
@@ -133,12 +140,7 @@ const ChangeItem: React.FC = () => {
     });
 
     if (!result.canceled && result.assets[0].base64) {
-      // This is where you would handle the upload to the backend
-      //setImageUri(result.assets[0].uri);
       setImageUri(result.assets[0].base64);
-      // You will need to add a function here to upload the image
-      // to a new backend endpoint and get a new URL
-      // Then, call handleSave to update the rest of the item details
     }
   };
 
