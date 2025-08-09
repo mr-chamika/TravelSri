@@ -146,6 +146,7 @@ export default function Guide() {
 
     const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
     const [guides, setGuides] = useState<Guide[]>([])
+    const [guidesS, setGuidesS] = useState<Guide[]>([])
 
     const [destination, setDestination] = useState('');
     const [bookingType, setBookingType] = useState('visit')
@@ -164,25 +165,26 @@ export default function Guide() {
     };
 
     const handleSubmit = async () => {
-        if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
-            alert('Please fill in all fields.');
-            return;
-        }
-
-        const book: BookingDetails = {
-            dates: selectedDates,
-            destination: destination,
-            type: bookingType,
-            language: lan
-        };
-
-        setBookingDetails(book);
-        setModalVisible(false);
-        setFine(true)
 
         try {
+            if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
+                alert('Please fill in all fields.');
+                return;
+            }
 
-            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination}&language=${lan}`)
+            const book: BookingDetails = {
+                dates: selectedDates,
+                destination: destination,
+                type: bookingType,
+                language: lan
+            };
+
+            setBookingDetails(book);
+            setModalVisible(false);
+            setFine(true)
+
+
+            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`)
 
             if (res.ok) {
 
@@ -194,6 +196,18 @@ export default function Guide() {
             } else {
 
                 console.log(await res.text());
+                setGuides([])
+                const res1 = await fetch(`http://localhost:8080/traveler/guide-all`)
+
+                if (res1) {
+
+                    const data1 = await res1.json()
+
+                    //console.log(data1)
+                    setGuidesS(data1)
+
+                }
+
 
             }
 
@@ -438,6 +452,124 @@ export default function Guide() {
                         <ScrollView
                             className="flex-1"
                             showsVerticalScrollIndicator={false}>
+
+                            {guides.length == 0 &&
+                                <View>
+
+                                    <View className="p-10 bg-red-200 w-full flex-1 justify-center items-center">
+                                        <Text>No results found</Text>
+                                    </View>
+                                    <View>
+                                        <Text className="self-start p-3 text-xl font-semibold">Suggested Guides</Text>
+                                        {guidesS.map((guide) => {
+
+                                            const rating = guide.reviewCount > 0
+                                                ? parseFloat(((guide.stars / guide.reviewCount) * 2).toFixed(1))
+                                                : 0;
+
+                                            return (
+                                                <TouchableOpacity
+                                                    key={guide._id}
+                                                    className={`bg-white mx-4 my-2 rounded-lg border p-4 shadow-sm border-gray-100`}
+                                                    onPress={() => router.push(`/views/guide/solo/${guide._id}`)}
+                                                    activeOpacity={0.7}
+                                                >
+                                                    {/* Guide Header */}
+                                                    <View className="flex-row mb-2 gap-2">
+                                                        {/* Guide Image and Basic Info */}
+                                                        <Image source={{ uri: `data:image/jpeg;base64,${guide.pp}` }} className='w-20 h-20 rounded-full' />
+
+                                                        <View className="flex-1">
+
+                                                            <View className="flex-col items-start mb-1 ml-1">
+                                                                <Text className="text-lg font-semibold text-gray-800 flex-1">{`${guide.firstName} ${guide.lastName}`}</Text>
+                                                                <Text className="text-sm text-gray-500 mb-1">{guide.description}</Text>
+                                                                <View className='w-[96%] flex-row justify-between'>
+                                                                    <View className='gap-1 flex-row items-center'>
+                                                                        <Image className='w-4 h-4' source={guide.verified ? tele : cross}></Image>
+                                                                        <Text className="text-sm">Phone Verified</Text>
+                                                                    </View>
+                                                                    <View className='gap-1 flex-row items-center'>
+                                                                        <Image className='w-4 h-4' source={guide.identified ? mark : cross}></Image>
+                                                                        <Text className="text-sm">Identity Verified</Text>
+                                                                    </View>
+
+                                                                </View>
+
+                                                            </View>
+                                                            <View className="flex-row justify-between mb-2">
+                                                                <View className="flex-row items-center gap-1 flex-1">
+                                                                    <Image source={pin} className='w-5 h-5' />
+                                                                    <Text className="text-xs text-gray-600">{guide.location}</Text>
+                                                                </View>
+                                                                <View className="flex-row items-center gap-1 flex-1">
+                                                                    <Image source={xp} className='w-5 h-5' />
+                                                                    <Text className="text-xs text-gray-600">{guide.experience} experience</Text>
+                                                                </View>
+                                                            </View>
+
+                                                            <View className="flex-row items-center justify-between">
+                                                                <View className="flex-row items-center gap-1">
+                                                                    <View className={`rounded px-1.5 py-0.5 ${rating >= 9 ? 'bg-green-500' :
+                                                                        rating >= 8 ? 'bg-emerald-400' :
+                                                                            rating >= 7 ? 'bg-yellow-400' :
+                                                                                rating >= 5 ? 'bg-orange-400' :
+                                                                                    'bg-red-500'
+                                                                        }`}>
+                                                                        <Text className="text-white text-xs font-semibold">{rating}</Text>
+                                                                    </View>
+
+                                                                    <Text className="text-[10px] text-gray-500">({guide.reviewCount} Reviews)</Text>
+                                                                </View>
+
+                                                                <View className="items-end">
+                                                                    <Text className="text-[10px] text-green-500 font-medium">{guide.responseTime}</Text>
+                                                                    <Text className="text-[10px] text-gray-500">{guide.responseRate}% response rate</Text>
+                                                                </View>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+
+                                                    <View className="mb-3">
+                                                        <Text className="text-xs font-semibold text-gray-700 mb-1.5">Specializations:</Text>
+                                                        <View className="flex-row flex-wrap gap-1.5">
+                                                            {guide.specializations.map((spec, index) => (
+                                                                <View key={index} className="bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-300">
+                                                                    <Text className="text-yellow-800 text-[11px] font-medium">{spec}</Text>
+                                                                </View>
+                                                            ))}
+                                                        </View>
+                                                    </View>
+
+
+
+                                                    <View className="mb-4">
+                                                        <Text className="text-sm text-gray-600 leading-5">{guide.bio}</Text>
+                                                    </View>
+
+
+                                                    <View className="flex-row items-end justify-between border-t border-gray-100 pt-3">
+                                                        <View className="flex-1">
+                                                            <Text className="text-sm text-gray-500 mb-0.5">Starting from</Text>
+
+                                                            <Text className="text-xl font-extrabold text-gray-600">LKR {(guide.dailyRate)}/day</Text>
+                                                        </View>
+
+                                                        <View className="flex-row gap-2">
+
+                                                            <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
+                                                                <Image source={tele} className='w-6 h-6' />
+                                                                <Text className="text-sm text-gray-800 font-semibold">{guide.mobileNumber}</Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            )
+                                        })}
+                                    </View>
+                                </View>
+                            }
+
                             {guides.length > 0 && guides.map((guide, index) => {
 
                                 const rating = guide.reviewCount > 0

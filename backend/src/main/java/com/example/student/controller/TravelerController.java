@@ -150,6 +150,13 @@ public class TravelerController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/guide-all")
+    public ResponseEntity<List<Guidedto>> GuideAll() {
+        List<Guidedto> list = userRepo.findAllGuidedto();
+
+        return ResponseEntity.ok(list);
+    }
+
     @GetMapping("/guides-view")
     public ResponseEntity<Optional<GuideViewdto>> Guide(@RequestParam String id) {
         Optional<GuideViewdto> list = userRepo.findData(id);

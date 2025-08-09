@@ -509,7 +509,7 @@ export default function SignupForm() {
         const fieldsToValidate: (keyof typeof formData)[] = [
             'identitypic1', 'locpic', 'agreeTerms'
         ];
-        if (formData.role !== 'user') {
+        if (formData.role == 'merchant') {
             fieldsToValidate.push('confirmCondition');
         }
         fieldsToValidate.forEach(field => {
