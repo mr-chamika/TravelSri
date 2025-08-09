@@ -120,11 +120,27 @@ public class Hashingpw {
                                 "/api/bookings/{bookingId}/cancel",
                                 "/api/bookings/{bookingId}/complete",
                                 "/api/payhere/test/generate-hash",
-                                "/api/payhere/test/verify-hash"
-
+                                "/api/payhere/test/verify-hash",
                                 "/shopitems/delete",
-                                "/shopitems/by-shop"
-
+                                "/shopitems/by-shop",
+                                "/api/payments/payhere/health",
+                                "/api/wallet/platform",
+                                "/api/bookings/create",
+                                "/api/payments/payhere/create-checkout",
+                                "/api/payments/payhere/notify",
+                                "/api/wallet/platform",
+                                "/api/wallet/traveler/{travelerId}",
+                                "/api/payments/payhere/status/{orderId}",
+                                "/api/bookings/{bookingId}/accept",
+                                "api/payments/payhere/process-confirmation-fee/{bookingId}",
+                                "/api/wallet/provider/{providerId}",
+                                "/api/wallet/platform",
+                                "/api/bookings/{bookingId}/cancel",
+                                "/api/wallet/traveler/{travelerId}",
+                                "/api/wallet/platform",
+                                "/api/wallet/money-flow/summary",
+                                "/api/wallet/money-flow/booking/{bookingId}",
+                                "/api/payments/payhere/summary/{bookingId}"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

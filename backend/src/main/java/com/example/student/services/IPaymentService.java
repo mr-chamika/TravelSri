@@ -14,4 +14,9 @@ public interface IPaymentService {
     void processPartialRefund(Booking booking, BigDecimal refundPercentage, String reason);
     void scheduleFinalPayout(Booking booking);
     Booking getBookingByOrderId(String orderId);
+
+    // ===== NEW METHODS FOR TESTING =====
+    void processConfirmationFeePayout(Booking booking);
+    Map<String, Object> getPaymentSummary(String bookingId);
+    Map<String, Object> getServiceHealth();
 }

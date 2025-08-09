@@ -150,7 +150,7 @@ public class BookingServiceImpl implements IBookingService {
     @Override
     public Booking cancelBooking(String bookingId, String travelerId) {
         Optional<Booking> optBooking = bookingRepo.findById(bookingId);
-        if (optBooking.isEmpty()) {
+        if (!optBooking.isPresent()) {
             throw new RuntimeException("Booking not found");
         }
 
