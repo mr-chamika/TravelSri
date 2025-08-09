@@ -134,7 +134,6 @@ const BookingsScreen: React.FC = () => {
 
               const data = await res.json()
 
-              console.log(data)
               setBookings(data)
 
             }
@@ -493,7 +492,12 @@ const BookingsScreen: React.FC = () => {
               <View style={styles.starsContainer}>
                 {renderStars(booking.ratings)}
               </View>
-              <Text style={styles.ratingText}>{booking.ratings.toFixed(1)}</Text>
+              <Text style={styles.ratingText} className={`${booking.ratings >= 9 ? 'bg-green-500' :
+                booking.ratings >= 8 ? 'bg-emerald-400' :
+                  booking.ratings >= 7 ? 'bg-yellow-400' :
+                    booking.ratings >= 5 ? 'bg-orange-400' :
+                      'bg-red-500'
+                }`}>{booking.ratings.toFixed(1)}</Text>
               {/* {booking.provider.verified && (
                 <View style={styles.verifiedBadge}>
                   <Icon name="check" size={10} color={colors.success} />
@@ -508,12 +512,12 @@ const BookingsScreen: React.FC = () => {
       <View style={styles.statusSection}>
         <View style={[styles.statusIndicator, { backgroundColor: booking.paymentStatus ? '#10b981' : 'red' }]} />
         <Text style={[styles.statusMessage, { color: booking.paymentStatus ? '#10b981' : 'red' }]}>
-          {booking.paymentStatus ? "Confirmed" : "Pending"} - Check-in in {getDaysUntilBooking(booking.bookingDates && booking.bookingDates[0])} days
+          {booking.paymentStatus ? "Confirmed" : "Pending"} - {booking.type == 'hotel' ? 'Check-in ' : booking.type == 'guide' ? 'Starts in ' : ''} in {getDaysUntilBooking(booking.bookingDates && booking.bookingDates[0])} days
         </Text>
       </View>
 
       <View style={styles.detailsSection}>
-        {booking.guests && (
+        {booking.guests > 0 && (
           <View style={styles.detailItem}>
             <Icon name="users" size={16} color={colors.textMuted} />
             <Text style={styles.detailText}>{booking.guests} guests</Text>
@@ -853,7 +857,9 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1f2937',
+    color: 'white',
+    padding: 4,
+    borderRadius: 5
   },
   verifiedBadge: {
     flexDirection: 'row',

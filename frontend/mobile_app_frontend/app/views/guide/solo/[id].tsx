@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
 
 cssInterop(Image, { className: "style" });
@@ -32,6 +34,34 @@ interface Review {
     author: string,
     dp: string,
 
+}
+
+export interface Booking {
+    _id: string;
+    userId: string;
+    serviceId: string;
+    type: string;
+    thumbnail: string;
+    title: string;
+    subtitle: string[];
+    location: string;
+    bookingDates: string[];
+    stars: number;
+    ratings: number;
+    paymentStatus: boolean;
+    guests: number;
+    facilities: string[];
+    price: number;
+    status: string;
+    mobileNumber: string;
+}
+
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
 }
 
 interface Guide {
@@ -70,6 +100,8 @@ export default function Views() {
 
     const [item, setItem] = useState<Guide | null>(null)
     const [reviews, setReviews] = useState<Review[]>([]);
+    const [booking, setBooking] = useState<Booking | null>(null)
+
 
 
     useEffect(() => {
@@ -112,128 +144,63 @@ export default function Views() {
 
     }, [])
 
+    const handleBooking = async () => {
 
-    const reviewers = [
-        {
-            id: '1',
-            name: 'Sunny',
-            from: 'America',
-            images: pic,
-            review: 'mmh maru',
-            stars: 3
-        },
-        {
-            id: '2',
-            name: 'Lena',
-            from: 'Spain',
-            images: pic,
-            review: "set na meka",
-            stars: 2
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        }
-    ]
-    /* const groupCollection = [
-        {
-            id: '1',
-            image: profile,
-            description: 'Shangri-La',
-            stars: 3,
-            location: 'Colombo',
-            price: 9000,
-            description: 'Shangri-La Hotels and Resorts is a Hong Kong-based multinational hospitality company founded in 1971 by Malaysian tycoon Robert Kuok. Named after the mythical utopia from James Hilton’s novel Lost Horizon, it symbolizes serenity and luxury. The brand operates over 100 five-star luxury hotels and resorts across Asia, Europe, the Middle East, North America, and Oceania, with notable properties like Shangri-La Hotel Singapore, its first location, and Shangri-La Colombo in Sri Lanka. Renowned for its "hospitality from the heart," Shangri-La offers world-class service, exquisite dining, and inspirational architecture in premier city addresses and tranquil retreats',
-            reviewers: [
-                {
-                    id: '1',
-                    name: 'Sunny',
-                    from: 'America',
-                    images: pic,
-                    review: 'mmh maru',
-                    stars: 3
-                },
+        const keys = await AsyncStorage.getItem("token");
 
-                    id: '2',
-                    name: 'Lena',
-                    from: 'Spain',
-                    images: pic,
-                    review: "set na meka",
-                    stars: 2
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
+        if (keys) {
+
+            const data = await AsyncStorage.getItem('soloGuideBook')
+
+
+            const token: MyToken = jwtDecode(keys)
+
+
+            const book = { ...booking }
+            book.userId = token.id
+            book.serviceId = id.toString();
+            book.type = 'guide';
+            book.thumbnail = item?.pp;
+            book.title = item?.firstName + " " + item?.lastName;
+
+            book.subtitle = item?.tourStyles.slice(0, 2) || [];
+
+            book.location = item?.location;
+
+            if (data) {
+
+                const bookingData = JSON.parse(data)
+
+                if (bookingData) {
+
+                    book.bookingDates = bookingData.dates;
+
                 }
-            ],
-            langs: ['sinhala', 'English', 'French', 'Mexican', 'Tamil', 'Japan'],
-            ys: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail]
 
-        },
-        // { id: '2', image: bg, description: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '3', image: t, description: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '4', image: pic, description: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '5', image: bg, description: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '6', image: t, description: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
+                book.ratings = rating;
+                book.paymentStatus = false;
+                book.facilities = item?.specializations;
+                book.price = item?.dailyRate;
+                book.status = 'active';
+                book.mobileNumber = item?.mobileNumber;
 
-    ];
- */
+                await fetch(`http://localhost:8080/traveler/create-booking`, {
+
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+
+                })
+                    .then(res => res.text())
+                    .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
+                    .catch(err => console.log("Error from booking create " + err))
+
+            }
+        }
+
+    }
+
+
 
     const rating = item && item.reviewCount > 0
         ? parseFloat(((item?.stars / item?.reviewCount) * 2).toFixed(1))
@@ -540,7 +507,7 @@ export default function Views() {
 
                         <Text className="px-3 font-extrabold text-xl">{item?.dailyRate}.00 LKR/day</Text>
 
-                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={() => router.replace(`/views/payment/${item?._id}`)}>
+                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={handleBooking}>
                             <View className="py-2 px-3 flex-row justify-between items-center w-full">
                                 <Text>Book Now</Text>
                                 <Image className="w-5 h-5" source={back} />

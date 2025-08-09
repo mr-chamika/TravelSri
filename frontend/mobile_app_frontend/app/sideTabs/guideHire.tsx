@@ -5,6 +5,7 @@ import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Phone } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 cssInterop(Image, { className: "style" });
 
@@ -183,6 +184,7 @@ export default function Guide() {
             setModalVisible(false);
             setFine(true)
 
+            await AsyncStorage.setItem('soloGuideBook', JSON.stringify(book));
 
             const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`)
 

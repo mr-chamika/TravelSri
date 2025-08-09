@@ -72,6 +72,7 @@ interface RoomType {
 export interface Booking {
     _id: string;
     userId: string;
+    serviceId: string;
     type: string;
     thumbnail: string;
     title: string;
@@ -443,6 +444,7 @@ export default function Views() {
 
             const book = { ...booking }
             book.userId = token.id
+            book.serviceId = id.toString();
             book.type = 'hotel';
             book.thumbnail = hotelv?.images[0];
             book.title = hotelv?.name;
