@@ -227,8 +227,6 @@ export default function Views() {
                                 {/* Guide Image and Basic Info */}
                                 {item && item.pp &&
                                     <Image source={{ uri: `data:image/jpeg;base64,${item?.pp}` }} className='w-20 h-20 rounded-full' />
-
-
                                 }
 
                                 <View className="flex-1">

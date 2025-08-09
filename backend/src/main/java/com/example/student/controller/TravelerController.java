@@ -261,19 +261,28 @@ public class TravelerController {
 
     }
 
-    @Autowired
-    private VehicleRepo vehicleRepo;
+    @GetMapping("/category-get")
+    public ResponseEntity<List<Categorydto>> Categoryget() {
 
-    @GetMapping("/driver-get")
-    public ResponseEntity<List<Driverdto>> VehiclesAll(String id) {
-
-        List<Driverdto> list= vehicleRepo.findByCatId(id);
+        List<Categorydto> list= categoryRepo.pfindAll();
 
         return ResponseEntity.ok(list);
 
     }
 
-    @GetMapping("/driver-data")
+    @Autowired
+    private VehicleRepo vehicleRepo;
+
+    @GetMapping("/vehicle-get")
+    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language) {
+
+        List<Driverdto> list= vehicleRepo.findByCatId(location,language);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/vehicle-data")
     public ResponseEntity<?> VehicleData(String id) {
 
         Optional<Vehicledto> list = vehicleRepo.findVehicleById(id);
@@ -405,7 +414,7 @@ SolotripViewdto s = new SolotripViewdto(
         g.getUsername(),
         x.getCarId(),
         x.getCprice(),
-        v.getName(),
+        v.getFirstName()+" "+v.getLastName(),
         c.getTitle(),
         x.getStart(),
         x.getDestination(),

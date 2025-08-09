@@ -512,7 +512,7 @@ const BookingsScreen: React.FC = () => {
       <View style={styles.statusSection}>
         <View style={[styles.statusIndicator, { backgroundColor: booking.paymentStatus ? '#10b981' : 'red' }]} />
         <Text style={[styles.statusMessage, { color: booking.paymentStatus ? '#10b981' : 'red' }]}>
-          {booking.paymentStatus ? "Confirmed" : "Pending"} - {booking.type == 'hotel' ? 'Check-in ' : booking.type == 'guide' ? 'Starts in ' : ''} in {getDaysUntilBooking(booking.bookingDates && booking.bookingDates[0])} days
+          {booking.paymentStatus ? "Confirmed" : "Pending"} - {booking.type == 'hotel' ? 'Check-in ' : (booking.type == 'guide' || booking.type == 'vehicle') ? 'Starts in ' : ''} in {getDaysUntilBooking(booking.bookingDates && booking.bookingDates[0])} days
         </Text>
       </View>
 

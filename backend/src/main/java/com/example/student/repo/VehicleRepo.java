@@ -13,7 +13,11 @@ import java.util.Optional;
 @Repository
 public interface VehicleRepo extends MongoRepository<Vehicle,String> {
 
-    List<Driverdto> findByCatId(String id);
+    @Query(
+            value = "{$and: [ { 'location': { $regex: ?0, $options: 'i' } }, { 'languages': { $regex: ?1, $options: 'i' } }]}",
+            fields = "{ '_id': 1, 'vehicleModel': 1, 'catId': 1, 'doors': 1, 'seats': 1, 'gearType': 1, 'mileage': 1, 'image': 1, 'location': 1, 'stars': 1, 'reviewCount': 1, 'dailyRatePrice': 1, 'duration': 1}"
+    )
+    List<Driverdto> findByCatId(String location,String language);
 
     @Query("{ '_id' : ?0 }")
     Optional<Vehicledto> findVehicleById(String id);
