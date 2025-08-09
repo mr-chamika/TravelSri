@@ -435,6 +435,28 @@ export default function Views() {
 
     const handleBooking = async () => {
 
+        const getTotal = (obj: { [key: number]: number }) => {
+
+            var t = 0;
+            const totalof = Object.values(obj)
+
+            for (const count of totalof) {
+
+                t = t + count
+
+            }
+            return t;
+        }
+
+        if (bookingData && getTotal(selectedRoomCounts) < bookingData?.adults + bookingData?.children) {
+
+            alert('Select enough accomodation')
+            return;
+
+        }
+
+
+
         const keys = await AsyncStorage.getItem("token");
 
         if (keys) {

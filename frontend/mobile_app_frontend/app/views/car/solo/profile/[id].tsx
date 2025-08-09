@@ -214,7 +214,7 @@ export default function Views() {
             book.userId = token.id
             book.serviceId = id.toString();
             book.type = 'vehicle';
-            book.thumbnail = vehicle?.pp;
+            book.thumbnail = vehicle?.image;
             book.title = vehicle?.firstName + " " + vehicle?.lastName + " | " + vehicle?.vehicleModel + " | " + catName?.title;
             book.location = vehicle?.location;
 
@@ -249,7 +249,16 @@ export default function Views() {
 
                 })
                     .then(res => res.text())
-                    .then(data => { console.log(data); router.replace('/(tabs)/bookings'), AsyncStorage.removeItem('solocbookings') })
+                    .then(
+
+                        async (data) => {
+
+                            console.log(data);
+                            await AsyncStorage.removeItem('solocbookingSession');
+                            await AsyncStorage.removeItem('solocbookingComplete')
+                            router.replace('/(tabs)/bookings')
+
+                        })
                     .catch(err => console.log("Error from booking create " + err))
 
             }

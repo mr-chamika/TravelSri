@@ -231,7 +231,6 @@ export default function App() {
             const sessionExists = await AsyncStorage.getItem('solocbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('solocbookingComplete')
 
-            setSelectedCardId(null);
             setSelectedDates([]);
             setIsBookingComplete(false);
             setBookingData(null);
@@ -282,29 +281,11 @@ export default function App() {
         }
     }, []);
 
-    const startNewBooking = useCallback(() => {
-        setIsBookingComplete(false);
-        setBookingData(null);
-        setSelectedDates([]);
-        setStartLocation('');
-        setEndLocation('');
-        setLanguage('');
-        setTime('');
-        setVehicles([]); // Also clear previous search results
-        setModalVisible(true);
-    }, []);
-
-
     useFocusEffect(
         useCallback(() => {
-            //        loadBookingData();
-            startNewBooking();
+            loadBookingData();
         }, [])
     );
-
-
-
-
 
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
