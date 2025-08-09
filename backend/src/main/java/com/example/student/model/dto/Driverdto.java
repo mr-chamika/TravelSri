@@ -1,32 +1,38 @@
 package com.example.student.model.dto;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
-@Getter
-@Setter
-@Document(collection = "vehicles")
 public class Driverdto {
 
-    @Id
     private String _id;
+    private String vehicleModel;
+    private String catId;
+    private int doors;
+    private int seats;
+    private String gearType;
+    private String mileage;
     private String image;
-    private String verified;
-    private String name;
-    private String identified;
+    private String location;
+    private int stars;
+    private int reviewCount;
+    private int dailyRatePrice;
+    private int duration;
 
-    Driverdto( String _id,String image,String verified,String name,String identified) {
-
-        this._id=_id;
-this.image=image;
-this.verified=verified;
-this.name=name;
-this.identified=identified;
-
+    public Driverdto(String _id, String vehicleModel, String catId, int doors, int seats, String gearType, String mileage, String image, String location, int stars, int reviewCount, int dailyRatePrice, int duration) {
+        this._id = _id;
+        this.vehicleModel = vehicleModel;
+        this.catId = catId;
+        this.doors = doors;
+        this.seats = seats;
+        this.gearType = gearType;
+        this.mileage = mileage;
+        this.image = image;
+        this.location = location;
+        this.stars = stars;
+        this.reviewCount = reviewCount;
+        this.dailyRatePrice = dailyRatePrice;
+        this.duration = duration;
     }
 
 }

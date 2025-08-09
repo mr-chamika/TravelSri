@@ -10,6 +10,7 @@ public class TravelerBooking {
 
     @Id
     private String _id;
+    private String serviceId;
     private String userId;
     private String type;//hotel or guide or vehicle
     private String thumbnail;
@@ -17,10 +18,10 @@ public class TravelerBooking {
     private String[] subtitle;//Deluxe room or Standard room like that booked rooms detail
     private String location;
     private String[] bookingDates;
-    private int stars;
+    private Integer stars;
     private double ratings;
     private boolean paymentStatus;//
-    private int guests;
+    private Integer guests;
     private String[] facilities;
     private int price;
     private String status;//booked,pending,cancelled
