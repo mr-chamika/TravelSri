@@ -29,6 +29,14 @@ public class Hashingpw {
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
+                                "/hotels/register",
+                                "/hotels/login",
+                                "/hotels/check-email",
+                                "/hotels/check-username",
+                                "/hotels/profile",
+                                "/hotels/reset-password",
+                                "/hotels",
+                                "/hotels/**",
                                 "/guide/groupTours",
                                 "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
                                 "/guide/submittedQuotation/{guideId}", // Fixed: Allow all submittedQuotation endpoints
