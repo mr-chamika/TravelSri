@@ -16,30 +16,62 @@ public class Vehicledto {
 
     @Id
     private String _id;
-    private String catId;
     private String image;
-    private String verified;
-    private String name;
-    private String identified;
-    private int driverAge;
-    private List<String> images;
+    private String firstName;
+    private String lastName;
+    private int stars;
     private String location;
-    private String phone;
+    private double dailyRatePrice;
+    private int driverAge;
     private String vehicleNumber;
+    private String phone;
+    private int reviewCount;
+    private String vehicleModel;
+    private String catId;
+    private int doors;
+    private int seats;
+    private String gearType;
+    private String mileage;
+    private List<String> images;
+    private List<String> whatsIncluded;
+    private boolean ac;
+    private List<String> languages;
+    private String verified;
+    private String experience;
+    private String pp; // Profile Picture
 
+    public Vehicledto(String _id, String image, String firstName, String lastName, int stars, String location, double dailyRatePrice, int driverAge, String vehicleNumber, String phone, int reviewCount, String vehicleModel, String catId, int doors, int seats, String gearType, String mileage, List<String> images, List<String> whatsIncluded, boolean ac, List<String> languages, String verified, String experience, String pp) {
 
-    public Vehicledto(String _id, String catId, String image, String verified, String name, String identified, int driverAge, List<String> images, String location, String phone, String vehicleNumber) {
         this._id = _id;
-        this.catId = catId;
         this.image = image;
-        this.verified = verified;
-        this.name = name;
-        this.identified = identified;
-        this.driverAge = driverAge;
-        this.images = images;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.stars = stars;
         this.location = location;
-        this.phone = phone;
+        this.dailyRatePrice = dailyRatePrice;
+        this.driverAge = driverAge;
         this.vehicleNumber = vehicleNumber;
+        this.phone = phone;
+        this.reviewCount = reviewCount;
+        this.vehicleModel = vehicleModel;
+        this.catId = catId;
+        this.doors = doors;
+        this.seats = seats;
+        this.gearType = gearType;
+        this.mileage = mileage;
+        this.images = images;
+        this.whatsIncluded = whatsIncluded;
+        this.ac = ac;
+        this.languages = languages;
+        this.verified = verified;
+        this.experience = experience;
+        this.pp = pp;
+
+
+
+
+
+
     }
 
 }

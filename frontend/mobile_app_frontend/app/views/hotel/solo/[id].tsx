@@ -72,6 +72,7 @@ interface RoomType {
 export interface Booking {
     _id: string;
     userId: string;
+    serviceId: string;
     type: string;
     thumbnail: string;
     title: string;
@@ -434,6 +435,28 @@ export default function Views() {
 
     const handleBooking = async () => {
 
+        const getTotal = (obj: { [key: number]: number }) => {
+
+            var t = 0;
+            const totalof = Object.values(obj)
+
+            for (const count of totalof) {
+
+                t = t + count
+
+            }
+            return t;
+        }
+
+        if (bookingData && getTotal(selectedRoomCounts) < bookingData?.adults + bookingData?.children) {
+
+            alert('Select enough accomodation')
+            return;
+
+        }
+
+
+
         const keys = await AsyncStorage.getItem("token");
 
         if (keys) {
@@ -443,6 +466,7 @@ export default function Views() {
 
             const book = { ...booking }
             book.userId = token.id
+            book.serviceId = id.toString();
             book.type = 'hotel';
             book.thumbnail = hotelv?.images[0];
             book.title = hotelv?.name;

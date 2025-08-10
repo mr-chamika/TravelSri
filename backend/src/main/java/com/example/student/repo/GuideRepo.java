@@ -55,15 +55,5 @@ public interface GuideRepo extends MongoRepository<User, String> {
         return findByMinExperienceYears(minExperience);
     }
 
-    @Query(
-            value = "{ $and: [ { 'location': ?0 }, { 'languages': { $in: [?1] } }, { 'role': 'guide' } ] }",
-            fields = "{ '_id': 1, 'pp': 1, 'stars': 1, 'price': 1, 'username': 1, 'verified': 1, 'identified': 1,'languages':1,'location':1,'images': 1 ,'description': 1}"
-    )
-    List<Guidedto> findAllGuidedtos(String location, String language);
 
-    @Query(
-            value = "{ '_id': ?0, 'role': 'guide' }",
-            fields = "{ '_id': 1, 'pp': 1, 'stars': 1, 'price': 1, 'username': 1, 'verified': 1, 'identified': 1 ,'languages': 1,'location': 1,'images':1,'description': 1}"
-    )
-    Optional<GuideViewdto> findData(String id);
 }

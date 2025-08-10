@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { jwtDecode } from 'jwt-decode';
 
-cssInterop(Image, { className: "style" });
+cssInterop(Image, { classvehicleModel: "style" });
 
 const mark = require('../../../../../assets/images/mark.png');
 const pic = require('../../../../../assets/images/tabbar/create/car/drv.png');
@@ -18,238 +18,27 @@ const setting = require('../../../../../assets/images/setting.png')
 const infinity = require('../../../../../assets/images/infinity.png')
 
 interface Vehicle {
-    id: number;
-    name: string;
-    category: string;
+    _id: string;
+    vehicleModel: string;
+    catId: string;
     doors: number;
     seats: number;
     gearType: string;
     mileage: string;
     image: string;
     location: string;
-    locationDetail: string
     stars: number;
     reviewCount: number;
-    price: number;
-    duration: string;
-    currency: string;
+    dailyRatePrice: number;
+    duration: number;
 }
 
-const vehicles: Vehicle[] = [
-    {
-        id: 1,
-        name: "Perodua Axia",
-        category: "Seddan",
-        doors: 2,
-        seats: 4,
-        gearType: "Automatic",
-        mileage: "Unlimited km",
-        image: "https://images.unsplash.com/photo-1549924231-f129b911e442?w=300&h=200&fit=crop",
-        location: "Colombo Downtown",
-        locationDetail: "Downtown",
-        stars: 5,
-        reviewCount: 2,
-        price: 72278,
-        duration: "for 3 days",
-        currency: "LKR"
-    },
-    {
-        id: 2,
-        name: "Perodua Bezza",
-        category: "Mini",
-        doors: 4,
-        seats: 4,
-        gearType: "Automatic",
-        mileage: "Unlimited km",
-        image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?w=300&h=200&fit=crop",
-        location: "Colombo Downtown",
-        locationDetail: "Downtown",
-        stars: 7.5,
-        reviewCount: 2,
-        price: 77440,
-        duration: "for 3 days",
-        currency: "LKR"
-    },
-    {
-        id: 3,
-        name: "Kia Rio",
-        category: "Sport",
-        doors: 2,
-        seats: 4,
-        gearType: "Automatic",
-        mileage: "Unlimited km",
-        image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=300&h=200&fit=crop",
-        location: "Colombo Downtown",
-        locationDetail: "Downtown",
-        stars: 7.5,
-        reviewCount: 2,
-        price: 68500,
-        duration: "for 3 days",
-        currency: "LKR"
-    }
-];
+interface Category {
 
-
-interface Guide {
-    id: string;
-    image: any;
-    title: string;
-    stars: number;
-    verified: boolean;
-    identified: boolean
+    _id: string,
+    title: string,
 
 }
-const guidex: Guide[] = [
-    {
-        id: '1',
-        image: pic,
-        title: 'Theekshana',
-        stars: 3,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '2',
-        image: pic,
-        title: 'Teshini',
-        stars: 1,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '3',
-        image: pic,
-        title: 'Sudewa',
-        stars: 2,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '4',
-        image: pic,
-        title: 'Bimsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '5',
-        image: pic,
-        title: 'Tharusha',
-        stars: 3,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '6',
-        image: pic,
-        title: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '7',
-        image: pic,
-        title: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '8',
-        image: pic,
-        title: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '6',
-        image: pic,
-        title: 'Viduranga',
-        stars: 1,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '7',
-        image: pic,
-        title: 'Chamika',
-        stars: 2,
-        verified: true,
-        identified: true,
-    },
-    {
-        id: '8',
-        image: pic,
-        title: 'Thathsara',
-        stars: 5,
-        verified: true,
-        identified: true,
-    },
-    // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-    // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-    // { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-    // { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-    // { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-
-];
-
-interface BookO {
-    dates: string[];
-    loc: string;
-    ad: string;
-    ch: string;
-    ni: string;
-    s: string;
-    d: string
-}
-interface BookG {
-    dates: string[];
-    loc: string;
-    lan: string;
-}
-
-interface Form {
-
-    //index.tsx (select a route)
-    routeId: string;
-    creatorId: string;
-
-    //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
-    hotelId: string;
-    singleBeds: number;
-    doubleBeds: number;
-    hdatesBooked: string[];
-    hlocation: string;
-    adults: number;
-    children: number;
-    nights: number;
-    hprice: number;
-
-    //guide.tsx (select dates, location, language)
-
-    guideId: string;
-    gdatesBooked: string[];
-    glocation: string;
-    glanguage: string;
-    gprice: number;
-
-
-    //car.tsx (select dates, location, language)
-
-    carId: string;
-    cdatesBooked: string[];
-    startLocation: string;
-    endLocation: string;
-    clanguage: string;
-    bookedTime: string;
-    cprice: number;
-
-
-}
-
 interface g {
 
     id: string,
@@ -313,12 +102,6 @@ export default function App() {
             const data = await res.json()
 
             if (data.length > 0) {
-
-                const minimalCars = data.map((car: Car) => ({
-                    id: car._id,
-                    price: car.price,
-                }));
-                await AsyncStorage.setItem('cars', JSON.stringify(minimalCars))
                 //console.log(data)
                 setCategories(data)
             }
@@ -350,50 +133,10 @@ export default function App() {
     const [time, setTime] = useState('')
     const [guides, setGuides] = useState<g[]>([])
     const [hotels, setHotels] = useState<H[]>([])
-    const [categories, setCategories] = useState<Cat[]>([])
-
-    const [hotelId, setHotelId] = useState<string | null>(null)
-    const [guideId, setGuideId] = useState<string | null>(null)
-    const [submitForm, setSubmitForm] = useState<Form>({
-
-        routeId: '',
-        creatorId: '',
-
-        //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
-        hotelId: '',
-        singleBeds: 0,
-        doubleBeds: 0,
-        hdatesBooked: [],
-        hlocation: '',
-        adults: 0,
-        children: 0,
-        nights: 0,
-        hprice: 0,
-
-        //guide.tsx (select dates, location, language)
-
-        guideId: '',
-        gdatesBooked: [],
-        glocation: '',
-        glanguage: '',
-        gprice: 0,
-
-        //car.tsx (select dates, location, language)
-
-        carId: '',
-        cdatesBooked: [],
-        startLocation: '',
-        endLocation: '',
-        clanguage: '',
-        bookedTime: '',
-        cprice: 0
+    const [categories, setCategories] = useState<Category[]>([])
+    const [vehicles, setVehicles] = useState<Vehicle[]>([])
 
 
-    })
-    const [catPrice, setCatPrice] = useState(0);
-    const [guidePrice, setGuidePrice] = useState(0);
-    const [hotelPrice, setHotelPrice] = useState(0);
-    var m = ''
 
     const onDayPress = (day: { dateString: string }) => {
         const date = day.dateString;
@@ -442,7 +185,28 @@ export default function App() {
         setModalVisible(false);
         setIsBookingComplete(true);
 
-        console.log(newBooking)
+        //console.log(newBooking)
+
+        const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${newBooking.start}&language=${newBooking.language}`)
+
+        const data = await res.json();
+
+        if (data) {
+
+            //console.log(data)
+            setVehicles(data)
+
+        }
+        const res1 = await fetch(`http://localhost:8080/traveler/category-get`)
+
+        const data1 = await res1.json();
+
+        if (data1) {
+
+            //console.log(data1)
+            setCategories(data1)
+
+        }
 
         // 4. Save the booking data to AsyncStorage for persistence
         try {
@@ -467,7 +231,6 @@ export default function App() {
             const sessionExists = await AsyncStorage.getItem('solocbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('solocbookingComplete')
 
-            setSelectedCardId(null);
             setSelectedDates([]);
             setIsBookingComplete(false);
             setBookingData(null);
@@ -518,13 +281,11 @@ export default function App() {
         }
     }, []);
 
-
     useFocusEffect(
         useCallback(() => {
             loadBookingData();
         }, [])
     );
-
 
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
@@ -663,7 +424,7 @@ export default function App() {
                         className="flex-1"
                         contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 py-5"
                     >
-                        {vehicles.map((vehicle, index) => {
+                        {vehicles.length > 0 && vehicles.map((vehicle, index) => {
 
                             const getReviewLabel = (score: number): string => {
                                 if (score >= 9) return 'Excellent';
@@ -677,17 +438,19 @@ export default function App() {
                                 ? parseFloat(((vehicle.stars / vehicle.reviewCount) * 2).toFixed(1))
                                 : 0;
 
+                            const catName = categories.find(cat => cat._id == vehicle.catId)
+
                             return (<TouchableOpacity
-                                key={vehicle.id}
+                                key={vehicle._id}
                                 className={` bg-white w-[95%] my-2 rounded-lg border p-4 shadow-md border-gray-50`}
-                                onPress={() => router.push(`/views/car/solo/profile/${vehicle.id}`)}
+                                onPress={() => router.push(`/views/car/solo/profile/${vehicle._id}`)}
                                 activeOpacity={0.7}
                             >
                                 {/* Vehicle Header */}
                                 <View className="flex-row mb-3">
-                                    <View className="flex-1 pr-3">
-                                        <Text className="text-base font-semibold text-gray-800 mb-0.5">{vehicle.name}</Text>
-                                        <Text className="text-xs text-gray-500 mb-2">{vehicle.category}</Text>
+                                    <View className="flex-1">
+                                        <Text className="text-base font-semibold text-gray-800 mb-0.5">{vehicle.vehicleModel}</Text>
+                                        <Text className="text-xs text-gray-500 mb-2">{catName?.title}</Text>
 
                                         {/* Vehicle Specs */}
                                         <View className="space-y-1">
@@ -706,8 +469,8 @@ export default function App() {
                                     </View>
 
                                     {/* Vehicle Image */}
-                                    <View className="w-[100px] h-[60px]">
-                                        <Image source={{ uri: vehicle.image }} className="w-full h-full" contentFit="contain" />
+                                    <View className="w-[200px] h-[120px]">
+                                        <Image source={{ uri: `data:image/jpeg;base64,${vehicle.image}` }} className="w-full h-full" contentFit="contain" />
                                     </View>
                                 </View>
 
@@ -735,9 +498,9 @@ export default function App() {
                                     {/* Price Section */}
                                     <View className="items-end">
                                         <View className="items-end">
-                                            <Text className="text-xs text-gray-500 mb-0.5">Price {vehicle.duration}</Text>
+                                            <Text className="text-xs text-gray-500 mb-0.5">Price for {vehicle.duration} days</Text>
                                             <Text className="text-lg font-bold text-gray-800">
-                                                {vehicle.currency} {(vehicle.price)}.00
+                                                LKR {(vehicle.dailyRatePrice)}.00
                                             </Text>
                                         </View>
                                     </View>
