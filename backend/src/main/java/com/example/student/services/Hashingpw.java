@@ -151,7 +151,11 @@ public class Hashingpw {
                                 "/api/wallet/money-flow/summary",
                                 "/api/wallet/money-flow/booking/{bookingId}",
                                 "/api/payments/payhere/summary/{bookingId}",
-                                "/api/guide/search"
+                                "/api/guide/search",
+                                "/reviews/by-service",
+                                "/reviews//stats",
+                                "/reviews/service-search",
+                                "/reviews/by-rating"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
