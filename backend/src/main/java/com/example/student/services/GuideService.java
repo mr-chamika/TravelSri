@@ -4,6 +4,10 @@ import com.example.student.model.User;
 import com.example.student.repo.GuideRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +16,10 @@ import java.util.Optional;
 public class GuideService implements IGuideService{
     @Autowired
     private GuideRepo GuideRepo;
+
+    // Add this line to inject MongoTemplate
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Override
     public User createGuide(User TGuide) {
@@ -122,4 +130,52 @@ public class GuideService implements IGuideService{
         return GuideRepo.findByAreaOfService(area);
     }
 
+    @Override
+    public List<User> searchGuides(String location, String language, String guideType,
+                                   String verified, Integer minExperience, Double maxDailyRate, Double minRating) {
+
+        // Build dynamic query using MongoDB Query and Criteria
+        Query query = new Query();
+
+        // Filter by location (case-insensitive partial match)
+        if (location != null && !location.trim().isEmpty()) {
+            query.addCriteria(Criteria.where("location").regex(location, "i"));
+        }
+
+        // Filter by language (check if language is in the languages array)
+        if (language != null && !language.trim().isEmpty()) {
+            query.addCriteria(Criteria.where("languages").in(language));
+        }
+
+        // Filter by guide type
+        if (guideType != null && !guideType.trim().isEmpty()) {
+            query.addCriteria(Criteria.where("guideType").is(guideType));
+        }
+
+        // Filter by verification status
+        if (verified != null && !verified.trim().isEmpty()) {
+            query.addCriteria(Criteria.where("verified").is(verified));
+        }
+
+        // Filter by minimum experience
+        if (minExperience != null) {
+            query.addCriteria(Criteria.where("experience").gte(minExperience));
+        }
+
+        // Filter by maximum daily rate
+        if (maxDailyRate != null) {
+            query.addCriteria(Criteria.where("dailyRate").lte(maxDailyRate));
+        }
+
+        // Filter by minimum rating
+        if (minRating != null) {
+            query.addCriteria(Criteria.where("stars").gte(minRating));
+        }
+
+        // Add sorting by rating (highest first) and then by experience
+        query.with(Sort.by(Sort.Direction.DESC, "stars", "experience"));
+
+        // Execute query
+        return mongoTemplate.find(query, User.class);
+    }
 }

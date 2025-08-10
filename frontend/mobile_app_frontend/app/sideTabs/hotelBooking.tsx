@@ -103,7 +103,7 @@ export default function HotelsBookingScreen() {
     };
 
     const handleSubmit = async () => {
-        if (selectedoutDates === '' || selectedDates === '' || !location || !adults || !children || nights < 0) {
+        if (selectedoutDates === '' || selectedDates === '' || !location || !adults || children < 0 || nights < 0) {
             alert('Please fill in all fields.');
             return;
         }
@@ -309,7 +309,7 @@ export default function HotelsBookingScreen() {
                                     <View>
                                         <Text>Enter number of children</Text>
                                         <TextInput
-                                            placeholder="1"
+                                            placeholder=""
                                             placeholderTextColor="#8E8E8E"
                                             value={children.toString()}
                                             onChangeText={(text) => setChildren(parseInt(text.replace(/[^0-9]/g, '')) || 0)}
@@ -461,7 +461,7 @@ export default function HotelsBookingScreen() {
                                                                                             rating >= 5 ? 'bg-orange-400' :
                                                                                                 'bg-red-500'
                                                                                     }`}>
-                                                                                    <Text className="text-white text-xs font-semibold">{rating}</Text>
+                                                                                    <Text className="text-white text-xs font-semibold">{rating.toFixed(1)}</Text>
                                                                                 </View>
                                                                                 <View className="flex-1">
                                                                                     <Text
@@ -538,7 +538,8 @@ export default function HotelsBookingScreen() {
                                         <View>
                                             <View className="relative h-40">
                                                 <Image
-                                                    source={{ uri: hotel.thumbnail }}
+
+                                                    source={{ uri: `data:image/jpeg;base64,${hotel.thumbnail}` }}
                                                     className="w-full h-full"
                                                     contentFit="cover"
                                                 />

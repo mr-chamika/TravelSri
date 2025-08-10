@@ -35,12 +35,16 @@ public class Hotel{
     private int maxSingle;//maximum single bed rooms
     private int maxDouble;//maximum double bed rooms
     private  String description;
+    private String mobileNumber;
 
     private String taxes;
     private String priceDescription;//priceDescription: '1 Night',
     private String[] freeFeatures;//freeFeatures: ["Free cancellation", "No prepayment needed"]
     private String[] policies;
-    String specialOffer;//if available
+    private String specialOffer;//if available
+    private String[] roomTypes;//["id for singlebedroom","id for double bedroom"]
+    private String[] facilities;//["id for facility pool","id for sea view"]
+
     //theekshana
 
 

@@ -17,6 +17,5 @@ public class Faci{
     private String _id;
     private String title;
     private String image;
-    private String[] hotelId;
 
 }

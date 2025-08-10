@@ -509,7 +509,7 @@ export default function SignupForm() {
         const fieldsToValidate: (keyof typeof formData)[] = [
             'identitypic1', 'locpic', 'agreeTerms'
         ];
-        if (formData.role !== 'user') {
+        if (formData.role == 'merchant') {
             fieldsToValidate.push('confirmCondition');
         }
         fieldsToValidate.forEach(field => {
@@ -714,7 +714,7 @@ export default function SignupForm() {
                     ...payload
                 } = dataToSend;
 
-                console.log(payload)
+                //console.log(payload)
 
                 await fetch('http://localhost:8080/user/signup', {
                     //await fetch('https://travelsri-backend.onrender.com/user/signup', {
@@ -742,7 +742,7 @@ export default function SignupForm() {
             try {
 
 
-                const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role };
+                const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role, reviewCount: 0, stars: 0, responseRate: 0 };
                 const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic1', 'businessRegPic2', 'identitypic1', 'identitypic2', 'locpic'];
 
                 for (const field of imageFields) {

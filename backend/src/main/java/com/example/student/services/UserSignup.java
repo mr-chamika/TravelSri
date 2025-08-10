@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserSignup {
 
@@ -17,12 +19,20 @@ public class UserSignup {
 
     public User registerNewUser(User user) {
 
-        String plainPassword = user.getPassword();
+        Optional<User> x = userRepo.findByEmail(user.getEmail());
 
-        String hashedPassword = passwordEncoder.encode(plainPassword);
+        if (x.isPresent()) {
 
-        user.setPassword(hashedPassword);
+            return null;
 
-        return userRepo.save(user);
+        }
+            String plainPassword = user.getPassword();
+
+            String hashedPassword = passwordEncoder.encode(plainPassword);
+
+            user.setPassword(hashedPassword);
+
+            return userRepo.save(user);
+
     }
 }

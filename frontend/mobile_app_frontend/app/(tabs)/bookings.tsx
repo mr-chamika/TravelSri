@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import {
   View,
   Text,
@@ -12,7 +13,16 @@ import {
   Alert,
 } from 'react-native';
 
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
 
 // Simple icon component using emojis
 const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, size, color }) => {
@@ -44,7 +54,7 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
     'download': '📥',
     'support': '🎧',
   };
-  
+
   return (
     <Text style={{ fontSize: size, color }}>
       {iconMap[name] || '•'}
@@ -53,58 +63,25 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
 };
 
 interface Booking {
-  id: string;
-  type: 'hotel' | 'guide' | 'vehicle' | 'group_tour';
-  status: 'active' | 'past' | 'cancelled';
+  _id: string;
+  type: string;
+  status: string;
+  paymentStatus: boolean,
   title: string;
-  subtitle: string;
+  subtitle: string[];
   location: string;
-  image: string;
-  dates: {
-    start: string;
-    end: string;
-    checkin?: string;
-    checkout?: string;
-  };
-  price: {
-    total: number;
-    currency: string;
-    breakdown?: string;
-  };
-  bookingReference: string;
-  provider: {
-    name: string;
-    contact: string;
-    rating?: number;
-    verified: boolean;
-  };
-  details: {
-    guests?: number;
-    rooms?: number;
-    duration?: string;
-    groupSize?: number;
-    vehicle?: string;
-    guide?: string;
-    inclusions?: string[];
-  };
-  statusInfo: {
-    message: string;
-    color: string;
-    canModify: boolean;
-    canCancel: boolean;
-  };
-  timeline?: {
-    booked: string;
-    confirmed?: string;
-    checkedIn?: string;
-    completed?: string;
-    cancelled?: string;
-  };
+  thumbnail: string;
+  bookingDates: string[];
+  price: number;
+  guests: number;
+  facilities: string[];
+  ratings: number;
+  mobileNumber: string;
 }
 
 const BookingsScreen: React.FC = () => {
   const router = useRouter();
-  
+
   // Color theme - Yellow
   const colors = {
     primary: '#fde047',        // yellow-300
@@ -127,6 +104,7 @@ const BookingsScreen: React.FC = () => {
   };
 
   const [activeFilter, setActiveFilter] = useState<'active' | 'past' | 'cancelled'>('active');
+  const [bookings, setBookings] = useState<Booking[]>([])
 
   const filterOptions = [
     { id: 'active', label: 'Active', count: 5 },
@@ -134,57 +112,70 @@ const BookingsScreen: React.FC = () => {
     { id: 'cancelled', label: 'Cancelled', count: 2 },
   ];
 
-  const bookings: Booking[] = [
+
+  useFocusEffect(
+    useCallback(() => {
+
+      const getBookings = async () => {
+
+        try {
+
+          const keys = await AsyncStorage.getItem("token");
+
+          if (keys) {
+
+            const x: MyToken = jwtDecode(keys)
+
+
+            const res = await fetch(`http://localhost:8080/traveler/bookings-all?userId=${x.id}`)
+
+
+            if (res) {
+
+              const data = await res.json()
+
+              setBookings(data)
+
+            }
+
+          }
+        } catch (err) {
+
+          console.log("Error from bookings getting : " + err)
+
+        }
+
+      }
+      getBookings();
+    }, [])
+  );
+
+  /*const bookings: Booking[] = [
     {
-      id: 'booking1',
+      _id: 'booking1',
       type: 'hotel',
       status: 'active',
+      paymentStatus: false,
       title: 'Heritage Hotel Kandy',
       subtitle: 'Deluxe Room with Garden View',
       location: 'Kandy, Central Province',
-      image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=250&fit=crop',
-      dates: {
-        start: '2025-08-15',
-        end: '2025-08-18',
-        checkin: '15:00',
-        checkout: '11:00'
-      },
-      price: {
-        total: 45000,
-        currency: 'LKR',
-        breakdown: 'LKR 15,000 × 3 nights'
-      },
-      bookingReference: 'HTL-KDY-001',
-      provider: {
-        name: 'Heritage Hotel Kandy',
-        contact: '+94 81 234 5678',
-        rating: 4.8,
-        verified: true
-      },
-      details: {
-        guests: 2,
-        rooms: 1,
-        inclusions: ['Breakfast', 'WiFi', 'Pool Access', 'Parking']
-      },
-      statusInfo: {
-        message: 'Confirmed - Check-in in 3 days',
-        color: colors.success,
-        canModify: true,
-        canCancel: true
-      },
-      timeline: {
-        booked: '2025-07-20',
-        confirmed: '2025-07-21'
-      }
+      thumbnail: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&h=250&fit=crop',
+      dates: ['2025-08-15', '2025-08-18'],
+      price: 45000,
+      ratings: 4.8,
+      mobileNumber: '+94 81 234 5678',
+      guests: 2,
+      facilities: ["breakfast", "wi-fi", "pool", "Minibar", "Minibar"]
+
     },
-    {
+     {
       id: 'booking2',
       type: 'group_tour',
       status: 'active',
       title: 'Sri Lanka Cultural Heritage Tour',
       subtitle: '7-Day Group Adventure',
       location: 'Kandy, Sigiriya, Anuradhapura',
-      image: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=400&h=250&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1566552881560-0be862a7c445?w=400&h=250&fit=crop',
       dates: {
         start: '2025-08-15',
         end: '2025-08-22'
@@ -199,7 +190,6 @@ const BookingsScreen: React.FC = () => {
         name: 'Lanka Adventures',
         contact: '+94 77 987 6543',
         rating: 4.9,
-        verified: true
       },
       details: {
         groupSize: 12,
@@ -225,7 +215,7 @@ const BookingsScreen: React.FC = () => {
       title: 'Toyota Hiace Van Rental',
       subtitle: 'Air-conditioned with Driver',
       location: 'Colombo Airport Pickup',
-      image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=250&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=250&fit=crop',
       dates: {
         start: '2025-08-15',
         end: '2025-08-18'
@@ -240,7 +230,6 @@ const BookingsScreen: React.FC = () => {
         name: 'Colombo Car Rentals',
         contact: '+94 11 234 5678',
         rating: 4.6,
-        verified: true
       },
       details: {
         vehicle: 'Toyota Hiace (8 seats)',
@@ -265,7 +254,7 @@ const BookingsScreen: React.FC = () => {
       title: 'Ranjan Silva - Cultural Guide',
       subtitle: 'Private Cultural Sites Tour',
       location: 'Kandy & Central Province',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
       dates: {
         start: '2025-08-16',
         end: '2025-08-16'
@@ -280,7 +269,6 @@ const BookingsScreen: React.FC = () => {
         name: 'Ranjan Silva',
         contact: '+94 77 345 6789',
         rating: 4.9,
-        verified: true
       },
       details: {
         duration: 'Full day (8 hours)',
@@ -304,7 +292,7 @@ const BookingsScreen: React.FC = () => {
       title: 'Beach Resort Mirissa',
       subtitle: 'Ocean View Suite',
       location: 'Mirissa, Southern Province',
-      image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=250&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&h=250&fit=crop',
       dates: {
         start: '2025-07-01',
         end: '2025-07-05',
@@ -321,7 +309,6 @@ const BookingsScreen: React.FC = () => {
         name: 'Mirissa Beach Resort',
         contact: '+94 41 234 5678',
         rating: 4.7,
-        verified: true
       },
       details: {
         guests: 2,
@@ -348,7 +335,7 @@ const BookingsScreen: React.FC = () => {
       title: 'Suzuki Alto Car Rental',
       subtitle: 'Economy Car',
       location: 'Galle',
-      image: 'https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=400&h=250&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=400&h=250&fit=crop',
       dates: {
         start: '2025-07-10',
         end: '2025-07-15'
@@ -363,7 +350,6 @@ const BookingsScreen: React.FC = () => {
         name: 'Galle Car Rentals',
         contact: '+94 91 234 5678',
         rating: 4.3,
-        verified: true
       },
       details: {
         vehicle: 'Suzuki Alto (4 seats)',
@@ -381,11 +367,25 @@ const BookingsScreen: React.FC = () => {
         confirmed: '2025-06-21',
         cancelled: '2025-07-05'
       }
-    }
+    } 
   ];
-
+*/
   const getFilteredBookings = () => {
-    return bookings.filter(booking => booking.status === activeFilter);
+    return bookings.filter(booking => booking.status == activeFilter);
+  };
+
+  // FIX 3: Correctly calculate days until the booking starts
+  const getDaysUntilBooking = (dateString: string) => {
+    const bookingDate = new Date(dateString);
+    const today = new Date();
+    // Remove time part for accurate day difference
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = bookingDate.getTime() - today.getTime();
+    if (diffTime < 0) return 0; // The date is in the past
+
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   const getTypeIcon = (type: string) => {
@@ -410,23 +410,11 @@ const BookingsScreen: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  const handleContactProvider = (booking: Booking) => {
-    Alert.alert(
-      "Contact Provider",
-      `Contact ${booking.provider.name}?`,
-      [
-        { text: "Call", onPress: () => console.log(`Calling ${booking.provider.contact}`) },
-        { text: "Message", onPress: () => console.log(`Messaging ${booking.provider.contact}`) },
-        { text: "Cancel", style: "cancel" }
-      ]
-    );
   };
 
   const handleModifyBooking = (booking: Booking) => {
@@ -447,14 +435,14 @@ const BookingsScreen: React.FC = () => {
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
-    
+
     for (let i = 0; i < 5; i++) {
       stars.push(
-        <Icon 
-          key={i} 
-          name="star" 
-          size={12} 
-          color={i < fullStars ? colors.rating : colors.textMuted} 
+        <Icon
+          key={i}
+          name="star"
+          size={12}
+          color={i < fullStars ? colors.rating : colors.textMuted}
         />
       );
     }
@@ -471,17 +459,21 @@ const BookingsScreen: React.FC = () => {
           <Text style={styles.typeLabel}>{getTypeLabel(booking.type)}</Text>
         </View>
         <View style={styles.referenceSection}>
-          <Text style={styles.referenceText}>{booking.bookingReference}</Text>
+          <Text style={styles.referenceText}>{booking._id}</Text>
         </View>
       </View>
 
       <View style={styles.cardContent}>
-        <Image source={{ uri: booking.image }} style={styles.bookingImage} />
-        
+        <Image source={{ uri: `data:image/jpeg;base64,${booking.thumbnail}` }} style={styles.bookingImage} />
+
         <View style={styles.bookingInfo}>
           <Text style={styles.bookingTitle}>{booking.title}</Text>
-          <Text style={styles.bookingSubtitle}>{booking.subtitle}</Text>
-          
+          <Text style={styles.bookingSubtitle}>
+            {booking.subtitle && booking.subtitle.length > 0
+              ? booking.subtitle.join(', ')
+              : ''
+            }</Text>
+
           <View style={styles.locationRow}>
             <Icon name="location" size={12} color={colors.textMuted} />
             <Text style={styles.locationText}>{booking.location}</Text>
@@ -490,69 +482,62 @@ const BookingsScreen: React.FC = () => {
           <View style={styles.dateRow}>
             <Icon name="calendar" size={12} color={colors.textMuted} />
             <Text style={styles.dateText}>
-              {formatDate(booking.dates.start)}
-              {booking.dates.end !== booking.dates.start && ` - ${formatDate(booking.dates.end)}`}
+              {booking.bookingDates && formatDate(booking.bookingDates[0])}
+              {booking.bookingDates && booking.bookingDates[(booking.bookingDates.length - 1)] !== booking.bookingDates[0] && ` - ${formatDate(booking.bookingDates[(booking.bookingDates.length - 1)])}`}
             </Text>
           </View>
 
-          {booking.provider.rating && (
+          {booking.ratings && (
             <View style={styles.ratingRow}>
               <View style={styles.starsContainer}>
-                {renderStars(booking.provider.rating)}
+                {renderStars(booking.ratings)}
               </View>
-              <Text style={styles.ratingText}>{booking.provider.rating}</Text>
-              {booking.provider.verified && (
+              <Text style={styles.ratingText} className={`${booking.ratings >= 9 ? 'bg-green-500' :
+                booking.ratings >= 8 ? 'bg-emerald-400' :
+                  booking.ratings >= 7 ? 'bg-yellow-400' :
+                    booking.ratings >= 5 ? 'bg-orange-400' :
+                      'bg-red-500'
+                }`}>{booking.ratings.toFixed(1)}</Text>
+              {/* {booking.provider.verified && (
                 <View style={styles.verifiedBadge}>
                   <Icon name="check" size={10} color={colors.success} />
                   <Text style={styles.verifiedText}>Verified</Text>
                 </View>
-              )}
+              )} */}
             </View>
           )}
         </View>
       </View>
 
       <View style={styles.statusSection}>
-        <View style={[styles.statusIndicator, { backgroundColor: booking.statusInfo.color }]} />
-        <Text style={[styles.statusMessage, { color: booking.statusInfo.color }]}>
-          {booking.statusInfo.message}
+        <View style={[styles.statusIndicator, { backgroundColor: booking.paymentStatus ? '#10b981' : 'red' }]} />
+        <Text style={[styles.statusMessage, { color: booking.paymentStatus ? '#10b981' : 'red' }]}>
+          {booking.paymentStatus ? "Confirmed" : "Pending"} - {booking.type == 'hotel' ? 'Check-in ' : (booking.type == 'guide' || booking.type == 'vehicle') ? 'Starts in ' : ''} in {getDaysUntilBooking(booking.bookingDates && booking.bookingDates[0])} days
         </Text>
       </View>
 
       <View style={styles.detailsSection}>
-        {booking.details.guests && (
+        {booking.guests > 0 && (
           <View style={styles.detailItem}>
-            <Icon name="users" size={12} color={colors.textMuted} />
-            <Text style={styles.detailText}>{booking.details.guests} guests</Text>
-          </View>
-        )}
-        {booking.details.groupSize && (
-          <View style={styles.detailItem}>
-            <Icon name="group" size={12} color={colors.textMuted} />
-            <Text style={styles.detailText}>{booking.details.groupSize} people</Text>
-          </View>
-        )}
-        {booking.details.duration && (
-          <View style={styles.detailItem}>
-            <Icon name="time" size={12} color={colors.textMuted} />
-            <Text style={styles.detailText}>{booking.details.duration}</Text>
+            <Icon name="users" size={16} color={colors.textMuted} />
+            <Text style={styles.detailText}>{booking.guests} guests</Text>
           </View>
         )}
       </View>
 
-      {booking.details.inclusions && (
+      {booking.facilities && (
         <View style={styles.inclusionsSection}>
           <Text style={styles.inclusionsTitle}>Includes:</Text>
           <View style={styles.inclusionsList}>
-            {booking.details.inclusions.slice(0, 3).map((inclusion, index) => (
+            {booking.facilities.slice(0, 3).map((inclusion, index) => (
               <View key={index} style={styles.inclusionItem}>
                 <Icon name="check" size={10} color={colors.success} />
                 <Text style={styles.inclusionText}>{inclusion}</Text>
               </View>
             ))}
-            {booking.details.inclusions.length > 3 && (
+            {booking.facilities.length > 3 && (
               <Text style={styles.moreInclusions}>
-                +{booking.details.inclusions.length - 3} more
+                +{booking.facilities.length - 3} more
               </Text>
             )}
           </View>
@@ -560,27 +545,25 @@ const BookingsScreen: React.FC = () => {
       )}
 
       <View style={styles.priceSection}>
+        {/* Apply style to align icon and text horizontally */}
+        <View style={styles.detailItem}>
+          <Icon name="phone" size={18} color="#4b5563" />
+          <Text style={styles.detailText}>{booking.mobileNumber}</Text>
+        </View>
+
+        {/* This part remains the same */}
         <View style={styles.priceInfo}>
           <Text style={styles.priceAmount}>
-            {booking.price.currency} {booking.price.total.toLocaleString()}
+            LKR {booking.price.toLocaleString()}
           </Text>
-          {booking.price.breakdown && (
-            <Text style={styles.priceBreakdown}>{booking.price.breakdown}</Text>
-          )}
         </View>
       </View>
 
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
-          style={styles.contactButton}
-          onPress={() => handleContactProvider(booking)}
-        >
-          <Icon name="phone" size={16} color={colors.primaryText} />
-          <Text style={styles.contactButtonText}>Contact</Text>
-        </TouchableOpacity>
-        
-        {booking.statusInfo.canModify && (
-          <TouchableOpacity 
+
+
+        {booking.paymentStatus != true && (
+          <TouchableOpacity
             style={styles.modifyButton}
             onPress={() => handleModifyBooking(booking)}
           >
@@ -588,9 +571,9 @@ const BookingsScreen: React.FC = () => {
             <Text style={styles.modifyButtonText}>Modify</Text>
           </TouchableOpacity>
         )}
-        
-        {booking.statusInfo.canCancel && (
-          <TouchableOpacity 
+
+        {booking.paymentStatus != true && (
+          <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => handleCancelBooking(booking)}
           >
@@ -612,15 +595,15 @@ const BookingsScreen: React.FC = () => {
         <Text style={styles.emptyIconText}>🌍</Text>
       </View>
       <Text style={styles.emptyTitle}>
-        {activeFilter === 'active' ? 'No Active Bookings' : 
-         activeFilter === 'past' ? 'No Past Bookings' : 'No Cancelled Bookings'}
+        {activeFilter === 'active' ? 'No Active Bookings' :
+          activeFilter === 'past' ? 'No Past Bookings' : 'No Cancelled Bookings'}
       </Text>
       <Text style={styles.emptyMessage}>
-        {activeFilter === 'active' 
+        {activeFilter === 'active'
           ? "You haven't made any bookings yet. When you book hotels, guides, vehicles or join group tours, they will appear here."
           : activeFilter === 'past'
-          ? "Your completed bookings will appear here after your trips."
-          : "Your cancelled bookings will appear here."}
+            ? "Your completed bookings will appear here after your trips."
+            : "Your cancelled bookings will appear here."}
       </Text>
       {activeFilter === 'active' && (
         <TouchableOpacity style={styles.exploreButton}>
@@ -633,13 +616,13 @@ const BookingsScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={colors.primary} barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Icon name="arrow-left" size={24} color={colors.primaryText} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Trips</Text>
+        <Text style={styles.headerTitle}>Bookings</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.helpButton}>
             <Icon name="help" size={20} color={colors.primaryText} />
@@ -678,11 +661,11 @@ const BookingsScreen: React.FC = () => {
         ) : (
           <View style={styles.bookingsList}>
             {getFilteredBookings().map((booking) => (
-              <BookingCard key={booking.id} booking={booking} />
+              <BookingCard key={booking._id} booking={booking} />
             ))}
           </View>
         )}
-        
+
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -734,7 +717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   // Filter Tabs
   filterTabs: {
     backgroundColor: '#ffffff',
@@ -762,7 +745,7 @@ const styles = StyleSheet.create({
   activeFilterTabText: {
     color: 'white',
   },
-  
+
   // Content
   content: {
     flex: 1,
@@ -770,7 +753,7 @@ const styles = StyleSheet.create({
   bookingsList: {
     padding: 16,
   },
-  
+
   // Booking Card
   bookingCard: {
     backgroundColor: '#ffffff',
@@ -874,7 +857,9 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#1f2937',
+    color: 'white',
+    padding: 4,
+    borderRadius: 5
   },
   verifiedBadge: {
     flexDirection: 'row',
@@ -920,7 +905,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   detailText: {
-    fontSize: 12,
+    fontSize: 16,
     color: '#6b7280',
   },
   inclusionsSection: {
@@ -959,8 +944,11 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   priceSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12, // Increased padding slightly for better spacing
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',
   },
@@ -996,8 +984,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   contactButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#a16207',
   },
   modifyButton: {
@@ -1045,7 +1033,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#a16207',
   },
-  
+
   // Empty State
   emptyState: {
     flex: 1,
@@ -1091,7 +1079,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#a16207',
   },
-  
+
   // Utility Styles
   bottomPadding: {
     height: 20,

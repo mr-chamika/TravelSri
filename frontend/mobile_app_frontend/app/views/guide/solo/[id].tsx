@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
 
 cssInterop(Image, { className: "style" });
@@ -22,25 +24,62 @@ const education = require('../../../../assets/images/mortarboard.png')
 const certificate = require('../../../../assets/images/quality.png')
 const award = require('../../../../assets/images/trophy.png')
 
+interface Review {
+
+    _id: string,
+    serviseId: string,
+    text: string,
+    country: string,
+    stars: number,
+    author: string,
+    dp: string,
+
+}
+
+export interface Booking {
+    _id: string;
+    userId: string;
+    serviceId: string;
+    type: string;
+    thumbnail: string;
+    title: string;
+    subtitle: string[];
+    location: string;
+    bookingDates: string[];
+    stars: number;
+    ratings: number;
+    paymentStatus: boolean;
+    guests: number;
+    facilities: string[];
+    price: number;
+    status: string;
+    mobileNumber: string;
+}
+
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
 
 interface Guide {
-    id: string;
+    _id: string;
     firstName: string;
     lastName: string;
-    title: string;
+    description: string;
     location: string;
     experience: string;
     stars: number;
     reviewCount: number
     dailyRate: number;
-    currency: string;
     pp: string;
-    verified: boolean;
-    identified: boolean;
+    verified: string;
+    identified: string;
     specializations: string[];
     responseTime: string;
-    responseRate: string;
-    description: string;
+    responseRate: number;
     mobileNumber: string;
     languages: string[];
     images: any[];
@@ -59,292 +98,113 @@ export default function Views() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
+    const [item, setItem] = useState<Guide | null>(null)
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [booking, setBooking] = useState<Booking | null>(null)
+
+
+
     useEffect(() => {
 
-        getItem(id)
+        const getGuide = async () => {
 
-    }, [id])
+            try {
 
-    const [item, setItem] = useState<Guide | null>(null)
+                const res = await fetch(`http://localhost:8080/traveler/guides-view?id=${id}`)
 
-    const guides: Guide[] = [
-        {
-            id: '1',
-            firstName: "Ravi",
-            lastName: "Perera",
-            title: "Cultural Heritage Specialist",
-            location: "Kandy",
-            experience: "8 years",
-            stars: 600,
-            reviewCount: 156,
-            dailyRate: 8500,
-            currency: "LKR",
-            pp: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-            verified: true,
-            identified: true,
-            specializations: ["Cultural Heritage", "Historical Sites", "Religious Sites"],
-            responseTime: "Within 1 hour",
-            responseRate: "98%",
-            description: "Expert in Sri Lankan cultural heritage with deep knowledge of ancient temples and traditional practices.",
-            mobileNumber: "012 3456789",
-            languages: ["English", "Sinhala", "German", "French"],
-            images: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail],
-            bio: "With over 10 years of experience exploring the ancient kingdoms of Anuradhapura and Polonnaruwa, I bring the stories of Sri Lanka's rich history to life. Join me to walk through majestic ruins, understand timeless traditions, and uncover the island's vibrant legacy, one story at a time.",
-            education: ["BA in History - University of Peradeniya", "Diploma in Tourism Management"],
-            certifications: ["Licensed Tourist Guide - SLTB", "Cultural Heritage Specialist", "First Aid Certified"],
-            whyChooseMe: [
-                "Extensive knowledge of local history and culture",
-                "Fluent in 4 languages for international visitors",
-                "Licensed and certified professional guide",
-                "Flexible and personalized tour experiences",
-                "Excellent safety record and first aid certified"
-            ],
-            tourStyles: ["Walking Tours", "Private Vehicle Tours", "Photography Tours", "Educational Tours", "Family-Friendly Tours"],
-            awards: ["Best Local Guide 2022", "Excellence in Cultural Tourism 2021"],
-            daysPerWeek: ["Monday", "Sunday", "Friday"]
-        },
-        {
-            id: '2',
-            firstName: "Priya",
-            lastName: "Fernando",
-            title: "City & Urban Explorer",
-            location: "Colombo",
-            experience: "5 years",
-            stars: 100,
-            reviewCount: 89,
-            dailyRate: 6500,
-            currency: "LKR",
-            pp: "https://images.unsplash.com/photo-1494790108755-2616b612b524?w=400&h=400&fit=crop",
-            verified: true,
-            identified: true,
-            specializations: ["City Tours", "Food & Cuisine", "Photography Tours"],
-            responseTime: "Within 2 hours",
-            responseRate: "95%",
-            description: "Passionate about showcasing Colombo's vibrant culture, hidden gems, and diverse culinary scene.",
-            mobileNumber: "078 1234567",
-            languages: ["English", "Sinhala"],
-            images: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail],
-            bio: "As a certified naturalist, my office is the untamed wilderness of Sri Lanka. From tracking leopards in Yala National Park to spotting blue whales off the coast of Mirissa, I offer an unforgettable adventure into the wild heart of the island for nature lovers and thrill-seekers alike.",
-            education: ["BA in History - University of Peradeniya", "Diploma in Tourism Management"],
-            certifications: ["Licensed Tourist Guide - SLTB", "Cultural Heritage Specialist", "First Aid Certified"],
-            whyChooseMe: [
-                "Extensive knowledge of local history and culture",
-                "Fluent in 4 languages for international visitors",
-                "Licensed and certified professional guide",
-                "Flexible and personalized tour experiences",
-                "Excellent safety record and first aid certified"
-            ],
-            tourStyles: ["Walking Tours", "Private Vehicle Tours", "Photography Tours", "Educational Tours", "Family-Friendly Tours"],
-            awards: ["Best Local Guide 2022", "Excellence in Cultural Tourism 2021"],
-            daysPerWeek: ["Monday", "Sunday", "Friday"]
-        },
-        {
-            id: '3',
-            firstName: "Samantha",
-            lastName: "Silva",
-            title: "Wildlife & Adventure Guide",
-            location: "Yala",
-            experience: "12 years",
-            stars: 900,
-            reviewCount: 203,
-            dailyRate: 12000,
-            currency: "LKR",
-            pp: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-            verified: true,
-            identified: false,
-            specializations: ["Nature & Wildlife", "Adventure Tours"],
-            responseTime: "Within 30 minutes",
-            responseRate: "99%",
-            description: "Experienced wildlife guide with extensive knowledge of Sri Lankan fauna and conservation efforts.",
-            mobileNumber: "076 1234567",
-            languages: ["English", "Sinhala", "French"],
-            images: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail],
-            bio: "They say the best way to know a country is through its food. I'll take you on a flavorful journey through bustling local markets and family kitchens, where you'll taste authentic curries, learn the secret of a perfect hopper, and explore the island's world-famous spices.",
-            education: ["BA in History - University of Peradeniya", "Diploma in Tourism Management"],
-            certifications: ["Licensed Tourist Guide - SLTB", "Cultural Heritage Specialist", "First Aid Certified"],
-            whyChooseMe: [
-                "Extensive knowledge of local history and culture",
-                "Fluent in 4 languages for international visitors",
-                "Licensed and certified professional guide",
-                "Flexible and personalized tour experiences",
-                "Excellent safety record and first aid certified"
-            ],
-            tourStyles: ["Walking Tours", "Private Vehicle Tours", "Photography Tours", "Educational Tours", "Family-Friendly Tours"],
-            awards: ["Best Local Guide 2022", "Excellence in Cultural Tourism 2021"],
-            daysPerWeek: ["Monday", "Sunday", "Friday"]
+                const data = await res.json()
 
-        },
-        {
-            id: '4',
-            firstName: "Kamala",
-            lastName: "Wijesinghe",
-            title: "Culinary Arts Expert",
-            location: "Galle",
-            experience: "6 years",
-            stars: 250,
-            reviewCount: 74,
-            dailyRate: 7500,
-            currency: "LKR",
-            pp: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-            verified: false,
-            identified: true,
-            specializations: ["Food & Cuisine", "Cultural Heritage"],
-            responseTime: "Within 3 hours",
-            responseRate: "92%",
-            description: "Culinary expert specializing in traditional Sri Lankan cuisine and cooking techniques.",
-            mobileNumber: "075 1234567",
-            languages: ["Sinhala", "German"],
-            images: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail],
-            bio: "If you're looking to escape the crowds, I'm your guide. Let's conquer the misty trails of the Knuckles Mountain Range, chase hidden waterfalls in Ella, or discover remote tea villages. I specialize in crafting unique trekking adventures that show you a side of Sri Lanka most people never see.",
-            education: ["BA in History - University of Peradeniya", "Diploma in Tourism Management"],
-            certifications: ["Licensed Tourist Guide - SLTB", "Cultural Heritage Specialist", "First Aid Certified"],
-            whyChooseMe: [
-                "Extensive knowledge of local history and culture",
-                "Fluent in 4 languages for international visitors",
-                "Licensed and certified professional guide",
-                "Flexible and personalized tour experiences",
-                "Excellent safety record and first aid certified"
-            ],
-            tourStyles: ["Walking Tours", "Private Vehicle Tours", "Photography Tours", "Educational Tours", "Family-Friendly Tours"],
-            awards: ["Best Local Guide 2022", "Excellence in Cultural Tourism 2021"],
-            daysPerWeek: ["Monday", "Sunday", "Friday"]
-        }
-    ];
+                if (data) {
 
-    const reviewers = [
-        {
-            id: '1',
-            name: 'Sunny',
-            from: 'America',
-            images: pic,
-            review: 'mmh maru',
-            stars: 3
-        },
-        {
-            id: '2',
-            name: 'Lena',
-            from: 'Spain',
-            images: pic,
-            review: "set na meka",
-            stars: 2
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        },
-        {
-            id: '3',
-            name: 'Jhonny',
-            from: 'Sweedan',
-            images: pic,
-            review: "Goooood",
-            stars: 0
-        }
-    ]
-    /* const groupCollection = [
-        {
-            id: '1',
-            image: profile,
-            title: 'Shangri-La',
-            stars: 3,
-            location: 'Colombo',
-            price: 9000,
-            description: 'Shangri-La Hotels and Resorts is a Hong Kong-based multinational hospitality company founded in 1971 by Malaysian tycoon Robert Kuok. Named after the mythical utopia from James Hilton’s novel Lost Horizon, it symbolizes serenity and luxury. The brand operates over 100 five-star luxury hotels and resorts across Asia, Europe, the Middle East, North America, and Oceania, with notable properties like Shangri-La Hotel Singapore, its first location, and Shangri-La Colombo in Sri Lanka. Renowned for its "hospitality from the heart," Shangri-La offers world-class service, exquisite dining, and inspirational architecture in premier city addresses and tranquil retreats',
-            reviewers: [
-                {
-                    id: '1',
-                    name: 'Sunny',
-                    from: 'America',
-                    images: pic,
-                    review: 'mmh maru',
-                    stars: 3
-                },
-                {
-                    id: '2',
-                    name: 'Lena',
-                    from: 'Spain',
-                    images: pic,
-                    review: "set na meka",
-                    stars: 2
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
+                    //console.log(data);
+                    setItem(data)
+
                 }
-            ],
-            langs: ['sinhala', 'English', 'French', 'Mexican', 'Tamil', 'Japan'],
-            ys: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail]
 
-        },
-        // { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
-        // { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24, routes: [{ place: 'peradeniya Botnical Garden', images: g }, { place: 'Sri Dalada Maligawa', images: l }, { place: 'Kandy Lake Round', images: te }] },
+                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
-    ];
- */
-    const getItem = (Id: string | string[]) => {
-        guides.map((collection, i) => {
-            if (collection.id == Id) {
-                setItem(collection)
+                if (res2) {
+
+                    const data2 = await res2.json()
+                    //console.log(data2)
+                    setReviews(data2)
+
+                }
+
+            } catch (err) {
+
+                console.log(err)
+
             }
-        })
+
+        }
+
+        getGuide()
+
+    }, [])
+
+    const handleBooking = async () => {
+
+        const keys = await AsyncStorage.getItem("token");
+
+        if (keys) {
+
+            const data = await AsyncStorage.getItem('soloGuideBook')
+
+
+            const token: MyToken = jwtDecode(keys)
+
+
+            const book = { ...booking }
+            book.userId = token.id
+            book.serviceId = id.toString();
+            book.type = 'guide';
+            book.thumbnail = item?.pp;
+            book.title = item?.firstName + " " + item?.lastName;
+
+            book.subtitle = item?.tourStyles.slice(0, 2) || [];
+
+            book.location = item?.location;
+
+            if (data) {
+
+                const bookingData = JSON.parse(data)
+
+                if (bookingData) {
+
+                    book.bookingDates = bookingData.dates;
+
+                }
+
+                book.ratings = rating;
+                book.paymentStatus = false;
+                book.facilities = item?.specializations;
+                book.price = item?.dailyRate;
+                book.status = 'active';
+                book.mobileNumber = item?.mobileNumber;
+
+                await fetch(`http://localhost:8080/traveler/create-booking`, {
+
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+
+                })
+                    .then(res => res.text())
+                    .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
+                    .catch(err => console.log("Error from booking create " + err))
+
+            }
+        }
+
     }
+
+
 
     const rating = item && item.reviewCount > 0
         ? parseFloat(((item?.stars / item?.reviewCount) * 2).toFixed(1))
         : 0;
-
-    const route = item?.title.split(" ");
 
     return (
 
@@ -365,37 +225,27 @@ export default function Views() {
                         <View className="bg-white pb-2  px-3 py-2">
                             <View className="w-full flex-row mb-2 gap-5">
                                 {/* Guide Image and Basic Info */}
-                                <Image source={item?.pp} className='w-20 h-20 rounded-full' />
+                                {item && item.pp &&
+                                    <Image source={{ uri: `data:image/jpeg;base64,${item?.pp}` }} className='w-20 h-20 rounded-full' />
+                                }
 
                                 <View className="flex-1">
 
                                     <View className="flex-col items-start mb-1 ml-1 space-y-2">
                                         <Text className="text-lg font-semibold text-gray-800 flex-1">{`${item?.firstName} ${item?.lastName}`}</Text>
-                                        <Text className="text-sm text-gray-500 mb-1">{item?.title}</Text>
+                                        <Text className="text-sm text-gray-500 mb-1">{item?.description}</Text>
                                         <View className='w-[90%] flex-row justify-between'>
                                             <View className='gap-1 flex-row items-center'>
-                                                <Image className='w-4 h-4' source={item?.verified ? tele : cross}></Image>
+                                                <Image className='w-4 h-4' source={item?.verified == "done" ? tele : cross}></Image>
                                                 <Text className="text-sm">Phone Verified</Text>
                                             </View>
                                             <View className='gap-1 flex-row items-center'>
-                                                <Image className='w-4 h-4' source={item?.identified ? mark : cross}></Image>
+                                                <Image className='w-4 h-4' source={item?.identified == "done" ? mark : cross}></Image>
                                                 <Text className="text-sm">Identity Verified</Text>
                                             </View>
 
                                         </View>
-                                        {/* <TouchableOpacity 
-                            className="p-1"
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(guide.id);
-                            }}
-                        >
-                            <Icon 
-                                name={favorites.includes(guide.id) ? "heart-filled" : "heart"} 
-                                size={20} 
-                                color={favorites.includes(guide.id) ? "#dc2626" : "#6b7280"} 
-                            />
-                        </TouchableOpacity> */}
+
                                     </View>
                                     <View className="flex-row justify-between mb-2">
                                         <View className="flex-row items-center gap-1 flex-1">
@@ -422,37 +272,17 @@ export default function Views() {
                                             {/* <View className="flex-row">
                                                             {renderStars(guide.rating)}
                                                         </View> */}
-                                            <Text className="text-[10px] text-gray-500">({item?.reviewCount} Reviews)</Text>
+                                            <Text className="text-[10px] text-gray-500">({reviews.length} Reviews)</Text>
                                         </View>
 
                                         <View className="items-end">
                                             <Text className="text-[10px] text-green-500 font-medium">{item?.responseTime}</Text>
-                                            <Text className="text-[10px] text-gray-500">{item?.responseRate} response rate</Text>
+                                            <Text className="text-[10px] text-gray-500">{item?.responseRate}% response rate</Text>
                                         </View>
                                     </View>
                                 </View>
 
-                                {/* <View className='w-[90%] gap-2 flex-row my-3 items-center'>
-                                <Image className='w-5 h-5' source={globl}></Image>
-                                <View className="flex-row gap-3 px-4">
-                                    {
 
-                                        item?.languages.map((lan, i) => {
-                                            return (
-
-                                                <Text key={i} className="text-sm font-light">{lan}</Text>
-
-                                            );
-                                        })
-
-                                    }
-                                </View>
-
-                            </View>
-                            <View className='w-[90%] gap-6 flex-row'>
-                                <Image className='w-5 h-5' source={location} />
-                                <Text className="text-md font-light">{item?.location}</Text>
-                            </View>*/}
 
                             </View>
 
@@ -460,7 +290,7 @@ export default function Views() {
 
                                 <View>
 
-                                    <Text className="text-lg font-bold self-center">{reviewers.length}</Text>
+                                    <Text className="text-lg font-bold self-center">{reviews.length}</Text>
                                     <Text className="text-sm text-gray-500">Reviews</Text>
 
                                 </View>
@@ -529,7 +359,7 @@ export default function Views() {
 
                                             <View key={i} className="flex-row w-[310px] h-40">
 
-                                                <Image className=" w-[310px] h-full" source={x} />
+                                                <Image className=" w-[310px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
 
                                             </View>
                                         )
@@ -545,7 +375,7 @@ export default function Views() {
                         <View className="gap-5 px-3">
                             <View className=" bg-white rounded-lg shadow-md m-1 px-2">
                                 <Text className=" text-2xl font-semibold py-1">About Me</Text>
-                                <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{item?.description}</Text>
+                                <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{item?.bio}</Text>
                             </View>
 
                             <View className="bg-white mx- my-2 p-4 rounded-lg shadow-md">
@@ -621,47 +451,51 @@ export default function Views() {
                                 </View>
                             </View>)}
 
-                            <View className=" bg-white rounded-lg shadow-md m-1 px-2">
-                                <View className="w-[35%] flex-row justify-between">
-                                    <Text className=" text-2xl font-semibold py-1">Reviews</Text>
-                                    {/* <View className="flex-row items-center">
+                            {reviews.length > 0 &&
+
+                                <View className=" bg-white rounded-lg shadow-md m-1 px-2">
+                                    <View className="w-[35%] flex-row justify-between">
+                                        <Text className=" text-2xl font-semibold py-1">Reviews</Text>
+                                        {/* <View className="flex-row items-center">
                                     <Image className="w-5 h-5" source={star} />
                                     <Text>{item.stars}/5</Text>
                                 </View> */}
-                                </View>
-                                <View>
-                                    <ScrollView
+                                    </View>
+                                    <View>
+                                        <ScrollView
 
-                                        className="w-full h-72 rounded-2xl mx-2 mb-2"
-                                        contentContainerClassName=" flex-col px-2 py-3 gap-5 "
-                                        showsVerticalScrollIndicator={false}
-                                        nestedScrollEnabled={true}
+                                            className="w-full h-72 rounded-2xl mx-2 mb-2"
+                                            contentContainerClassName=" flex-col px-2 py-3 gap-5 "
+                                            showsVerticalScrollIndicator={false}
+                                            nestedScrollEnabled={true}
 
-                                    >
-                                        {reviewers.map((x, i) => {
+                                        >
+                                            {reviews.map((x, i) => {
 
-                                            return (
+                                                return (
 
-                                                <View key={i} className="bg-gray-200 px-3 rounded-2xl">
-                                                    <View className="flex-row items-center">
-                                                        <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                                        <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.name} from {x.from}</Text>
-                                                        <View className="flex-row items-center gap-1">
-                                                            <Image className="w-5 h-5" source={star} />
-                                                            <Text>{x.stars}/5</Text>
+                                                    <View key={i} className="bg-gray-200 px-3 rounded-2xl">
+                                                        <View className="flex-row items-center">
+                                                            <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
+                                                            <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
+                                                            <View className="flex-row items-center gap-1">
+                                                                <Image className="w-5 h-5" source={star} />
+                                                                <Text>{x.stars}/5</Text>
+                                                            </View>
                                                         </View>
+                                                        <Text className="text-lg mx-5 my-2">{x.text}</Text>
+
                                                     </View>
-                                                    <Text className="text-lg mx-5 my-2">{x.review}</Text>
+                                                )
+                                            })
 
-                                                </View>
-                                            )
-                                        })
+                                            }
+                                        </ScrollView>
 
-                                        }
-                                    </ScrollView>
-
+                                    </View>
                                 </View>
-                            </View>
+
+                            }
 
                         </View>
                     </View>
@@ -671,7 +505,7 @@ export default function Views() {
 
                         <Text className="px-3 font-extrabold text-xl">{item?.dailyRate}.00 LKR/day</Text>
 
-                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={() => router.replace(`/views/payment/${item?.id}`)}>
+                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={handleBooking}>
                             <View className="py-2 px-3 flex-row justify-between items-center w-full">
                                 <Text>Book Now</Text>
                                 <Image className="w-5 h-5" source={back} />

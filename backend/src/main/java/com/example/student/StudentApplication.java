@@ -5,12 +5,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @EnableMongoRepositories(basePackages = "com.example.student")
 @EnableMongoAuditing // Enable automatic date auditing
 public class StudentApplication {
-	
+
 	public static void main(String[] args) {
 
 		// Load the .env file before starting Spring
@@ -25,5 +27,4 @@ public class StudentApplication {
 		System.out.println("Application running ......");
 
 	}
-
 }

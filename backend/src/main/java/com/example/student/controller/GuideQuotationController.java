@@ -149,7 +149,6 @@ public class GuideQuotationController {
         System.out.println("Fetching submitted quotations for guide ID: " + guideId);
 
         try {
-            // Step 1: Fetch all quotations submitted by this guide
             List<GuideQuotation> quotations = quotationRepo.findByGuideId(guideId);
 
             if (quotations.isEmpty()) {
@@ -157,11 +156,17 @@ public class GuideQuotationController {
                 return ResponseEntity.ok(Collections.emptyList());
             }
 
-            // Step 2: Join each quotation with its corresponding tour
             List<Map<String, Object>> resultList = new ArrayList<>();
 
             for (GuideQuotation quotation : quotations) {
-                Optional<PendingTrip> tourOptional = guideTourRepo.findById(quotation.getPendingTripId());
+                // Add null check here
+                String pendingTripId = quotation.getPendingTripId();
+                if (pendingTripId == null || pendingTripId.trim().isEmpty()) {
+                    System.out.println("Warning: Quotation " + quotation.get_id() + " has null/empty pendingTripId");
+                    continue; // Skip this quotation or handle as needed
+                }
+
+                Optional<PendingTrip> tourOptional = guideTourRepo.findById(pendingTripId);
 
                 if (tourOptional.isPresent()) {
                     PendingTrip tour = tourOptional.get();
@@ -170,13 +175,15 @@ public class GuideQuotationController {
                     data.put("quotationId", quotation.get_id());
                     data.put("guideId", quotation.getGuideId());
                     data.put("tourId", tour.getPtId());
-                    data.put("tourDetails", tour);  // Entire Tour model
+                    data.put("tourDetails", tour);
                     data.put("quotedAmount", quotation.getQuotedAmount());
                     data.put("quotationNotes", quotation.getQuotationNotes());
                     data.put("quotationDate", quotation.getQuotationDate());
                     data.put("status", quotation.getStatus());
 
                     resultList.add(data);
+                } else {
+                    System.out.println("Warning: No tour found for pendingTripId: " + pendingTripId);
                 }
             }
 
