@@ -1,8 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Suspense, lazy } from 'react';
-//import './App.css';
 import Login from './pages/Login/Login';
-import SignUp from './pages/SignUp/SignUp'
 import AdminLayout from "./layouts/AdminLayout";
 import DashboardPage from './pages/Admin/DashboardPage';
 import AllHotelRequests from './pages/Admin/AllHotelRequests';
@@ -18,372 +15,293 @@ import CreateTrip01 from "./pages/Admin/CreateTrip01";
 import CreateTrip02 from "./pages/Admin/CreateTrip02";
 import PendingTripDetails from "./pages/Admin/PendingTripDetails";
 import AllHotelQuotation from "./pages/Admin/AllHotelQuotation";
+import AllVehileQuotation from "./pages/Admin/AllVehicleQuotation";
 import AllGuideQuotation from "./pages/Admin/AllGuideQuotation";
-import AllVehicleQuotation from "./pages/Admin/AllVehicleQuotation";
 import PendingTripDetails02 from "./pages/Admin/PendingTripDetails02";
 import PendingTripDetails03 from "./pages/Admin/PendingTripDetails03";
-import CreateTrip03 from "./pages/Admin/CreateTrip03";
-import Dashboard from './pages/Dashboard/Dashboard';
-import VehicleQuotation from "./pages/Admin/VehicleQuotation";
-import GuideQuotation from "./pages/Admin/GuideQuotation";
-import HotelQuotation from "./pages/Admin/HotelQuotation";
-
-// Hotel Admin components
-const HotelAdmin = lazy(() => import('./pages/HotelAdmin/HotelAdmin'));
-const HotelDashboard = lazy(() => import('./pages/HotelAdmin/HotelDashboard/HotelDashboard'));
-const RoomManagement = lazy(() => import('./pages/HotelAdmin/RoomManagement/RoomManagement'));
-const BookingsManagement = lazy(() => import('./pages/HotelAdmin/BookingsManagement/BookingsManagement'));
-const NotificationsPage = lazy(() => import('./pages/HotelAdmin/NotificationsPage/NotificationsPage'));
-const EarningsPage = lazy(() => import('./pages/HotelAdmin/EarningsPage/EarningsPage'));
-const FeedbackPage = lazy(() => import('./pages/HotelAdmin/FeedbackPage/FeedbackPage'));
-const ProfilePage = lazy(() => import('./pages/HotelAdmin/ProfilePage/ProfilePage'));
-const QuotationsManagement = lazy(() => import('./pages/HotelAdmin/QuotationsManagement/QuotationsManagement'));
-const QuotationsList = lazy(() => import('./pages/HotelAdmin/QuotationsList/QuotationsList'));
-
-// System Hotels Managing Admin components
-const SystemAdmin = lazy(() => import('./pages/SystemHotelsManagingAdmin/SystemAdmin'));
-const SystemAdminDashboard = lazy(() => import('./pages/SystemHotelsManagingAdmin/SystemAdminDashboard'));
-const Properties = lazy(() => import('./pages/SystemHotelsManagingAdmin/Properties'));
-const RegistrationRequests = lazy(() => import('./pages/SystemHotelsManagingAdmin/RegistrationRequests'));
-const QuatationRequests = lazy(() => import('./pages/SystemHotelsManagingAdmin/QuatationRequests'));
-const CommisionRevenue = lazy(() => import('./pages/SystemHotelsManagingAdmin/CommisionRevenue'));
-const AdminProfile = lazy(() => import('./pages/SystemHotelsManagingAdmin/AdminProfile'));
-
-//guide admin
-
-import GuideDashboard from './pages/guideAdmin/Dashboard';
-import GuidePagelayout from './pages/guideAdmin/Pagelayout';
-import GuideRegistrationRequests from './pages/guideAdmin/RegistrationRequests';
-import BookingManagement from './pages/guideAdmin/BookingManagement';
-import GuideAdminProfile from './pages/guideAdmin/AdminProfile';
-
-//vehicle admin
-import VehicleDashboard from './pages/VehicleAdmin/Dashboard';
-import Pagelayout from './pages/VehicleAdmin/Pagelayout';
-import VehicleRegistrationRequests from './pages/VehicleAdmin/RegistrationRequests';
-import VehicleManagement from './pages/VehicleAdmin/VehicleManagement';
-import VehicleBookingManagement from './pages/VehicleAdmin/BookingManagement';
-import VehicleAdminProfile from './pages/VehicleAdmin/AdminProfile';
+// import CreateTrip03 from "./pages/Admin/CreateTrip03";
 
 function App() {
   return (
     <Router>
       <div className="app">
-
-        {/* Redirect root to dashboard */}
-        <Routes>
-          <Route path="/GuideAdmin" element={<GuidePagelayout />}>
-            <Route index element={<GuideDashboard />} />
-            <Route path="RegistrationRequests" element={<GuideRegistrationRequests />} />
-            <Route path="BookingManagement" element={<BookingManagement />} />
-            <Route path="AdminProfile" element={<GuideAdminProfile />} />
-          </Route>
-
-          <Route path="/VehicleAdmin" element={<Pagelayout />}>
-            <Route index element={<VehicleDashboard />} />
-            <Route path="RegistrationRequests" element={<VehicleRegistrationRequests />} />
-            <Route path="VehicleManagement" element={<VehicleManagement />} />
-            <Route path="BookingManagement" element={<VehicleBookingManagement />} />
-            <Route path="AdminProfile" element={<VehicleAdminProfile />} />
-
-          </Route>
-          {/* Login route without AdminLayout */}
-
-          <Route
-
-            path="/"
-            element={<Login />}
-          />
-          <Route
-
-            path="/signup"
-            element={<SignUp />}
-          />
-          {/* <Route path="/guide" element={<VehicleAdmin/>} /> */}
-
-          {/* Admin routes with AdminLayout */}
-          <Route
-            path="/admin"
-            element={
-              <AdminLayout>
+        <AdminLayout>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+              <Login />
+              }
+           />
+            <Route
+              path="/admin"
+              element={
                 <DashboardPage />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allhotelrequests"
-            element={
-              <AdminLayout>
-                <AllHotelRequests />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allvehiclerequests"
-            element={
-              <AdminLayout>
-                <AllVehicleRequests />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allguiderequests"
-            element={
-              <AdminLayout>
-                <AllGuidesRequests />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allupcomingtrips"
-            element={
-              <AdminLayout>
-                <AllUpcomingTrips />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allpendingtrips"
-            element={
-              <AdminLayout>
-                <AllPendingTrip />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/upcomingtripdetails"
-            element={
-              <AdminLayout>
-                <UpcomingTripDetails />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/upcomingtripparticipants"
-            element={
-              <AdminLayout>
-                <UpcomingTripParticipants />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/upcomingtrippayment"
-            element={
-              <AdminLayout>
-                <UpcomingTripPayment />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/canceltrip"
-            element={
-              <AdminLayout>
-                <CancelTrip />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/createtrip01"
-            element={
-              <AdminLayout>
-                <CreateTrip01 />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/createtrip02"
-            element={
-              <AdminLayout>
-                <CreateTrip02 />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/createtrip03"
-            element={
-              <AdminLayout>
-                <CreateTrip03 />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/vehiclequotation"
-            element={
-              <AdminLayout>
-                <VehicleQuotation />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/guidequotation"
-            element={
-              <AdminLayout>
-                <GuideQuotation />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/hotelquotation"
-            element={
-              <AdminLayout>
-                <HotelQuotation />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/pendingtripdetails"
-            element={
-              <AdminLayout>
-                <PendingTripDetails />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/pendingtripdetails02"
-            element={
-              <AdminLayout>
-                <PendingTripDetails02 />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/pendingtripdetails03"
-            element={
-              <AdminLayout>
-                <PendingTripDetails03 />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allhotelquotation"
-            element={
-              <AdminLayout>
-                <AllHotelQuotation />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allguidequotation"
-            element={
-              <AdminLayout>
-                <AllGuideQuotation />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/allvehiclequotation"
-            element={
-              <AdminLayout>
-                <AllVehicleQuotation />
-              </AdminLayout>
-            }
-          />
-
-          <Route path="/dashboard" element={<Dashboard />} />
-
-          {/* System Hotels Managing Admin Routes */}
-          <Route path="/system-admin" element={
-            <Suspense fallback={<div className="flex justify-center items-center h-screen ">Loading...</div>}>
-              <SystemAdmin />
-            </Suspense>
-          }>
-            <Route index element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <SystemAdminDashboard />
-              </Suspense>
-            } />
-            <Route path="dashboard" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <SystemAdminDashboard />
-              </Suspense>
-            } />
-            <Route path="properties" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <Properties />
-              </Suspense>
-            } />
-            <Route path="registration-requests" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <RegistrationRequests />
-              </Suspense>
-            } />
-            <Route path="quatation-requests" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <QuatationRequests />
-              </Suspense>
-            } />
-            <Route path="commision-revenue" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <CommisionRevenue />
-              </Suspense>
-            } />
-            <Route path="admin-profile" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <AdminProfile />
-              </Suspense>
-            } />
-          </Route>
-
-          {/* Hotel Admin Routes */}
-          <Route path="/hotel" element={
-            <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-              <HotelAdmin />
-            </Suspense>
-          }>
-            <Route index element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <HotelDashboard />
-              </Suspense>
-            } />
-            <Route path="dashboard" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <HotelDashboard />
-              </Suspense>
-            } />            <Route path="rooms" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <RoomManagement />
-              </Suspense>
-            } />
-            <Route path="bookings" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <BookingsManagement />
-              </Suspense>
-            } />            <Route path="notifications" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <NotificationsPage />
-              </Suspense>
-            } />            <Route path="earnings" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <EarningsPage />
-              </Suspense>
-            } />
-            <Route path="feedback" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <FeedbackPage />
-              </Suspense>
-            } />
-            <Route path="profile" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <ProfilePage />
-              </Suspense>
-            } />
-            <Route path="quotations" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <QuotationsManagement />
-              </Suspense>
-            } />
-            <Route path="quotations-list" element={
-              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-                <QuotationsList />
-              </Suspense>
-            } />
-          </Route>
-        </Routes>
+              }
+            />
+            <Route
+              path="/allhotelrequests"
+              element={
+                <AllHotelRequests/>
+              }
+            />
+            <Route
+              path="/allvehiclerequests"
+              element={
+                <AllVehicleRequests/>
+              }
+            />
+            <Route
+              path="/allguiderequests"
+              element={
+                <AllGuidesRequests/>
+              }
+            />
+            <Route
+              path="/allupcomingtrips"
+              element={
+                <AllUpcomingTrips/>
+              }
+            />
+            <Route
+              path="/allpendingtrips"
+              element={
+                <AllPendingTrip/>
+              }
+            />
+            <Route
+              path="/upcomingtripdetails"
+              element={
+                <UpcomingTripDetails/>
+              }
+            />
+            <Route
+              path="/upcomingtripparticipants"
+              element={
+                <UpcomingTripParticipants/>
+              }
+            />
+            <Route
+              path="/upcomingtrippayment"
+              element={
+                <UpcomingTripPayment/>
+              }
+            />
+            <Route
+              path="/canceltrip"
+              element={
+                <CancelTrip/>
+              }
+            />
+            <Route
+              path="/createtrip01"
+              element={
+                <CreateTrip01/>
+              }
+            />
+            <Route
+              path="/createtrip02"
+              element={
+                <CreateTrip02/>
+              }
+            />
+            {/* <Route
+              path="/createtrip03"
+              element={
+                <CreateTrip03/>
+              }
+            /> */}
+            <Route
+              path="/pendingtripdetails"
+              element={
+                <PendingTripDetails/>
+              }
+            />
+            <Route
+              path="/pendingtripdetails02"
+              element={
+                <PendingTripDetails02/>
+              }
+            />
+            <Route
+              path="/pendingtripdetails03"
+              element={
+                <PendingTripDetails03/>
+              }
+            />
+            <Route
+              path="/allhotelquotation"
+              element={
+                <AllHotelQuotation/>
+              }
+            />
+            <Route
+              path="/allvehiclequotation"
+              element={
+                <AllVehileQuotation/>
+              }
+            />
+            <Route
+              path="/allguidequotation"
+              element={
+                <AllGuideQuotation/>
+              }
+            />
+          </Routes>
+        </AdminLayout>
       </div>
-
     </Router>
-
   );
-};
+}
+
+export default App;
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Login from './pages/Login/Login';
+import AdminLayout from "./layouts/AdminLayout";
+import DashboardPage from './pages/Admin/DashboardPage';
+import AllHotelRequests from './pages/Admin/AllHotelRequests';
+import AllVehicleRequests from './pages/Admin/AllVehicleRequests';
+import AllGuidesRequests from './pages/Admin/AllGuidesRequests';
+import AllUpcomingTrips from "./pages/Admin/AllUpcomingTrip";
+import AllPendingTrip from "./pages/Admin/AllPendingTrip";
+import UpcomingTripDetails from "./pages/Admin/UpcomingTripDetails";
+import UpcomingTripParticipants from "./pages/Admin/UpcomingTripParticipants";
+import UpcomingTripPayment from "./pages/Admin/UpcomingTripPayment";
+import CancelTrip from "./pages/Admin/CancelTrip";
+import CreateTrip01 from "./pages/Admin/CreateTrip01";
+import CreateTrip02 from "./pages/Admin/CreateTrip02";
+import PendingTripDetails from "./pages/Admin/PendingTripDetails";
+import AllHotelQuotation from "./pages/Admin/AllHotelQuotation";
+import AllVehileQuotation from "./pages/Admin/AllVehicleQuotation";
+import AllGuideQuotation from "./pages/Admin/AllGuideQuotation";
+import PendingTripDetails02 from "./pages/Admin/PendingTripDetails02";
+import PendingTripDetails03 from "./pages/Admin/PendingTripDetails03";
+
+function App() {
+  return (
+    <Router>
+      <div className="app">
+        <AdminLayout>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+              <Login />
+              }
+           />
+            <Route
+              path="/admin"
+              element={
+                <DashboardPage />
+              }
+            />
+            <Route
+              path="/allhotelrequests"
+              element={
+                <AllHotelRequests/>
+              }
+            />
+            <Route
+              path="/allvehiclerequests"
+              element={
+                <AllVehicleRequests/>
+              }
+            />
+            <Route
+              path="/allguiderequests"
+              element={
+                <AllGuidesRequests/>
+              }
+            />
+            <Route
+              path="/allupcomingtrips"
+              element={
+                <AllUpcomingTrips/>
+              }
+            />
+            <Route
+              path="/allpendingtrips"
+              element={
+                <AllPendingTrip/>
+              }
+            />
+            <Route
+              path="/upcomingtripdetails"
+              element={
+                <UpcomingTripDetails/>
+              }
+            />
+            <Route
+              path="/upcomingtripparticipants"
+              element={
+                <UpcomingTripParticipants/>
+              }
+            />
+            <Route
+              path="/upcomingtrippayment"
+              element={
+                <UpcomingTripPayment/>
+              }
+            />
+            <Route
+              path="/canceltrip"
+              element={
+                <CancelTrip/>
+              }
+            />
+            <Route
+              path="/createtrip01"
+              element={
+                <CreateTrip01/>
+              }
+            />
+            <Route
+              path="/createtrip02"
+              element={
+                <CreateTrip02/>
+              }
+            />
+            <Route
+              path="/pendingtripdetails"
+              element={
+                <PendingTripDetails/>
+              }
+            />
+            <Route
+              path="/pendingtripdetails02"
+              element={
+                <PendingTripDetails02/>
+              }
+            />
+            <Route
+              path="/pendingtripdetails03"
+              element={
+                <PendingTripDetails03/>
+              }
+            />
+            <Route
+              path="/allhotelquotation"
+              element={
+                <AllHotelQuotation/>
+              }
+            />
+            <Route
+              path="/allvehiclequotation"
+              element={
+                <AllVehileQuotation/>
+              }
+            />
+            <Route
+              path="/allguidequotation"
+              element={
+                <AllGuideQuotation/>
+              }
+            />
+          </Routes>
+        </AdminLayout>
+      </div>
+    </Router>
+  );
+}
 
 export default App;
