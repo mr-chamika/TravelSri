@@ -435,20 +435,15 @@ export default function Views() {
 
     const handleBooking = async () => {
 
-        const getTotal = (obj: { [key: number]: number }) => {
-
-            var t = 0;
-            const totalof = Object.values(obj)
-
-            for (const count of totalof) {
-
-                t = t + count
-
+        let totalCapacity = 0;
+        Object.entries(selectedRoomCounts).forEach(([index, count]) => {
+            const room = roomTypes[parseInt(index)];
+            if (room) {
+                totalCapacity += count * room.capacity;
             }
-            return t;
-        }
+        });
 
-        if (bookingData && getTotal(selectedRoomCounts) < bookingData?.adults + bookingData?.children) {
+        if (bookingData && totalCapacity < bookingData?.adults + bookingData?.children) {
 
             alert('Select enough accomodation')
             return;

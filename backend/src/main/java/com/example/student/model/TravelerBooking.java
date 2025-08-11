@@ -26,5 +26,7 @@ public class TravelerBooking {
     private int price;
     private String status;//booked,pending,cancelled
     private String mobileNumber;
-
+//meal 1,2,3//
+    //hotel no
+    //checkin checkout time
 }
