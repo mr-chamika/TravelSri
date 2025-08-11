@@ -188,7 +188,7 @@ public class TravelerController {
     @GetMapping("/shops-get")
     public ResponseEntity<List<User>> StoreGet() {
 
-        List<User> list = storesRepo.findAll();
+        List<User> list = storesRepo.findAllShops();
 
         return ResponseEntity.ok(list);
 
@@ -206,7 +206,7 @@ public class TravelerController {
     @GetMapping("/shop-get")
     public ResponseEntity<Optional<User>> StoreGet(@RequestParam String id) {
 
-        Optional<User> x = storesRepo.findStoreById(id);
+        Optional<User> x = storesRepo.findById(id);
 
         return ResponseEntity.ok(x);
 
@@ -221,6 +221,7 @@ public class TravelerController {
         String userId = obj.getAuthorId().toString();
 
         Optional<User> newuser= userRepo.findById(userId);
+
         String pp = newuser.get().getPp();
         String country = newuser.get().getCountry();
 
@@ -234,6 +235,7 @@ public class TravelerController {
         );
 
        return repo3.save(newReview);
+
 
     }
 

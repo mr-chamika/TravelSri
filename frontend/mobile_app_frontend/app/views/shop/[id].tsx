@@ -24,7 +24,7 @@ interface Item {
     image: string,
     name: string,
     price: number
-    contact: string,
+    mobileNumber: string,
     buyCount: number
 
 }
@@ -46,9 +46,9 @@ interface Shop {
     _id: string,
     image: string,
     location: string,
-    phone: string,
+    mobileNumber: string,
     stars: number,
-    name: string
+    businessName: string
 
 
 }
@@ -79,7 +79,7 @@ export default function ShopDetailScreen() {
     const getReviews = async () => {
 
         try {
-
+            console.log(id)
             const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
@@ -176,7 +176,7 @@ export default function ShopDetailScreen() {
             image: pic,
             name: 'Rope (Large)',
             price: 500,
-            contact: '0771161615'
+            mobileNumber: '0771161615'
 
         },
         {
@@ -416,8 +416,8 @@ export default function ShopDetailScreen() {
                     {/* --- Header Section --- */}
                     <TouchableOpacity onPress={() => router.back()}><Text className="ml-3">Back</Text></TouchableOpacity>
                     <View className="items-center pt-10 pb-5">
-                        <Text className="text-4xl font-black">{shop?.name}</Text>
-                        <Text>Contact us - {shop?.phone}</Text>
+                        <Text className="text-4xl font-black">{shop?.businessName}</Text>
+                        <Text>Contact us - {shop?.mobileNumber}</Text>
                     </View>
 
                     {/* --- Search Bar --- */}
@@ -441,7 +441,7 @@ export default function ShopDetailScreen() {
                             <Text className="text-[22px] font-semibold mx-3 py-6">Items</Text>
 
                             <ScrollView
-                                className="w-full pt-2 px-3 py-14"
+                                className=" w-full pt-2 px-3 py-4"
                                 contentContainerClassName="bg-white flex-row flex-wrap justify-center gap-12 py-1"
                                 showsVerticalScrollIndicator={false}
                                 nestedScrollEnabled={true}
@@ -451,7 +451,7 @@ export default function ShopDetailScreen() {
 
                                 {items.map((item, i) => {
                                     return (
-                                        <TouchableOpacity key={i} onPress={() => alert(`Contact us - ${item.contact}`)}>
+                                        <TouchableOpacity key={i} onPress={() => alert(`Contact us - ${item.mobileNumber}`)}>
                                             <View className=" w-full">
 
                                                 <Image
@@ -478,8 +478,8 @@ export default function ShopDetailScreen() {
                             <View className="px-3 h-[75%]">
                                 <Text className=" text-2xl font-semibold py-10">Reviews</Text>
                                 <ScrollView
-                                    className="w-full h-64 border-2 border-gray-200 rounded-2xl"
-                                    contentContainerClassName=" flex-col bg-white px-2 py-3 gap-3 "
+                                    className="w-full py-2 px-2 h-64 border-2 border-gray-200 rounded-2xl"
+                                    contentContainerClassName=" flex-col rounded-2xl bg-white px-2 py-3 gap-3 "
                                     showsVerticalScrollIndicator={false}
                                     nestedScrollEnabled={true}
                                 >
@@ -556,7 +556,7 @@ export default function ShopDetailScreen() {
                                         {searchResults.items.length > 0 ? (
                                             <ScrollView showsVerticalScrollIndicator={false} className="p-2">
                                                 {searchResults.items.map((item) => (
-                                                    <TouchableOpacity key={item.id} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2" onPress={() => alert(`Contact us - ${item.contact}`)}>
+                                                    <TouchableOpacity key={item.id} className="flex-row items-center bg-gray-100 p-2 rounded-lg mb-2" onPress={() => alert(`Contact us - ${item.mobileNumber}`)}>
                                                         <Image className="w-14 h-14 rounded-md" source={{ uri: `data:image/jpeg;base64,${item.image}` }} />
                                                         <View className="ml-3 flex-1">
                                                             <Text className="font-bold">{item.name}</Text>
