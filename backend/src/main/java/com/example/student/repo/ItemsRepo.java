@@ -8,21 +8,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-//public interface ShopItemRepo extends MongoRepository<ShopItem, String> {
 public interface ItemsRepo extends MongoRepository<Item,String> {
 
-    // You can add custom query methods if needed, for example:
-
-    // Find items by name containing a string (case-insensitive)
-    //List<Item> findByNameContainingIgnoreCase(String itemName);
-
-    // Find items by price range
     List<Item> findByPriceBetween(double minPrice, double maxPrice);
 
-    // Find items with available stock
     List<Item> findByCountGreaterThan(int minStock);
 
-    // Find items by exact price
     List<Item> findByPrice(double price);
 
     @Query(
@@ -31,8 +22,9 @@ public interface ItemsRepo extends MongoRepository<Item,String> {
     )
     List<Item> findByBuyCountIsGreaterThanEqual(int count);
 
-
+    // This method is correctly implemented in your code.
     List<Item> findByShopId(String id);
+
     List<Item> findByNameContainingIgnoreCase(String keyword);
 
 }

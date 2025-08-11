@@ -96,15 +96,19 @@ public class UserController {
 
     public String signup(@RequestBody User user) {
 
+    Optional<User> exists = repo.findByEmail(user.getEmail());
 
+    if(!exists.isPresent()) {
 
-       User x =  userSignup.registerNewUser(user);
+        User x =  userSignup.registerNewUser(user);
 
-       if(x.getEmail().equals(user.getEmail())) {
+        if(x.getEmail().equals(user.getEmail())) {
 
-           return "Success";
+            return "Success";
 
-       }
+        }
+
+    }
 
        return "Signup failed";
     }
@@ -128,7 +132,7 @@ public class UserController {
 
     public ResponseEntity<Map<String, User>> proPic(@RequestParam String email) {
 
-        Optional<User> x = userRepo.findByEmail(email);
+        Optional<User> x = userRepo.pfindByEmail(email);
 
         Map<String, User> j = new HashMap<>();
         j.put("user", x.get());

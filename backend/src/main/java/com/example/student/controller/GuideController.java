@@ -149,6 +149,30 @@ public class GuideController {
         }
     }
 
+    /**
+     * Search guides with multiple filters
+     * GET /api/guides/search?location=Kandy&language=English&guideType=visit&verified=done
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchGuides(
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "language", required = false) String language,
+            @RequestParam(value = "guideType", required = false) String guideType,
+            @RequestParam(value = "verified", required = false) String verified,
+            @RequestParam(value = "minExperience", required = false) Integer minExperience,
+            @RequestParam(value = "maxDailyRate", required = false) Double maxDailyRate,
+            @RequestParam(value = "minRating", required = false) Double minRating
+    ) {
+        try {
+            List<User> guides = guideService.searchGuides(location, language, guideType, verified, minExperience, maxDailyRate, minRating);
+            return new ResponseEntity<>(guides, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
 
 

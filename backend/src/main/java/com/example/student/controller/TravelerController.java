@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+
 import java.util.*;
 
 @RestController
@@ -73,10 +74,9 @@ public class TravelerController {
     public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
 
         Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
-
         if (list.isEmpty()) {
-            return ResponseEntity.notFound().build();
 
+            return ResponseEntity.notFound().build();
 
         }
 
@@ -106,9 +106,9 @@ public class TravelerController {
     private FaciRepo repo4;
 
     @GetMapping("/facis-view")
-    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam String id) {
+    public ResponseEntity<List<Faci>> HotelFacilities(@RequestParam List<String> ids) {
 
-        List<Faci> list = repo4.findByHotelIdContaining(id);
+        List<Faci> list = repo4.findAllById(ids);
 
         if (list.isEmpty()) {
 
@@ -121,24 +121,45 @@ public class TravelerController {
     }
 
     @Autowired
-    private GuideRepo repo5;
+    private RoomTypeRepo roomtypeRepo;
 
+    @GetMapping("/roomtypes-view")
+    public ResponseEntity<List<RoomType>> HotelRoomType(@RequestParam List<String> ids) {
+
+        List<RoomType> list = roomtypeRepo.findAllById(ids);
+
+        if (list.isEmpty()) {
+
+            return ResponseEntity.notFound().build();
+
+        }
+
+        return ResponseEntity.ok(list);
+
+    }
 
     @GetMapping("/guides-all")
-            public ResponseEntity<List<Guidedto>> GuidesAll(String location,String language) {
-        List<Guidedto> list = repo5.findAllGuidedtos(location,language);
+            public ResponseEntity<?> GuidesAll(String location,String language) {
+        List<Guidedto> list = userRepo.findAllGuidedtos(location,language);
 
 
-//        if (list.isEmpty()) {
-//            return ResponseEntity.notFound().build();
-//        }
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body("No guides found");
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/guide-all")
+    public ResponseEntity<List<Guidedto>> GuideAll() {
+        List<Guidedto> list = userRepo.findAllGuidedto();
 
         return ResponseEntity.ok(list);
     }
 
     @GetMapping("/guides-view")
     public ResponseEntity<Optional<GuideViewdto>> Guide(@RequestParam String id) {
-        Optional<GuideViewdto> list = repo5.findData(id);
+        Optional<GuideViewdto> list = userRepo.findData(id);
 
 
         if (list.isEmpty()) {
@@ -240,19 +261,28 @@ public class TravelerController {
 
     }
 
-    @Autowired
-    private VehicleRepo vehicleRepo;
+    @GetMapping("/category-get")
+    public ResponseEntity<List<Categorydto>> Categoryget() {
 
-    @GetMapping("/driver-get")
-    public ResponseEntity<List<Driverdto>> VehiclesAll(String id) {
-
-        List<Driverdto> list= vehicleRepo.findByCatId(id);
+        List<Categorydto> list= categoryRepo.pfindAll();
 
         return ResponseEntity.ok(list);
 
     }
 
-    @GetMapping("/driver-data")
+    @Autowired
+    private VehicleRepo vehicleRepo;
+
+    @GetMapping("/vehicle-get")
+    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language) {
+
+        List<Driverdto> list= vehicleRepo.findByCatId(location,language);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/vehicle-data")
     public ResponseEntity<?> VehicleData(String id) {
 
         Optional<Vehicledto> list = vehicleRepo.findVehicleById(id);
@@ -352,7 +382,7 @@ r.get().getMapRoute()
 
         Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
         Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
-        Optional<User> guide = repo5.findById(solotrip.get().getGuideId());
+        Optional<User> guide = userRepo.findById(solotrip.get().getGuideId());
         Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.get().getCarId());
 
         if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
@@ -384,7 +414,7 @@ SolotripViewdto s = new SolotripViewdto(
         g.getUsername(),
         x.getCarId(),
         x.getCprice(),
-        v.getName(),
+        v.getFirstName()+" "+v.getLastName(),
         c.getTitle(),
         x.getStart(),
         x.getDestination(),
@@ -397,6 +427,37 @@ SolotripViewdto s = new SolotripViewdto(
 
         return ResponseEntity.ok(s);
 
+    }
+
+    @Autowired
+    private TravelerBookingRepo travelerBookingRepo;
+
+    @PostMapping("/create-booking")
+    public String CreateBooking(@RequestBody TravelerBooking obj) {
+
+        TravelerBooking x = travelerBookingRepo.save(obj);
+
+        if (x == null) {
+
+            return "Booking is Failed";
+
+        }
+
+        return "Success";
+    }
+
+    @GetMapping("/bookings-all")
+    public ResponseEntity<?> GetAllBookings(@RequestParam String userId) {
+
+         List<TravelerBooking> list = travelerBookingRepo.findAllByUserId(userId);
+
+        if(list.isEmpty()) {
+
+            return ResponseEntity.badRequest().body("No Bookings Found");
+
+        }
+
+        return ResponseEntity.ok(list);
     }
 
 }

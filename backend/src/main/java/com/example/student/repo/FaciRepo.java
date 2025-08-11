@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface FaciRepo extends MongoRepository<Faci,String> {
-List<Faci> findByHotelIdContaining(String id);
+
 }

@@ -7,12 +7,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
-@Getter
-@Setter
+
+
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Document(collection = "vehicles")
 public class Vehicle {
 
@@ -29,12 +26,10 @@ public class Vehicle {
     private String image;
     private String insuranceDocument;
     private String insuranceDocument2;
-    private String languagesSpoken;
     private String lastName;
     private String licenseExpiryDate;
     private String licensePhoto;
     private String licensePhoto2;
-    private String licenseYearsOfExperience;
     private String nicNumber;
     private String vehicleNumber;
     private String[] images;
@@ -45,7 +40,7 @@ public class Vehicle {
     private String vehicleOwnerId;
     private String catId;
     private String vehicleYearOfManufacture;
-    private boolean gearType;//auto or manual
+    private String gearType;//auto or manual or hybrid
     private boolean perKm;
     private int perKmPrice;
     private boolean dailyRate;
@@ -60,5 +55,9 @@ public class Vehicle {
     private String[] whatsIncluded;
     private String[] languages;
     private int experience;
+    private int stars;
+    private int reviewCount;
+    private int duration;
+    private String pp;
 
 }

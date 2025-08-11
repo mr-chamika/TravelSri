@@ -6,7 +6,14 @@ import { useEffect, useState } from "react";
 import { useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 cssInterop(Image, { className: "style" });
-
+import { jwtDecode } from "jwt-decode";
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
 interface BookingData {
     selectedDates: string;
     selectedoutDates: string;
@@ -14,6 +21,72 @@ interface BookingData {
     children: number;
     nights: number;
     location: string;
+}
+
+export interface HotelView {
+    _id: string;
+    images: string[];
+    stars: number;
+    ratings: number;
+    reviewCount: number;
+    price: number;
+    name: string;
+    location: string;
+    description: string;
+    policies: string[];
+    roomTypes: string[];
+    facilities: string[];
+    availableSingle: number;
+    availableDouble: number;
+    mobileNumber: string;
+}
+
+interface Review {
+
+    _id: string,
+    serviseId: string,
+    text: string,
+    country: string,
+    stars: number,
+    author: string,
+    dp: string,
+
+}
+
+interface Facility {
+    _id: string;
+    title: string;
+    image: string;
+    hotelId: string[];
+}
+
+interface RoomType {
+
+    _id: string;
+    name: string;
+    pricePerRoom: number;
+    capacity: number;
+
+}
+
+export interface Booking {
+    _id: string;
+    userId: string;
+    serviceId: string;
+    type: string;
+    thumbnail: string;
+    title: string;
+    subtitle: string[];
+    location: string;
+    bookingDates: string[];
+    stars: number;
+    ratings: number;
+    paymentStatus: boolean;
+    guests: number;
+    facilities: string[];
+    price: number;
+    status: string;
+    mobileNumber: string;
 }
 
 const pic = require('../../../../assets/images/tabbar/towert.png');
@@ -26,11 +99,9 @@ const back = require('../../../../assets/images/back.png');
 
 export default function Views() {
     const router = useRouter();
-    //const { id } = useLocalSearchParams();
+    const { id } = useLocalSearchParams();
 
-    const id = '1';
-
-    const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { persons: number, type: any, capacity: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
+    const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
     const [totalPrice, setTotalPrice] = useState(0);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -38,8 +109,95 @@ export default function Views() {
     const [bookingData, setBookingData] = useState<BookingData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [capacityWarning, setCapacityWarning] = useState('');
+    const [hotelv, setHotelv] = useState<HotelView | null>(null);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [facilities, setFacilities] = useState<Facility[]>([]);
+    const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+    const [booking, setBooking] = useState<Booking | null>(null)
 
-    const groupCollection = [
+
+    useEffect(() => {
+
+        const gethotel = async () => {
+
+            try {
+
+                const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+
+                const params = new URLSearchParams();
+                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
+                const data1: HotelView = await res1.json()
+
+                //console.log(data1)
+                setHotelv(data1)
+                //setHotel(data1)
+
+                if (data1?.facilities && data1?.facilities.length > 0) {
+
+                    data1?.facilities.forEach(facilityId => {
+                        params.append('ids', facilityId);
+                    })
+
+
+
+
+                    const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
+                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
+
+                    if (res3) {
+
+                        const data3 = await res3.json()
+                        //console.log(data3)
+                        setFacilities(data3)
+
+                    }
+                }
+
+                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
+
+                if (res2) {
+
+                    const data2 = await res2.json()
+                    //console.log(data2)
+                    setReviews(data2)
+
+                }
+
+                if (data1?.roomTypes && data1?.roomTypes.length > 0) {
+                    const params1 = new URLSearchParams();
+
+                    data1.roomTypes.forEach(roomId => {
+                        params1.append('ids', roomId);
+                    })
+
+
+                    const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
+                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
+
+                    if (res4) {
+
+                        const data4 = await res4.json()
+                        //console.log(data4)
+                        setRoomTypes(data4)
+
+                    }
+                }
+
+
+            } catch (err) {
+
+                console.log(`Error in hotel data getting : ${err}`)
+
+            }
+
+        }
+        gethotel()
+
+    }, [])
+
+
+    /* const groupCollection = [
         {
             id: '1',
             image: [thumbnail, thumbnail],
@@ -139,15 +297,18 @@ export default function Views() {
                     images: pic
                 }
             ],
-            rooms: [
+            roomsType: [
                 {
-                    type: single,
+                    id:'1',
+                    name: "singleBedroom",
                     capacity: 5, // Total available single rooms
                     pricePerRoom: 5000,
-                    persons: 1 // Price per single room per day
+                    persons: 1 // Price per single room per day,
+                    
                 },
                 {
-                    type: double,
+                    id:'2',
+                    name: "doubleBedroom",
                     capacity: 2, // Total available double rooms
                     pricePerRoom: 8000,
                     persons: 2// Price per double room per day
@@ -155,20 +316,20 @@ export default function Views() {
             ]
         },
     ];
-
-    const rating = item.reviewCount > 0
-        ? parseFloat(((item.ratings / item.reviewCount) * 2).toFixed(1))
+ */
+    const rating = hotelv && hotelv?.reviewCount > 0
+        ? parseFloat(((hotelv?.ratings / hotelv?.reviewCount) * 2).toFixed(1))
         : 0;
 
-    useEffect(() => {
-        getItem(id);
-    }, [id]);
+    /*  useEffect(() => {
+         getItem(id);
+     }, [id]); */
 
     useEffect(() => {
         calculateTotalPrice();
-    }, [selectedRoomCounts, item.price]); // Recalculate when room counts or base item price changes
+    }, [selectedRoomCounts, hotelv?.price]); // Recalculate when room counts or base item price changes
 
-    const getItem = (Id: string | string[]) => {
+    /* const getItem = (Id: string | string[]) => {
         const foundItem = groupCollection.find(collection => collection.id === Id);
         if (foundItem) {
             setItem(foundItem);
@@ -179,42 +340,59 @@ export default function Views() {
             });
             setSelectedRoomCounts(initialRoomCounts);
         }
-    };
+    }; */
 
     const handleRoomCountChange = (index: number, change: number) => {
+        // Calculate total guests once
         const totalGuests = (bookingData?.adults || 0) + (bookingData?.children || 0);
 
-        // --- NEW REAL-TIME LOGIC ---
+        setSelectedRoomCounts(prevCounts => {
+            const room = roomTypes[index];
+            if (!room) return prevCounts;
 
-        // 1. Check for the invalid condition first (only when adding a room)
-        if (change > 0) {
-            let currentTotalCapacity = 0;
-            Object.entries(selectedRoomCounts).forEach(([roomIndexStr, count]) => {
-                const room = item.rooms[Number(roomIndexStr)];
-                if (room) {
-                    currentTotalCapacity += count * room.persons;
+            // Determine the maximum number of available rooms
+            let maxAvailableRooms = 0;
+            if (room.name === "Standard Single Bedroom") {
+                maxAvailableRooms = hotelv?.availableSingle || 0;
+            } else {
+                maxAvailableRooms = hotelv?.availableDouble || 0;
+            }
+
+            // Calculate and clamp the new count for the current room type
+            const currentCount = prevCounts[index] || 0;
+            const newCount = currentCount + change;
+
+            if (change > 0 && currentCount >= maxAvailableRooms) {
+                setCapacityWarning(`No more ${room.name}s are available.`);
+                return prevCounts; // Return the previous state without changes
+            }
+
+            const clampedCount = Math.max(0, Math.min(newCount, maxAvailableRooms));
+
+            // Create the new state object for room counts
+            const newSelectedRoomCounts = {
+                ...prevCounts,
+                [index]: clampedCount,
+            };
+
+            // --- NEW MINIMUM GUEST COUNT LOGIC ---
+            // Calculate the new total capacity based on the updated counts
+            let newTotalCapacity = 0;
+            Object.entries(newSelectedRoomCounts).forEach(([idx, count]) => {
+                const r = roomTypes[parseInt(idx)];
+                if (r) {
+                    newTotalCapacity += count * r.capacity;
                 }
             });
 
-            const newRoomCapacity = item.rooms[index]?.persons || 0;
-            if (currentTotalCapacity + newRoomCapacity > totalGuests) {
-                // If invalid, set the warning message and stop the function
-                setCapacityWarning(`Adding this room would exceed the guest count of ${totalGuests}.`);
-                return;
+            // Set a warning if the new capacity is less than the total guests
+            if (newTotalCapacity < totalGuests) {
+                setCapacityWarning(`You need to select rooms for at least ${totalGuests} guests.`);
+            } else {
+                setCapacityWarning(''); // Clear the warning if capacity is sufficient
             }
-        }
 
-        // 2. If the code reaches here, the action is valid.
-        // Clear any previous warning and update the state.
-        setCapacityWarning('');
-
-        setSelectedRoomCounts(prevCounts => {
-            const newCount = (prevCounts[index] || 0) + change;
-            const roomCapacity = item.rooms[index]?.capacity || 0;
-            return {
-                ...prevCounts,
-                [index]: Math.max(0, Math.min(newCount, roomCapacity)),
-            };
+            return newSelectedRoomCounts;
         });
     };
     useEffect(() => {
@@ -239,8 +417,8 @@ export default function Views() {
 
 
     const calculateTotalPrice = () => {
-        let total = item.price; // Start with the base hotel price
-        item.rooms.forEach((room, index) => {
+        let total = hotelv?.price || 0; // Start with the base hotel price
+        roomTypes.forEach((room, index) => {
             const count = selectedRoomCounts[index] || 0;
             total += count * room.pricePerRoom;
         });
@@ -254,6 +432,82 @@ export default function Views() {
             setActiveIndex(newIndex);
         }
     }, [carouselWidth]);
+
+    const handleBooking = async () => {
+
+        let totalCapacity = 0;
+        Object.entries(selectedRoomCounts).forEach(([index, count]) => {
+            const room = roomTypes[parseInt(index)];
+            if (room) {
+                totalCapacity += count * room.capacity;
+            }
+        });
+
+        if (bookingData && totalCapacity < bookingData?.adults + bookingData?.children) {
+
+            alert('Select enough accomodation')
+            return;
+
+        }
+
+
+
+        const keys = await AsyncStorage.getItem("token");
+
+        if (keys) {
+
+            const token: MyToken = jwtDecode(keys)
+
+
+            const book = { ...booking }
+            book.userId = token.id
+            book.serviceId = id.toString();
+            book.type = 'hotel';
+            book.thumbnail = hotelv?.images[0];
+            book.title = hotelv?.name;
+
+            var x = new Array();
+
+            Object.entries(selectedRoomCounts).forEach(n => { if (n[1] > 0) x.push(n[0] == '0' ? n[1] + ` Single bed room ${n[1] > 1 ? 's' : ''}` : n[1] + ` Double bed room ${n[1] > 1 ? 's' : ''}`) })
+
+            book.subtitle = x;
+            book.location = hotelv?.location;
+            if (bookingData) {
+
+                book.bookingDates = [bookingData.selectedDates, bookingData.selectedoutDates];
+                book.guests = bookingData?.adults + bookingData?.children;
+            }
+            book.stars = hotelv?.stars;
+            book.ratings = rating;
+            book.paymentStatus = false;
+
+            var y = new Array();
+
+            facilities.map((x, i) => {
+
+                y.push(x.title);
+
+            })
+
+            book.facilities = y;
+            book.price = totalPrice;
+            book.status = 'active';
+            book.mobileNumber = hotelv?.mobileNumber;
+
+            await fetch(`http://localhost:8080/traveler/create-booking`, {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(book)
+
+            })
+                .then(res => res.text())
+                .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
+                .catch(err => console.log("Error from booking create " + err))
+
+        }
+
+    }
 
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
@@ -289,10 +543,10 @@ export default function Views() {
                                     })}
 
                                 >
-                                    {item.image.map((x, index) => (
+                                    {hotelv?.images.map((x, index) => (
                                         <View key={index} style={{ width: carouselWidth }} className="p-1 h-full snap-center">
                                             <Image
-                                                source={x}
+                                                source={{ uri: `data:image/jpeg;base64,${x}` }}
                                                 // 2. The Image now fills the padded container.
                                                 className="h-full w-full border-2 border-gray-300"
                                                 contentFit="cover"
@@ -305,9 +559,9 @@ export default function Views() {
                         <View className="flex-row justify-between pt-1">
                             <View>
                                 <View className="flex-row items-center gap-3">
-                                    <Text className="font-black text-xl">{item.title}</Text>
+                                    <Text className="font-black text-xl">{hotelv?.name}</Text>
                                     <View className="flex-row">
-                                        {[...Array(item.stars)].map((_, index) => (
+                                        {[...Array(hotelv?.stars)].map((_, index) => (
                                             <Image
                                                 key={index}
                                                 source={star} // Your imported star image
@@ -318,12 +572,12 @@ export default function Views() {
                                 </View>
                                 <View className="flex-row items-center">
                                     <Image className="w-4 h-4" source={location} />
-                                    <Text className="text-start">{item.location}</Text>
+                                    <Text className="text-start">{hotelv?.location}</Text>
                                 </View>
                             </View>
                             <View className="flex-row items-start">
                                 {/* <Image className="w-5 h-5" source={star} /> */}
-                                <Text className="text-sm rounded-lg bg-yellow-300 py-1 px-2 font-medium">{rating}</Text>
+                                <Text className="text-sm rounded-lg bg-yellow-300 py-1 px-2 font-medium">{rating.toFixed(1)}</Text>
                             </View>
                         </View>
                     </View>
@@ -332,11 +586,11 @@ export default function Views() {
                         <Text className=" text-2xl font-semibold py-2">Facilities</Text>
                         <View className="flex-wrap flex-row justify-evenly">
 
-                            {item.faci.map((x, i) => (
+                            {facilities.map((x, i) => (
                                 <View key={i} className="p-3 rounded-2xl">
                                     <View className="items-center">
-                                        <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                        <Text className="text-center">{x.name}</Text>
+                                        <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.image}` }} />
+                                        <Text className="text-center">{x.title}</Text>
                                     </View>
                                 </View>
                             ))}
@@ -388,11 +642,11 @@ export default function Views() {
 
                         <View className=" bg-gray-100 rounded-lg shadow-md m-1">
                             <Text className=" text-2xl font-semibold px-2 py-1">Choose Rooms</Text>
-                            {item.rooms.map((r, i) => (
-                                <View key={i} className="flex-row px-2 py-3 gap-16 items-center justify-between">
+                            {roomTypes.map((r, i) => (
+                                <View key={i} className="flex-row px-2 py-3 gap-12 items-center justify-between">
                                     <View className="flex-row items-center gap-14">
-                                        <Image className="w-10 h-10" source={r.type} />
-                                        <Text>Available: {r.capacity}</Text>
+                                        <Image className="w-10 h-10" source={r.name == "Standard Single Bedroom" ? single : double} />
+                                        <Text>Available Rooms: {r.name == "Standard Single Bedroom" ? hotelv?.availableSingle : hotelv?.availableDouble}</Text>
                                     </View>
                                     <View className="flex-row items-center gap-3">
                                         <TouchableOpacity
@@ -411,15 +665,20 @@ export default function Views() {
                                     </View>
                                 </View>
                             ))}
-                            {capacityWarning ? (
-                                <Text className="text-red-500 font-semibold px-2 pb-2 text-center">
-                                    {capacityWarning}
-                                </Text>
-                            ) : null}
+
+                            <Text
+                                className={`
+        text-red-500 font-semibold px-2 pb-2 text-center 
+        ${capacityWarning ? 'opacity-100' : 'opacity-0'}
+    `}
+                            >
+                                {capacityWarning || '\u00A0'}
+                            </Text>
+
                         </View>
 
 
-                        <View className="gap-3">
+                        {reviews.length > 0 && <View className="gap-3">
                             <View className=" bg-gray-100 rounded-lg shadow-md m-1">
                                 <Text className="px-2 text-2xl font-semibold">Reviews</Text>
                                 <ScrollView
@@ -428,17 +687,17 @@ export default function Views() {
                                     showsVerticalScrollIndicator={false}
                                     nestedScrollEnabled={true}
                                 >
-                                    {item.reviewers.map((x, i) => (
+                                    {reviews.map((x, i) => (
                                         <View key={i} className="bg-gray-200 px-3 rounded-2xl">
                                             <View className="flex-row items-center">
-                                                <Image className="w-10 h-10 rounded-full" source={x.images} />
-                                                <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.name} from {x.from}</Text>
+                                                <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
+                                                <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
                                                 <View className="flex-row items-center gap-1">
                                                     <Image className="w-5 h-5" source={star} />
-                                                    <Text>{x.ratings}/5</Text>
+                                                    <Text>{x.stars}/5</Text>
                                                 </View>
                                             </View>
-                                            <Text className="text-lg mx-5 my-2">{x.review}</Text>
+                                            <Text className="text-lg mx-5 my-2">{x.text}</Text>
                                         </View>
                                     ))}
                                 </ScrollView>
@@ -446,9 +705,9 @@ export default function Views() {
                             <View className="p-4 bg-gray-100 rounded-lg shadow-md m-1">
                                 <Text className="text-lg font-bold text-gray-800 mb-3">Policies</Text>
                                 <View className="space-y-4">
-                                    {item.policies.map((policy) => (
+                                    {hotelv?.policies.map((policy, i) => (
 
-                                        <View className="flex-row items-center">
+                                        <View className="flex-row items-center" key={i}>
                                             {/* You can use a simple text character or an icon */}
                                             <Text className="text-blue-500 mr-2 text-lg">✓</Text>
                                             <Text className="text-base font-semibold text-gray-700">{policy}</Text>
@@ -458,7 +717,7 @@ export default function Views() {
                                     ))}
                                 </View>
                             </View>
-                        </View>
+                        </View>}
 
 
 
@@ -469,7 +728,8 @@ export default function Views() {
                     <Text className="px-3 font-extrabold text-xl">{totalPrice}.00 LKR/day</Text>
                     <TouchableOpacity
                         className=" bg-[#84848460] rounded-xl w-[30%]"
-                        onPress={() => router.push(`/views/payment/${item.id}`)}
+                        // onPress={() => router.push(`/views/payment/${hotelv?._id}`)}
+                        onPress={handleBooking}
                     >
                         <View className="py-2 px-3 flex-row justify-between items-center w-full" >
                             <Text>Book Now</Text>

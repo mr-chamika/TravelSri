@@ -31,8 +31,8 @@ export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
         password: string
     }
 
-    const [email, setEmail] = useState('chamikauni2001@gmail.com');
-    const [password, setPassword] = useState('123456789');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [credentE, setCredentE] = useState(false)
     const [invalidE, setInvalidE] = useState(false);
     const [wrongP, setWrongP] = useState(false);

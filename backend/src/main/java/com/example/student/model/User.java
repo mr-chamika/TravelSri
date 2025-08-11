@@ -34,7 +34,7 @@ public class User {
     private String username;
     private String dob;
     private String Country;
-    private String status;
+    private String status;//active,pending,banned,deactivated
     private boolean enterCredentials;//should enter username and pw every time login to app or not
 
     //services
@@ -45,9 +45,8 @@ public class User {
     private String registrationNumber;
     private String businessRegPic1;
     private String businessRegPic2;
-    private int reviewCount;
-    private int stars;
-    private String currency;
+    private Integer reviewCount;
+    private Integer stars;
 
     //store
     private String businessName;
@@ -65,7 +64,14 @@ public class User {
     private Integer dailyRate;//charge per day
     private String bio;//about me
     private String responseTime;
-    private int ResponseRate;
+    private Integer  responseRate;
+    private String[] education;
+    private String[] certifications;
+    private String[] whyChooseMe;
+    private String[] tourStyles;
+    private String[] awards;
+
+
 
 
 
