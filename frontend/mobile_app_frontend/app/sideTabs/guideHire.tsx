@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Alert } from 'react-native';
 
 cssInterop(Image, { className: "style" });
 
@@ -356,24 +357,54 @@ export default function Guide() {
     );
 
     // Guide Card Component
-    const GuideCard = ({ guide }: { guide: Guide }) => {
+  // Fixed Guide Card Component with correct navigation
+const GuideCard = ({ guide }: { guide: Guide }) => {
     // Calculate total cost based on selected dates
     const numberOfDays = selectedDates.length;
     const totalCost = guide.dailyRate * numberOfDays;
 
+    const handleGuideCardPress = () => {
+        // Ensure bookingDetails exists before navigation
+        if (!bookingDetails) {
+            console.error('Booking details not available');
+            return;
+        }
+
+        console.log('Navigating with params:', {
+            id: guide._id,
+            guideData: JSON.stringify(guide),
+            bookingDetails: JSON.stringify(bookingDetails),
+            selectedDates: JSON.stringify(selectedDates),
+            numberOfDays: numberOfDays.toString(),
+            totalCost: totalCost.toString()
+        });
+
+        // Navigate to guide detail page - corrected pathname
+        router.push({
+            // Use the correct path - this should match your file structure
+            pathname: `../views/guide/solo/[id]`, // or whatever your guide detail page path is
+            params: { 
+                id: guide._id,
+                // Pass the complete guide data
+                guideData: JSON.stringify(guide),
+                // Pass booking details
+                bookingDetails: JSON.stringify(bookingDetails),
+                // Pass individual params for easier access
+                destination: bookingDetails.destination,
+                selectedDates: JSON.stringify(selectedDates),
+                language: bookingDetails.language,
+                type: bookingDetails.type,
+                numberOfDays: numberOfDays.toString(),
+                totalCost: totalCost.toString(),
+                dailyRate: guide.dailyRate.toString()
+            }
+        });
+    };
+
     return (
         <TouchableOpacity 
             className="bg-white rounded-3xl shadow-lg border border-gray-50 mb-6 overflow-hidden"
-            onPress={() => {
-                // Navigate to guide detail page with guide ID and booking details
-                router.push({
-                    pathname: './guide-detail',
-                    params: { 
-                        guideId: guide._id,
-                        bookingDetails: JSON.stringify(bookingDetails)
-                    }
-                });
-            }}
+            onPress={handleGuideCardPress}
             style={{ 
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
@@ -382,6 +413,7 @@ export default function Guide() {
                 elevation: 8,
             }}
         >
+            {/* Rest of your GuideCard JSX remains the same */}
             {/* Header Section with Profile and Rating */}
             <View className="p-5 pb-0">
                 <View className="flex-row items-start">
@@ -458,9 +490,9 @@ export default function Guide() {
                         {guide.languages.slice(0, 4).map((language, index) => (
                             <View 
                                 key={index}
-                                className="bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full mr-2 mb-2"
+                                className="bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-full mr-2 mb-2"
                             >
-                                <Text className="text-blue-700 text-xs font-medium">{language}</Text>
+                                <Text className="text-black-700 text-xs font-medium">{language}</Text>
                             </View>
                         ))}
                         {guide.languages.length > 4 && (
@@ -479,8 +511,8 @@ export default function Guide() {
                 <View className="flex-row justify-between items-center">
                     {/* Guide Type */}
                     <View className="flex-1">
-                        <View className="bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl inline-block self-start">
-                            <Text className="text-blue-700 text-sm font-semibold capitalize">
+                        <View className="bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-xl inline-block self-start">
+                            <Text className="text-black-700 text-sm font-semibold capitalize">
                                 {guide.guideType} Guide
                             </Text>
                         </View>
@@ -514,15 +546,15 @@ export default function Guide() {
                     {/* Duration Info */}
                     <View className="flex-row items-center">
                         <Text className="text-blue-600 text-sm mr-1">📅</Text>
-                        <Text className="text-blue-700 text-sm font-medium">
+                        <Text className="text-Black-700 text-sm font-medium">
                             {numberOfDays} day{numberOfDays > 1 ? 's' : ''} selected
                         </Text>
                     </View>
                     
                     {/* Book Now Button */}
-                    <TouchableOpacity className="bg-blue-500 px-8 py-3 rounded-xl flex-row items-center shadow-sm">
+                    <TouchableOpacity className="bg-yellow-400 px-8 py-3 rounded-xl flex-row items-center shadow-sm">
                         <Text className="text-white text-sm mr-1">🎯</Text>
-                        <Text className="text-white font-bold text-sm">Book Now</Text>
+                        <Text className="text-black font-bold text-sm">Book Now</Text>
                     </TouchableOpacity>
                 </View>
             </View>

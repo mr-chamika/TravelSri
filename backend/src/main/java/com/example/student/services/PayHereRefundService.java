@@ -40,141 +40,141 @@ public class PayHereRefundService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public PayHereRefund processRealRefund(Booking booking, BigDecimal refundAmount, String reason) {
-        try {
-            System.out.println("💸 Initiating PayHere Refund:");
-            System.out.println("   Booking ID: " + booking.getId());
-            System.out.println("   Original Payment ID: " + booking.getPayHerePaymentId());
-            System.out.println("   Refund Amount: $" + refundAmount);
-            System.out.println("   Reason: " + reason);
+//    public PayHereRefund processRealRefund(Booking booking, BigDecimal refundAmount, String reason) {
+//        try {
+//            System.out.println("💸 Initiating PayHere Refund:");
+//            System.out.println("   Booking ID: " + booking.getId());
+//            System.out.println("   Original Payment ID: " + booking.getPayHerePaymentId());
+//            System.out.println("   Refund Amount: $" + refundAmount);
+//            System.out.println("   Reason: " + reason);
+//
+//            // 1. Create refund record
+//            PayHereRefund refund = new PayHereRefund();
+//            refund.setBookingId(booking.getId());
+//            refund.setTravelerId(booking.getTravelerId());
+//            refund.setOriginalPaymentId(booking.getPayHerePaymentId());
+//            refund.setRefundAmount(refundAmount);
+//            refund.setRefundReason(reason);
+//            refund.setStatus("PENDING");
+//            refund.setInitiatedAt(LocalDateTime.now());
+//
+//            // 2. Call PayHere Refund API (or simulate)
+//            String payHereRefundId = callPayHereRefundAPI(booking.getPayHerePaymentId(), refundAmount, reason);
+//
+//            // 3. Update refund record with PayHere response
+//            refund.setPayHereRefundId(payHereRefundId);
+//            refund.setStatus("SUCCESS");
+//            refund.setCompletedAt(LocalDateTime.now());
+//            refund.setPayHereResponse("Refund processed successfully via API");
+//
+//            // 4. Save refund record
+//            PayHereRefund savedRefund = refundRepo.save(refund);
+//
+//            // 5. Update traveler wallet
+//            updateTravelerWalletWithRefund(booking.getTravelerId(), refundAmount, reason, savedRefund.getId(), payHereRefundId);
+//
+//            System.out.println("✅ PayHere Refund Completed:");
+//            System.out.println("   💳 Refund Amount: $" + refundAmount);
+//            System.out.println("   🆔 PayHere Refund ID: " + payHereRefundId);
+//            System.out.println("   📝 Database Record ID: " + savedRefund.getId());
+//            System.out.println("   ⏱️ Processing Time: 3-5 business days");
+//
+//            return savedRefund;
+//
+//        } catch (Exception e) {
+//            System.err.println("❌ PayHere refund processing failed: " + e.getMessage());
+//
+//            // Handle failed refund
+//            PayHereRefund failedRefund = new PayHereRefund();
+//            failedRefund.setBookingId(booking.getId());
+//            failedRefund.setTravelerId(booking.getTravelerId());
+//            failedRefund.setOriginalPaymentId(booking.getPayHerePaymentId());
+//            failedRefund.setRefundAmount(refundAmount);
+//            failedRefund.setRefundReason(reason);
+//            failedRefund.setStatus("FAILED");
+//            failedRefund.setPayHereResponse("Refund failed: " + e.getMessage());
+//            failedRefund.setInitiatedAt(LocalDateTime.now());
+//            refundRepo.save(failedRefund);
+//
+//            throw new RuntimeException("PayHere refund failed: " + e.getMessage());
+//        }
+//    }
 
-            // 1. Create refund record
-            PayHereRefund refund = new PayHereRefund();
-            refund.setBookingId(booking.getId());
-            refund.setTravelerId(booking.getTravelerId());
-            refund.setOriginalPaymentId(booking.getPayHerePaymentId());
-            refund.setRefundAmount(refundAmount);
-            refund.setRefundReason(reason);
-            refund.setStatus("PENDING");
-            refund.setInitiatedAt(LocalDateTime.now());
-
-            // 2. Call PayHere Refund API (or simulate)
-            String payHereRefundId = callPayHereRefundAPI(booking.getPayHerePaymentId(), refundAmount, reason);
-
-            // 3. Update refund record with PayHere response
-            refund.setPayHereRefundId(payHereRefundId);
-            refund.setStatus("SUCCESS");
-            refund.setCompletedAt(LocalDateTime.now());
-            refund.setPayHereResponse("Refund processed successfully via API");
-
-            // 4. Save refund record
-            PayHereRefund savedRefund = refundRepo.save(refund);
-
-            // 5. Update traveler wallet
-            updateTravelerWalletWithRefund(booking.getTravelerId(), refundAmount, reason, savedRefund.getId(), payHereRefundId);
-
-            System.out.println("✅ PayHere Refund Completed:");
-            System.out.println("   💳 Refund Amount: $" + refundAmount);
-            System.out.println("   🆔 PayHere Refund ID: " + payHereRefundId);
-            System.out.println("   📝 Database Record ID: " + savedRefund.getId());
-            System.out.println("   ⏱️ Processing Time: 3-5 business days");
-
-            return savedRefund;
-
-        } catch (Exception e) {
-            System.err.println("❌ PayHere refund processing failed: " + e.getMessage());
-
-            // Handle failed refund
-            PayHereRefund failedRefund = new PayHereRefund();
-            failedRefund.setBookingId(booking.getId());
-            failedRefund.setTravelerId(booking.getTravelerId());
-            failedRefund.setOriginalPaymentId(booking.getPayHerePaymentId());
-            failedRefund.setRefundAmount(refundAmount);
-            failedRefund.setRefundReason(reason);
-            failedRefund.setStatus("FAILED");
-            failedRefund.setPayHereResponse("Refund failed: " + e.getMessage());
-            failedRefund.setInitiatedAt(LocalDateTime.now());
-            refundRepo.save(failedRefund);
-
-            throw new RuntimeException("PayHere refund failed: " + e.getMessage());
-        }
-    }
-
-    private String callPayHereRefundAPI(String originalPaymentId, BigDecimal refundAmount, String reason) {
-        try {
-            System.out.println("🔗 Calling PayHere Refund API:");
-            System.out.println("   Payment ID: " + originalPaymentId);
-            System.out.println("   Amount: $" + refundAmount);
-
-            // Check if we have a valid payment ID
-            if (originalPaymentId == null || originalPaymentId.trim().isEmpty() || "null".equals(originalPaymentId)) {
-                System.out.println("⚠️ No valid payment ID found, using simulation");
-                return simulateRefund(originalPaymentId, refundAmount, reason);
-            }
-
-            // Prepare PayHere refund API request
-            Map<String, Object> refundRequest = new HashMap<>();
-            refundRequest.put("merchant_id", merchantId);
-            refundRequest.put("payment_id", originalPaymentId);
-            refundRequest.put("amount", payHereUtils.formatAmount(refundAmount));
-            refundRequest.put("reason", reason);
-            refundRequest.put("notify_url", "https://your-domain.com/api/payments/payhere/refund-notify");
-
-            // Generate refund hash (NOW THIS METHOD EXISTS!)
-            String refundHash = payHereUtils.generateRefundHash(merchantId, originalPaymentId, refundAmount);
-            refundRequest.put("hash", refundHash);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("User-Agent", "TravelBookingApp/1.0");
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(refundRequest, headers);
-
-            // Call PayHere refund API
-            String refundApiUrl = payHereBaseUrl.replace("/pay/checkout", "/api/v1/refund");
-
-            System.out.println("📡 API Call Details:");
-            System.out.println("   URL: " + refundApiUrl);
-            System.out.println("   Merchant ID: " + merchantId);
-            System.out.println("   Hash: " + refundHash);
-
-            try {
-                ResponseEntity<Map> response = restTemplate.postForEntity(refundApiUrl, request, Map.class);
-
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    Map<String, Object> responseBody = response.getBody();
-                    String status = (String) responseBody.get("status");
-
-                    System.out.println("📬 PayHere API Response:");
-                    System.out.println("   Status: " + status);
-                    System.out.println("   Response: " + responseBody);
-
-                    if ("SUCCESS".equalsIgnoreCase(status) || "APPROVED".equalsIgnoreCase(status)) {
-                        String refundId = (String) responseBody.get("refund_id");
-                        if (refundId != null) {
-                            return refundId;
-                        } else {
-                            return "REFUND_" + System.currentTimeMillis();
-                        }
-                    } else {
-                        String message = (String) responseBody.get("message");
-                        throw new RuntimeException("PayHere refund rejected: " + message);
-                    }
-                } else {
-                    throw new RuntimeException("PayHere API error: HTTP " + response.getStatusCode());
-                }
-
-            } catch (Exception apiException) {
-                System.err.println("⚠️ PayHere API call failed: " + apiException.getMessage());
-                System.out.println("🎭 Falling back to simulation");
-                return simulateRefund(originalPaymentId, refundAmount, reason);
-            }
-
-        } catch (Exception e) {
-            System.err.println("❌ Refund API call failed: " + e.getMessage());
-            return simulateRefund(originalPaymentId, refundAmount, reason);
-        }
-    }
+//    private String callPayHereRefundAPI(String originalPaymentId, BigDecimal refundAmount, String reason) {
+//        try {
+//            System.out.println("🔗 Calling PayHere Refund API:");
+//            System.out.println("   Payment ID: " + originalPaymentId);
+//            System.out.println("   Amount: $" + refundAmount);
+//
+//            // Check if we have a valid payment ID
+//            if (originalPaymentId == null || originalPaymentId.trim().isEmpty() || "null".equals(originalPaymentId)) {
+//                System.out.println("⚠️ No valid payment ID found, using simulation");
+//                return simulateRefund(originalPaymentId, refundAmount, reason);
+//            }
+//
+//            // Prepare PayHere refund API request
+//            Map<String, Object> refundRequest = new HashMap<>();
+//            refundRequest.put("merchant_id", merchantId);
+//            refundRequest.put("payment_id", originalPaymentId);
+//            refundRequest.put("amount", payHereUtils.formatAmount(refundAmount));
+//            refundRequest.put("reason", reason);
+//            refundRequest.put("notify_url", "https://your-domain.com/api/payments/payhere/refund-notify");
+//
+//            // Generate refund hash (NOW THIS METHOD EXISTS!)
+//            String refundHash = payHereUtils.generateRefundHash(merchantId, originalPaymentId, refundAmount);
+//            refundRequest.put("hash", refundHash);
+//
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.APPLICATION_JSON);
+//            headers.set("User-Agent", "TravelBookingApp/1.0");
+//
+//            HttpEntity<Map<String, Object>> request = new HttpEntity<>(refundRequest, headers);
+//
+//            // Call PayHere refund API
+//            String refundApiUrl = payHereBaseUrl.replace("/pay/checkout", "/api/v1/refund");
+//
+//            System.out.println("📡 API Call Details:");
+//            System.out.println("   URL: " + refundApiUrl);
+//            System.out.println("   Merchant ID: " + merchantId);
+//            System.out.println("   Hash: " + refundHash);
+//
+//            try {
+//                ResponseEntity<Map> response = restTemplate.postForEntity(refundApiUrl, request, Map.class);
+//
+//                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+//                    Map<String, Object> responseBody = response.getBody();
+//                    String status = (String) responseBody.get("status");
+//
+//                    System.out.println("📬 PayHere API Response:");
+//                    System.out.println("   Status: " + status);
+//                    System.out.println("   Response: " + responseBody);
+//
+//                    if ("SUCCESS".equalsIgnoreCase(status) || "APPROVED".equalsIgnoreCase(status)) {
+//                        String refundId = (String) responseBody.get("refund_id");
+//                        if (refundId != null) {
+//                            return refundId;
+//                        } else {
+//                            return "REFUND_" + System.currentTimeMillis();
+//                        }
+//                    } else {
+//                        String message = (String) responseBody.get("message");
+//                        throw new RuntimeException("PayHere refund rejected: " + message);
+//                    }
+//                } else {
+//                    throw new RuntimeException("PayHere API error: HTTP " + response.getStatusCode());
+//                }
+//
+//            } catch (Exception apiException) {
+//                System.err.println("⚠️ PayHere API call failed: " + apiException.getMessage());
+//                System.out.println("🎭 Falling back to simulation");
+//                return simulateRefund(originalPaymentId, refundAmount, reason);
+//            }
+//
+//        } catch (Exception e) {
+//            System.err.println("❌ Refund API call failed: " + e.getMessage());
+//            return simulateRefund(originalPaymentId, refundAmount, reason);
+//        }
+//    }
 
     private String simulateRefund(String originalPaymentId, BigDecimal refundAmount, String reason) {
         // Simulate PayHere refund for testing/development

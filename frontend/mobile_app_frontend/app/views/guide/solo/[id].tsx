@@ -1,522 +1,901 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
-import { cssInterop } from 'nativewind'
-import { Image } from 'expo-image'
-import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { jwtDecode } from "jwt-decode";
+// Updated Guide Detail Page with Fixed PayHere Integration
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  Platform,
+  Alert,
+} from 'react-native';
 
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import BookingService from '../../../../services/BookingService';
 
-cssInterop(Image, { className: "style" });
-
-const pic = require('../../../../assets/images/tabbar/towert.png')
-const location = require('../../../../assets/images/tabbar/create/pin.png')
-const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelthumb.png')
-const star = require('../../../../assets/images/tabbar/create/hotel/stars.png')
-const back = require('../../../../assets/images/back.png')
-const profile = require('../../../../assets/images/sideTabs/profile.jpg')
-const tele = require('../../../../assets/images/tabbar/create/guide/telephones.png')
-const globl = require('../../../../assets/images/tabbar/create/guide/global.png')
-const mark = require('../../../../assets/images/mark.png')
-const cross = require('../../../../assets/images/cross.png');
-const xp = require('../../../../assets/images/xp.png')
-const education = require('../../../../assets/images/mortarboard.png')
-const certificate = require('../../../../assets/images/quality.png')
-const award = require('../../../../assets/images/trophy.png')
-
-interface Review {
-
-    _id: string,
-    serviseId: string,
-    text: string,
-    country: string,
-    stars: number,
-    author: string,
-    dp: string,
-
+// Your existing interfaces remain the same...
+interface BookingDetails {
+  dates: string[];
+  destination: string;
+  type: string;
+  language: string;
 }
 
-export interface Booking {
-    _id: string;
-    userId: string;
-    serviceId: string;
-    type: string;
-    thumbnail: string;
-    title: string;
-    subtitle: string[];
-    location: string;
-    bookingDates: string[];
-    stars: number;
-    ratings: number;
-    paymentStatus: boolean;
-    guests: number;
-    facilities: string[];
-    price: number;
-    status: string;
-    mobileNumber: string;
+interface ApiGuide {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  description: string;
+  location: string;
+  experience: number;
+  stars: number;
+  reviewCount: number;
+  dailyRate: number;
+  currency: string;
+  pp: string;
+  verified: string;
+  identified: string;
+  specialization: string;
+  responseTime: string;
+  ResponseRate: number;
+  bio: string;
+  mobileNumber: string;
+  languages: string[];
+  guideType: string;
 }
 
-interface MyToken {
-    sub: string;
-    roles: string[];
-    username: string;
-    email: string;
-    id: string
-}
+const GuideProfileDetails: React.FC = () => {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  
+  // Color theme
+  const colors = {
+    primary: '#fde047',
+    primaryDark: '#facc15',
+    primaryLight: '#fefce8',
+    primaryText: '#a16207',
+    background: '#f5f5f5',
+    cardBg: '#ffffff',
+    textPrimary: '#1f2937',
+    textSecondary: '#4b5563',
+    textMuted: '#9ca3af',
+    border: '#e5e7eb',
+    success: '#10b981',
+    rating: '#fbbf24',
+    price: '#dc2626',
+    blue: '#2563eb',
+    green: '#059669',
+    lightBlue: '#eff6ff',
+  };
 
-interface Guide {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    description: string;
-    location: string;
-    experience: string;
-    stars: number;
-    reviewCount: number
-    dailyRate: number;
-    pp: string;
-    verified: string;
-    identified: string;
-    specializations: string[];
-    responseTime: string;
-    responseRate: number;
-    mobileNumber: string;
-    languages: string[];
-    images: any[];
-    bio: string,
-    education: string[];
-    certifications: string[];
-    whyChooseMe: string[];
-    tourStyles: string[];
-    awards: string[];
-    daysPerWeek: string[];
-}
+  // State management
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [guide, setGuide] = useState<any>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [numberOfDays, setNumberOfDays] = useState<number>(0);
+  const [totalCost, setTotalCost] = useState<number>(0);
+  
+  // Booking states
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
+// Extract navigation parameters
+useEffect(() => {
+  try {
+    console.log('Received params:', params);
 
-export default function Views() {
+    const bookingDetailsParam = params.bookingDetails as string;
+    const selectedDatesParam = params.selectedDates as string;
+    const guideDataParam = params.guideData as string;
+    const idParam = params.id as string;
+    const numberOfDaysParam = params.numberOfDays as string;
+    const totalCostParam = params.totalCost as string;
 
-    const router = useRouter();
-    const { id } = useLocalSearchParams();
-
-    const [item, setItem] = useState<Guide | null>(null)
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [booking, setBooking] = useState<Booking | null>(null)
-
-
-
-    useEffect(() => {
-
-        const getGuide = async () => {
-
-            try {
-
-                const res = await fetch(`http://localhost:8080/traveler/guides-view?id=${id}`)
-
-                const data = await res.json()
-
-                if (data) {
-
-                    //console.log(data);
-                    setItem(data)
-
-                }
-
-                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
-                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
-
-                if (res2) {
-
-                    const data2 = await res2.json()
-                    //console.log(data2)
-                    setReviews(data2)
-
-                }
-
-            } catch (err) {
-
-                console.log(err)
-
-            }
-
-        }
-
-        getGuide()
-
-    }, [])
-
-    const handleBooking = async () => {
-
-        const keys = await AsyncStorage.getItem("token");
-
-        if (keys) {
-
-            const data = await AsyncStorage.getItem('soloGuideBook')
-
-
-            const token: MyToken = jwtDecode(keys)
-
-
-            const book = { ...booking }
-            book.userId = token.id
-            book.serviceId = id.toString();
-            book.type = 'guide';
-            book.thumbnail = item?.pp;
-            book.title = item?.firstName + " " + item?.lastName;
-
-            book.subtitle = item?.tourStyles.slice(0, 2) || [];
-
-            book.location = item?.location;
-
-            if (data) {
-
-                const bookingData = JSON.parse(data)
-
-                if (bookingData) {
-
-                    book.bookingDates = bookingData.dates;
-
-                }
-
-                book.ratings = rating;
-                book.paymentStatus = false;
-                book.facilities = item?.specializations;
-                book.price = item?.dailyRate;
-                book.status = 'active';
-                book.mobileNumber = item?.mobileNumber;
-
-                await fetch(`http://localhost:8080/traveler/create-booking`, {
-
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(book)
-
-                })
-                    .then(res => res.text())
-                    .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
-                    .catch(err => console.log("Error from booking create " + err))
-
-            }
-        }
-
+    if (bookingDetailsParam) {
+      const bookingData = JSON.parse(bookingDetailsParam);
+      setBookingDetails(bookingData);
     }
 
+    if (selectedDatesParam) {
+      const dates = JSON.parse(selectedDatesParam);
+      setSelectedDates(dates);
+    }
 
+    if (guideDataParam) {
+      const apiGuide: ApiGuide = JSON.parse(guideDataParam);
+      
+      const specializationsArray = apiGuide.specialization 
+        ? apiGuide.specialization.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : ["General Guiding"];
+      
+      const convertedGuide = {
+        id: parseInt(idParam) || 1,
+        _id: apiGuide._id,
+        name: `${apiGuide.firstName} ${apiGuide.lastName}`,
+        title: apiGuide.specialization || "Professional Guide",
+        location: apiGuide.location,
+        experience: `${apiGuide.experience} years`,
+        rating: apiGuide.stars,
+        reviewCount: apiGuide.reviewCount,
+        hourlyRate: Math.round(apiGuide.dailyRate / 8),
+        dailyRate: apiGuide.dailyRate,
+        currency: apiGuide.currency || "USD",
+        image: apiGuide.pp || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+        verified: apiGuide.verified === 'done',
+        languages: apiGuide.languages || ['English'],
+        specializations: specializationsArray,
+        expertise: specializationsArray,
+        responseTime: apiGuide.responseTime || "Within 1 hour",
+        responseRate: `${apiGuide.ResponseRate || 95}%`,
+        description: apiGuide.description || apiGuide.bio || "Experienced local guide",
+        joinedDate: "Member since 2020",
+        education: ["Professional Tourism Training"],
+        certifications: ["Licensed Tourist Guide"],
+        awards: [],
+        gallery: [],
+        availability: "Available 7 days a week",
+        aboutMe: apiGuide.bio || apiGuide.description || "Passionate local guide ready to show you the best experiences.",
+        whyChooseMe: [
+          "Extensive local knowledge",
+          "Professional and reliable",
+          "Great communication skills",
+          "Flexible tour options"
+        ],
+        tourStyles: [apiGuide.guideType === 'visit' ? "Day Tours" : "Multi-day Tours"]
+      };
 
-    const rating = item && item.reviewCount > 0
-        ? parseFloat(((item?.stars / item?.reviewCount) * 2).toFixed(1))
-        : 0;
+      setGuide(convertedGuide);
+    }
 
+    if (numberOfDaysParam) {
+      setNumberOfDays(parseInt(numberOfDaysParam));
+    }
+    if (totalCostParam) {
+      setTotalCost(parseFloat(totalCostParam));
+    }
+
+  } catch (error) {
+    console.error('Error parsing navigation params:', error);
+  }
+}, [
+  params.bookingDetails,
+  params.selectedDates, 
+  params.guideData,
+  params.id,
+  params.numberOfDays,
+  params.totalCost
+]); 
+
+// Depend on specific param values, not the entire params object
+  // Fixed Booking function with proper PayHere integration
+  const handleBookNow = async () => {
+  console.log('=== BOOKING DEBUG START ===');
+  console.log('bookingDetails:', bookingDetails);
+  console.log('guide:', guide);
+  console.log('selectedDates:', selectedDates);
+  console.log('numberOfDays:', numberOfDays);
+  console.log('totalCost:', totalCost);
+
+  if (!bookingDetails || !guide || selectedDates.length === 0) {
+    console.log('❌ Missing required data');
+    Alert.alert('Error', 'Missing booking information. Please go back and select your dates.');
+    return;
+  }
+
+  console.log('✅ All required data present, starting booking...');
+  setIsBooking(true);
+  setBookingError(null);
+
+  try {
+    // Prepare booking data
+    const startDate = new Date(Math.min(...selectedDates.map(date => new Date(date).getTime())));
+    const endDate = new Date(Math.max(...selectedDates.map(date => new Date(date).getTime())));
+    
+    startDate.setHours(9, 0, 0, 0); // 9 AM start
+    endDate.setHours(18, 0, 0, 0);  // 6 PM end
+
+    const bookingRequest = {
+      travelerId: "user123", // Replace with actual user ID from auth
+      providerId: guide._id,
+      providerType: "guide" as const,
+      serviceName: `${guide.name} - ${bookingDetails.type === 'visit' ? 'Local Guide' : 'Travel Guide'} Service`,
+      serviceDescription: `${numberOfDays} day${numberOfDays > 1 ? 's' : ''} guide service in ${bookingDetails.destination}. Language: ${bookingDetails.language}. Specializations: ${guide.specializations.join(', ')}.`,
+      serviceStartDate: startDate.toISOString(),
+      serviceEndDate: endDate.toISOString(),
+      totalAmount: totalCost || (guide.dailyRate * numberOfDays),
+    };
+
+    console.log('📋 Booking request prepared:', JSON.stringify(bookingRequest, null, 2));
+
+    // Step 1: Create booking
+    console.log('🔄 Step 1: Creating booking...');
+    const booking = await BookingService.createBooking(bookingRequest);
+    console.log('✅ Step 1: Booking created successfully:', booking);
+
+    // Step 2: Create payment checkout
+    console.log('🔄 Step 2: Creating payment checkout...');
+    const paymentResponse = await BookingService.createPaymentCheckout(booking.id);
+    console.log('✅ Step 2: Payment response received:', paymentResponse);
+
+    // Check if we have proper PayHere payment data
+    if (paymentResponse.success && paymentResponse.paymentData) {
+      console.log('✅ Step 3: Payment data valid, navigating to checkout...');
+      // Navigate to PayHere checkout page with payment data
+      router.push({
+        pathname: './../../../views/PayHereCheckout/[id]',
+        params: {
+          paymentData: JSON.stringify(paymentResponse.paymentData),
+          bookingId: booking.id,
+          orderId: paymentResponse.orderId
+        }
+      });
+    } else {
+      console.log('❌ Step 3: Invalid payment response');
+      throw new Error('Invalid payment response from server');
+    }
+
+  } catch (error) {
+    console.error('❌ BOOKING ERROR:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
+    
+    setBookingError(error instanceof Error ? error.message : 'Failed to create booking');
+    Alert.alert(
+      'Booking Failed', 
+      error instanceof Error ? error.message : 'An error occurred while creating your booking. Please try again.',
+      [{ text: 'OK' }]
+    );
+  } finally {
+    console.log('🏁 Booking process finished, setting isBooking to false');
+    setIsBooking(false);
+  }
+  console.log('=== BOOKING DEBUG END ===');
+};
+
+  // Your existing helper functions
+  const formatPrice = (price: number) => {
+    return price.toLocaleString();
+  };
+
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating / 2);
+    
+    for (let i = 0; i < 5; i++) {
+      stars.push(
+        <Text key={i} style={{ fontSize: 14, color: i < fullStars ? colors.rating : colors.textMuted }}>
+          ★
+        </Text>
+      );
+    }
+    return stars;
+  };
+
+  if (!guide) {
     return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading guide details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor={colors.blue} barStyle="light-content" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Guide Profile</Text>
+          {bookingDetails && (
+            <Text style={styles.headerSubtitle}>
+              {numberOfDays} day{numberOfDays > 1 ? 's' : ''} • {bookingDetails.destination}
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity style={styles.shareButton}>
+          <Text style={styles.shareIcon}>📤</Text>
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Compact Booking Summary */}
+        {bookingDetails && (
+          <View style={styles.compactBookingSummary}>
+            <View style={styles.bookingRow}>
+              <View style={styles.bookingItem}>
+                <Text style={styles.bookingIcon}>📍</Text>
+                <Text style={styles.bookingText}>{bookingDetails.destination}</Text>
+              </View>
+              <View style={styles.bookingItem}>
+                <Text style={styles.bookingIcon}>📅</Text>
+                <Text style={styles.bookingText}>{selectedDates.length} day{selectedDates.length > 1 ? 's' : ''}</Text>
+              </View>
+            </View>
+            <View style={styles.bookingRow}>
+              <View style={styles.bookingItem}>
+                <Text style={styles.bookingIcon}>🗣️</Text>
+                <Text style={styles.bookingText}>{bookingDetails.language}</Text>
+              </View>
+              <View style={styles.bookingItem}>
+                <Text style={styles.bookingIcon}>🎯</Text>
+                <Text style={styles.bookingText}>{bookingDetails.type === 'visit' ? 'Local Guide' : 'Travel Guide'}</Text>
+              </View>
+            </View>
+            {totalCost > 0 && (
+              <View style={styles.totalChargeContainer}>
+                <Text style={styles.totalChargeLabel}>Total Charge</Text>
+                <Text style={styles.totalChargeAmount}>${totalCost}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
-            <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
+        {/* Guide Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.guideImageContainer}>
+            <Image source={{ uri: guide.image }} style={styles.guideImage} />
+          </View>
 
-            <ScrollView
+          <View style={styles.guideMainInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.guideName}>{guide.name}</Text>
+              <TouchableOpacity 
+                style={styles.favoriteButton}
+                onPress={() => setIsFavorite(!isFavorite)}
+              >
+                <Text style={styles.heartIcon}>
+                  {isFavorite ? '♥️' : '♡'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.guideTitle}>{guide.title}</Text>
+            
+            <View style={styles.locationExperience}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoIcon}>📍</Text>
+                <Text style={styles.infoText}>{guide.location}</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoIcon}>🎖️</Text>
+                <Text style={styles.infoText}>{guide.experience} experience</Text>
+              </View>
+            </View>
 
-                className="w-full h-[97%]"
-                contentContainerClassName="flex-col py-5"
-                showsVerticalScrollIndicator={false}
-
-            >
-                <View className="w-full justify-between">
-                    <View className="w-full gap-5 mb-4">
-                        <View className="bg-white pb-2  px-3 py-2">
-                            <View className="w-full flex-row mb-2 gap-5">
-                                {/* Guide Image and Basic Info */}
-                                {item && item.pp &&
-                                    <Image source={{ uri: `data:image/jpeg;base64,${item?.pp}` }} className='w-20 h-20 rounded-full' />
-                                }
-
-                                <View className="flex-1">
-
-                                    <View className="flex-col items-start mb-1 ml-1 space-y-2">
-                                        <Text className="text-lg font-semibold text-gray-800 flex-1">{`${item?.firstName} ${item?.lastName}`}</Text>
-                                        <Text className="text-sm text-gray-500 mb-1">{item?.description}</Text>
-                                        <View className='w-[90%] flex-row justify-between'>
-                                            <View className='gap-1 flex-row items-center'>
-                                                <Image className='w-4 h-4' source={item?.verified == "done" ? tele : cross}></Image>
-                                                <Text className="text-sm">Phone Verified</Text>
-                                            </View>
-                                            <View className='gap-1 flex-row items-center'>
-                                                <Image className='w-4 h-4' source={item?.identified == "done" ? mark : cross}></Image>
-                                                <Text className="text-sm">Identity Verified</Text>
-                                            </View>
-
-                                        </View>
-
-                                    </View>
-                                    <View className="flex-row justify-between mb-2">
-                                        <View className="flex-row items-center gap-1 flex-1">
-                                            <Image source={location} className='w-5 h-5' />
-                                            <Text className="text-xs text-gray-600">{item?.location}</Text>
-                                        </View>
-                                        <View className="flex-row items-center gap-1 flex-1">
-                                            <Image source={xp} className='w-5 h-5' />
-                                            <Text className="text-xs text-gray-600">{item?.experience} experience</Text>
-                                        </View>
-                                    </View>
-
-                                    {/* Rating and Response */}
-                                    <View className="w-[92%] flex-row items-center justify-between">
-                                        <View className="flex-row items-center gap-1">
-                                            <View className={`rounded px-1.5 py-0.5 ${rating >= 9 ? 'bg-green-500' :
-                                                rating >= 8 ? 'bg-emerald-400' :
-                                                    rating >= 7 ? 'bg-yellow-400' :
-                                                        rating >= 5 ? 'bg-orange-400' :
-                                                            'bg-red-500'
-                                                }`}>
-                                                <Text className="text-white text-xs font-semibold">{rating}</Text>
-                                            </View>
-                                            {/* <View className="flex-row">
-                                                            {renderStars(guide.rating)}
-                                                        </View> */}
-                                            <Text className="text-[10px] text-gray-500">({reviews.length} Reviews)</Text>
-                                        </View>
-
-                                        <View className="items-end">
-                                            <Text className="text-[10px] text-green-500 font-medium">{item?.responseTime}</Text>
-                                            <Text className="text-[10px] text-gray-500">{item?.responseRate}% response rate</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-
-
-                            </View>
-
-                            <View className="w-full pt-2 flex-row justify-between px-2 border-t border-gray-300">
-
-                                <View>
-
-                                    <Text className="text-lg font-bold self-center">{reviews.length}</Text>
-                                    <Text className="text-sm text-gray-500">Reviews</Text>
-
-                                </View>
-
-                                <View>
-
-                                    <Text className="text-lg font-bold self-center">{item?.experience}</Text>
-                                    <Text className="text-sm text-gray-500">Experience</Text>
-
-                                </View>
-                                <View>
-
-                                    <Text className="text-lg font-bold self-center">{item?.languages.length}</Text>
-                                    <Text className="text-sm text-gray-500">Languages</Text>
-
-                                </View>
-                                <View>
-
-                                    <Text className="text-lg font-bold self-center">{item?.specializations.length}</Text>
-                                    <Text className="text-sm text-gray-500">Specializations</Text>
-
-                                </View>
-
-
-                            </View>
-                        </View>
-
-                        <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
-                            <Text className="text-lg font-semibold text-gray-800 mb-4">Available Days</Text>
-                            <View className="flex-row flex-wrap gap-2">
-                                {item?.daysPerWeek.map((day, index) => (
-                                    <View key={index} className="flex-row items-center bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 gap-1.5">
-                                        <Text className="text-sm text-orange-600 font-medium">{day}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                        <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
-                            <Text className="text-lg font-semibold text-gray-800 mb-4">Languages</Text>
-                            <View className="flex-row flex-wrap gap-2">
-                                {item?.languages.map((language, index) => (
-                                    <View key={index} className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 gap-1.5">
-                                        <Image source={globl} className="w-5 h-5" />
-                                        <Text className="text-sm text-blue-600 font-medium">{language}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-
-                        <View className=" bg-white rounded-lg shadow-md m-1 px-2 pb-10 mx-5">
-                            <Text className=" text-2xl font-semibold py-1">Photos</Text>
-
-
-                            <View className="w-full items-center">
-                                <ScrollView
-                                    horizontal
-                                    className="w-[80%] h-50 border-gray-200 rounded-2xl"
-                                    contentContainerClassName="flex-row gap-1"
-                                    showsHorizontalScrollIndicator={false}
-                                    nestedScrollEnabled={true}
-
-                                >
-                                    {item?.images.map((x, i) => {
-
-                                        return (
-
-                                            <View key={i} className="flex-row w-[310px] h-40">
-
-                                                <Image className=" w-[310px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
-
-                                            </View>
-                                        )
-                                    })
-
-                                    }
-                                </ScrollView>
-
-                            </View>
-
-                        </View>
-
-                        <View className="gap-5 px-3">
-                            <View className=" bg-white rounded-lg shadow-md m-1 px-2">
-                                <Text className=" text-2xl font-semibold py-1">About Me</Text>
-                                <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{item?.bio}</Text>
-                            </View>
-
-                            <View className="bg-white mx- my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Specializations</Text>
-                                <View className="flex-row flex-wrap gap-2">
-                                    {item?.specializations.map((language, index) => (
-                                        <View key={index} className="flex-row items-center bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-200 gap-1.5">
-                                            <Text className="text-sm text-blue-600 font-medium">{language}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-
-                            <View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Why Choose Me</Text>
-                                <View className="space-y-3">
-                                    {item?.whyChooseMe.map((reason, index) => (
-                                        <View key={index} className="flex-row items-center gap-3">
-                                            <Image source={mark} className="w-3 h-3" />
-                                            <Text className="text-sm text-gray-600 flex-1 leading-snug">{reason}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-
-                            {(item?.education || item?.certifications || item?.awards) && (<View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Education & Certifications</Text>
-
-                                <View className="space-y-5">
-                                    {/* Education Group */}
-                                    {item.education && (<View>
-                                        <View className="flex-row items-center gap-2 mb-1">
-                                            <Image source={education} className="w-3 h-3" />
-                                            <Text className="text-base font-semibold text-gray-800">Education</Text>
-                                        </View>
-                                        {item?.education.map((edu, index) => (
-                                            <Text key={index} className=" text-sm text-gray-600 ml-8 leading-snug">* {edu}</Text>
-                                        ))}
-                                    </View>)}
-
-                                    {/* Certifications Group */}
-                                    {item.certifications && (<View>
-                                        <View className="flex-row items-center gap-2 mb-1">
-                                            <Image source={certificate} className="w-3 h-3" />
-                                            <Text className="text-base font-semibold text-gray-800">Certifications</Text>
-                                        </View>
-                                        {item?.certifications.map((cert, index) => (
-                                            <Text key={index} className="text-sm text-gray-600 ml-8 leading-snug">* {cert}</Text>
-                                        ))}
-                                    </View>)}
-
-                                    {/* Awards Group */}
-                                    {item.awards && (<View>
-                                        <View className="flex-row items-center gap-2 mb-1">
-                                            <Image source={award} className="w-3 h-3" />
-                                            <Text className="text-base font-semibold text-gray-800">Awards</Text>
-                                        </View>
-                                        {item?.awards.map((award, index) => (
-                                            <Text key={index} className="text-sm text-gray-600 ml-8 leading-snug">* {award}</Text>
-                                        ))}
-                                    </View>)}
-                                </View>
-                            </View>)}
-
-                            {item?.tourStyles && (<View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Tour Styles</Text>
-                                <View className="flex-row flex-wrap gap-2">
-                                    {item?.tourStyles.map((style, index) => (
-                                        <View key={index} className="bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
-                                            <Text className="text-sm text-green-700 font-medium">{style}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>)}
-
-                            {reviews.length > 0 &&
-
-                                <View className=" bg-white rounded-lg shadow-md m-1 px-2">
-                                    <View className="w-[35%] flex-row justify-between">
-                                        <Text className=" text-2xl font-semibold py-1">Reviews</Text>
-                                        {/* <View className="flex-row items-center">
-                                    <Image className="w-5 h-5" source={star} />
-                                    <Text>{item.stars}/5</Text>
-                                </View> */}
-                                    </View>
-                                    <View>
-                                        <ScrollView
-
-                                            className="w-full h-72 rounded-2xl mx-2 mb-2"
-                                            contentContainerClassName=" flex-col px-2 py-3 gap-5 "
-                                            showsVerticalScrollIndicator={false}
-                                            nestedScrollEnabled={true}
-
-                                        >
-                                            {reviews.map((x, i) => {
-
-                                                return (
-
-                                                    <View key={i} className="bg-gray-200 px-3 rounded-2xl">
-                                                        <View className="flex-row items-center">
-                                                            <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
-                                                            <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
-                                                            <View className="flex-row items-center gap-1">
-                                                                <Image className="w-5 h-5" source={star} />
-                                                                <Text>{x.stars}/5</Text>
-                                                            </View>
-                                                        </View>
-                                                        <Text className="text-lg mx-5 my-2">{x.text}</Text>
-
-                                                    </View>
-                                                )
-                                            })
-
-                                            }
-                                        </ScrollView>
-
-                                    </View>
-                                </View>
-
-                            }
-
-                        </View>
-                    </View>
-
-
-                    <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
-
-                        <Text className="px-3 font-extrabold text-xl">{item?.dailyRate}.00 LKR/day</Text>
-
-                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={handleBooking}>
-                            <View className="py-2 px-3 flex-row justify-between items-center w-full">
-                                <Text>Book Now</Text>
-                                <Image className="w-5 h-5" source={back} />
-                            </View>
-                        </TouchableOpacity>
-                    </View>
+            <View style={styles.ratingRow}>
+              <View style={styles.ratingContainer}>
+                <View style={styles.ratingScore}>
+                  <Text style={styles.ratingNumber}>{guide.rating}</Text>
                 </View>
+                <View style={styles.starsContainer}>
+                  {renderStars(guide.rating)}
+                </View>
+                <Text style={styles.reviewCount}>({guide.reviewCount} reviews)</Text>
+              </View>
+            </View>
 
-            </ScrollView>
+            <View style={styles.responseRow}>
+              <Text style={styles.responseTime}>{guide.responseTime}</Text>
+              <Text style={styles.responseRate}>{guide.responseRate} response rate</Text>
+            </View>
+
+            <Text style={styles.joinedDate}>{guide.joinedDate}</Text>
+          </View>
         </View>
 
-    )
+        {/* Languages */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Languages</Text>
+          <View style={styles.tagsContainer}>
+            {guide.languages.map((language: string, index: number) => (
+              <View key={index} style={styles.languageTag}>
+                <Text style={styles.languageText}>{language}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
-}
+        {/* Specializations */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Specializations</Text>
+          <View style={styles.tagsContainer}>
+            {guide.specializations.map((spec: string, index: number) => (
+              <View key={index} style={styles.specializationTag}>
+                <Text style={styles.specializationText}>{spec}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* About Me */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>About Me</Text>
+          <Text style={styles.aboutText}>{guide.aboutMe}</Text>
+        </View>
+
+        {/* Why Choose Me */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Why Choose Me</Text>
+          <View style={styles.whyChooseList}>
+            {guide.whyChooseMe.map((reason: string, index: number) => (
+              <View key={index} style={styles.whyChooseItem}>
+                <Text style={styles.checkIcon}>✓</Text>
+                <Text style={styles.whyChooseText}>{reason}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Pricing */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Pricing</Text>
+          <View style={styles.pricingContainer}>
+            <View style={styles.priceItem}>
+              <Text style={styles.priceIcon}>📅</Text>
+              <View style={styles.priceInfo}>
+                <Text style={styles.priceLabel}>Daily Rate</Text>
+                <Text style={styles.priceAmount}>
+                  {guide.currency} {formatPrice(guide.dailyRate)}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.availabilityInfo}>
+            <Text style={styles.availabilityIcon}>ℹ️</Text>
+            <Text style={styles.availabilityText}>{guide.availability}</Text>
+          </View>
+        </View>
+
+        {/* Error Display */}
+        {bookingError && (
+          <View style={styles.card}>
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.errorText}>{bookingError}</Text>
+            </View>
+          </View>
+        )}
+        
+        <View style={styles.bottomPadding} />
+      </ScrollView>
+
+      {/* Fixed Bottom Action Bar */}
+      <View style={styles.bottomActionBar}>
+        <View style={styles.chargesDisplay}>
+          <Text style={styles.chargesLabel}>Total Charges</Text>
+          <Text style={styles.chargesAmount}>
+            ${totalCost > 0 ? totalCost : guide.dailyRate}
+          </Text>
+          <Text style={styles.chargesDuration}>
+            {numberOfDays > 0 ? `for ${numberOfDays} day${numberOfDays > 1 ? 's' : ''}` : 'per day'}
+          </Text>
+        </View>
+        <View style={styles.bookButtonContainer}>
+          <TouchableOpacity 
+            style={[styles.bookButton, isBooking && styles.bookButtonDisabled]} 
+            onPress={handleBookNow}
+            disabled={isBooking}
+          >
+            <Text style={styles.bookButtonText}>
+              {isBooking ? 'Processing...' : 'Book Now'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+// Add all your existing styles here
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  header: {
+    backgroundColor: '#fde047',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingTop: Platform.OS === 'ios' ? 12 : 20,
+  },
+  backButton: {
+    padding: 8,
+  },
+  backIcon: {
+    fontSize: 24,
+    color: '#000',
+  },
+  headerContent: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  headerTitle: {
+    color: '#000000ff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  shareButton: {
+    padding: 8,
+  },
+  shareIcon: {
+    fontSize: 24,
+  },
+  content: {
+    flex: 1,
+  },
+  compactBookingSummary: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#fde047',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  bookingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  bookingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bookingIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  bookingText: {
+    fontSize: 14,
+    color: '#4b5563',
+    fontWeight: '500',
+  },
+  totalChargeContainer: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalChargeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  totalChargeAmount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  heroSection: {
+    backgroundColor: '#ffffff',
+    padding: 20,
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  guideImageContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  guideImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    resizeMode: 'cover',
+  },
+  guideMainInfo: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  guideName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1f2937',
+    flex: 1,
+  },
+  favoriteButton: {
+    padding: 4,
+  },
+  heartIcon: {
+    fontSize: 24,
+    color: '#dc2626',
+  },
+  guideTitle: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  locationExperience: {
+    marginBottom: 12,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  infoIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#4b5563',
+  },
+  ratingRow: {
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ratingScore: {
+    backgroundColor: '#fde047',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  ratingNumber: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+  },
+  reviewCount: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  responseRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 8,
+  },
+  responseTime: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '500',
+  },
+  responseRate: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  joinedDate: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 16,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  languageTag: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  languageText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  specializationTag: {
+    backgroundColor: '#fefce8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#fde047',
+  },
+  specializationText: {
+    fontSize: 13,
+    color: '#a16207',
+    fontWeight: '500',
+  },
+  aboutText: {
+    fontSize: 15,
+    color: '#4b5563',
+    lineHeight: 22,
+  },
+  whyChooseList: {
+    gap: 12,
+  },
+  whyChooseItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  checkIcon: {
+    fontSize: 14,
+    color: '#10b981',
+  },
+  whyChooseText: {
+    fontSize: 14,
+    color: '#4b5563',
+    flex: 1,
+    lineHeight: 20,
+  },
+  pricingContainer: {
+    marginBottom: 16,
+  },
+  priceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  priceIcon: {
+    fontSize: 20,
+    marginRight: 16,
+  },
+  priceInfo: {
+    flex: 1,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  priceAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#dc2626',
+  },
+  availabilityInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+  },
+  availabilityIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  availabilityText: {
+    fontSize: 14,
+    color: '#059669',
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  errorIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#dc2626',
+    flex: 1,
+  },
+  bottomPadding: {
+    height: 100,
+  },
+  bottomActionBar: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  chargesDisplay: {
+    flex: 1,
+  },
+  chargesLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  chargesAmount: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#dc2626',
+    marginVertical: 2,
+  },
+  chargesDuration: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  bookButtonContainer: {
+    alignItems: 'flex-end',
+  },
+  bookButton: {
+    backgroundColor: '#fde047',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  bookButtonDisabled: {
+    backgroundColor: '#d1d5db',
+    opacity: 0.7,
+  },
+  bookButtonText: {
+    fontSize: 16,
+    color: '#1f2937',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+});
+
+export default GuideProfileDetails;

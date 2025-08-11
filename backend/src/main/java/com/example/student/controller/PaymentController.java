@@ -2,7 +2,6 @@ package com.example.student.controller;
 
 import com.example.student.model.dto.PayHereSessionResponse;
 import com.example.student.model.dto.PaymentSessionRequest;
-import com.example.student.model.dto.PayHereNotification;
 import com.example.student.services.IPaymentService;
 import com.example.student.services.IBookingService;
 import com.example.student.model.Booking;
@@ -11,14 +10,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;  // Changed from javax.servlet to jakarta.servlet
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin
+@CrossOrigin(
+        originPatterns = "*", // Use originPatterns instead of origins
+        allowCredentials = "false", // Set to false
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
+)
 public class PaymentController {
 
     @Autowired
@@ -27,68 +29,11 @@ public class PaymentController {
     @Autowired
     private IBookingService bookingService;
 
-    @PostMapping("/payhere/create-checkout")
-    public ResponseEntity<?> createPayHereCheckout(@RequestBody PaymentSessionRequest request) {
-        try {
-            if (request == null || request.getBookingId() == null) {
-                return new ResponseEntity<>("Invalid request", HttpStatus.BAD_REQUEST);
-            }
+    // REMOVED: Duplicate endpoints that conflict with PayHereController:
+    // - /payhere/create-checkout (now only in PayHereController)
+    // - /payhere/status/{orderId} (now only in PayHereController)
 
-            PayHereSessionResponse response = paymentService.createPayHereCheckout(request.getBookingId());
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>("Error creating PayHere checkout: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Internal error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @PostMapping("/payhere/notify")
-    public ResponseEntity<String> handlePayHereNotification(HttpServletRequest request) {
-        try {
-            // Extract PayHere notification parameters
-            PayHereNotification notification = new PayHereNotification();
-            notification.setMerchantId(request.getParameter("merchant_id"));
-            notification.setOrderId(request.getParameter("order_id"));
-            notification.setPaymentId(request.getParameter("payment_id"));
-
-            String amountParam = request.getParameter("amount");
-            if (amountParam != null && !amountParam.isEmpty()) {
-                notification.setAmount(new BigDecimal(amountParam));
-            }
-
-            notification.setCurrency(request.getParameter("currency"));
-            notification.setStatusCode(request.getParameter("status_code"));
-            notification.setMd5sig(request.getParameter("md5sig"));
-            notification.setMethod(request.getParameter("method"));
-            notification.setStatusMessage(request.getParameter("status_message"));
-            notification.setCardHolderName(request.getParameter("card_holder_name"));
-            notification.setCardNo(request.getParameter("card_no"));
-
-            paymentService.handlePaymentNotification(notification);
-
-            return new ResponseEntity<>("OK", HttpStatus.OK);
-        } catch (Exception e) {
-            System.err.println("Error processing PayHere notification: " + e.getMessage());
-            return new ResponseEntity<>("ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/payhere/status/{orderId}")
-    public ResponseEntity<?> getPaymentStatus(@PathVariable("orderId") String orderId) {
-        try {
-            Booking booking = paymentService.getBookingByOrderId(orderId);
-            if (booking != null) {
-                return new ResponseEntity<>(booking, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Payment not found", HttpStatus.NOT_FOUND);
-            }
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error retrieving payment status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // ===== NEW ENDPOINTS FOR TESTING =====
+    // ===== ADMINISTRATIVE AND TESTING ENDPOINTS =====
 
     @GetMapping("/payhere/health")
     public ResponseEntity<?> getServiceHealth() {
@@ -117,7 +62,7 @@ public class PaymentController {
     public ResponseEntity<?> processConfirmationFee(@PathVariable("bookingId") String bookingId) {
         try {
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (!optBooking.isEmpty()) {
+            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
                 return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
             }
 
@@ -165,7 +110,7 @@ public class PaymentController {
                                         @RequestParam(defaultValue = "test-refund") String reason) {
         try {
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (optBooking.isEmpty()) {
+            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
                 return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
             }
 
@@ -191,7 +136,7 @@ public class PaymentController {
     public ResponseEntity<?> validateMoneyFlow(@PathVariable("bookingId") String bookingId) {
         try {
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (optBooking.isEmpty()) {
+            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
                 return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
             }
 
@@ -207,12 +152,13 @@ public class PaymentController {
             // Validation
             validation.put("bookingId", bookingId);
             validation.put("totalAmount", totalAmount);
-            validation.put("expectedBreakdown", Map.of(
-                    "platformCommission", platformCommission,
-                    "confirmationFee", confirmationFee,
-                    "finalPayout", finalPayout,
-                    "total", platformCommission.add(confirmationFee).add(finalPayout)
-            ));
+            // Create expectedBreakdown map (Java 8 compatible)
+            Map<String, Object> expectedBreakdown = new java.util.HashMap<>();
+            expectedBreakdown.put("platformCommission", platformCommission);
+            expectedBreakdown.put("confirmationFee", confirmationFee);
+            expectedBreakdown.put("finalPayout", finalPayout);
+            expectedBreakdown.put("total", platformCommission.add(confirmationFee).add(finalPayout));
+            validation.put("expectedBreakdown", expectedBreakdown);
             validation.put("mathValid", platformCommission.add(confirmationFee).add(finalPayout).equals(totalAmount));
             validation.put("paymentStatus", booking.getPaymentStatus());
             validation.put("bookingStatus", booking.getStatus());
@@ -234,12 +180,17 @@ public class PaymentController {
             health.put("status", "HEALTHY");
             health.put("service", "PaymentController");
             health.put("timestamp", java.time.LocalDateTime.now().toString());
-            health.put("endpoints", java.util.Arrays.asList(
-                    "POST /api/payments/payhere/create-checkout",
-                    "POST /api/payments/payhere/notify",
-                    "GET /api/payments/payhere/status/{orderId}",
+            health.put("note", "This controller handles administrative and testing functions");
+            health.put("core_payhere_endpoints", "Handled by PayHereController at /api/payments/payhere/");
+            health.put("available_endpoints", java.util.Arrays.asList(
                     "GET /api/payments/payhere/health",
-                    "GET /api/payments/payhere/summary/{bookingId}"
+                    "GET /api/payments/payhere/summary/{bookingId}",
+                    "POST /api/payments/payhere/process-confirmation-fee/{bookingId}",
+                    "POST /api/payments/payhere/test-payment",
+                    "POST /api/payments/payhere/test-refund/{bookingId}",
+                    "GET /api/payments/payhere/test/validate-money-flow/{bookingId}",
+                    "GET /api/payments/payhere/simple-health",
+                    "GET /api/payments/payhere/test/booking-info/{bookingId}"
             ));
 
             return new ResponseEntity<>(health, HttpStatus.OK);
@@ -255,7 +206,7 @@ public class PaymentController {
     public ResponseEntity<?> getBookingInfo(@PathVariable("bookingId") String bookingId) {
         try {
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (optBooking.isEmpty()) {
+            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
                 return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
             }
 
@@ -278,6 +229,39 @@ public class PaymentController {
             return new ResponseEntity<>(info, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Error getting booking info: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ===== ADDITIONAL ADMINISTRATIVE ENDPOINTS =====
+
+    @GetMapping("/admin/all-bookings-status")
+    public ResponseEntity<?> getAllBookingsStatus() {
+        try {
+            Map<String, Object> status = new java.util.HashMap<>();
+
+            // Count bookings by status
+            status.put("pending_payment", bookingService.countBookingsByPaymentStatus("PENDING"));
+            status.put("successful_payment", bookingService.countBookingsByPaymentStatus("SUCCESS"));
+            status.put("failed_payment", bookingService.countBookingsByPaymentStatus("FAILED"));
+            status.put("confirmed_bookings", bookingService.countBookingsByStatus("CONFIRMED"));
+            status.put("completed_bookings", bookingService.countBookingsByStatus("COMPLETED"));
+            status.put("cancelled_bookings", bookingService.countBookingsByStatus("CANCELLED_BY_TRAVELER"));
+
+            return new ResponseEntity<>(status, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error getting bookings status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/admin/recent-bookings")
+    public ResponseEntity<?> getRecentBookings(@RequestParam(defaultValue = "10") int limit) {
+        try {
+            if (limit > 50) limit = 50; // Safety limit
+
+            var recentBookings = bookingService.getRecentBookings(limit);
+            return new ResponseEntity<>(recentBookings, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error getting recent bookings: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

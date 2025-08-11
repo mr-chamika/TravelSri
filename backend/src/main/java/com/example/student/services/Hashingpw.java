@@ -141,7 +141,18 @@ public class Hashingpw {
                                 "/api/wallet/money-flow/summary",
                                 "/api/wallet/money-flow/booking/{bookingId}",
                                 "/api/payments/payhere/summary/{bookingId}",
-                                "/api/guide/search"
+                                "/api/guide/search",
+                                "/api/payments/payhere/simple-health",
+                                "/api/payments/payhere/create-checkout",
+                                "/api/payments/payhere/test/booking-info/{bookingId}",
+                                "api/payments/payhere/test/generate-hash",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/return/{bookingId}",
+                                "/api/payments/payhere/sdk/payment-completed/"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
