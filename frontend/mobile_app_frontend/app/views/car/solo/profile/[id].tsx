@@ -177,7 +177,7 @@ export default function Views() {
         ? parseFloat(((vehicle?.stars / vehicle?.reviewCount) * 2).toFixed(1))
         : 0;
 
-    /* useFocusEffect(
+    useFocusEffect(
         useCallback(() => {
             const loadData = async () => {
                 try {
@@ -197,7 +197,7 @@ export default function Views() {
             loadData();
         }, [])
     );
- */
+
     const handleBooking = async () => {
 
         const keys = await AsyncStorage.getItem("token");
@@ -433,7 +433,7 @@ export default function Views() {
                                     <Text className="text-sm text-gray-500">Age</Text>
                                 </View>
                                 <View className="items-center">
-                                    <Text className="text-lg font-bold text-gray-800">{vehicle?.experience}</Text>
+                                    <Text className="text-lg font-bold text-gray-800">{vehicle?.experience} years</Text>
                                     <Text className="text-sm text-gray-500">Experience</Text>
                                 </View>
                                 <View className="items-center">
@@ -480,7 +480,7 @@ export default function Views() {
                                 <Text className="text-base font-semibold text-gray-700">Trip Type</Text>
                                 <View className="flex-row items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
                                     <Text className="text-blue-700 font-bold">
-                                        {booking?.oneWay ? 'One-Way' : 'Round Trip'}
+                                        {booking?.oneWay ? 'One-Way' : 'Way Back'}
                                     </Text>
                                 </View>
                             </View>

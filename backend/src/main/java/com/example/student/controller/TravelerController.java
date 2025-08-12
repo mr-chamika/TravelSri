@@ -218,12 +218,37 @@ public class TravelerController {
     @PostMapping("/review-create")
     public Review ReviewCreate(@RequestBody ReviewGetdto obj) {
 
+        //find the review creator
+
         String userId = obj.getAuthorId().toString();
 
         Optional<User> newuser= userRepo.findById(userId);
 
         String pp = newuser.get().getPp();
         String country = newuser.get().getCountry();
+
+        //find the merchant
+
+        Optional <User> store = userRepo.findById(obj.getServiceId());
+        User user = store.get();
+
+        // Initialize if null
+        if (user.getReviewCount() == null) user.setReviewCount(0);
+        if (user.getStars() == null) user.setStars(0);
+
+        // Current values
+        int currentReviewCount = user.getReviewCount();
+        int currentStars = user.getStars();
+
+        // Update values
+        int newReviewCount = currentReviewCount + 1;
+        int newTotalStars = currentStars + obj.getStars();
+
+        user.setReviewCount(newReviewCount);
+        user.setStars(newTotalStars);
+
+
+        userRepo.save(user);
 
         Review newReview = new Review(
                 obj.getServiceId(),
