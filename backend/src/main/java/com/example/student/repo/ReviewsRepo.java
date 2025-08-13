@@ -25,11 +25,15 @@ public interface ReviewsRepo extends MongoRepository<Review, String> {
     )
     List<Review> findByStarsIsGreaterThanEqual(int stars);
 
-    // This method is correctly implemented in your code.
+    // Basic find by service ID (no sorting, fastest)
     List<Review> findByServiceId(String serviceId);
 
-    // Find reviews by service ordered by stars (highest first)
-    List<Review> findByServiceIdOrderByStarsDesc(String serviceId);
+    // OLD PROBLEMATIC METHOD - CAUSES MEMORY OVERFLOW
+    // List<Review> findByServiceIdOrderByStarsDesc(String serviceId);
+
+    // NEW LIMITED METHODS - SAFE FROM MEMORY OVERFLOW
+    List<Review> findTop50ByServiceIdOrderByStarsDesc(String serviceId);
+    List<Review> findTop100ByServiceIdOrderByStarsDesc(String serviceId);
 
     // Find reviews by service and specific star rating
     List<Review> findByServiceIdAndStars(String serviceId, int stars);
