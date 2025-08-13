@@ -408,12 +408,12 @@ export default function Views() {
                                                 )}
                                             </View>
                                         </View>
-                                        <View className="items-center flex-row gap-3 justify-center">
+                                        {/* <View className="items-center flex-row gap-3 justify-center">
 
                                             <Image source={tele} className="w-4 h-4" />
                                             <Text>{vehicle?.phone}</Text>
 
-                                        </View>
+                                        </View> */}
                                         <View className="flex-row flex-wrap gap-2 pt-3">
                                             {vehicle?.languages.map((language, index) => (
                                                 <View key={index} className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 gap-1.5">
