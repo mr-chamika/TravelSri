@@ -470,6 +470,27 @@ SolotripViewdto s = new SolotripViewdto(
 
         }
 
+        if(obj.getType().equals("hotel")){
+
+    Optional<Hotel> hotel = hotelsRepo.findById(obj.getServiceId());
+
+    Hotel h = hotel.get();
+
+    if(hotel.isPresent()) {
+
+        if (obj.getSingleRooms() != 0) {
+            h.setAvailableSingle(h.getAvailableSingle() - obj.getSingleRooms());
+        }
+
+        if (obj.getDoubleRooms() != 0) {
+            h.setAvailableDouble(h.getAvailableDouble() - obj.getDoubleRooms());
+        }
+
+        hotelsRepo.save(h);
+
+    }
+
+        }
         return "Success";
     }
 

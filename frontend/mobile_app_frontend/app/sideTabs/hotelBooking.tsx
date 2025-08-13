@@ -45,8 +45,8 @@ export default function HotelsBookingScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [bookingComplete, setBookingComplete] = useState(false);
 
-    const [adults, setAdults] = useState(0);
-    const [children, setChildren] = useState(0);
+    const [adults, setAdults] = useState<number | ''>('');
+    const [children, setChildren] = useState<number | ''>('');
     const [nights, setNights] = useState(0);
     const [location, setLocation] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
@@ -103,7 +103,7 @@ export default function HotelsBookingScreen() {
     };
 
     const handleSubmit = async () => {
-        if (selectedoutDates === '' || selectedDates === '' || !location || !adults || children < 0 || nights < 0) {
+        if (selectedoutDates === '' || selectedDates === '' || !location || !adults || Number(children) < 0 || nights < 0) {
             alert('Please fill in all fields.');
             return;
         }
@@ -113,7 +113,7 @@ export default function HotelsBookingScreen() {
         sending.selectedDates = selectedDates;
         sending.selectedoutDates = selectedoutDates;
         sending.adults = adults;
-        sending.children = children;
+        sending.children = Number(children);
         sending.nights = nights;
         sending.location = location;
 
@@ -125,7 +125,7 @@ export default function HotelsBookingScreen() {
         try {
 
             await AsyncStorage.setItem("soloHotelBook", JSON.stringify(sending));
-            const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${location.toLocaleLowerCase()}&guests=${adults + children}`)
+            const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${location.toLocaleLowerCase()}&guests=${Number(adults) + Number(children)}`)
 
 
             if (res) {
@@ -139,7 +139,7 @@ export default function HotelsBookingScreen() {
                 } else {
 
                     setHotels([])
-                    const res = await fetch(`http://localhost:8080/traveler/hotel-all?guests=${adults + children}`)
+                    const res = await fetch(`http://localhost:8080/traveler/hotel-all?guests=${Number(adults) + Number(children)}`)
 
                     if (res) {
 
@@ -300,19 +300,38 @@ export default function HotelsBookingScreen() {
                                             placeholder="1"
                                             placeholderTextColor="#8E8E8E"
                                             value={adults.toString()}
-                                            onChangeText={(text) => setAdults(parseInt(text.replace(/[^0-9]/g, '')) || 0)}
+                                            onChangeText={(text) => {
+                                                const cleanedText = text.replace(/[^0-9]/g, '');
+                                                if (cleanedText === '') {
+                                                    setAdults('');
+                                                } else {
+                                                    const num = parseInt(cleanedText, 10);
+
+                                                    setAdults(num === 0 ? 1 : num);
+                                                }
+                                            }
+                                            }
                                             keyboardType="numeric"
                                             className="mt-2 w-[90%] ml-7 text-black border border-gray-300 rounded-xl px-3 py-3 text-base"
+
                                         />
                                     </View>
 
                                     <View>
                                         <Text>Enter number of children</Text>
                                         <TextInput
-                                            placeholder=""
+                                            placeholder="0"
                                             placeholderTextColor="#8E8E8E"
                                             value={children.toString()}
-                                            onChangeText={(text) => setChildren(parseInt(text.replace(/[^0-9]/g, '')) || 0)}
+                                            onChangeText={(text) => {
+                                                const cleanedText = text.replace(/[^0-9]/g, '');
+                                                if (cleanedText === '') {
+                                                    setChildren('');
+                                                } else {
+                                                    setChildren(parseInt(cleanedText, 10));
+                                                }
+                                            }
+                                            }
                                             keyboardType="numeric"
                                             className="mt-2 w-[90%] ml-7 text-black border border-gray-300 rounded-xl px-3 py-3 text-base"
                                         />
