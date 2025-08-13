@@ -163,7 +163,7 @@ export default function Views() {
             book.thumbnail = item?.pp;
             book.title = item?.firstName + " " + item?.lastName;
 
-            book.subtitle = item?.tourStyles.slice(0, 2) || [];
+            book.subtitle = item?.tourStyles && item?.tourStyles.length > 0 && item?.tourStyles.slice(0, 2) || [];
 
             book.location = item?.location;
 
@@ -272,7 +272,7 @@ export default function Views() {
                                             {/* <View className="flex-row">
                                                             {renderStars(guide.rating)}
                                                         </View> */}
-                                            <Text className="text-[10px] text-gray-500">({reviews.length} Reviews)</Text>
+                                            <Text className="text-[10px] text-gray-500">({reviews && reviews.length} Reviews)</Text>
                                         </View>
 
                                         <View className="items-end">
@@ -290,7 +290,7 @@ export default function Views() {
 
                                 <View>
 
-                                    <Text className="text-lg font-bold self-center">{reviews.length}</Text>
+                                    <Text className="text-lg font-bold self-center">{reviews && reviews.length}</Text>
                                     <Text className="text-sm text-gray-500">Reviews</Text>
 
                                 </View>
@@ -303,13 +303,13 @@ export default function Views() {
                                 </View>
                                 <View>
 
-                                    <Text className="text-lg font-bold self-center">{item?.languages.length}</Text>
+                                    <Text className="text-lg font-bold self-center">{item?.languages && item?.languages.length}</Text>
                                     <Text className="text-sm text-gray-500">Languages</Text>
 
                                 </View>
                                 <View>
 
-                                    <Text className="text-lg font-bold self-center">{item?.specializations.length}</Text>
+                                    <Text className="text-lg font-bold self-center">{item?.specializations && item?.specializations.length}</Text>
                                     <Text className="text-sm text-gray-500">Specializations</Text>
 
                                 </View>
@@ -321,7 +321,7 @@ export default function Views() {
                         <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
                             <Text className="text-lg font-semibold text-gray-800 mb-4">Available Days</Text>
                             <View className="flex-row flex-wrap gap-2">
-                                {item?.daysPerWeek.map((day, index) => (
+                                {item?.daysPerWeek && item.daysPerWeek.length > 0 && item?.daysPerWeek.map((day, index) => (
                                     <View key={index} className="flex-row items-center bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200 gap-1.5">
                                         <Text className="text-sm text-orange-600 font-medium">{day}</Text>
                                     </View>
@@ -331,7 +331,7 @@ export default function Views() {
                         <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
                             <Text className="text-lg font-semibold text-gray-800 mb-4">Languages</Text>
                             <View className="flex-row flex-wrap gap-2">
-                                {item?.languages.map((language, index) => (
+                                {item?.languages && item.languages.length > 0 && item?.languages.map((language, index) => (
                                     <View key={index} className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 gap-1.5">
                                         <Image source={globl} className="w-5 h-5" />
                                         <Text className="text-sm text-blue-600 font-medium">{language}</Text>
@@ -340,37 +340,39 @@ export default function Views() {
                             </View>
                         </View>
 
-                        <View className=" bg-white rounded-lg shadow-md m-1 px-2 pb-10 mx-5">
-                            <Text className=" text-2xl font-semibold py-1">Photos</Text>
+                        {item?.images && item.images.length > 0 &&
+                            <View className=" bg-white rounded-lg shadow-md m-1 px-2 pb-10 mx-5">
+                                <Text className=" text-2xl font-semibold py-1">Photos</Text>
 
 
-                            <View className="w-full items-center">
-                                <ScrollView
-                                    horizontal
-                                    className="w-[80%] h-50 border-gray-200 rounded-2xl"
-                                    contentContainerClassName="flex-row gap-1"
-                                    showsHorizontalScrollIndicator={false}
-                                    nestedScrollEnabled={true}
+                                <View className="w-full items-center">
+                                    <ScrollView
+                                        horizontal
+                                        className="w-[80%] h-50 border-gray-200 rounded-2xl"
+                                        contentContainerClassName="flex-row gap-1"
+                                        showsHorizontalScrollIndicator={false}
+                                        nestedScrollEnabled={true}
 
-                                >
-                                    {item?.images.map((x, i) => {
+                                    >
+                                        {item?.images.map((x, i) => {
 
-                                        return (
+                                            return (
 
-                                            <View key={i} className="flex-row w-[310px] h-40">
+                                                <View key={i} className="flex-row w-[310px] h-40">
 
-                                                <Image className=" w-[310px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
+                                                    <Image className=" w-[310px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
 
-                                            </View>
-                                        )
-                                    })
+                                                </View>
+                                            )
+                                        })
 
-                                    }
-                                </ScrollView>
+                                        }
+                                    </ScrollView>
+
+                                </View>
 
                             </View>
-
-                        </View>
+                        }
 
                         <View className="gap-5 px-3">
                             <View className=" bg-white rounded-lg shadow-md m-1 px-2">
@@ -378,28 +380,32 @@ export default function Views() {
                                 <Text className="px-3 my-2 text-sm italic text-justify text-gray-500 font-semibold">{item?.bio}</Text>
                             </View>
 
-                            <View className="bg-white mx- my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Specializations</Text>
-                                <View className="flex-row flex-wrap gap-2">
-                                    {item?.specializations.map((language, index) => (
-                                        <View key={index} className="flex-row items-center bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-200 gap-1.5">
-                                            <Text className="text-sm text-blue-600 font-medium">{language}</Text>
-                                        </View>
-                                    ))}
+                            {item?.specializations && item.specializations.length > 0 &&
+                                <View className="bg-white mx- my-2 p-4 rounded-lg shadow-md">
+                                    <Text className="text-lg font-semibold text-gray-800 mb-4">Specializations</Text>
+                                    <View className="flex-row flex-wrap gap-2">
+                                        {item?.specializations.map((language, index) => (
+                                            <View key={index} className="flex-row items-center bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-200 gap-1.5">
+                                                <Text className="text-sm text-blue-600 font-medium">{language}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
-                            </View>
+                            }
 
-                            <View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
-                                <Text className="text-lg font-semibold text-gray-800 mb-4">Why Choose Me</Text>
-                                <View className="space-y-3">
-                                    {item?.whyChooseMe.map((reason, index) => (
-                                        <View key={index} className="flex-row items-center gap-3">
-                                            <Image source={mark} className="w-3 h-3" />
-                                            <Text className="text-sm text-gray-600 flex-1 leading-snug">{reason}</Text>
-                                        </View>
-                                    ))}
+                            {item?.whyChooseMe && item.whyChooseMe.length > 0 &&
+                                <View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
+                                    <Text className="text-lg font-semibold text-gray-800 mb-4">Why Choose Me</Text>
+                                    <View className="space-y-3">
+                                        {item?.whyChooseMe.map((reason, index) => (
+                                            <View key={index} className="flex-row items-center gap-3">
+                                                <Image source={mark} className="w-3 h-3" />
+                                                <Text className="text-sm text-gray-600 flex-1 leading-snug">{reason}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
                                 </View>
-                            </View>
+                            }
 
                             {(item?.education || item?.certifications || item?.awards) && (<View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
                                 <Text className="text-lg font-semibold text-gray-800 mb-4">Education & Certifications</Text>
@@ -411,7 +417,7 @@ export default function Views() {
                                             <Image source={education} className="w-3 h-3" />
                                             <Text className="text-base font-semibold text-gray-800">Education</Text>
                                         </View>
-                                        {item?.education.map((edu, index) => (
+                                        {item.education && item.education.length > 0 && item?.education.map((edu, index) => (
                                             <Text key={index} className=" text-sm text-gray-600 ml-8 leading-snug">* {edu}</Text>
                                         ))}
                                     </View>)}
@@ -422,13 +428,13 @@ export default function Views() {
                                             <Image source={certificate} className="w-3 h-3" />
                                             <Text className="text-base font-semibold text-gray-800">Certifications</Text>
                                         </View>
-                                        {item?.certifications.map((cert, index) => (
+                                        {item.certifications && item.certifications.length > 0 && item?.certifications.map((cert, index) => (
                                             <Text key={index} className="text-sm text-gray-600 ml-8 leading-snug">* {cert}</Text>
                                         ))}
                                     </View>)}
 
                                     {/* Awards Group */}
-                                    {item.awards && (<View>
+                                    {item.awards && item.awards.length > 0 && (<View>
                                         <View className="flex-row items-center gap-2 mb-1">
                                             <Image source={award} className="w-3 h-3" />
                                             <Text className="text-base font-semibold text-gray-800">Awards</Text>
@@ -440,7 +446,7 @@ export default function Views() {
                                 </View>
                             </View>)}
 
-                            {item?.tourStyles && (<View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
+                            {item?.tourStyles && item.tourStyles.length > 0 && (<View className="bg-white mx-1 my-2 p-4 rounded-lg shadow-md">
                                 <Text className="text-lg font-semibold text-gray-800 mb-4">Tour Styles</Text>
                                 <View className="flex-row flex-wrap gap-2">
                                     {item?.tourStyles.map((style, index) => (
@@ -451,7 +457,7 @@ export default function Views() {
                                 </View>
                             </View>)}
 
-                            {reviews.length > 0 &&
+                            {reviews && reviews.length > 0 &&
 
                                 <View className=" bg-white rounded-lg shadow-md m-1 px-2">
                                     <View className="w-[35%] flex-row justify-between">
@@ -470,7 +476,7 @@ export default function Views() {
                                             nestedScrollEnabled={true}
 
                                         >
-                                            {reviews.map((x, i) => {
+                                            {reviews.length > 0 && reviews.map((x, i) => {
 
                                                 return (
 
