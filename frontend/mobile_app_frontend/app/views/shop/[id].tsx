@@ -79,7 +79,7 @@ export default function ShopDetailScreen() {
     const getReviews = async () => {
 
         try {
-            console.log(id)
+
             const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
