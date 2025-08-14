@@ -1,27 +1,37 @@
 package com.example.student.controller;
 
-import com.example.student.model.dto.PayHereSessionResponse;
-import com.example.student.model.dto.PaymentSessionRequest;
 import com.example.student.services.IPaymentService;
 import com.example.student.services.IBookingService;
+import com.example.student.services.IMoneyFlowService;
+import com.example.student.services.ITravelerWalletService;
 import com.example.student.model.Booking;
+import com.example.student.model.MoneyFlow;
+import com.example.student.model.TravelerWallet;
+import com.example.student.model.PaymentTransaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payments")
 @CrossOrigin(
-        originPatterns = "*", // Use originPatterns instead of origins
-        allowCredentials = "false", // Set to false
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
+        originPatterns = "*",
+        allowCredentials = "false",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
 )
 public class PaymentController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
 
     @Autowired
     private IPaymentService paymentService;
@@ -29,239 +39,435 @@ public class PaymentController {
     @Autowired
     private IBookingService bookingService;
 
-    // REMOVED: Duplicate endpoints that conflict with PayHereController:
-    // - /payhere/create-checkout (now only in PayHereController)
-    // - /payhere/status/{orderId} (now only in PayHereController)
+    @Autowired
+    private IMoneyFlowService moneyFlowService;
 
-    // ===== ADMINISTRATIVE AND TESTING ENDPOINTS =====
+    @Autowired
+    private ITravelerWalletService travelerWalletService;
 
-    @GetMapping("/payhere/health")
-    public ResponseEntity<?> getServiceHealth() {
-        try {
-            Map<String, Object> health = paymentService.getServiceHealth();
-            return new ResponseEntity<>(health, HttpStatus.OK);
-        } catch (Exception e) {
-            Map<String, String> errorResponse = new java.util.HashMap<>();
-            errorResponse.put("status", "ERROR");
-            errorResponse.put("message", e.getMessage());
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+    // ===== GENERAL PAYMENT MANAGEMENT ENDPOINTS =====
 
-    @GetMapping("/payhere/summary/{bookingId}")
+    /**
+     * Get payment summary for a booking
+     */
+    @GetMapping("/summary/{bookingId}")
     public ResponseEntity<?> getPaymentSummary(@PathVariable("bookingId") String bookingId) {
         try {
-            Map<String, Object> summary = paymentService.getPaymentSummary(bookingId);
-            return new ResponseEntity<>(summary, HttpStatus.OK);
+            logger.info("Getting payment summary for booking: {}", bookingId);
+
+            Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
+            }
+
+            Booking booking = optBooking.get();
+            Map<String, Object> summary = createPaymentSummary(booking);
+
+            return ResponseEntity.ok(summary);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error getting payment summary: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error getting payment summary for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error getting payment summary: " + e.getMessage()));
         }
     }
 
-    @PostMapping("/payhere/process-confirmation-fee/{bookingId}")
-    public ResponseEntity<?> processConfirmationFee(@PathVariable("bookingId") String bookingId) {
+    /**
+     * Get money flow records for a booking
+     */
+    @GetMapping("/money-flow/{bookingId}")
+    public ResponseEntity<?> getMoneyFlow(@PathVariable("bookingId") String bookingId) {
         try {
+            logger.info("Getting money flow for booking: {}", bookingId);
+
+            List<MoneyFlow> moneyFlows = moneyFlowService.findByBookingId(bookingId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("bookingId", bookingId);
+            response.put("moneyFlows", moneyFlows);
+            response.put("totalFlows", moneyFlows.size());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error getting money flow for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error getting money flow: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get traveler wallet information
+     */
+    @GetMapping("/wallet/{travelerId}")
+    public ResponseEntity<?> getTravelerWallet(@PathVariable("travelerId") String travelerId) {
+        try {
+            logger.info("Getting wallet for traveler: {}", travelerId);
+
+            Optional<TravelerWallet> optWallet = travelerWalletService.findByTravelerId(travelerId);
+
+            if (!optWallet.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Wallet not found for traveler"));
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("wallet", optWallet.get());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error getting wallet for traveler: {}", travelerId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error getting wallet: " + e.getMessage()));
+        }
+    }
+
+    // ===== REFUND MANAGEMENT ENDPOINTS =====
+
+    /**
+     * Process full refund for a booking
+     */
+    @PostMapping("/refund/full/{bookingId}")
+    public ResponseEntity<?> processFullRefund(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam(defaultValue = "Full refund requested") String reason) {
+        try {
+            logger.info("Processing full refund for booking: {}", bookingId);
+
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
-                return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
             }
 
             Booking booking = optBooking.get();
 
-            // Check if booking is in correct status
+            // Validate refund eligibility
+            if (!isRefundEligible(booking)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Booking is not eligible for refund"));
+            }
+
+            // Process refund
+            paymentService.processFullRefund(booking, reason);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Full refund processed successfully");
+            response.put("refundAmount", booking.getTotalAmount());
+            response.put("currency", booking.getCurrency());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error processing full refund for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error processing refund: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Process partial refund for a booking
+     */
+    @PostMapping("/refund/partial/{bookingId}")
+    public ResponseEntity<?> processPartialRefund(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam BigDecimal refundPercentage,
+            @RequestParam(defaultValue = "Partial refund requested") String reason) {
+        try {
+            logger.info("Processing partial refund for booking: {} ({}%)", bookingId, refundPercentage.multiply(BigDecimal.valueOf(100)));
+
+            // Validate refund percentage
+            if (refundPercentage.compareTo(BigDecimal.ZERO) <= 0 || refundPercentage.compareTo(BigDecimal.ONE) > 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Refund percentage must be between 0.01 and 1.0"));
+            }
+
+            Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
+            }
+
+            Booking booking = optBooking.get();
+
+            // Validate refund eligibility
+            if (!isRefundEligible(booking)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Booking is not eligible for refund"));
+            }
+
+            // Process partial refund
+            paymentService.processPartialRefund(booking, refundPercentage, reason);
+
+            BigDecimal refundAmount = booking.getTotalAmount().multiply(refundPercentage);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Partial refund processed successfully");
+            response.put("refundAmount", refundAmount);
+            response.put("refundPercentage", refundPercentage.multiply(BigDecimal.valueOf(100)) + "%");
+            response.put("currency", booking.getCurrency());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error processing partial refund for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error processing partial refund: " + e.getMessage()));
+        }
+    }
+
+    // ===== PAYOUT MANAGEMENT ENDPOINTS =====
+
+    /**
+     * Process confirmation fee payout to provider
+     */
+    @PostMapping("/payout/confirmation-fee/{bookingId}")
+    public ResponseEntity<?> processConfirmationFeePayout(@PathVariable("bookingId") String bookingId) {
+        try {
+            logger.info("Processing confirmation fee payout for booking: {}", bookingId);
+
+            Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
+            }
+
+            Booking booking = optBooking.get();
+
+            // Validate booking status
             if (!"CONFIRMED".equals(booking.getStatus())) {
-                return new ResponseEntity<>("Booking must be confirmed before processing confirmation fee", HttpStatus.BAD_REQUEST);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Booking must be confirmed before processing confirmation fee"));
             }
 
             if (booking.isConfirmationFeePaid()) {
-                return new ResponseEntity<>("Confirmation fee already paid", HttpStatus.BAD_REQUEST);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Confirmation fee already paid"));
             }
 
-            // Process confirmation fee
+            // Process confirmation fee payout
             paymentService.processConfirmationFeePayout(booking);
 
-            return new ResponseEntity<>("Confirmation fee processed successfully", HttpStatus.OK);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Confirmation fee payout processed successfully");
+            response.put("payoutAmount", booking.getProviderConfirmationFee());
+            response.put("currency", booking.getCurrency());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error processing confirmation fee: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error processing confirmation fee payout for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error processing confirmation fee: " + e.getMessage()));
         }
     }
 
-    @PostMapping("/payhere/test-payment")
-    public ResponseEntity<?> createTestPayment(@RequestBody Map<String, Object> testData) {
+    /**
+     * Process final payout to provider
+     */
+    @PostMapping("/payout/final/{bookingId}")
+    public ResponseEntity<?> processFinalPayout(@PathVariable("bookingId") String bookingId) {
         try {
-            // For testing purposes - creates a simple PayHere checkout URL
-            String bookingId = (String) testData.get("bookingId");
+            logger.info("Processing final payout for booking: {}", bookingId);
 
-            if (bookingId == null || bookingId.trim().isEmpty()) {
-                return new ResponseEntity<>("Booking ID is required", HttpStatus.BAD_REQUEST);
-            }
-
-            PayHereSessionResponse response = paymentService.createPayHereCheckout(bookingId);
-
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error creating test payment: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @PostMapping("/payhere/test-refund/{bookingId}")
-    public ResponseEntity<?> testRefund(@PathVariable("bookingId") String bookingId,
-                                        @RequestParam(defaultValue = "1.0") BigDecimal refundPercentage,
-                                        @RequestParam(defaultValue = "test-refund") String reason) {
-        try {
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
-                return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
             }
 
             Booking booking = optBooking.get();
 
-            if (refundPercentage.compareTo(BigDecimal.ONE) == 0) {
-                // Full refund
-                paymentService.processFullRefund(booking, reason);
-                return new ResponseEntity<>("Full refund processed: $" + booking.getTotalAmount(), HttpStatus.OK);
-            } else {
-                // Partial refund
-                paymentService.processPartialRefund(booking, refundPercentage, reason);
-                BigDecimal refundAmount = booking.getTotalAmount().multiply(refundPercentage);
-                return new ResponseEntity<>("Partial refund processed: $" + refundAmount + " (" +
-                        refundPercentage.multiply(BigDecimal.valueOf(100)) + "%)", HttpStatus.OK);
+            // Validate booking status
+            if (!"COMPLETED".equals(booking.getStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Booking must be completed before processing final payout"));
             }
+
+            if (booking.isFinalPayoutPaid()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(createErrorResponse("Final payout already paid"));
+            }
+
+            // Process final payout
+            paymentService.processFinalPayout(booking);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Final payout processed successfully");
+            response.put("payoutAmount", booking.calculateFinalPayout());
+            response.put("currency", booking.getCurrency());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error processing test refund: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error processing final payout for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error processing final payout: " + e.getMessage()));
         }
     }
 
-    @GetMapping("/payhere/test/validate-money-flow/{bookingId}")
+    // ===== VALIDATION AND REPORTING ENDPOINTS =====
+
+    /**
+     * Validate money flow for a booking
+     */
+    @GetMapping("/validate/{bookingId}")
     public ResponseEntity<?> validateMoneyFlow(@PathVariable("bookingId") String bookingId) {
         try {
+            logger.info("Validating money flow for booking: {}", bookingId);
+
             Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
-                return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
+            if (!optBooking.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Booking not found"));
             }
 
             Booking booking = optBooking.get();
-            Map<String, Object> validation = new java.util.HashMap<>();
+            Map<String, Object> validation = validateBookingMoneyFlow(booking);
 
-            // Calculate expected amounts
-            BigDecimal totalAmount = booking.getTotalAmount();
-            BigDecimal platformCommission = booking.getPlatformCommission();
-            BigDecimal confirmationFee = booking.getProviderConfirmationFee();
-            BigDecimal finalPayout = totalAmount.multiply(BigDecimal.valueOf(0.75));
-
-            // Validation
-            validation.put("bookingId", bookingId);
-            validation.put("totalAmount", totalAmount);
-            // Create expectedBreakdown map (Java 8 compatible)
-            Map<String, Object> expectedBreakdown = new java.util.HashMap<>();
-            expectedBreakdown.put("platformCommission", platformCommission);
-            expectedBreakdown.put("confirmationFee", confirmationFee);
-            expectedBreakdown.put("finalPayout", finalPayout);
-            expectedBreakdown.put("total", platformCommission.add(confirmationFee).add(finalPayout));
-            validation.put("expectedBreakdown", expectedBreakdown);
-            validation.put("mathValid", platformCommission.add(confirmationFee).add(finalPayout).equals(totalAmount));
-            validation.put("paymentStatus", booking.getPaymentStatus());
-            validation.put("bookingStatus", booking.getStatus());
-            validation.put("confirmationFeePaid", booking.isConfirmationFeePaid());
-            validation.put("finalPayoutPaid", booking.isFinalPayoutPaid());
-
-            return new ResponseEntity<>(validation, HttpStatus.OK);
+            return ResponseEntity.ok(validation);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error validating money flow: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error validating money flow for booking: {}", bookingId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Error validating money flow: " + e.getMessage()));
         }
     }
 
-    // ===== SIMPLE TEST ENDPOINTS (No Wallet Dependencies) =====
-
-    @GetMapping("/payhere/simple-health")
-    public ResponseEntity<?> getSimpleHealth() {
+    /**
+     * Get payment service health status
+     */
+    @GetMapping("/health")
+    public ResponseEntity<?> getPaymentServiceHealth() {
         try {
-            Map<String, Object> health = new java.util.HashMap<>();
+            Map<String, Object> health = new HashMap<>();
             health.put("status", "HEALTHY");
             health.put("service", "PaymentController");
-            health.put("timestamp", java.time.LocalDateTime.now().toString());
-            health.put("note", "This controller handles administrative and testing functions");
-            health.put("core_payhere_endpoints", "Handled by PayHereController at /api/payments/payhere/");
-            health.put("available_endpoints", java.util.Arrays.asList(
-                    "GET /api/payments/payhere/health",
-                    "GET /api/payments/payhere/summary/{bookingId}",
-                    "POST /api/payments/payhere/process-confirmation-fee/{bookingId}",
-                    "POST /api/payments/payhere/test-payment",
-                    "POST /api/payments/payhere/test-refund/{bookingId}",
-                    "GET /api/payments/payhere/test/validate-money-flow/{bookingId}",
-                    "GET /api/payments/payhere/simple-health",
-                    "GET /api/payments/payhere/test/booking-info/{bookingId}"
-            ));
+            health.put("timestamp", LocalDateTime.now().toString());
+            health.put("supportedCurrency", "LKR");
+            health.put("availableEndpoints", getAvailableEndpoints());
 
-            return new ResponseEntity<>(health, HttpStatus.OK);
-        } catch (Exception e) {
-            Map<String, String> error = new java.util.HashMap<>();
-            error.put("status", "ERROR");
-            error.put("message", e.getMessage());
-            return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @GetMapping("/payhere/test/booking-info/{bookingId}")
-    public ResponseEntity<?> getBookingInfo(@PathVariable("bookingId") String bookingId) {
-        try {
-            Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
-            if (!optBooking.isPresent()) {  // FIXED: Use !isPresent() instead of isEmpty()
-                return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
+            // Add service-specific health checks
+            try {
+                Map<String, Object> serviceHealth = paymentService.getServiceHealth();
+                health.put("serviceHealth", serviceHealth);
+            } catch (Exception e) {
+                health.put("serviceHealthError", e.getMessage());
+                health.put("status", "DEGRADED");
             }
 
-            Booking booking = optBooking.get();
-            Map<String, Object> info = new java.util.HashMap<>();
-
-            info.put("bookingId", booking.getId());
-            info.put("totalAmount", booking.getTotalAmount());
-            info.put("platformCommission", booking.getPlatformCommission());
-            info.put("providerConfirmationFee", booking.getProviderConfirmationFee());
-            info.put("paymentStatus", booking.getPaymentStatus());
-            info.put("bookingStatus", booking.getStatus());
-            info.put("payHereOrderId", booking.getPayHereOrderId());
-            info.put("payHerePaymentId", booking.getPayHerePaymentId());
-            info.put("confirmationFeePaid", booking.isConfirmationFeePaid());
-            info.put("finalPayoutPaid", booking.isFinalPayoutPaid());
-            info.put("createdAt", booking.getCreatedAt());
-            info.put("updatedAt", booking.getUpdatedAt());
-
-            return new ResponseEntity<>(info, HttpStatus.OK);
+            return ResponseEntity.ok(health);
         } catch (Exception e) {
-            return new ResponseEntity<>("Error getting booking info: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            logger.error("Error getting payment service health", e);
+            Map<String, Object> errorHealth = new HashMap<>();
+            errorHealth.put("status", "ERROR");
+            errorHealth.put("message", e.getMessage());
+            errorHealth.put("timestamp", LocalDateTime.now().toString());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorHealth);
         }
     }
 
-    // ===== ADDITIONAL ADMINISTRATIVE ENDPOINTS =====
+    // ===== HELPER METHODS =====
 
-    @GetMapping("/admin/all-bookings-status")
-    public ResponseEntity<?> getAllBookingsStatus() {
-        try {
-            Map<String, Object> status = new java.util.HashMap<>();
+    private Map<String, Object> createPaymentSummary(Booking booking) {
+        Map<String, Object> summary = new HashMap<>();
 
-            // Count bookings by status
-            status.put("pending_payment", bookingService.countBookingsByPaymentStatus("PENDING"));
-            status.put("successful_payment", bookingService.countBookingsByPaymentStatus("SUCCESS"));
-            status.put("failed_payment", bookingService.countBookingsByPaymentStatus("FAILED"));
-            status.put("confirmed_bookings", bookingService.countBookingsByStatus("CONFIRMED"));
-            status.put("completed_bookings", bookingService.countBookingsByStatus("COMPLETED"));
-            status.put("cancelled_bookings", bookingService.countBookingsByStatus("CANCELLED_BY_TRAVELER"));
+        summary.put("bookingId", booking.getId());
+        summary.put("totalAmount", booking.getTotalAmount());
+        summary.put("currency", booking.getCurrency());
+        summary.put("paymentStatus", booking.getPaymentStatus());
+        summary.put("bookingStatus", booking.getStatus());
 
-            return new ResponseEntity<>(status, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error getting bookings status: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        // Financial breakdown
+        Map<String, Object> breakdown = new HashMap<>();
+        breakdown.put("platformCommission", booking.getPlatformCommission());
+        breakdown.put("confirmationFee", booking.getProviderConfirmationFee());
+        breakdown.put("finalPayout", booking.calculateFinalPayout());
+        summary.put("financialBreakdown", breakdown);
+
+        // Payment tracking
+        Map<String, Object> tracking = new HashMap<>();
+        tracking.put("payHereOrderId", booking.getPayHereOrderId());
+        tracking.put("payHerePaymentId", booking.getPayHerePaymentId());
+        tracking.put("confirmationFeePaid", booking.isConfirmationFeePaid());
+        tracking.put("finalPayoutPaid", booking.isFinalPayoutPaid());
+        summary.put("paymentTracking", tracking);
+
+        // Timestamps
+        Map<String, Object> timestamps = new HashMap<>();
+        timestamps.put("createdAt", booking.getCreatedAt());
+        timestamps.put("updatedAt", booking.getUpdatedAt());
+        timestamps.put("confirmationFeePaidAt", booking.getConfirmationFeePaidAt());
+        timestamps.put("finalPayoutPaidAt", booking.getFinalPayoutPaidAt());
+        summary.put("timestamps", timestamps);
+
+        return summary;
     }
 
-    @GetMapping("/admin/recent-bookings")
-    public ResponseEntity<?> getRecentBookings(@RequestParam(defaultValue = "10") int limit) {
-        try {
-            if (limit > 50) limit = 50; // Safety limit
+    private Map<String, Object> validateBookingMoneyFlow(Booking booking) {
+        Map<String, Object> validation = new HashMap<>();
 
-            var recentBookings = bookingService.getRecentBookings(limit);
-            return new ResponseEntity<>(recentBookings, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error getting recent bookings: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        BigDecimal totalAmount = booking.getTotalAmount();
+        BigDecimal platformCommission = booking.getPlatformCommission();
+        BigDecimal confirmationFee = booking.getProviderConfirmationFee();
+        BigDecimal finalPayout = booking.calculateFinalPayout();
+
+        validation.put("bookingId", booking.getId());
+        validation.put("totalAmount", totalAmount);
+
+        // Expected breakdown
+        Map<String, Object> expectedBreakdown = new HashMap<>();
+        expectedBreakdown.put("platformCommission", platformCommission);
+        expectedBreakdown.put("confirmationFee", confirmationFee);
+        expectedBreakdown.put("finalPayout", finalPayout);
+        expectedBreakdown.put("total", platformCommission.add(confirmationFee).add(finalPayout));
+        validation.put("expectedBreakdown", expectedBreakdown);
+
+        // Math validation
+        BigDecimal calculatedTotal = platformCommission.add(confirmationFee).add(finalPayout);
+        validation.put("mathValid", calculatedTotal.equals(totalAmount));
+        validation.put("difference", totalAmount.subtract(calculatedTotal));
+
+        // Status validation
+        validation.put("paymentStatus", booking.getPaymentStatus());
+        validation.put("bookingStatus", booking.getStatus());
+        validation.put("confirmationFeePaid", booking.isConfirmationFeePaid());
+        validation.put("finalPayoutPaid", booking.isFinalPayoutPaid());
+
+        // Business rule validation
+        validation.put("needsConfirmationFeePayout", booking.needsConfirmationFeePayout());
+        validation.put("needsFinalPayout", booking.needsFinalPayout());
+        validation.put("canBeCancelledByTraveler", booking.canBeCancelledByTraveler());
+        validation.put("isWithinRefundWindow", booking.isWithinRefundWindow());
+
+        return validation;
+    }
+
+    private boolean isRefundEligible(Booking booking) {
+        return "SUCCESS".equals(booking.getPaymentStatus()) &&
+                !booking.isCancelled() &&
+                booking.isWithinRefundWindow();
+    }
+
+    private Map<String, Object> createErrorResponse(String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("success", false);
+        error.put("message", message);
+        error.put("timestamp", LocalDateTime.now().toString());
+        return error;
+    }
+
+    private List<String> getAvailableEndpoints() {
+        return List.of(
+                "GET /api/payments/summary/{bookingId}",
+                "GET /api/payments/money-flow/{bookingId}",
+                "GET /api/payments/wallet/{travelerId}",
+                "POST /api/payments/refund/full/{bookingId}",
+                "POST /api/payments/refund/partial/{bookingId}",
+                "POST /api/payments/payout/confirmation-fee/{bookingId}",
+                "POST /api/payments/payout/final/{bookingId}",
+                "GET /api/payments/validate/{bookingId}",
+                "GET /api/payments/health"
+        );
     }
 }

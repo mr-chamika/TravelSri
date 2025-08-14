@@ -1,7 +1,7 @@
 // types/index.ts - Central export for all type definitions
 
 // PayHere types
-export * from './PayHere';
+export * from './payhere';
 
 // Booking types (add when you create them)
 // export * from './booking';

@@ -17,23 +17,10 @@ const tele = require('../../assets/images/tabbar/create/guide/telephones.png')
 const pin = require('../../assets/images/tabbar/create/pin.png')
 const xp = require('../../assets/images/xp.png')
 
-// Replace with your Node.js backend URL for Places API
-const PLACES_API_URL = __DEV__ 
-    ? 'http://localhost:3000/api'  // Development - Node.js Places API
-    : 'https://your-places-api.com/api'; // Production
-
 // Replace with your Spring Boot backend URL for Guides
 const SPRING_BACKEND_URL = __DEV__
     ? 'http://localhost:8080'  // Development - Spring Boot API
     : 'https://your-spring-backend.com'; // Production
-
-interface PlacePrediction {
-    place_id: string;
-    description: string;
-    main_text: string;
-    secondary_text: string;
-    types: string[];
-}
 
 interface Guide {
     _id: string;
@@ -65,6 +52,35 @@ interface BookingDetails {
     language: string;
 }
 
+// Static list of popular Sri Lankan destinations
+const popularDestinations = [
+    'Kandy',
+    'Galle',
+    'Ella',
+    'Sigiriya',
+    'Nuwara Eliya',
+    'Yala National Park',
+    'Anuradhapura',
+    'Polonnaruwa',
+    'Mirissa',
+    'Hikkaduwa',
+    'Dambulla',
+    'Bentota',
+    'Negombo',
+    'Trincomalee',
+    'Arugam Bay',
+    'Haputale',
+    'Bandarawela',
+    'Kitulgala',
+    'Pinnawala',
+    'Horton Plains',
+    'Adam\'s Peak',
+    'Colombo',
+    'Jaffna',
+    'Tangalle',
+    'Unawatuna'
+];
+
 const languages = [
     'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Russian', 'Chinese (Mandarin)', 'Chinese (Cantonese)', 'Japanese', 'Korean', 'Arabic',
     'Dutch', 'Swedish', 'Norwegian', 'Danish', 'Finnish', 'Polish', 'Czech', 'Hungarian', 'Romanian', 'Bulgarian', 'Croatian', 'Serbian', 'Slovak', 'Slovenian', 'Estonian', 'Latvian', 'Lithuanian', 'Greek', 'Turkish', 'Albanian', 'Macedonian', 'Bosnian', 'Montenegrin', 'Maltese', 'Irish', 'Welsh', 'Scottish Gaelic', 'Basque', 'Catalan', 'Galician', 'Icelandic', 'Faroese', 'Luxembourgish', 'Romansh', 'Corsican', 'Sardinian', 'Friulian', 'Ladin', 'Occitan', 'Breton', 'Cornish', 'Manx',
@@ -84,16 +100,14 @@ export default function Guide() {
     const [destination, setDestination] = useState('');
     const [bookingType, setBookingType] = useState('visit');
 
-    // Guide data states (NEW)
+    // Guide data states
     const [guides, setGuides] = useState<Guide[]>([]);
     const [isLoadingGuides, setIsLoadingGuides] = useState(false);
     const [guideError, setGuideError] = useState<string | null>(null);
 
-    // Google Places states (UNCHANGED)
-    const [placePredictions, setPlacePredictions] = useState<PlacePrediction[]>([]);
-    const [showPlaceSuggestions, setShowPlaceSuggestions] = useState(false);
-    const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
-    const [popularPlaces, setPopularPlaces] = useState<any[]>([]);
+    // Destination search states (simplified - no external API)
+    const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(false);
+    const [filteredDestinations, setFilteredDestinations] = useState<string[]>([]);
 
     // Date picker states
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -107,171 +121,110 @@ export default function Guide() {
         lang.toLowerCase().includes(languageSearch.toLowerCase())
     );
 
-    // Node.js backend API integration for Places (UNCHANGED)
-    const searchPlaces = async (input: string) => {
+    // Simple destination search (local filtering)
+    const searchDestinations = (input: string) => {
         if (input.length < 2) {
-            setPlacePredictions([]);
-            setShowPlaceSuggestions(false);
+            setFilteredDestinations([]);
+            setShowDestinationSuggestions(false);
             return;
         }
 
-        setIsLoadingPlaces(true);
-        try {
-            const response = await fetch(
-                `${PLACES_API_URL}/places/search?query=${encodeURIComponent(input)}&country=lk`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    signal: AbortSignal.timeout(5000),
-                }
-            );
-
-            const data = await response.json();
-            
-            if (data.success && data.predictions) {
-                setPlacePredictions(data.predictions);
-                setShowPlaceSuggestions(true);
-            } else {
-                console.error('Backend API error:', data.error);
-                setPlacePredictions([]);
-                setShowPlaceSuggestions(false);
-            }
-        } catch (error: unknown) {
-            console.error('Error fetching places:', error);
-            setPlacePredictions([]);
-            setShowPlaceSuggestions(false);
-            
-            if (error instanceof Error) {
-                if (error.name === 'TimeoutError') {
-                    console.log('Request timed out - please check your connection');
-                } else if (error.name === 'TypeError') {
-                    console.log('Network error - please check your backend server');
-                }
-            }
-        } finally {
-            setIsLoadingPlaces(false);
-        }
-    };
-
-    // Load popular places from Node.js API (UNCHANGED)
-    const loadPopularPlaces = async () => {
-        try {
-            const response = await fetch(`${PLACES_API_URL}/places/popular?country=lk`);
-            const data = await response.json();
-            
-            if (data.success && data.places) {
-                setPopularPlaces(data.places);
-            }
-        } catch (error: unknown) {
-            console.error('Error loading popular places:', error);
-            setPopularPlaces([
-                { name: 'Kandy', description: 'Kandy, Sri Lanka' },
-                { name: 'Galle', description: 'Galle, Sri Lanka' },
-                { name: 'Ella', description: 'Ella, Sri Lanka' },
-                { name: 'Sigiriya', description: 'Sigiriya, Sri Lanka' },
-                { name: 'Nuwara Eliya', description: 'Nuwara Eliya, Sri Lanka' },
-                { name: 'Yala National Park', description: 'Yala National Park, Sri Lanka' }
-            ]);
-        }
-    };
-
-    // NEW: Fetch filtered guides from Spring Boot backend
-    const fetchFilteredGuides = async (filters: BookingDetails) => {
-    setIsLoadingGuides(true);
-    setGuideError(null);
-    
-    try {
-        // Build query parameters for filtering
-        const queryParams = new URLSearchParams();
-        
-        // Extract location from destination (remove ", Sri Lanka" if present)
-        const cleanLocation = filters.destination.replace(', Sri Lanka', '').trim();
-        
-        // Add filters - CORRECTED PARAMETER NAMES
-        if (cleanLocation) {
-            queryParams.append('location', cleanLocation);
-        }
-        if (filters.language) {
-            queryParams.append('language', filters.language);
-        }
-        if (filters.type) {
-            // Changed from 'guideType' to 'type' to match your API
-            queryParams.append('type', filters.type);
-        }
-        
-        // Add verified status filter
-        queryParams.append('verified', 'done');
-        
-        console.log('API URL:', `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`);
-        
-        const response = await fetch(
-            // CORRECTED URL - using the constant and correct endpoint
-            `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                signal: AbortSignal.timeout(10000), // 10 second timeout
-            }
+        const filtered = popularDestinations.filter(dest => 
+            dest.toLowerCase().includes(input.toLowerCase())
         );
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const guidesData = await response.json();
-        console.log('Guides data:', guidesData);
-        setGuides(guidesData);
         
-    } catch (error: unknown) {
-        console.error('Error fetching guides:', error);
-        if (error instanceof Error) {
-            setGuideError(`Failed to load guides: ${error.message}`);
-        } else {
-            setGuideError('Failed to load guides. Please try again.');
-        }
-        setGuides([]);
-    } finally {
-        setIsLoadingGuides(false);
-    }
-};
+        setFilteredDestinations(filtered);
+        setShowDestinationSuggestions(filtered.length > 0);
+    };
 
-    // Debounced search to avoid too many API calls (UNCHANGED)
+    // Debounced destination search
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (destination) {
-                searchPlaces(destination);
+                searchDestinations(destination);
             }
         }, 300);
 
         return () => clearTimeout(timeoutId);
     }, [destination]);
 
-    // Load popular places on mount (UNCHANGED)
-    useEffect(() => {
-        loadPopularPlaces();
-    }, []);
-
-    const handlePlaceSelect = (place: PlacePrediction) => {
-        setDestination(place.description);
-        setShowPlaceSuggestions(false);
-        setPlacePredictions([]);
+    const handleDestinationSelect = (selectedDestination: string) => {
+        setDestination(selectedDestination);
+        setShowDestinationSuggestions(false);
+        setFilteredDestinations([]);
     };
 
     const handleDestinationChange = (text: string) => {
         setDestination(text);
         if (text.length < 2) {
-            setShowPlaceSuggestions(false);
-            setPlacePredictions([]);
+            setShowDestinationSuggestions(false);
+            setFilteredDestinations([]);
         }
     };
 
-    // Generate calendar days for compact date picker (UNCHANGED)
+    // Fetch filtered guides from Spring Boot backend
+    const fetchFilteredGuides = async (filters: BookingDetails) => {
+        setIsLoadingGuides(true);
+        setGuideError(null);
+        
+        try {
+            // Build query parameters for filtering
+            const queryParams = new URLSearchParams();
+            
+            // Extract location from destination
+            const cleanLocation = filters.destination.trim();
+            
+            // Add filters
+            if (cleanLocation) {
+                queryParams.append('location', cleanLocation);
+            }
+            if (filters.language) {
+                queryParams.append('language', filters.language);
+            }
+            if (filters.type) {
+                queryParams.append('type', filters.type);
+            }
+            
+            // Add verified status filter
+            queryParams.append('verified', 'done');
+            
+            console.log('API URL:', `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`);
+            
+            const response = await fetch(
+                `${SPRING_BACKEND_URL}/api/guide/search?${queryParams.toString()}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(10000), // 10 second timeout
+                }
+            );
+
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const guidesData = await response.json();
+            console.log('Guides data:', guidesData);
+            setGuides(guidesData);
+            
+        } catch (error: unknown) {
+            console.error('Error fetching guides:', error);
+            if (error instanceof Error) {
+                setGuideError(`Failed to load guides: ${error.message}`);
+            } else {
+                setGuideError('Failed to load guides. Please try again.');
+            }
+            setGuides([]);
+        } finally {
+            setIsLoadingGuides(false);
+        }
+    };
+
+    // Generate calendar days for compact date picker
     const generateCalendarDays = (month: Date) => {
         const year = month.getFullYear();
         const monthIndex = month.getMonth();
@@ -321,7 +274,7 @@ export default function Guide() {
         });
     };
 
-    // UPDATED: Now fetches guides after form submission
+    // Handle form submission and fetch guides
     const handleSubmit = () => {
         if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
             alert('Please fill in all fields.');
@@ -339,7 +292,7 @@ export default function Guide() {
         setModalVisible(false);
         setFine(true);
         
-        // NEW: Fetch filtered guides based on user selections
+        // Fetch filtered guides based on user selections
         fetchFilteredGuides(book);
     };
 
@@ -357,210 +310,207 @@ export default function Guide() {
     );
 
     // Guide Card Component
-  // Fixed Guide Card Component with correct navigation
-const GuideCard = ({ guide }: { guide: Guide }) => {
-    // Calculate total cost based on selected dates
-    const numberOfDays = selectedDates.length;
-    const totalCost = guide.dailyRate * numberOfDays;
+    const GuideCard = ({ guide }: { guide: Guide }) => {
+        // Calculate total cost based on selected dates
+        const numberOfDays = selectedDates.length;
+        const totalCost = guide.dailyRate * numberOfDays;
 
-    const handleGuideCardPress = () => {
-        // Ensure bookingDetails exists before navigation
-        if (!bookingDetails) {
-            console.error('Booking details not available');
-            return;
-        }
-
-        console.log('Navigating with params:', {
-            id: guide._id,
-            guideData: JSON.stringify(guide),
-            bookingDetails: JSON.stringify(bookingDetails),
-            selectedDates: JSON.stringify(selectedDates),
-            numberOfDays: numberOfDays.toString(),
-            totalCost: totalCost.toString()
-        });
-
-        // Navigate to guide detail page - corrected pathname
-        router.push({
-            // Use the correct path - this should match your file structure
-            pathname: `../views/guide/solo/[id]`, // or whatever your guide detail page path is
-            params: { 
-                id: guide._id,
-                // Pass the complete guide data
-                guideData: JSON.stringify(guide),
-                // Pass booking details
-                bookingDetails: JSON.stringify(bookingDetails),
-                // Pass individual params for easier access
-                destination: bookingDetails.destination,
-                selectedDates: JSON.stringify(selectedDates),
-                language: bookingDetails.language,
-                type: bookingDetails.type,
-                numberOfDays: numberOfDays.toString(),
-                totalCost: totalCost.toString(),
-                dailyRate: guide.dailyRate.toString()
+        const handleGuideCardPress = () => {
+            // Ensure bookingDetails exists before navigation
+            if (!bookingDetails) {
+                console.error('Booking details not available');
+                return;
             }
-        });
-    };
 
-    return (
-        <TouchableOpacity 
-            className="bg-white rounded-3xl shadow-lg border border-gray-50 mb-6 overflow-hidden"
-            onPress={handleGuideCardPress}
-            style={{ 
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.1,
-                shadowRadius: 12,
-                elevation: 8,
-            }}
-        >
-            {/* Rest of your GuideCard JSX remains the same */}
-            {/* Header Section with Profile and Rating */}
-            <View className="p-5 pb-0">
-                <View className="flex-row items-start">
-                    {/* Profile Picture with Status */}
-                    <View className="mr-4 relative">
-                        <Image 
-                            source={{ uri: guide.pp || 'https://via.placeholder.com/80' }}
-                            className="w-20 h-20 rounded-2xl"
-                            contentFit="cover"
-                        />
-                        {/* Verification Badge */}
-                        {guide.verified === 'done' && (
-                            <View className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full items-center justify-center border-2 border-white">
-                                <Text className="text-white text-xs font-bold">✓</Text>
+            console.log('Navigating with params:', {
+                id: guide._id,
+                guideData: JSON.stringify(guide),
+                bookingDetails: JSON.stringify(bookingDetails),
+                selectedDates: JSON.stringify(selectedDates),
+                numberOfDays: numberOfDays.toString(),
+                totalCost: totalCost.toString()
+            });
+
+            // Navigate to guide detail page
+            router.push({
+                pathname: `../views/guide/solo/[id]`,
+                params: { 
+                    id: guide._id,
+                    // Pass the complete guide data
+                    guideData: JSON.stringify(guide),
+                    // Pass booking details
+                    bookingDetails: JSON.stringify(bookingDetails),
+                    // Pass individual params for easier access
+                    destination: bookingDetails.destination,
+                    selectedDates: JSON.stringify(selectedDates),
+                    language: bookingDetails.language,
+                    type: bookingDetails.type,
+                    numberOfDays: numberOfDays.toString(),
+                    totalCost: totalCost.toString(),
+                    dailyRate: guide.dailyRate.toString()
+                }
+            });
+        };
+
+        return (
+            <TouchableOpacity 
+                className="bg-white rounded-3xl shadow-lg border border-gray-50 mb-6 overflow-hidden"
+                onPress={handleGuideCardPress}
+                style={{ 
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 12,
+                    elevation: 8,
+                }}
+            >
+                {/* Header Section with Profile and Rating */}
+                <View className="p-5 pb-0">
+                    <View className="flex-row items-start">
+                        {/* Profile Picture with Status */}
+                        <View className="mr-4 relative">
+                            <Image 
+                                source={{ uri: guide.pp || 'https://via.placeholder.com/80' }}
+                                className="w-20 h-20 rounded-2xl"
+                                contentFit="cover"
+                            />
+                            {/* Verification Badge */}
+                            {guide.verified === 'done' && (
+                                <View className="absolute -top-2 -right-2 w-7 h-7 bg-green-500 rounded-full items-center justify-center border-2 border-white">
+                                    <Text className="text-white text-xs font-bold">✓</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Guide Info Header */}
+                        <View className="flex-1">
+                            <View className="flex-row items-start justify-between mb-1">
+                                <View className="flex-1 mr-2">
+                                    <Text className="text-xl font-bold text-gray-900 mb-1">
+                                        {guide.firstName} {guide.lastName}
+                                    </Text>
+                                    <Text className="text-sm text-gray-500 font-medium">
+                                        {guide.specialization || "Professional Guide"}
+                                    </Text>
+                                </View>
+                                
+                                {/* Rating Badge */}
+                                <View className="bg-yellow-50 border border-yellow-200 rounded-full px-3 py-1 flex-row items-center">
+                                    <Text className="text-yellow-600 text-lg mr-1">⭐</Text>
+                                    <Text className="text-yellow-700 font-bold text-sm">
+                                        {guide.stars.toFixed(1)}
+                                    </Text>
+                                    <Text className="text-yellow-600 text-xs ml-1">
+                                        ({guide.reviewCount})
+                                    </Text>
+                                </View>
                             </View>
-                        )}
-                    </View>
 
-                    {/* Guide Info Header */}
-                    <View className="flex-1">
-                        <View className="flex-row items-start justify-between mb-1">
-                            <View className="flex-1 mr-2">
-                                <Text className="text-xl font-bold text-gray-900 mb-1">
-                                    {guide.firstName} {guide.lastName}
+                            {/* Location and Experience Row */}
+                            <View className="flex-row items-center mt-2">
+                                <View className="flex-row items-center mr-4">
+                                    <Text className="text-blue-500 text-base mr-1">📍</Text>
+                                    <Text className="text-sm text-gray-600 font-medium">{guide.location}</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <Text className="text-purple-500 text-base mr-1">🎖️</Text>
+                                    <Text className="text-sm text-gray-600 font-medium">
+                                        {guide.experience}y exp
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Description Section */}
+                <View className="px-5 py-3">
+                    <Text className="text-gray-700 text-sm leading-5" numberOfLines={2}>
+                        {guide.description || guide.bio || "Experienced local guide ready to show you the best of Sri Lanka!"}
+                    </Text>
+                </View>
+
+                {/* Languages Section */}
+                {guide.languages && guide.languages.length > 0 && (
+                    <View className="px-5 pb-3">
+                        <Text className="text-gray-500 text-xs font-semibold mb-2 uppercase tracking-wide">
+                            Languages
+                        </Text>
+                        <View className="flex-row flex-wrap">
+                            {guide.languages.slice(0, 4).map((language, index) => (
+                                <View 
+                                    key={index}
+                                    className="bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-full mr-2 mb-2"
+                                >
+                                    <Text className="text-black-700 text-xs font-medium">{language}</Text>
+                                </View>
+                            ))}
+                            {guide.languages.length > 4 && (
+                                <View className="bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full">
+                                    <Text className="text-gray-600 text-xs font-medium">
+                                        +{guide.languages.length - 4} more
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
+
+                {/* Pricing Section */}
+                <View className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                    <View className="flex-row justify-between items-center">
+                        {/* Guide Type */}
+                        <View className="flex-1">
+                            <View className="bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-xl inline-block self-start">
+                                <Text className="text-black-700 text-sm font-semibold capitalize">
+                                    {guide.guideType} Guide
                                 </Text>
-                                <Text className="text-sm text-gray-500 font-medium">
-                                    {guide.specialization || "Professional Guide"}
+                            </View>
+                        </View>
+                        
+                        {/* Pricing Details */}
+                        <View className="items-end">
+                            {/* Total Cost - Prominent */}
+                            <View className="items-end mb-1">
+                                <Text className="text-3xl font-bold text-green-600">
+                                    ${totalCost}
+                                </Text>
+                                <Text className="text-gray-500 text-xs font-medium">
+                                    for {numberOfDays} day{numberOfDays > 1 ? 's' : ''}
                                 </Text>
                             </View>
                             
-                            {/* Rating Badge */}
-                            <View className="bg-yellow-50 border border-yellow-200 rounded-full px-3 py-1 flex-row items-center">
-                                <Text className="text-yellow-600 text-lg mr-1">⭐</Text>
-                                <Text className="text-yellow-700 font-bold text-sm">
-                                    {guide.stars.toFixed(1)}
-                                </Text>
-                                <Text className="text-yellow-600 text-xs ml-1">
-                                    ({guide.reviewCount})
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Location and Experience Row */}
-                        <View className="flex-row items-center mt-2">
-                            <View className="flex-row items-center mr-4">
-                                <Text className="text-blue-500 text-base mr-1">📍</Text>
-                                <Text className="text-sm text-gray-600 font-medium">{guide.location}</Text>
-                            </View>
-                            <View className="flex-row items-center">
-                                <Text className="text-purple-500 text-base mr-1">🎖️</Text>
-                                <Text className="text-sm text-gray-600 font-medium">
-                                    {guide.experience}y exp
+                            {/* Daily Rate - Secondary */}
+                            <View className="bg-green-50 border border-green-200 px-2 py-1 rounded-lg">
+                                <Text className="text-green-700 text-xs font-medium">
+                                    ${guide.dailyRate}/day
                                 </Text>
                             </View>
                         </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Description Section */}
-            <View className="px-5 py-3">
-                <Text className="text-gray-700 text-sm leading-5" numberOfLines={2}>
-                    {guide.description || guide.bio || "Experienced local guide ready to show you the best of Sri Lanka!"}
-                </Text>
-            </View>
-
-            {/* Languages Section */}
-            {guide.languages && guide.languages.length > 0 && (
-                <View className="px-5 pb-3">
-                    <Text className="text-gray-500 text-xs font-semibold mb-2 uppercase tracking-wide">
-                        Languages
-                    </Text>
-                    <View className="flex-row flex-wrap">
-                        {guide.languages.slice(0, 4).map((language, index) => (
-                            <View 
-                                key={index}
-                                className="bg-yellow-50 border border-yellow-100 px-3 py-1.5 rounded-full mr-2 mb-2"
-                            >
-                                <Text className="text-black-700 text-xs font-medium">{language}</Text>
-                            </View>
-                        ))}
-                        {guide.languages.length > 4 && (
-                            <View className="bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-full">
-                                <Text className="text-gray-600 text-xs font-medium">
-                                    +{guide.languages.length - 4} more
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-            )}
-
-            {/* Pricing Section */}
-            <View className="px-5 py-4 bg-gray-50 border-t border-gray-100">
-                <View className="flex-row justify-between items-center">
-                    {/* Guide Type */}
-                    <View className="flex-1">
-                        <View className="bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-xl inline-block self-start">
-                            <Text className="text-black-700 text-sm font-semibold capitalize">
-                                {guide.guideType} Guide
-                            </Text>
-                        </View>
-                    </View>
-                    
-                    {/* Pricing Details */}
-                    <View className="items-end">
-                        {/* Total Cost - Prominent */}
-                        <View className="items-end mb-1">
-                            <Text className="text-3xl font-bold text-green-600">
-                                ${totalCost}
-                            </Text>
-                            <Text className="text-gray-500 text-xs font-medium">
-                                for {numberOfDays} day{numberOfDays > 1 ? 's' : ''}
+                {/* Action Footer */}
+                <View className="px-5 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-gray-100">
+                    <View className="flex-row items-center justify-between">
+                        {/* Duration Info */}
+                        <View className="flex-row items-center">
+                            <Text className="text-blue-600 text-sm mr-1">📅</Text>
+                            <Text className="text-Black-700 text-sm font-medium">
+                                {numberOfDays} day{numberOfDays > 1 ? 's' : ''} selected
                             </Text>
                         </View>
                         
-                        {/* Daily Rate - Secondary */}
-                        <View className="bg-green-50 border border-green-200 px-2 py-1 rounded-lg">
-                            <Text className="text-green-700 text-xs font-medium">
-                                ${guide.dailyRate}/day
-                            </Text>
-                        </View>
+                        {/* Book Now Button */}
+                        <TouchableOpacity className="bg-yellow-400 px-8 py-3 rounded-xl flex-row items-center shadow-sm">
+                            <Text className="text-white text-sm mr-1">🎯</Text>
+                            <Text className="text-black font-bold text-sm">Book Now</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
-            </View>
-
-            {/* Action Footer */}
-            <View className="px-5 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-gray-100">
-                <View className="flex-row items-center justify-between">
-                    {/* Duration Info */}
-                    <View className="flex-row items-center">
-                        <Text className="text-blue-600 text-sm mr-1">📅</Text>
-                        <Text className="text-Black-700 text-sm font-medium">
-                            {numberOfDays} day{numberOfDays > 1 ? 's' : ''} selected
-                        </Text>
-                    </View>
-                    
-                    {/* Book Now Button */}
-                    <TouchableOpacity className="bg-yellow-400 px-8 py-3 rounded-xl flex-row items-center shadow-sm">
-                        <Text className="text-white text-sm mr-1">🎯</Text>
-                        <Text className="text-black font-bold text-sm">Book Now</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </TouchableOpacity>
-    );
-};
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
@@ -707,7 +657,7 @@ const GuideCard = ({ guide }: { guide: Guide }) => {
                                         )}
                                     </View>
 
-                                    {/* Google Places Destination Input */}
+                                    {/* Destination Input - Simplified without Google Places */}
                                     <View className="mb-6 relative z-20">
                                         <View className="flex-row items-center mb-3">
                                             <View className="w-8 h-8 bg-green-100 rounded-full items-center justify-center mr-3">
@@ -723,39 +673,32 @@ const GuideCard = ({ guide }: { guide: Guide }) => {
                                                 value={destination}
                                                 onChangeText={handleDestinationChange}
                                                 onFocus={() => {
-                                                    if (destination.length >= 2 && placePredictions.length > 0) {
-                                                        setShowPlaceSuggestions(true);
+                                                    if (destination.length >= 2 && filteredDestinations.length > 0) {
+                                                        setShowDestinationSuggestions(true);
                                                     }
                                                 }}
                                                 className="bg-white rounded-2xl border-2 border-gray-200 px-4 py-4 text-base font-medium text-gray-800"
                                             />
-                                            
-                                            {/* Loading indicator */}
-                                            {isLoadingPlaces && (
-                                                <View className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                                                    <Text className="text-gray-400 text-sm">🔄</Text>
-                                                </View>
-                                            )}
                                         </View>
 
-                                        {/* Google Places Suggestions */}
-                                        {showPlaceSuggestions && placePredictions.length > 0 && (
+                                        {/* Local Destination Suggestions */}
+                                        {showDestinationSuggestions && filteredDestinations.length > 0 && (
                                             <View className="absolute top-full left-0 right-0 bg-white rounded-2xl border border-gray-200 mt-2 shadow-lg z-30 max-h-60">
                                                 <ScrollView 
                                                     showsVerticalScrollIndicator={false}
                                                     keyboardShouldPersistTaps="handled"
                                                 >
-                                                    {placePredictions.map((place) => (
+                                                    {filteredDestinations.map((dest, index) => (
                                                         <TouchableOpacity
-                                                            key={place.place_id}
-                                                            onPress={() => handlePlaceSelect(place)}
+                                                            key={index}
+                                                            onPress={() => handleDestinationSelect(dest)}
                                                             className="px-4 py-3 border-b border-gray-100"
                                                         >
                                                             <Text className="text-base font-medium text-gray-800">
-                                                                {place.main_text}
+                                                                {dest}
                                                             </Text>
                                                             <Text className="text-sm text-gray-500 mt-1">
-                                                                {place.secondary_text}
+                                                                {dest}, Sri Lanka
                                                             </Text>
                                                         </TouchableOpacity>
                                                     ))}
@@ -764,18 +707,18 @@ const GuideCard = ({ guide }: { guide: Guide }) => {
                                         )}
 
                                         {/* Popular Places */}
-                                        {!showPlaceSuggestions && destination.length < 2 && popularPlaces.length > 0 && (
+                                        {!showDestinationSuggestions && destination.length < 2 && (
                                             <View className="mt-4">
                                                 <Text className="text-sm font-medium text-gray-600 mb-3">Popular Destinations</Text>
                                                 <View className="flex-row flex-wrap">
-                                                    {popularPlaces.map((place, index) => (
+                                                    {popularDestinations.slice(0, 8).map((place, index) => (
                                                         <TouchableOpacity
                                                             key={index}
-                                                            onPress={() => setDestination(place.description || place.name)}
+                                                            onPress={() => setDestination(place)}
                                                             className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 mr-2 mb-2"
                                                         >
                                                             <Text className="text-blue-700 text-sm font-medium">
-                                                                {place.name}
+                                                                {place}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     ))}

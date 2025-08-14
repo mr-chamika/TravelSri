@@ -105,6 +105,10 @@ public interface BookingRepo extends MongoRepository<Booking, String> {
     @Query("{'providerId': ?0, 'paymentStatus': ?1}")
     List<Booking> findByProviderIdAndPaymentStatus(String providerId, String paymentStatus);
 
+    List<Booking> findByProviderIdAndStatusAndPaymentStatus(String providerId, String status, String paymentStatus);
+
+    List<Booking> findByProviderIdAndServiceStartDateBetween(String providerId, LocalDateTime start, LocalDateTime end);
+
     // Complex business logic queries
     @Query("{'paymentStatus': 'SUCCESS', 'status': {$in: ['CONFIRMED', 'COMPLETED']}}")
     List<Booking> findSuccessfullyPaidBookings();

@@ -152,7 +152,19 @@ public class Hashingpw {
                                 "/api/payments/payhere/test/debug-payment-data",
                                 "/api/payments/payhere/test/config",
                                 "/api/payments/payhere/return/{bookingId}",
-                                "/api/payments/payhere/sdk/payment-completed/"
+                                "/api/payments/payhere/sdk/payment-completed/",
+                                "/api/guide/bookings/{guideId}",
+                                "/api/guide/bookings/{guideId}/pending",
+                                "/api/guide/bookings/{guideId}/confirmed",
+                                "/api/guide/bookings/{guideId}/completed",
+                                "/api/guide/bookings/{guideId}/today",
+                                "/api/guide/bookings/{guideId}/upcoming",
+                                "/api/guide/bookings/{bookingId}/accept",
+                                "/api/guide/bookings/{bookingId}/reject",
+                                "/api/guide/bookings/{bookingId}/complete",
+                                "/api/guide/bookings/{guideId}/stats",
+                                "/api/guide/bookings/{guideId}/daterange",
+                                "/api/payments/payhere/debug/config-check"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

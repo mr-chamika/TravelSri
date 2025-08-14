@@ -123,7 +123,7 @@ useEffect(() => {
         reviewCount: apiGuide.reviewCount,
         hourlyRate: Math.round(apiGuide.dailyRate / 8),
         dailyRate: apiGuide.dailyRate,
-        currency: apiGuide.currency || "USD",
+        currency: apiGuide.currency || "LKR",
         image: apiGuide.pp || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
         verified: apiGuide.verified === 'done',
         languages: apiGuide.languages || ['English'],
@@ -172,7 +172,9 @@ useEffect(() => {
 
 // Depend on specific param values, not the entire params object
   // Fixed Booking function with proper PayHere integration
-  const handleBookNow = async () => {
+  // Fixed handleBookNow function - replace lines 207-250 in your [id].tsx file
+
+const handleBookNow = async () => {
   console.log('=== BOOKING DEBUG START ===');
   console.log('bookingDetails:', bookingDetails);
   console.log('guide:', guide);
@@ -221,21 +223,22 @@ useEffect(() => {
     const paymentResponse = await BookingService.createPaymentCheckout(booking.id);
     console.log('✅ Step 2: Payment response received:', paymentResponse);
 
-    // Check if we have proper PayHere payment data
-    if (paymentResponse.success && paymentResponse.paymentData) {
+    // FIXED: Check for 'paymentObject' instead of 'paymentData'
+    if (paymentResponse.success && paymentResponse.paymentObject) {
       console.log('✅ Step 3: Payment data valid, navigating to checkout...');
       // Navigate to PayHere checkout page with payment data
       router.push({
         pathname: './../../../views/PayHereCheckout/[id]',
         params: {
-          paymentData: JSON.stringify(paymentResponse.paymentData),
+          paymentData: JSON.stringify(paymentResponse.paymentObject), // FIXED: Use 'paymentObject'
           bookingId: booking.id,
           orderId: paymentResponse.orderId
         }
       });
     } else {
-      console.log('❌ Step 3: Invalid payment response');
-      throw new Error('Invalid payment response from server');
+      console.log('❌ Step 3: Invalid payment response - missing paymentObject');
+      console.log('Available keys in response:', Object.keys(paymentResponse));
+      throw new Error('Invalid payment response from server - missing paymentObject');
     }
 
   } catch (error) {

@@ -44,14 +44,7 @@ management:
       exposure:
         include: health,info
 
-# PayHere Configuration
-payhere:
-  merchant:
-    id: ${PAYHERE_MERCHANT_ID:1231576}
-    secret: ${PAYHERE_MERCHANT_SECRET:MTg0NTAxODI1MjQ1NzY3MDI0MTQ1NTUzMTA2MzExMzI0NjIwODk=}
-  api:
-    base-url: ${PAYHERE_BASE_URL:https://sandbox.payhere.lk/pay/checkout}
-    # For live: https://www.payhere.lk/pay/checkout
+
 
 # Application Configuration
 app:
