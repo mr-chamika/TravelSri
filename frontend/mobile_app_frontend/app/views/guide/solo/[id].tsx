@@ -338,7 +338,7 @@ const handleBookNow = async () => {
             {totalCost > 0 && (
               <View style={styles.totalChargeContainer}>
                 <Text style={styles.totalChargeLabel}>Total Charge</Text>
-                <Text style={styles.totalChargeAmount}>${totalCost}</Text>
+                <Text style={styles.totalChargeAmount}>LKR {totalCost}</Text>
               </View>
             )}
           </View>
@@ -478,7 +478,7 @@ const handleBookNow = async () => {
         <View style={styles.chargesDisplay}>
           <Text style={styles.chargesLabel}>Total Charges</Text>
           <Text style={styles.chargesAmount}>
-            ${totalCost > 0 ? totalCost : guide.dailyRate}
+            LKR {totalCost > 0 ? totalCost : guide.dailyRate}
           </Text>
           <Text style={styles.chargesDuration}>
             {numberOfDays > 0 ? `for ${numberOfDays} day${numberOfDays > 1 ? 's' : ''}` : 'per day'}

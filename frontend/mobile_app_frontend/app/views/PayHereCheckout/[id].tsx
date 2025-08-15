@@ -225,7 +225,7 @@ const PayHereCheckout: React.FC = () => {
       if (isPaymentCanceled) {
         console.log('🚫 Payment canceled! Navigating to cancel page...');
         router.replace({
-          pathname: '../payment-cancelled',
+          pathname: '../PaymentCancel/[id]',
           params: {
             orderId: orderId,
             bookingId: bookingId,
@@ -708,7 +708,7 @@ const PayHereCheckout: React.FC = () => {
       </View>
 
       {/* Platform & Currency Info */}
-      <View style={styles.platformInfo}>
+      {/* <View style={styles.platformInfo}>
         <Text style={styles.platformText}>
           💻 {Platform.OS} | 
           {Platform.OS === 'web' ? ' Form Submission' : (PayHere ? ' SDK Ready' : ' SDK N/A')} | 
@@ -716,7 +716,7 @@ const PayHereCheckout: React.FC = () => {
           {paymentData?.custom_1 && ` | Booking: ${paymentData.custom_1}`}
           {lastRefreshTime && ` | Last Check: ${lastRefreshTime.toLocaleTimeString()}`}
         </Text>
-      </View>
+      </View> */}
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -794,10 +794,10 @@ const PayHereCheckout: React.FC = () => {
               <Text style={styles.detailValue}>{paymentData?.items}</Text>
             </View>
             
-            <View style={styles.detailRow}>
+            {/* <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Order ID:</Text>
               <Text style={styles.detailValue}>{paymentData?.order_id}</Text>
-            </View>
+            </View> */}
             
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Customer:</Text>
@@ -811,24 +811,24 @@ const PayHereCheckout: React.FC = () => {
               <Text style={styles.detailValue}>{paymentData?.email}</Text>
             </View>
 
-            <View style={styles.detailRow}>
+            {/* <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Merchant:</Text>
               <Text style={styles.detailValue}>{paymentData?.merchant_id}</Text>
-            </View>
+            </View> */}
 
-            {paymentData?.custom_1 && (
+            {/* {paymentData?.custom_1 && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Booking ID:</Text>
                 <Text style={styles.detailValue}>{paymentData.custom_1}</Text>
               </View>
-            )}
+            )} */}
 
-            <View style={styles.detailRow}>
+            {/* <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Environment:</Text>
               <Text style={[styles.detailValue, paymentData?.sandbox ? styles.sandboxText : styles.liveText]}>
                 {paymentData?.sandbox ? '🧪 Sandbox' : '🔴 Live'}
               </Text>
-            </View>
+            </View> */}
           </View>
         </View>
 
