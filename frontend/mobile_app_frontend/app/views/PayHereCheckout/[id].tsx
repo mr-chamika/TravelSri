@@ -1,4 +1,4 @@
-// Updated PayHere Checkout Component - LKR Only Support
+// Enhanced PayHere Checkout Component with Payment Status Refresh - LKR Only Support
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -37,6 +37,9 @@ if (Platform.OS !== 'web') {
   console.log('ℹ️ PayHere SDK not supported on web platform');
 }
 
+// API Base URL (you should move this to a config file)
+const API_BASE_URL = 'http://localhost:8080';
+
 const PayHereCheckout: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -45,6 +48,8 @@ const PayHereCheckout: React.FC = () => {
   const [paymentData, setPaymentData] = useState<PayHerePaymentData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
 
   const bookingId = params.bookingId as string;
   const orderId = params.orderId as string;
@@ -107,6 +112,185 @@ const PayHereCheckout: React.FC = () => {
       setIsLoading(false);
     }
   }, [params.paymentData, bookingId, orderId, expectedCurrency]);
+
+  const checkIfPaymentCanceled = async (): Promise<boolean> => {
+  try {
+    console.log('🔍 Checking if payment was canceled...');
+    const response = await fetch(`${API_BASE_URL}/api/payments/status/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: orderId,
+        bookingId: bookingId,
+        currency: 'LKR', // Always specify LKR
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Payment status check failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('📊 Payment status result:', result);
+
+    // Check if payment is canceled
+    const isCanceled =
+      result.status === 'CANCELED' ||
+      result.paymentStatus === 'CANCELED' ||
+      result.reason === 'user_cancelled'; // Adjust based on your API response
+
+    if (isCanceled) {
+      console.log('🚫 Payment confirmed as canceled in database!');
+      return true;
+    } else {
+      console.log('⏳ Payment not canceled in database');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error checking payment cancellation:', error);
+    throw error;
+  }
+};
+
+  // ✅ NEW: Check payment status in database
+ const checkPaymentStatus = async (): Promise<boolean> => {
+  try {
+    console.log('🔍 Checking payment status in database...');
+    const response = await fetch(`${API_BASE_URL}/api/payments/status/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: orderId,
+        bookingId: bookingId,
+        currency: 'LKR', // Always specify LKR
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Payment status check failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('📊 Payment status result:', result);
+
+    // Check if payment is successful
+    const isSuccessful =
+      result.status === 'SUCCESS' ||
+      result.status === 'COMPLETED' ||
+      result.paymentStatus === 'SUCCESS' ||
+      result.paymentStatus === 'COMPLETED';
+
+    if (isSuccessful) {
+      console.log('✅ Payment confirmed as successful in database!');
+      return true;
+    } else {
+      console.log('⏳ Payment not yet confirmed in database');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error checking payment status:', error);
+    throw error;
+  }
+};
+
+  // ✅ NEW: Handle refresh button click
+  const handleRefreshStatus = async () => {
+  if (isRefreshing) return;
+  setIsRefreshing(true);
+  setLastRefreshTime(new Date());
+
+  try {
+    console.log('🔄 Refreshing payment status...');
+    const isPaymentSuccessful = await checkPaymentStatus();
+
+    if (isPaymentSuccessful) {
+      // Navigate to success page with all available data
+      console.log('🎉 Payment confirmed! Navigating to success page...');
+      router.replace({
+        pathname: '../paymentSuccessfull/[id]',
+        params: {
+          orderId: orderId,
+          paymentId: `CONFIRMED_${Date.now()}`,
+          bookingId: bookingId,
+          amount: paymentData?.amount || '',
+          currency: paymentData?.currency || 'LKR',
+          confirmed: 'true',
+        },
+      });
+    } else {
+      // Check if payment was canceled
+      const isPaymentCanceled = await checkIfPaymentCanceled();
+      if (isPaymentCanceled) {
+        console.log('🚫 Payment canceled! Navigating to cancel page...');
+        router.replace({
+          pathname: '../payment-cancelled',
+          params: {
+            orderId: orderId,
+            bookingId: bookingId,
+            reason: 'user_cancelled', // or fetch the actual reason from the API
+          },
+        });
+      } else {
+        // Payment is still processing, stay on the checkout page
+        console.log('⏳ Payment not yet confirmed in database');
+        Alert.alert(
+          'Payment Status',
+          'Payment is still being processed. Please wait a moment and try refreshing again.',
+          [{ text: 'OK', onPress: () => setIsRefreshing(false) }]
+        );
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error checking payment status:', error);
+    Alert.alert('Error', 'Failed to check payment status. Please try again.');
+  } finally {
+    setIsRefreshing(false);
+  }
+};
+
+
+
+  // ✅ Auto-refresh every 30 seconds if payment was submitted
+  useEffect(() => {
+    let autoRefreshInterval: ReturnType<typeof setInterval>;
+
+    if (isSubmitting || lastRefreshTime) {
+      console.log('🔄 Starting auto-refresh for payment status...');
+      
+      autoRefreshInterval = setInterval(async () => {
+        if (!isRefreshing && !isSubmitting) {
+          console.log('⏰ Auto-refreshing payment status...');
+          const isSuccessful = await checkPaymentStatus();
+          
+          if (isSuccessful) {
+            clearInterval(autoRefreshInterval);
+            console.log('🎉 Auto-refresh detected successful payment!');
+            
+            // Auto-navigate to success page
+            router.replace({
+              pathname: '../payment-success',
+              params: {
+                orderId: orderId,
+                paymentId: `AUTO_CONFIRMED_${Date.now()}`,
+                bookingId: bookingId,
+                amount: paymentData?.amount || '',
+                currency: paymentData?.currency || 'LKR',
+                confirmed: 'true'
+              }
+            });
+          }
+        }
+      }, 30000); // Check every 30 seconds
+    }
+
+    return () => {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+      }
+    };
+  }, [isSubmitting, lastRefreshTime, isRefreshing, orderId, bookingId, paymentData]);
 
   // ✅ UPDATED: Convert backend payment data to PayHere SDK format with LKR validation
   const createPayHerePaymentObject = (paymentData: PayHerePaymentData): PayHerePaymentObject => {
@@ -205,25 +389,15 @@ const PayHereCheckout: React.FC = () => {
 
       console.log('✅ Payment form submitted to PayHere');
 
-      // Show user guidance
+      // Show user guidance with refresh option
       Alert.alert(
         'Payment Window Opened',
-        `PayHere payment page has opened in a new tab.\n\nAmount: ${paymentData.currency} ${paymentData.amount}\n\nPlease complete your payment and return to this page.`,
+        `PayHere payment page has opened in a new tab.\n\nAmount: ${paymentData.currency} ${paymentData.amount}\n\nComplete your payment and use the refresh button below to check status.`,
         [
           {
-            text: 'I completed payment',
+            text: 'Check Status Now',
             onPress: () => {
-              console.log('👤 User confirmed payment completion');
-              router.replace({
-                pathname: '../payment-success',
-                params: {
-                  paymentId: 'WEB_' + Date.now(),
-                  orderId: paymentData.order_id,
-                  bookingId: bookingId,
-                  amount: paymentData.amount,
-                  currency: paymentData.currency
-                }
-              });
+              setTimeout(() => handleRefreshStatus(), 2000);
             }
           },
           {
@@ -247,7 +421,7 @@ const PayHereCheckout: React.FC = () => {
     }
   };
 
-  // ✅ UPDATED: Enhanced success handler with LKR validation
+  // ✅ UPDATED: Enhanced success handler with status refresh
   const onPaymentCompleted = (paymentId: string) => {
     console.log('=== PAYMENT SUCCESS ===');
     console.log('✅ Payment completed successfully!');
@@ -319,8 +493,9 @@ const PayHereCheckout: React.FC = () => {
     
     Alert.alert(
       'Payment Cancelled',
-      `You cancelled the payment process.\n\nOrder ID: ${paymentData?.order_id}\n\nYou can try again or go back to modify your booking.`,
+      `You cancelled the payment process.\n\nOrder ID: ${paymentData?.order_id}\n\nYou can try again or use the refresh button to check if payment was processed.`,
       [
+        { text: 'Check Status', onPress: handleRefreshStatus },
         { text: 'Try Again', style: 'default' },
         { 
           text: 'Go Back', 
@@ -520,7 +695,16 @@ const PayHereCheckout: React.FC = () => {
           <Text style={styles.cancelIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PayHere Payment</Text>
-        <View style={styles.placeholder} />
+        {/* ✅ NEW: Refresh button in header */}
+        <TouchableOpacity 
+          style={[styles.refreshButton, isRefreshing && styles.refreshButtonDisabled]} 
+          onPress={handleRefreshStatus}
+          disabled={isRefreshing}
+        >
+          <Text style={[styles.refreshIcon, isRefreshing && styles.refreshIconSpinning]}>
+            {isRefreshing ? '⟳' : '🔄'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Platform & Currency Info */}
@@ -530,11 +714,60 @@ const PayHereCheckout: React.FC = () => {
           {Platform.OS === 'web' ? ' Form Submission' : (PayHere ? ' SDK Ready' : ' SDK N/A')} | 
           💰 {paymentData?.currency} Only
           {paymentData?.custom_1 && ` | Booking: ${paymentData.custom_1}`}
+          {lastRefreshTime && ` | Last Check: ${lastRefreshTime.toLocaleTimeString()}`}
         </Text>
       </View>
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* ✅ NEW: Payment Status Card */}
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <Text style={styles.statusIcon}>📊</Text>
+            <Text style={styles.statusTitle}>Payment Status</Text>
+            <TouchableOpacity 
+              style={[styles.miniRefreshButton, isRefreshing && styles.miniRefreshButtonDisabled]} 
+              onPress={handleRefreshStatus}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <ActivityIndicator size="small" color="#10b981" />
+              ) : (
+                <Text style={styles.miniRefreshText}>Refresh</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.statusContent}>
+            <Text style={styles.statusDescription}>
+              Complete your payment and click refresh to check if it's been confirmed in our system.
+            </Text>
+            {lastRefreshTime && (
+              <Text style={styles.lastCheckText}>
+                Last checked: {lastRefreshTime.toLocaleString()}
+              </Text>
+            )}
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.refreshStatusButton, isRefreshing && styles.refreshStatusButtonDisabled]} 
+            onPress={handleRefreshStatus}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={styles.refreshButtonText}>Checking Status...</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.refreshStatusIcon}>🔍</Text>
+                <Text style={styles.refreshButtonText}>Check Payment Status</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* Payment Summary Card */}
         <View style={styles.paymentCard}>
           <View style={styles.cardHeader}>
@@ -619,7 +852,7 @@ const PayHereCheckout: React.FC = () => {
               <Text style={styles.infoTitle}>Web Platform Payment</Text>
               <Text style={styles.infoText}>
                 Payment will open in a new tab through PayHere's secure checkout page. 
-                Complete the payment and return to this page to continue.
+                Complete the payment and use the refresh button to check status.
               </Text>
             </View>
           </View>
@@ -723,7 +956,7 @@ const PayHereCheckout: React.FC = () => {
   );
 };
 
-// ✅ UPDATED: Enhanced styles with LKR-specific design
+// ✅ UPDATED: Enhanced styles with new refresh components
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -775,12 +1008,109 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1f2937',
   },
-  placeholder: {
+  // ✅ NEW: Refresh button styles
+  refreshButton: {
     width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshButtonDisabled: {
+    opacity: 0.5,
+  },
+  refreshIcon: {
+    fontSize: 18,
+    color: '#1f2937',
+    fontWeight: 'bold',
+  },
+  refreshIconSpinning: {
+    // Add rotation animation if needed
   },
   content: {
     flex: 1,
     padding: 16,
+  },
+  // ✅ NEW: Status card styles
+  statusCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10b981',
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusIcon: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    flex: 1,
+  },
+  miniRefreshButton: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  miniRefreshButtonDisabled: {
+    opacity: 0.5,
+  },
+  miniRefreshText: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  statusContent: {
+    marginBottom: 16,
+  },
+  statusDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  lastCheckText: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontStyle: 'italic',
+  },
+  refreshStatusButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  refreshStatusButtonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  refreshStatusIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  refreshButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
   },
   paymentCard: {
     backgroundColor: '#ffffff',
@@ -808,7 +1138,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     flex: 1,
   },
-  // ✅ NEW: Currency badge
   currencyBadge: {
     backgroundColor: '#fef3c7',
     paddingHorizontal: 8,
@@ -875,7 +1204,6 @@ const styles = StyleSheet.create({
   liveText: {
     color: '#ef4444',
   },
-  // ✅ NEW: Enhanced info cards
   currencyNoticeCard: {
     backgroundColor: '#fef3c7',
     borderRadius: 12,

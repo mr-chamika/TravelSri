@@ -164,7 +164,28 @@ public class Hashingpw {
                                 "/api/guide/bookings/{bookingId}/complete",
                                 "/api/guide/bookings/{guideId}/stats",
                                 "/api/guide/bookings/{guideId}/daterange",
-                                "/api/payments/payhere/debug/config-check"
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/payhere/config-check",
+                                "/api/payments/payhere/test/verify-hash",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "/api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/status/check",
+                                "/api/payments/status/bulk-check",
+                                "/api/payments/status/update",
+                                "/api/payments/history/{bookingId}",
+                                "/api/payments/summary/{bookingId}",
+                                "/api/payments/money-flow/{bookingId}",
+                                "/api/payments/wallet/{travelerId}",
+                                "/api/payments/refund/partial/{bookingId}",
+                                "/api/payments/refund/full/{bookingId}",
+                                "/api/payments/payout/confirmation-fee/{bookingId}",
+                                "/api/payments/payout/final/{bookingId}",
+                                "/api/payments/validate/{bookingId}"
+
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

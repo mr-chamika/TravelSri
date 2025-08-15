@@ -65,6 +65,7 @@ public class PayHereController {
     @Autowired
     private ITravelerWalletService travelerWalletService;
 
+
     /**
      * ✅ FIXED: Input request class for checkout - removed currency field since only LKR is supported
      */
@@ -249,7 +250,7 @@ public class PayHereController {
             String bookingIdForUrl = request.getBookingId() != null ? request.getBookingId() : orderId;
             String returnUrl = String.format("%s/api/payments/payhere/return/payment-success?orderId=%s&bookingId=%s&amount=%.2f&currency=%s",
                     appBaseUrl, orderId, bookingIdForUrl, amount, currency);
-            String cancelUrl = String.format("travelsri://payment-cancelled?orderId=%s&bookingId=%s&reason=user_cancelled",
+            String cancelUrl = String.format("%s/api/payhere/cancle/payment-cancelled?orderId=%s&bookingId=%s&reason=user_cancelled",appBaseUrl,
                     orderId, bookingIdForUrl);
 
             logger.info("✅ App redirect URLs:");
@@ -410,29 +411,286 @@ public class PayHereController {
     @GetMapping("/return/{id}")
     public ResponseEntity<String> handlePaymentReturn(@PathVariable String id, @RequestParam Map<String, String> params) {
         try {
-            logger.info("=== PAYMENT RETURN ENDPOINT ===");
+            logger.info("=== PAYMENT RETURN ENDPOINT WITH FULL PROCESSING ===");
             logger.info("Payment return for ID: {} with params: {}", id, params);
 
-            String orderId = params.getOrDefault("order_id", "");
+            // Extract payment details from return URL parameters
+            String orderId = params.getOrDefault("orderId", "");
+            String bookingId = params.getOrDefault("bookingId", "");
+            String amountStr = params.getOrDefault("amount", "0");
+            String currency = params.getOrDefault("currency", "LKR");
+
+            // Additional PayHere parameters (if available)
             String paymentId = params.getOrDefault("payment_id", "");
-            String payhereAmount = params.getOrDefault("payhere_amount", "");
-            String payhereCurrency = params.getOrDefault("payhere_currency", "LKR");
-            String statusCode = params.getOrDefault("status_code", "");
+            String statusCode = params.getOrDefault("status_code", "2"); // Assume success if not provided
 
-            logger.info("Payment details - Order: {}, Payment: {}, Amount: {} {}, Status: {}",
-                    orderId, paymentId, payhereAmount, payhereCurrency, statusCode);
+            logger.info("Return URL Details - Order: {}, Booking: {}, Amount: {} {}, Payment: {}, Status: {}",
+                    orderId, bookingId, amountStr, currency, paymentId, statusCode);
 
-            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(
-                    generateReturnPage(orderId, statusCode)
-            );
+            // ✅ STEP 1: Validate return parameters
+            if (orderId.isEmpty() || bookingId.isEmpty()) {
+                logger.error("❌ Missing required parameters in return URL");
+                return generateErrorReturnResponse("Missing payment information");
+            }
+
+            // ✅ STEP 2: Validate booking exists
+            Optional<Booking> optBooking = bookingService.getBookingById(bookingId);
+            if (!optBooking.isPresent()) {
+                logger.error("❌ Booking not found: {}", bookingId);
+                return generateErrorReturnResponse("Booking not found");
+            }
+
+            Booking booking = optBooking.get();
+
+            // ✅ STEP 3: Check if payment already processed (avoid duplicate processing)
+            if ("SUCCESS".equals(booking.getPaymentStatus())) {
+                logger.info("✅ Payment already processed for booking: {}", bookingId);
+                return generateSuccessReturnResponse(orderId, booking);
+            }
+
+            // ✅ STEP 4: Validate payment amount matches booking
+            try {
+                BigDecimal returnAmount = new BigDecimal(amountStr);
+                if (returnAmount.compareTo(booking.getTotalAmount()) != 0) {
+                    logger.warn("⚠️ Amount mismatch - Expected: {}, Received: {}",
+                            booking.getTotalAmount(), returnAmount);
+                    // Continue processing but log the discrepancy
+                }
+            } catch (NumberFormatException e) {
+                logger.error("❌ Invalid amount in return URL: {}", amountStr);
+                return generateErrorReturnResponse("Invalid payment amount");
+            }
+
+            // ✅ STEP 5: Process successful payment (MAIN DATABASE UPDATES)
+            boolean processSuccess = processReturnUrlPaymentSuccess(booking, orderId, paymentId, currency, params);
+
+            if (processSuccess) {
+                logger.info("✅ Payment processing completed successfully for booking: {}", bookingId);
+                return generateSuccessReturnResponse(orderId, booking);
+            } else {
+                logger.error("❌ Payment processing failed for booking: {}", bookingId);
+                return generateErrorReturnResponse("Payment processing failed");
+            }
 
         } catch (Exception e) {
-            logger.error("Error in return endpoint", e);
-            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(
-                    generateErrorReturnPage()
-            );
+            logger.error("❌ Error in return endpoint for ID: {}", id, e);
+            return generateErrorReturnResponse("Payment processing error: " + e.getMessage());
         }
     }
+
+    private boolean processReturnUrlPaymentSuccess(Booking booking, String orderId, String paymentId,
+                                                   String currency, Map<String, String> params) {
+        try {
+            logger.info("=== PROCESSING RETURN URL PAYMENT SUCCESS ===");
+            logger.info("Booking: {}, Order: {}, Payment: {}", booking.getId(), orderId, paymentId);
+
+            // Generate payment ID if not provided
+            if (paymentId == null || paymentId.trim().isEmpty()) {
+                paymentId = "PAY_RETURN_" + System.currentTimeMillis();
+                logger.info("Generated payment ID from return: {}", paymentId);
+            }
+
+            // ✅ STEP 1: Create/Update Payment Transaction
+            PaymentTransaction paymentTransaction = createReturnPaymentTransaction(
+                    booking, orderId, paymentId, currency, params
+            );
+
+            // ✅ STEP 2: Update Booking with Payment Success
+            updateBookingForReturnSuccess(booking, orderId, paymentId, paymentTransaction);
+
+            // ✅ STEP 3: Create Complete Money Flow Records
+            createCompleteMoneyFlowRecords(booking, paymentTransaction);
+
+            // ✅ STEP 4: Update Traveler Wallet
+            updateTravelerWalletForPayment(booking);
+
+            // ✅ STEP 5: Log Success
+            logReturnPaymentSuccess(booking, paymentTransaction);
+
+            return true;
+
+        } catch (Exception e) {
+            logger.error("❌ Error processing return URL payment success for booking: {}", booking.getId(), e);
+            return false;
+        }
+    }
+
+    private PaymentTransaction createReturnPaymentTransaction(Booking booking, String orderId,
+                                                              String paymentId, String currency,
+                                                              Map<String, String> params) {
+        try {
+            // Check if transaction already exists
+            PaymentTransaction existingTransaction = payHerePaymentService.getPaymentByOrderId(orderId);
+
+            if (existingTransaction != null) {
+                // Update existing transaction
+                existingTransaction.setPayHerePaymentId(paymentId);
+                existingTransaction.setStatus("SUCCESS");
+                existingTransaction.setPayHereResponse("Return URL: " + params.toString());
+                existingTransaction.setUpdatedAt(LocalDateTime.now());
+
+                payHerePaymentService.savePaymentTransaction(existingTransaction);
+                logger.info("✅ Updated existing payment transaction: {}", existingTransaction.getId());
+                return existingTransaction;
+            } else {
+                // Create new transaction
+                PaymentTransaction newTransaction = new PaymentTransaction();
+                newTransaction.setBookingId(booking.getId());
+                newTransaction.setPayHereOrderId(orderId);
+                newTransaction.setPayHerePaymentId(paymentId);
+                newTransaction.setAmount(booking.getTotalAmount());
+                newTransaction.setCurrency(currency);
+                newTransaction.setStatus("SUCCESS");
+                newTransaction.setType("PAYMENT");
+                newTransaction.setPayHereResponse("Return URL: " + params.toString());
+                newTransaction.setCreatedAt(LocalDateTime.now());
+                newTransaction.setUpdatedAt(LocalDateTime.now());
+
+                payHerePaymentService.savePaymentTransaction(newTransaction);
+                logger.info("✅ Created new payment transaction: {}", newTransaction.getId());
+                return newTransaction;
+            }
+        } catch (Exception e) {
+            logger.error("❌ Error creating payment transaction from return URL", e);
+            throw e;
+        }
+    }
+
+    private ResponseEntity<String> generateSuccessReturnResponse(String orderId, Booking booking) {
+        String successHtml = "<!DOCTYPE html><html><head><title>Payment Successful</title>" +
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+                "<meta http-equiv=\"refresh\" content=\"3;url=travelsri://payment-success?orderId=" + orderId +
+                "&bookingId=" + booking.getId() + "&amount=" + booking.getTotalAmount() + "\">" +
+                "<style>" +
+                "body{font-family:Arial;text-align:center;padding:50px;background:#10b981;color:white;margin:0}" +
+                ".container{background:white;color:#333;border-radius:16px;padding:40px;max-width:400px;margin:0 auto;box-shadow:0 20px 40px rgba(0,0,0,0.1)}" +
+                ".icon{font-size:64px;margin-bottom:20px}" +
+                ".amount{font-size:24px;font-weight:bold;color:#10b981;margin:20px 0}" +
+                ".details{background:#f8f9fa;padding:15px;border-radius:8px;margin:20px 0}" +
+                ".redirect{color:#666;font-size:14px;margin-top:20px}" +
+                "</style></head>" +
+                "<body><div class=\"container\">" +
+                "<div class=\"icon\">✅</div>" +
+                "<h2>Payment Successful!</h2>" +
+                "<div class=\"amount\">" + booking.getTotalAmount() + " LKR</div>" +
+                "<div class=\"details\">" +
+                "<strong>Booking ID:</strong> " + booking.getId() + "<br>" +
+                "<strong>Order ID:</strong> " + orderId + "<br>" +
+                "<strong>Status:</strong> Confirmed" +
+                "</div>" +
+                "<p>Your booking has been confirmed and payment processed successfully.</p>" +
+                "<div class=\"redirect\">Redirecting to TravelSri app in 3 seconds...</div>" +
+                "<script>setTimeout(() => window.location.href='travelsri://payment-success?orderId=" + orderId +
+                "&bookingId=" + booking.getId() + "&amount=" + booking.getTotalAmount() + "', 3000);</script>" +
+                "</div></body></html>";
+
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(successHtml);
+    }
+
+    /**
+     * ✅ NEW: Generate error return response
+     */
+    private ResponseEntity<String> generateErrorReturnResponse(String errorMessage) {
+        String errorHtml = "<!DOCTYPE html><html><head><title>Payment Error</title>" +
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+                "<meta http-equiv=\"refresh\" content=\"5;url=travelsri://payment-error?reason=" +
+                java.net.URLEncoder.encode(errorMessage, java.nio.charset.StandardCharsets.UTF_8) + "\">" +
+                "<style>" +
+                "body{font-family:Arial;text-align:center;padding:50px;background:#ef4444;color:white;margin:0}" +
+                ".container{background:white;color:#333;border-radius:16px;padding:40px;max-width:400px;margin:0 auto;box-shadow:0 20px 40px rgba(0,0,0,0.1)}" +
+                ".icon{font-size:64px;margin-bottom:20px}" +
+                ".redirect{color:#666;font-size:14px;margin-top:20px}" +
+                "</style></head>" +
+                "<body><div class=\"container\">" +
+                "<div class=\"icon\">❌</div>" +
+                "<h2>Payment Processing Error</h2>" +
+                "<p>" + errorMessage + "</p>" +
+                "<p>Please try again or contact support if the problem persists.</p>" +
+                "<div class=\"redirect\">Redirecting to TravelSri app in 5 seconds...</div>" +
+                "</div></body></html>";
+
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(errorHtml);
+    }
+
+    /**
+     * ✅ NEW: Update booking for return URL success
+     */
+    private void updateBookingForReturnSuccess(Booking booking, String orderId, String paymentId,
+                                               PaymentTransaction transaction) {
+        try {
+            logger.info("Updating booking from return URL: {}", booking.getId());
+
+            // Basic payment updates
+            booking.setPayHereOrderId(orderId);
+            booking.setPayHerePaymentId(paymentId);
+            booking.setPaymentStatus("SUCCESS");
+            booking.setStatus("PENDING_PROVIDER_ACCEPTANCE");
+            booking.setCurrency(SUPPORTED_CURRENCY);
+
+            // ✅ Calculate financial breakdowns
+            if (booking.getTotalAmount() != null) {
+                if (booking.getPlatformCommission() == null) {
+                    booking.setPlatformCommission(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.05))); // 5%
+                }
+                if (booking.getProviderConfirmationFee() == null) {
+                    booking.setProviderConfirmationFee(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.10))); // 10%
+                }
+            }
+
+            // ✅ Set important deadlines
+            if (booking.getBookingTime() == null) {
+                booking.setBookingTime(LocalDateTime.now());
+            }
+            if (booking.getCancellationDeadline() == null) {
+                booking.setCancellationDeadline(booking.getBookingTime().plusHours(20));
+            }
+            if (booking.getRefundDeadline() == null && booking.getServiceStartDate() != null) {
+                booking.setRefundDeadline(booking.getServiceStartDate().minusDays(2));
+            }
+
+            // ✅ Add transaction to booking history
+            if (booking.getTransactions() == null) {
+                booking.setTransactions(new ArrayList<>());
+            }
+
+            boolean transactionExists = booking.getTransactions().stream()
+                    .anyMatch(t -> transaction.getPayHereOrderId().equals(t.getPayHereOrderId()));
+
+            if (!transactionExists) {
+                booking.getTransactions().add(transaction);
+            }
+
+            // Save booking
+            booking.onUpdate();
+            bookingService.updateBooking(booking);
+
+            logger.info("✅ Booking updated from return URL: Status={}, Commission={} LKR",
+                    booking.getStatus(), booking.getPlatformCommission());
+
+        } catch (Exception e) {
+            logger.error("❌ Error updating booking from return URL: {}", booking.getId(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * ✅ NEW: Log return URL payment success
+     */
+    private void logReturnPaymentSuccess(Booking booking, PaymentTransaction transaction) {
+        logger.info("=== RETURN URL PAYMENT SUCCESS SUMMARY ===");
+        logger.info("✅ Source: PayHere Return URL");
+        logger.info("✅ Booking ID: {}", booking.getId());
+        logger.info("✅ Total Amount: {} {}", booking.getTotalAmount(), booking.getCurrency());
+        logger.info("✅ Platform Commission: {} LKR", booking.getPlatformCommission());
+        logger.info("✅ Confirmation Fee: {} LKR", booking.getProviderConfirmationFee());
+        logger.info("✅ Final Payout: {} LKR", booking.calculateFinalPayout());
+        logger.info("✅ PayHere Order: {}", booking.getPayHereOrderId());
+        logger.info("✅ PayHere Payment: {}", booking.getPayHerePaymentId());
+        logger.info("✅ New Status: {}", booking.getStatus());
+        logger.info("✅ Payment Status: {}", booking.getPaymentStatus());
+        logger.info("===============================================");
+    }
+
 
     /**
      * ✅ EXISTING MAPPING: Handle payment cancellation
@@ -494,27 +752,79 @@ public class PayHereController {
                     orderId, paymentId, paymentAmount, currency, "SUCCESS", params
             );
 
-            // 2. Update Booking Details
+            // 2. Get and Update Booking Details
             Optional<Booking> optBooking = bookingService.getBookingByPayHereOrderId(orderId);
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
+
+                // ✅ STEP 1: Update booking for successful payment
                 updateBookingForSuccessfulPayment(booking, paymentId, paymentTransaction);
 
-                // 3. Create Money Flow Records
-                createMoneyFlowRecords(booking, paymentTransaction);
+                // ✅ STEP 2: Create comprehensive money flow records
+                createCompleteMoneyFlowRecords(booking, paymentTransaction);
 
-                // 4. Update Traveler Wallet
-                updateTravelerWallet(booking);
+                // ✅ STEP 3: Update traveler wallet with spending
+                updateTravelerWalletForPayment(booking);
+
+                // ✅ STEP 4: Log the complete success
+                logPaymentSuccess(booking, paymentTransaction);
 
                 logger.info("✅ Successfully processed payment for booking: {}", booking.getId());
             } else {
                 logger.warn("⚠️ No booking found for order ID: {}", orderId);
+                // Still save the payment transaction even if booking not found
             }
 
         } catch (Exception e) {
             logger.error("❌ Error handling successful payment for order: {}", orderId, e);
+            // Don't rethrow - we want to acknowledge the payment to PayHere
         }
     }
+
+    private void logPaymentSuccess(Booking booking, PaymentTransaction transaction) {
+        try {
+            logger.info("=== PAYMENT SUCCESS SUMMARY ===");
+            logger.info("Booking ID: {}", booking.getId());
+            logger.info("Traveler ID: {}", booking.getTravelerId());
+            logger.info("Provider ID: {}", booking.getProviderId());
+            logger.info("Total Amount: {} {}", booking.getTotalAmount(), booking.getCurrency());
+            logger.info("Platform Commission: {} LKR", booking.getPlatformCommission());
+            logger.info("Confirmation Fee: {} LKR", booking.getProviderConfirmationFee());
+            logger.info("Final Payout: {} LKR", booking.calculateFinalPayout());
+            logger.info("PayHere Order ID: {}", booking.getPayHereOrderId());
+            logger.info("PayHere Payment ID: {}", booking.getPayHerePaymentId());
+            logger.info("Booking Status: {}", booking.getStatus());
+            logger.info("Payment Status: {}", booking.getPaymentStatus());
+            logger.info("Transaction ID: {}", transaction.getId());
+            logger.info("================================");
+        } catch (Exception e) {
+            logger.warn("Error logging payment success details", e);
+        }
+    }
+
+    /**
+     * ✅ ENHANCED: Update traveler wallet with comprehensive data
+     */
+    private void updateTravelerWalletForPayment(Booking booking) {
+        try {
+            logger.info("Updating traveler wallet for successful payment: {}", booking.getTravelerId());
+
+            // Use the service to add spending - this will create/update wallet automatically
+            TravelerWallet updatedWallet = travelerWalletService.addSpending(
+                    booking.getTravelerId(),
+                    booking.getTotalAmount(),
+                    booking.getId()
+            );
+
+            logger.info("✅ Traveler wallet updated - Total spent: {} LKR for traveler: {}",
+                    updatedWallet.getTotalSpent(), booking.getTravelerId());
+
+        } catch (Exception e) {
+            logger.error("❌ Error updating traveler wallet for: {}", booking.getTravelerId(), e);
+            // Don't throw - this shouldn't stop the payment processing
+        }
+    }
+
 
     /**
      * ✅ NEW: Update or create payment transaction record
@@ -553,6 +863,100 @@ public class PayHereController {
         }
     }
 
+    private void createCompleteMoneyFlowRecords(Booking booking, PaymentTransaction transaction) {
+        try {
+            logger.info("Creating comprehensive money flow records for booking: {}", booking.getId());
+
+            // ✅ FLOW 1: Main payment flow: Traveler -> Platform
+            MoneyFlow mainPayment = createMoneyFlow(
+                    booking.getId(),
+                    "TRAVELER", "PLATFORM",
+                    booking.getTravelerId(), "PLATFORM_ACCOUNT",
+                    booking.getTotalAmount(),
+                    "PAYMENT",
+                    "Customer payment for booking " + booking.getId(),
+                    "COMPLETED",
+                    transaction.getPayHerePaymentId()
+            );
+            moneyFlowService.save(mainPayment);
+            logger.info("✅ Created main payment flow: {} LKR", booking.getTotalAmount());
+
+            // ✅ FLOW 2: Platform commission flow (5%)
+            if (booking.getPlatformCommission() != null && booking.getPlatformCommission().compareTo(BigDecimal.ZERO) > 0) {
+                MoneyFlow commissionFlow = createMoneyFlow(
+                        booking.getId(),
+                        "PLATFORM", "PLATFORM",
+                        "PLATFORM_ACCOUNT", "PLATFORM_REVENUE",
+                        booking.getPlatformCommission(),
+                        "COMMISSION",
+                        "Platform commission (5%) for booking " + booking.getId(),
+                        "COMPLETED",
+                        transaction.getPayHerePaymentId()
+                );
+                moneyFlowService.save(commissionFlow);
+                logger.info("✅ Created commission flow: {} LKR", booking.getPlatformCommission());
+            }
+
+            // ✅ FLOW 3: Provider confirmation fee allocation (10%) - PENDING until 20 hours
+            if (booking.getProviderConfirmationFee() != null && booking.getProviderConfirmationFee().compareTo(BigDecimal.ZERO) > 0) {
+                MoneyFlow confirmationFeeAllocation = createMoneyFlow(
+                        booking.getId(),
+                        "PLATFORM", "PROVIDER",
+                        "PLATFORM_ACCOUNT", booking.getProviderId(),
+                        booking.getProviderConfirmationFee(),
+                        "CONFIRMATION_FEE",
+                        "Confirmation fee allocation (10%) for booking " + booking.getId(),
+                        "PENDING", // Will be COMPLETED when actually paid after 20 hours
+                        transaction.getPayHerePaymentId()
+                );
+                moneyFlowService.save(confirmationFeeAllocation);
+                logger.info("✅ Created confirmation fee allocation: {} LKR (PENDING)", booking.getProviderConfirmationFee());
+            }
+
+            // ✅ FLOW 4: Final payout allocation (75%) - PENDING until service completed
+            BigDecimal finalPayout = booking.calculateFinalPayout();
+            if (finalPayout != null && finalPayout.compareTo(BigDecimal.ZERO) > 0) {
+                MoneyFlow finalPayoutAllocation = createMoneyFlow(
+                        booking.getId(),
+                        "PLATFORM", "PROVIDER",
+                        "PLATFORM_ACCOUNT", booking.getProviderId(),
+                        finalPayout,
+                        "FINAL_PAYOUT",
+                        "Final payout allocation (75%) for booking " + booking.getId(),
+                        "PENDING", // Will be COMPLETED when service is completed
+                        transaction.getPayHerePaymentId()
+                );
+                moneyFlowService.save(finalPayoutAllocation);
+                logger.info("✅ Created final payout allocation: {} LKR (PENDING)", finalPayout);
+            }
+
+            logger.info("✅ All money flow records created successfully for booking: {}", booking.getId());
+
+        } catch (Exception e) {
+            logger.error("❌ Error creating money flow records for booking: {}", booking.getId(), e);
+            // Don't throw - this shouldn't stop the payment processing
+        }
+    }
+
+    private MoneyFlow createMoneyFlow(String bookingId, String fromEntity, String toEntity,
+                                      String fromEntityId, String toEntityId, BigDecimal amount,
+                                      String flowType, String description, String status,
+                                      String transactionReference) {
+        MoneyFlow moneyFlow = new MoneyFlow();
+        moneyFlow.setBookingId(bookingId);
+        moneyFlow.setFromEntity(fromEntity);
+        moneyFlow.setToEntity(toEntity);
+        moneyFlow.setFromEntityId(fromEntityId);
+        moneyFlow.setToEntityId(toEntityId);
+        moneyFlow.setAmount(amount);
+        moneyFlow.setFlowType(flowType);
+        moneyFlow.setDescription(description);
+        moneyFlow.setStatus(status);
+        moneyFlow.setTransactionReference(transactionReference);
+        moneyFlow.setCreatedAt(LocalDateTime.now());
+        return moneyFlow;
+    }
+
     /**
      * ✅ NEW: Update booking for successful payment
      */
@@ -561,12 +965,43 @@ public class PayHereController {
         try {
             logger.info("Updating booking for successful payment: {}", booking.getId());
 
+            // Basic payment updates
             booking.setPayHerePaymentId(paymentId);
             booking.setPaymentStatus("SUCCESS");
             booking.setStatus("PENDING_PROVIDER_ACCEPTANCE");
             booking.setCurrency(SUPPORTED_CURRENCY);
 
-            // Add transaction to booking if not already present
+            // ✅ ENSURE ALL FINANCIAL CALCULATIONS ARE SET
+            if (booking.getTotalAmount() != null) {
+                // Platform commission (5%)
+                if (booking.getPlatformCommission() == null) {
+                    booking.setPlatformCommission(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.05)));
+                    logger.info("✅ Set platform commission: {} LKR", booking.getPlatformCommission());
+                }
+
+                // Provider confirmation fee (10%)
+                if (booking.getProviderConfirmationFee() == null) {
+                    booking.setProviderConfirmationFee(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.10)));
+                    logger.info("✅ Set confirmation fee: {} LKR", booking.getProviderConfirmationFee());
+                }
+            }
+
+            // ✅ SET IMPORTANT DEADLINES
+            if (booking.getBookingTime() == null) {
+                booking.setBookingTime(LocalDateTime.now());
+            }
+
+            if (booking.getCancellationDeadline() == null) {
+                booking.setCancellationDeadline(booking.getBookingTime().plusHours(20));
+                logger.info("✅ Set cancellation deadline: {}", booking.getCancellationDeadline());
+            }
+
+            if (booking.getRefundDeadline() == null && booking.getServiceStartDate() != null) {
+                booking.setRefundDeadline(booking.getServiceStartDate().minusDays(2));
+                logger.info("✅ Set refund deadline: {}", booking.getRefundDeadline());
+            }
+
+            // ✅ ADD TRANSACTION TO BOOKING HISTORY
             if (booking.getTransactions() == null) {
                 booking.setTransactions(new ArrayList<>());
             }
@@ -576,31 +1011,15 @@ public class PayHereController {
 
             if (!transactionExists) {
                 booking.getTransactions().add(transaction);
+                logger.info("✅ Added transaction to booking history");
             }
 
-            // Calculate commission amounts if not set
-            if (booking.getPlatformCommission() == null && booking.getTotalAmount() != null) {
-                booking.setPlatformCommission(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.05)));
-            }
-
-            if (booking.getProviderConfirmationFee() == null && booking.getTotalAmount() != null) {
-                booking.setProviderConfirmationFee(booking.getTotalAmount().multiply(BigDecimal.valueOf(0.10)));
-            }
-
-            // Set deadlines if not set
-            if (booking.getCancellationDeadline() == null && booking.getBookingTime() != null) {
-                booking.setCancellationDeadline(booking.getBookingTime().plusHours(20));
-            }
-
-            if (booking.getRefundDeadline() == null && booking.getServiceStartDate() != null) {
-                booking.setRefundDeadline(booking.getServiceStartDate().minusDays(2));
-            }
-
+            // Update booking
             booking.onUpdate();
             bookingService.updateBooking(booking);
 
-            logger.info("✅ Booking updated successfully: Status={}, PaymentStatus={}",
-                    booking.getStatus(), booking.getPaymentStatus());
+            logger.info("✅ Booking updated successfully: Status={}, PaymentStatus={}, Commission={} LKR",
+                    booking.getStatus(), booking.getPaymentStatus(), booking.getPlatformCommission());
 
         } catch (Exception e) {
             logger.error("❌ Error updating booking for successful payment: {}", booking.getId(), e);

@@ -1,6 +1,7 @@
 package com.example.student.services;
 
 import com.example.student.model.Booking;
+import com.example.student.model.MoneyFlow;
 import com.example.student.model.PaymentTransaction;
 import com.example.student.model.dto.PayHereSessionResponse;
 import com.example.student.model.dto.PayHereNotification;
@@ -35,6 +36,12 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
     @Autowired
     private PayHereUtils payHereUtils;
 
+    @Autowired
+    private IMoneyFlowService moneyFlowService;
+
+    @Autowired
+    private ITravelerWalletService travelerWalletService;
+
     @Value("${payhere.merchant.id:1231576}")
     private String merchantId;
 
@@ -47,9 +54,8 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
     @Value("${payhere.sandbox:true}")
     private boolean sandboxMode;
 
-    /**
-     * Save payment transaction with proper error handling
-     */
+    // ===== EXISTING METHODS =====
+
     public PaymentTransaction savePaymentTransaction(PaymentTransaction paymentTransaction) {
         try {
             if (paymentTransaction.getCreatedAt() == null) {
@@ -68,9 +74,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Get payment by order ID with improved error handling
-     */
     public PaymentTransaction getPaymentByOrderId(String orderId) {
         try {
             if (orderId == null || orderId.trim().isEmpty()) {
@@ -96,9 +99,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Get payment by booking ID with improved error handling
-     */
     public PaymentTransaction getPaymentByBookingId(String bookingId) {
         try {
             if (bookingId == null || bookingId.trim().isEmpty()) {
@@ -112,7 +112,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                 return null;
             }
 
-            // Return the most recent payment transaction
             return payments.stream()
                     .filter(p -> "PAYMENT".equals(p.getType()) || "SUCCESS".equals(p.getStatus()))
                     .findFirst()
@@ -124,15 +123,11 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Create PayHere checkout using simplified PayHereUtils
-     */
     @Override
     public PayHereSessionResponse createPayHereCheckout(String bookingId) {
         try {
             logger.info("Creating PayHere checkout for booking: {}", bookingId);
 
-            // Get booking details
             Optional<Booking> optBooking = bookingRepo.findById(bookingId);
             if (!optBooking.isPresent()) {
                 logger.error("Booking not found: {}", bookingId);
@@ -141,21 +136,17 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
 
             Booking booking = optBooking.get();
 
-            // Validate booking amount
             if (!payHereUtils.isValidAmount(booking.getTotalAmount())) {
                 logger.error("Invalid booking amount: {}", booking.getTotalAmount());
                 throw new RuntimeException("Invalid booking amount");
             }
 
-            // Generate unique order ID using PayHereUtils
             String orderId = payHereUtils.generateOrderId();
             logger.info("Generated order ID: {}", orderId);
 
-            // Generate hash using simplified PayHereUtils
             String hash = payHereUtils.generateHash(orderId, booking.getTotalAmount(),
                     booking.getCurrency() != null ? booking.getCurrency() : "LKR");
 
-            // Update booking with PayHere details
             booking.setPayHereOrderId(orderId);
             booking.setPaymentStatus("PENDING");
             booking.setStatus("PENDING_PAYMENT");
@@ -163,7 +154,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             bookingRepo.save(booking);
             logger.info("Updated booking status to PENDING_PAYMENT");
 
-            // Save payment transaction record
             PaymentTransaction paymentTransaction = new PaymentTransaction();
             paymentTransaction.setBookingId(bookingId);
             paymentTransaction.setPayHereOrderId(orderId);
@@ -177,10 +167,8 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             savePaymentTransaction(paymentTransaction);
             logger.info("Payment transaction created and saved");
 
-            // Log payment attempt using PayHereUtils
             payHereUtils.logPaymentAttempt(orderId, booking.getTotalAmount(), "customer@example.com");
 
-            // Create response
             PayHereSessionResponse response = new PayHereSessionResponse();
             response.setOrderId(orderId);
             response.setStatus("created");
@@ -199,27 +187,20 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Handle payment notification using simplified PayHereUtils
-     */
     @Override
     public void handlePaymentNotification(PayHereNotification notification) {
         try {
             logger.info("Processing PayHere notification for order: {}", notification.getOrderId());
 
-            // Convert notification to map format for PayHereUtils
             Map<String, String> notificationParams = new HashMap<>();
             notificationParams.put("merchant_id", merchantId);
             notificationParams.put("order_id", notification.getOrderId());
             notificationParams.put("payment_id", notification.getPaymentId());
-//            notificationParams.put("payhere_amount", notification.getPayhereAmount());
-//            notificationParams.put("payhere_currency", notification.getPayhereCurrency());
             notificationParams.put("status_code", notification.getStatusCode());
             notificationParams.put("md5sig", notification.getMd5sig());
             notificationParams.put("status_message", notification.getStatusMessage());
             notificationParams.put("method", notification.getMethod());
 
-            // Process notification using PayHereUtils
             PayHereUtils.PaymentNotificationResult result = payHereUtils.processNotification(notificationParams);
 
             if (!result.isHashValid()) {
@@ -227,7 +208,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                 throw new RuntimeException("Invalid notification hash");
             }
 
-            // Find booking by order ID
             Optional<Booking> optBooking = bookingRepo.findByPayHereOrderId(notification.getOrderId());
             if (!optBooking.isPresent()) {
                 logger.error("Booking not found for Order ID: {}", notification.getOrderId());
@@ -237,7 +217,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             Booking booking = optBooking.get();
             logger.info("Found booking: {} for order: {}", booking.getId(), notification.getOrderId());
 
-            // Update payment transaction
             PaymentTransaction payment = getPaymentByOrderId(notification.getOrderId());
             if (payment != null) {
                 payment.setPayHerePaymentId(notification.getPaymentId());
@@ -248,50 +227,43 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                 logger.info("Updated payment transaction for order: {}", notification.getOrderId());
             }
 
-            // Process payment based on status using PayHereUtils
             if (payHereUtils.isPaymentSuccessful(notification.getStatusCode())) {
-                // SUCCESS
                 booking.setPayHerePaymentId(notification.getPaymentId());
                 booking.setPaymentStatus("SUCCESS");
-                booking.setStatus("CONFIRMED"); // Changed from PENDING_PROVIDER_ACCEPTANCE to CONFIRMED
+                booking.setStatus("CONFIRMED");
                 booking.onUpdate();
                 bookingRepo.save(booking);
 
-                // Log payment result using PayHereUtils
                 payHereUtils.logPaymentResult(notification.getOrderId(), notification.getStatusCode(),
                         notification.getPaymentId());
-                logger.info("✅ Payment successful for booking: {}", booking.getId());
+                logger.info("Payment successful for booking: {}", booking.getId());
 
             } else {
-                // Handle non-successful payments
                 String statusDescription = payHereUtils.getPaymentStatusDescription(Integer.parseInt(notification.getStatusCode()));
                 logger.info("Processing {} payment for booking: {}", statusDescription, booking.getId());
 
                 switch (notification.getStatusCode()) {
-                    case "-1": // CANCELLED
+                    case "-1":
                         booking.setPaymentStatus("CANCELLED");
                         booking.setStatus("CANCELLED_BY_TRAVELER");
                         booking.setCancellationReason("Payment cancelled by user");
                         booking.setCancellationType("TRAVELER_CANCELLED");
-                        logger.info("💔 Payment cancelled for booking: {}", booking.getId());
+                        logger.info("Payment cancelled for booking: {}", booking.getId());
                         break;
-
-                    case "0": // PENDING
+                    case "0":
                         booking.setPaymentStatus("PENDING");
                         booking.setStatus("PENDING_PAYMENT");
-                        logger.info("⏳ Payment pending for booking: {}", booking.getId());
+                        logger.info("Payment pending for booking: {}", booking.getId());
                         break;
-
-                    case "-2": // FAILED
+                    case "-2":
                         booking.setPaymentStatus("FAILED");
                         booking.setStatus("PAYMENT_FAILED");
-                        logger.info("❌ Payment failed for booking: {}", booking.getId());
+                        logger.info("Payment failed for booking: {}", booking.getId());
                         break;
-
-                    case "-3": // CHARGEDBACK
+                    case "-3":
                         booking.setPaymentStatus("CHARGEDBACK");
                         booking.setStatus("CHARGEDBACK");
-                        logger.info("🔄 Payment chargedback for booking: {}", booking.getId());
+                        logger.info("Payment chargedback for booking: {}", booking.getId());
                         break;
                 }
 
@@ -308,67 +280,11 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Process full refund using PayHereUtils
-     */
-    @Override
-    public void processFullRefund(Booking booking, String reason) {
-        try {
-            logger.info("Processing full refund for booking: {}, Amount: {}{}",
-                    booking.getId(), booking.getCurrency(), booking.getTotalAmount());
-
-            // Validate refund amount
-            if (!payHereUtils.isValidAmount(booking.getTotalAmount())) {
-                throw new RuntimeException("Invalid refund amount");
-            }
-
-            // Update booking status
-            booking.setPaymentStatus("REFUNDED");
-            booking.setStatus("REFUNDED");
-            booking.setTotalRefundAmount(booking.getTotalAmount());
-            booking.setRefundedToTraveler(booking.getTotalAmount());
-            booking.setCancellationReason(reason);
-            booking.onUpdate();
-            bookingRepo.save(booking);
-
-            // Generate unique refund ID
-            String refundId = "REFUND-" + booking.getId() + "-" + System.currentTimeMillis();
-
-            // Record refund transaction
-            PaymentTransaction refundTransaction = new PaymentTransaction();
-            refundTransaction.setBookingId(booking.getId());
-            refundTransaction.setPayHereOrderId(booking.getPayHereOrderId());
-            refundTransaction.setPayHerePaymentId(booking.getPayHerePaymentId());
-            refundTransaction.setPayHereRefundId(refundId);
-            refundTransaction.setType("REFUND");
-            refundTransaction.setAmount(booking.getTotalAmount());
-            refundTransaction.setCurrency(booking.getCurrency());
-            refundTransaction.setStatus("SUCCESS");
-            refundTransaction.setReason(reason);
-            refundTransaction.setCreatedAt(LocalDateTime.now());
-            refundTransaction.setUpdatedAt(LocalDateTime.now());
-
-            savePaymentTransaction(refundTransaction);
-
-            logger.info("✅ Full refund completed for booking: {} - Amount: {}{}",
-                    booking.getId(), booking.getCurrency(), booking.getTotalAmount());
-
-        } catch (Exception e) {
-            logger.error("Error processing full refund for booking: {}", booking.getId(), e);
-            throw new RuntimeException("Error processing full refund: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Process partial refund using PayHereUtils
-     */
     @Override
     public void processPartialRefund(Booking booking, BigDecimal refundPercentage, String reason) {
         try {
-            // Calculate refund amount
             BigDecimal refundAmount = booking.getTotalAmount().multiply(refundPercentage);
 
-            // Validate refund amount
             if (!payHereUtils.isValidAmount(refundAmount)) {
                 throw new RuntimeException("Invalid refund amount");
             }
@@ -377,7 +293,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                     booking.getId(), booking.getCurrency(), refundAmount,
                     refundPercentage.multiply(BigDecimal.valueOf(100)));
 
-            // Update booking status
             booking.setPaymentStatus("PARTIALLY_REFUNDED");
             booking.setStatus("CANCELLED_BY_TRAVELER");
             booking.setTotalRefundAmount(refundAmount);
@@ -387,10 +302,8 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             booking.onUpdate();
             bookingRepo.save(booking);
 
-            // Generate unique refund ID
             String refundId = "PARTIAL-REFUND-" + booking.getId() + "-" + System.currentTimeMillis();
 
-            // Record partial refund transaction
             PaymentTransaction refundTransaction = new PaymentTransaction();
             refundTransaction.setBookingId(booking.getId());
             refundTransaction.setPayHereOrderId(booking.getPayHereOrderId());
@@ -406,7 +319,7 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
 
             savePaymentTransaction(refundTransaction);
 
-            logger.info("✅ Partial refund completed for booking: {} - Amount: {}{}",
+            logger.info("Partial refund completed for booking: {} - Amount: {}{}",
                     booking.getId(), booking.getCurrency(), refundAmount);
 
         } catch (Exception e) {
@@ -415,22 +328,17 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Schedule final payout with improved calculation
-     */
     @Override
     public void scheduleFinalPayout(Booking booking) {
         try {
-            // Use booking's method to calculate final payout if available, otherwise use default
             BigDecimal finalPayoutAmount;
             try {
                 finalPayoutAmount = booking.calculateFinalPayout();
             } catch (Exception e) {
                 logger.warn("calculateFinalPayout method not available, using default calculation");
-                finalPayoutAmount = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.75)); // 75%
+                finalPayoutAmount = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.75));
             }
 
-            // Validate payout amount
             if (!payHereUtils.isValidAmount(finalPayoutAmount)) {
                 throw new RuntimeException("Invalid payout amount");
             }
@@ -438,13 +346,11 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             logger.info("Processing final payout for booking: {}, Amount: {}{}",
                     booking.getId(), booking.getCurrency(), finalPayoutAmount);
 
-            // Update booking payout status
             booking.setFinalPayoutPaid(true);
             booking.setFinalPayoutPaidAt(LocalDateTime.now());
             booking.onUpdate();
             bookingRepo.save(booking);
 
-            // Record final payout transaction
             PaymentTransaction payoutTransaction = new PaymentTransaction();
             payoutTransaction.setBookingId(booking.getId());
             payoutTransaction.setPayHereOrderId(booking.getPayHereOrderId());
@@ -459,7 +365,7 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
 
             savePaymentTransaction(payoutTransaction);
 
-            logger.info("✅ Final payout completed for booking: {} - Amount: {}{}",
+            logger.info("Final payout completed for booking: {} - Amount: {}{}",
                     booking.getId(), booking.getCurrency(), finalPayoutAmount);
 
         } catch (Exception e) {
@@ -468,21 +374,17 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Process confirmation fee payout
-     */
+    @Override
     public void processConfirmationFeePayout(Booking booking) {
         try {
-            // Use booking's method to calculate confirmation fee if available
             BigDecimal confirmationFee;
             try {
                 confirmationFee = booking.calculateConfirmationFee();
             } catch (Exception e) {
                 logger.warn("calculateConfirmationFee method not available, using default calculation");
-                confirmationFee = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.10)); // 10%
+                confirmationFee = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.10));
             }
 
-            // Validate fee amount
             if (!payHereUtils.isValidAmount(confirmationFee)) {
                 throw new RuntimeException("Invalid confirmation fee amount");
             }
@@ -490,13 +392,11 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             logger.info("Processing confirmation fee payout for booking: {}, Amount: {}{}",
                     booking.getId(), booking.getCurrency(), confirmationFee);
 
-            // Update booking confirmation fee status
             booking.setConfirmationFeePaid(true);
             booking.setConfirmationFeePaidAt(LocalDateTime.now());
             booking.onUpdate();
             bookingRepo.save(booking);
 
-            // Record confirmation fee transaction
             PaymentTransaction payoutTransaction = new PaymentTransaction();
             payoutTransaction.setBookingId(booking.getId());
             payoutTransaction.setPayHereOrderId(booking.getPayHereOrderId());
@@ -511,7 +411,7 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
 
             savePaymentTransaction(payoutTransaction);
 
-            logger.info("✅ Confirmation fee payout completed for booking: {} - Amount: {}{}",
+            logger.info("Confirmation fee payout completed for booking: {} - Amount: {}{}",
                     booking.getId(), booking.getCurrency(), confirmationFee);
 
         } catch (Exception e) {
@@ -520,9 +420,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Get booking by order ID
-     */
     @Override
     public Booking getBookingByOrderId(String orderId) {
         try {
@@ -539,9 +436,7 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Get comprehensive payment summary
-     */
+    @Override
     public Map<String, Object> getPaymentSummary(String bookingId) {
         try {
             if (bookingId == null || bookingId.trim().isEmpty()) {
@@ -556,7 +451,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             Booking booking = optBooking.get();
             Map<String, Object> summary = new HashMap<>();
 
-            // Basic booking details
             summary.put("bookingId", booking.getId());
             summary.put("orderId", booking.getPayHereOrderId());
             summary.put("paymentId", booking.getPayHerePaymentId());
@@ -565,7 +459,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             summary.put("paymentStatus", booking.getPaymentStatus());
             summary.put("bookingStatus", booking.getStatus());
 
-            // Money flow details
             try {
                 if (booking.getPlatformCommission() != null) {
                     summary.put("platformCommission", booking.getPlatformCommission());
@@ -574,7 +467,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                     summary.put("providerConfirmationFee", booking.getProviderConfirmationFee());
                 }
 
-                // Calculate final payout
                 BigDecimal finalPayout;
                 try {
                     finalPayout = booking.calculateFinalPayout();
@@ -590,12 +482,10 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             summary.put("confirmationFeePaid", booking.isConfirmationFeePaid());
             summary.put("finalPayoutPaid", booking.isFinalPayoutPaid());
 
-            // Payment transactions
             List<PaymentTransaction> transactions = paymentTransactionRepo.findByBookingId(bookingId);
             summary.put("transactions", transactions);
             summary.put("transactionCount", transactions.size());
 
-            // Summary statistics
             BigDecimal totalPaid = transactions.stream()
                     .filter(t -> "SUCCESS".equals(t.getStatus()) &&
                             ("PAYMENT".equals(t.getType()) || "CONFIRMATION_FEE_PAYOUT".equals(t.getType()) ||
@@ -621,137 +511,6 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
         }
     }
 
-    /**
-     * Check if payment is completed
-     */
-    public boolean isPaymentCompleted(String bookingId) {
-        try {
-            if (bookingId == null || bookingId.trim().isEmpty()) {
-                return false;
-            }
-
-            PaymentTransaction payment = getPaymentByBookingId(bookingId);
-            return payment != null && payHereUtils.isPaymentSuccessful(payment.getStatus());
-
-        } catch (Exception e) {
-            logger.error("Error checking payment completion for booking: {}", bookingId, e);
-            return false;
-        }
-    }
-
-    /**
-     * Get service health status
-     */
-    public Map<String, Object> getServiceHealth() {
-        Map<String, Object> health = new HashMap<>();
-
-        try {
-            // Basic service info
-            health.put("paymentService", "HEALTHY");
-            health.put("timestamp", LocalDateTime.now());
-
-            // PayHere configuration
-            Map<String, Object> payhereConfig = payHereUtils.getConfigInfo();
-            health.put("payhereConfig", payhereConfig);
-
-            // Database connectivity
-            long totalBookings = bookingRepo.count();
-            long totalTransactions = paymentTransactionRepo.count();
-            health.put("totalBookings", totalBookings);
-            health.put("totalTransactions", totalTransactions);
-
-            // Service configuration
-            health.put("merchantId", merchantId);
-            health.put("baseUrl", payHereBaseUrl);
-            health.put("appBaseUrl", appBaseUrl);
-            health.put("sandboxMode", sandboxMode);
-
-        } catch (Exception e) {
-            logger.error("Error getting service health", e);
-            health.put("paymentService", "UNHEALTHY");
-            health.put("error", e.getMessage());
-        }
-
-        return health;
-    }
-
-    /**
-     * Convert status code to readable status (using PayHereUtils)
-     */
-    private String convertStatusCode(String statusCode) {
-        try {
-            return payHereUtils.getPaymentStatusDescription(Integer.parseInt(statusCode));
-        } catch (NumberFormatException e) {
-            logger.warn("Invalid status code: {}", statusCode);
-            return "UNKNOWN";
-        }
-    }
-
-    /**
-     * Build checkout URL (legacy method - kept for compatibility)
-     */
-    private String buildCheckoutUrl(Booking booking, String orderId, String hash) {
-        StringBuilder url = new StringBuilder(payHereBaseUrl);
-        url.append("?merchant_id=").append(merchantId);
-        url.append("&return_url=").append(appBaseUrl).append("/payment/success/").append(booking.getId());
-        url.append("&cancel_url=").append(appBaseUrl).append("/payment/cancel/").append(booking.getId());
-        url.append("&notify_url=").append(appBaseUrl).append("/api/payments/payhere/notify");
-        url.append("&order_id=").append(orderId);
-        url.append("&items=").append(booking.getServiceName() != null ?
-                booking.getServiceName().replaceAll(" ", "%20") : "Guide%20Service");
-        url.append("&currency=").append(booking.getCurrency() != null ? booking.getCurrency() : "LKR");
-        url.append("&amount=").append(payHereUtils.formatAmountForHash(booking.getTotalAmount()));
-        url.append("&hash=").append(hash);
-
-        return url.toString();
-    }
-
-    /**
-     * Get all transactions for a booking
-     */
-    public List<PaymentTransaction> getTransactionsByBookingId(String bookingId) {
-        try {
-            return paymentTransactionRepo.findByBookingId(bookingId);
-        } catch (Exception e) {
-            logger.error("Error getting transactions for booking: {}", bookingId, e);
-            throw new RuntimeException("Error getting transactions: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Get payment statistics
-     */
-    public Map<String, Object> getPaymentStatistics() {
-        try {
-            Map<String, Object> stats = new HashMap<>();
-
-            // Count transactions by type
-            List<PaymentTransaction> allTransactions = paymentTransactionRepo.findAll();
-
-            Map<String, Long> transactionsByType = allTransactions.stream()
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            PaymentTransaction::getType,
-                            java.util.stream.Collectors.counting()
-                    ));
-
-            Map<String, Long> transactionsByStatus = allTransactions.stream()
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            PaymentTransaction::getStatus,
-                            java.util.stream.Collectors.counting()
-                    ));
-
-            stats.put("transactionsByType", transactionsByType);
-            stats.put("transactionsByStatus", transactionsByStatus);
-            stats.put("totalTransactions", allTransactions.size());
-
-            return stats;
-
-        } catch (Exception e) {
-            logger.error("Error getting payment statistics", e);
-            throw new RuntimeException("Error getting payment statistics: " + e.getMessage());
-        }
-    }
-
     @Override
     public void processFinalPayout(Booking booking) {
         try {
@@ -762,16 +521,14 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
                 return;
             }
 
-            // Use booking's method to calculate final payout if available, otherwise use default
             BigDecimal finalPayoutAmount;
             try {
                 finalPayoutAmount = booking.calculateFinalPayout();
             } catch (Exception e) {
                 logger.warn("calculateFinalPayout method not available, using default calculation");
-                finalPayoutAmount = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.75)); // 75%
+                finalPayoutAmount = booking.getTotalAmount().multiply(BigDecimal.valueOf(0.75));
             }
 
-            // Validate payout amount
             if (!payHereUtils.isValidAmount(finalPayoutAmount)) {
                 throw new RuntimeException("Invalid payout amount");
             }
@@ -779,13 +536,11 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
             logger.info("Processing final payout for booking: {}, Amount: {}{}",
                     booking.getId(), booking.getCurrency(), finalPayoutAmount);
 
-            // Update booking payout status
             booking.setFinalPayoutPaid(true);
             booking.setFinalPayoutPaidAt(LocalDateTime.now());
             booking.onUpdate();
             bookingRepo.save(booking);
 
-            // Record final payout transaction
             PaymentTransaction payoutTransaction = new PaymentTransaction();
             payoutTransaction.setBookingId(booking.getId());
             payoutTransaction.setPayHereOrderId(booking.getPayHereOrderId());
@@ -800,12 +555,420 @@ public class PayHerePaymentServiceImpl implements IPaymentService {
 
             savePaymentTransaction(payoutTransaction);
 
-            logger.info("✅ Final payout completed for booking: {} - Amount: {}{}",
+            logger.info("Final payout completed for booking: {} - Amount: {}{}",
                     booking.getId(), booking.getCurrency(), finalPayoutAmount);
 
         } catch (Exception e) {
             logger.error("Error processing final payout for booking: {}", booking.getId(), e);
             throw new RuntimeException("Error processing final payout: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void processFullRefund(Booking booking, String reason) {
+        try {
+            logger.info("Processing full refund for booking: {}, Amount: {} {}",
+                    booking.getId(), booking.getTotalAmount(), booking.getCurrency());
+
+            if (!payHereUtils.isValidAmount(booking.getTotalAmount())) {
+                throw new RuntimeException("Invalid refund amount");
+            }
+
+            booking.setPaymentStatus("REFUNDED");
+            booking.setStatus("REFUNDED");
+            booking.setTotalRefundAmount(booking.getTotalAmount());
+            booking.setRefundedToTraveler(booking.getTotalAmount());
+            booking.setCancellationReason(reason);
+            booking.onUpdate();
+            bookingRepo.save(booking);
+
+            String refundId = "REFUND-" + booking.getId() + "-" + System.currentTimeMillis();
+
+            PaymentTransaction refundTransaction = new PaymentTransaction();
+            refundTransaction.setBookingId(booking.getId());
+            refundTransaction.setPayHereOrderId(booking.getPayHereOrderId());
+            refundTransaction.setPayHerePaymentId(booking.getPayHerePaymentId());
+            refundTransaction.setPayHereRefundId(refundId);
+            refundTransaction.setType("REFUND");
+            refundTransaction.setAmount(booking.getTotalAmount());
+            refundTransaction.setCurrency(booking.getCurrency());
+            refundTransaction.setStatus("SUCCESS");
+            refundTransaction.setReason(reason);
+            refundTransaction.setCreatedAt(LocalDateTime.now());
+            refundTransaction.setUpdatedAt(LocalDateTime.now());
+
+            savePaymentTransaction(refundTransaction);
+
+            MoneyFlow refundFlow = new MoneyFlow();
+            refundFlow.setBookingId(booking.getId());
+            refundFlow.setFromEntity("PLATFORM");
+            refundFlow.setToEntity("TRAVELER");
+            refundFlow.setFromEntityId("PLATFORM_ACCOUNT");
+            refundFlow.setToEntityId(booking.getTravelerId());
+            refundFlow.setAmount(booking.getTotalAmount());
+            refundFlow.setFlowType("REFUND");
+            refundFlow.setDescription("Full refund for booking " + booking.getId() + ": " + reason);
+            refundFlow.setStatus("COMPLETED");
+            refundFlow.setTransactionReference(refundId);
+            refundFlow.setCreatedAt(LocalDateTime.now());
+
+            moneyFlowService.save(refundFlow);
+
+            travelerWalletService.addRefund(booking.getTravelerId(), booking.getTotalAmount(),
+                    booking.getId(), reason, "FULL");
+
+            logger.info("Full refund completed: {} {} for booking {}",
+                    booking.getTotalAmount(), booking.getCurrency(), booking.getId());
+
+        } catch (Exception e) {
+            logger.error("Error processing full refund for booking: {}", booking.getId(), e);
+            throw new RuntimeException("Error processing full refund: " + e.getMessage());
+        }
+    }
+
+    // ===== NEW PAYMENT STATUS METHODS =====
+
+    @Override
+    public Optional<PaymentTransaction> findByOrderId(String orderId) {
+        try {
+            logger.debug("Finding payment by order ID: {}", orderId);
+            return paymentTransactionRepo.findByOrderId(orderId);
+        } catch (Exception e) {
+            logger.error("Error finding payment by order ID: {}", orderId, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<PaymentTransaction> findByBookingId(String bookingId) {
+        try {
+            logger.debug("Finding payment by booking ID: {}", bookingId);
+            return paymentTransactionRepo.findFirstByBookingIdOrderByCreatedAtDesc(bookingId);
+        } catch (Exception e) {
+            logger.error("Error finding payment by booking ID: {}", bookingId, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public List<PaymentTransaction> findAllByBookingId(String bookingId) {
+        try {
+            logger.debug("Finding all payments by booking ID: {}", bookingId);
+            return paymentTransactionRepo.findByBookingIdOrderByCreatedAtDesc(bookingId);
+        } catch (Exception e) {
+            logger.error("Error finding payments by booking ID: {}", bookingId, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public void updatePaymentStatus(PaymentTransaction payment, String newStatus, String source, String transactionId) {
+        try {
+            logger.info("Updating payment status:");
+            logger.info("  - Order ID: {}", payment.getPayHereOrderId());
+            logger.info("  - Old Status: {}", payment.getStatus());
+            logger.info("  - New Status: {}", newStatus);
+            logger.info("  - Source: {}", source);
+            logger.info("  - Transaction ID: {}", transactionId);
+
+            String oldStatus = payment.getStatus();
+            payment.setStatus(newStatus);
+            payment.setUpdatedAt(LocalDateTime.now());
+
+            if (transactionId != null && !transactionId.trim().isEmpty()) {
+                payment.setTransactionId(transactionId);
+            }
+
+            String noteUpdate = "Status updated from " + oldStatus + " to " + newStatus + " via " + source;
+            if (payment.getReason() == null) {
+                payment.setReason(noteUpdate);
+            } else {
+                payment.setReason(payment.getReason() + "; " + noteUpdate);
+            }
+
+            savePaymentTransaction(payment);
+
+            logger.info("Payment status updated successfully");
+
+        } catch (Exception e) {
+            logger.error("Error updating payment status:", e);
+            throw new RuntimeException("Failed to update payment status", e);
+        }
+    }
+
+    @Override
+    public PaymentTransaction createOrUpdatePaymentTransaction(
+            String orderId,
+            String bookingId,
+            BigDecimal amount,
+            String currency,
+            String status,
+            String paymentId,
+            String transactionId) {
+
+        try {
+            logger.info("Creating/updating payment transaction:");
+            logger.info("  - Order ID: {}", orderId);
+            logger.info("  - Booking ID: {}", bookingId);
+            logger.info("  - Amount: {} {}", amount, currency);
+            logger.info("  - Status: {}", status);
+
+            Optional<PaymentTransaction> existingOpt = findByOrderId(orderId);
+
+            PaymentTransaction payment;
+            if (existingOpt.isPresent()) {
+                payment = existingOpt.get();
+                logger.info("Updating existing payment transaction");
+
+                payment.setStatus(status);
+                payment.setUpdatedAt(LocalDateTime.now());
+
+                if (paymentId != null) payment.setPayHerePaymentId(paymentId);
+                if (transactionId != null) payment.setTransactionId(transactionId);
+
+            } else {
+                payment = new PaymentTransaction();
+                logger.info("Creating new payment transaction");
+
+                payment.setPayHereOrderId(orderId);
+                payment.setBookingId(bookingId);
+                payment.setAmount(amount);
+                payment.setCurrency(currency);
+                payment.setStatus(status);
+                payment.setPayHerePaymentId(paymentId);
+                payment.setTransactionId(transactionId);
+                payment.setType("PAYMENT");
+                payment.setCreatedAt(LocalDateTime.now());
+                payment.setUpdatedAt(LocalDateTime.now());
+            }
+
+            PaymentTransaction saved = savePaymentTransaction(payment);
+            logger.info("Payment transaction saved successfully");
+
+            return saved;
+
+        } catch (Exception e) {
+            logger.error("Error creating/updating payment transaction:", e);
+            throw new RuntimeException("Failed to create/update payment transaction", e);
+        }
+    }
+
+    @Override
+    public long getTotalPaymentCount() {
+        try {
+            return paymentTransactionRepo.count();
+        } catch (Exception e) {
+            logger.error("Error getting total payment count:", e);
+            return 0;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getServiceHealth() {
+        Map<String, Object> health = new HashMap<>();
+
+        try {
+            long totalPayments = getTotalPaymentCount();
+            health.put("databaseConnectivity", "UP");
+            health.put("totalPayments", totalPayments);
+
+            LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+            List<PaymentTransaction> recentPayments = findByDateRange(oneHourAgo, LocalDateTime.now());
+            health.put("recentPayments", recentPayments.size());
+
+            List<PaymentTransactionRepo.PaymentStatusStats> statusStats =
+                    paymentTransactionRepo.getPaymentStatisticsByStatus();
+
+            Map<String, Long> statusCounts = new HashMap<>();
+            for (PaymentTransactionRepo.PaymentStatusStats stat : statusStats) {
+                statusCounts.put(stat.getStatus(), stat.getCount());
+            }
+            health.put("statusDistribution", statusCounts);
+
+            health.put("status", "HEALTHY");
+            health.put("timestamp", LocalDateTime.now());
+
+        } catch (Exception e) {
+            logger.error("Error getting service health:", e);
+            health.put("status", "UNHEALTHY");
+            health.put("error", e.getMessage());
+            health.put("databaseConnectivity", "DOWN");
+        }
+
+        return health;
+    }
+
+    @Override
+    public List<PaymentTransaction> findByStatus(String status) {
+        try {
+            return paymentTransactionRepo.findByStatusOrderByCreatedAtDesc(status);
+        } catch (Exception e) {
+            logger.error("Error finding payments by status: {}", status, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public List<PaymentTransaction> findByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        try {
+            return paymentTransactionRepo.findByCreatedAtBetween(startDate, endDate);
+        } catch (Exception e) {
+            logger.error("Error finding payments by date range:", e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public Map<String, Object> getPaymentStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        try {
+            stats.put("totalPayments", getTotalPaymentCount());
+
+            List<PaymentTransactionRepo.PaymentStatusStats> statusStats =
+                    paymentTransactionRepo.getPaymentStatisticsByStatus();
+
+            for (PaymentTransactionRepo.PaymentStatusStats stat : statusStats) {
+                switch (stat.getStatus()) {
+                    case "SUCCESS":
+                        stats.put("successfulPayments", stat.getCount());
+                        stats.put("totalSuccessAmount", stat.getTotalAmount());
+                        break;
+                    case "PENDING":
+                        stats.put("pendingPayments", stat.getCount());
+                        break;
+                    case "FAILED":
+                        stats.put("failedPayments", stat.getCount());
+                        break;
+                }
+            }
+
+            LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+            LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+            long todayCount = paymentTransactionRepo.getPaymentCountForDateRange(startOfDay, endOfDay);
+            stats.put("todayPayments", todayCount);
+
+            stats.put("currency", "LKR");
+            stats.put("timestamp", LocalDateTime.now());
+
+        } catch (Exception e) {
+            logger.error("Error getting payment statistics:", e);
+            stats.put("error", e.getMessage());
+        }
+
+        return stats;
+    }
+
+    @Override
+    public boolean existsByOrderId(String orderId) {
+        try {
+            return paymentTransactionRepo.existsByOrderId(orderId);
+        } catch (Exception e) {
+            logger.error("Error checking if payment exists for order ID: {}", orderId, e);
+            return false;
+        }
+    }
+
+    @Override
+    public Optional<PaymentTransaction> getLatestPaymentForBooking(String bookingId) {
+        try {
+            return paymentTransactionRepo.findFirstByBookingIdOrderByCreatedAtDesc(bookingId);
+        } catch (Exception e) {
+            logger.error("Error getting latest payment for booking: {}", bookingId, e);
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public void markPaymentAsConfirmed(String orderId, String paymentId, String transactionId) {
+        try {
+            logger.info("Marking payment as confirmed:");
+            logger.info("  - Order ID: {}", orderId);
+            logger.info("  - Payment ID: {}", paymentId);
+            logger.info("  - Transaction ID: {}", transactionId);
+
+            Optional<PaymentTransaction> paymentOpt = findByOrderId(orderId);
+            if (paymentOpt.isPresent()) {
+                PaymentTransaction payment = paymentOpt.get();
+                updatePaymentStatus(payment, "SUCCESS", "PAYHERE_CONFIRMATION", transactionId);
+
+                if (paymentId != null) {
+                    payment.setPayHerePaymentId(paymentId);
+                    savePaymentTransaction(payment);
+                }
+
+                logger.info("Payment marked as confirmed successfully");
+            } else {
+                logger.warn("Payment not found for order ID: {}", orderId);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error marking payment as confirmed:", e);
+            throw new RuntimeException("Failed to mark payment as confirmed", e);
+        }
+    }
+
+    @Override
+    public void markPaymentAsFailed(String orderId, String errorMessage) {
+        try {
+            logger.info("Marking payment as failed:");
+            logger.info("  - Order ID: {}", orderId);
+            logger.info("  - Error: {}", errorMessage);
+
+            Optional<PaymentTransaction> paymentOpt = findByOrderId(orderId);
+            if (paymentOpt.isPresent()) {
+                PaymentTransaction payment = paymentOpt.get();
+                updatePaymentStatus(payment, "FAILED", "PAYHERE_ERROR", null);
+
+                String currentReason = payment.getReason() != null ? payment.getReason() : "";
+                payment.setReason(currentReason + "; Error: " + errorMessage);
+                savePaymentTransaction(payment);
+
+                logger.info("Payment marked as failed successfully");
+            } else {
+                logger.warn("Payment not found for order ID: {}", orderId);
+            }
+
+        } catch (Exception e) {
+            logger.error("Error marking payment as failed:", e);
+            throw new RuntimeException("Failed to mark payment as failed", e);
+        }
+    }
+
+    @Override
+    public List<PaymentTransaction> getPendingPaymentsOlderThan(int minutes) {
+        try {
+            LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(minutes);
+            return paymentTransactionRepo.findPendingPaymentsOlderThan(cutoffTime);
+        } catch (Exception e) {
+            logger.error("Error getting pending payments older than {} minutes:", minutes, e);
+            return List.of();
+        }
+    }
+
+    @Override
+    public int cleanupOldFailedPayments(int daysOld) {
+        try {
+            logger.info("Cleaning up failed payments older than {} days", daysOld);
+
+            LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysOld);
+            List<PaymentTransaction> oldFailedPayments = paymentTransactionRepo
+                    .findByStatusAndCreatedAtBefore("FAILED", cutoffDate);
+
+            int cleanedCount = oldFailedPayments.size();
+
+            if (cleanedCount > 0) {
+                paymentTransactionRepo.deleteAll(oldFailedPayments);
+                logger.info("Cleaned up {} old failed payment records", cleanedCount);
+            } else {
+                logger.info("No old failed payments found to cleanup");
+            }
+
+            return cleanedCount;
+
+        } catch (Exception e) {
+            logger.error("Error cleaning up old failed payments:", e);
+            throw new RuntimeException("Failed to cleanup old failed payments", e);
         }
     }
 }

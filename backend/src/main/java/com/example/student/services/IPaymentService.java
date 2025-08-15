@@ -1,18 +1,17 @@
 package com.example.student.services;
 
 import com.example.student.model.Booking;
+import com.example.student.model.PaymentTransaction;
 import com.example.student.model.dto.PayHereSessionResponse;
 import com.example.student.model.dto.PayHereNotification;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-/**
- * Complete IPaymentService interface with all required methods
- * Replace your existing IPaymentService with this complete version
- */
 public interface IPaymentService {
 
-    // ===== EXISTING METHODS IN YOUR IMPLEMENTATION =====
+    // ===== EXISTING METHODS =====
 
     /**
      * Create PayHere checkout session
@@ -45,6 +44,11 @@ public interface IPaymentService {
     void processConfirmationFeePayout(Booking booking);
 
     /**
+     * Process final payout to provider after service completion
+     */
+    void processFinalPayout(Booking booking);
+
+    /**
      * Get booking by PayHere order ID
      */
     Booking getBookingByOrderId(String orderId);
@@ -54,16 +58,93 @@ public interface IPaymentService {
      */
     Map<String, Object> getPaymentSummary(String bookingId);
 
+    // ===== NEW PAYMENT STATUS METHODS =====
+
     /**
-     * Get service health status
+     * Find payment transaction by order ID
+     */
+    Optional<PaymentTransaction> findByOrderId(String orderId);
+
+    /**
+     * Find payment transaction by booking ID
+     */
+    Optional<PaymentTransaction> findByBookingId(String bookingId);
+
+    /**
+     * Find all payment transactions for a booking ID
+     */
+    List<PaymentTransaction> findAllByBookingId(String bookingId);
+
+    /**
+     * Update payment status
+     */
+    void updatePaymentStatus(PaymentTransaction payment, String newStatus, String source, String transactionId);
+
+    /**
+     * Create or update payment transaction
+     */
+    PaymentTransaction createOrUpdatePaymentTransaction(
+            String orderId,
+            String bookingId,
+            BigDecimal amount,
+            String currency,
+            String status,
+            String paymentId,
+            String transactionId
+    );
+
+    /**
+     * Get total payment count (for health checks)
+     */
+    long getTotalPaymentCount();
+
+    /**
+     * Get service health information
      */
     Map<String, Object> getServiceHealth();
 
-    // ===== MISSING METHOD THAT NEEDS TO BE ADDED =====
+    /**
+     * Find payments by status
+     */
+    List<PaymentTransaction> findByStatus(String status);
 
     /**
-     * Process final payout to provider after service completion
-     * (This method is missing from your implementation)
+     * Find payments within date range
      */
-    void processFinalPayout(Booking booking);
+    List<PaymentTransaction> findByDateRange(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
+
+    /**
+     * Get payment statistics
+     */
+    Map<String, Object> getPaymentStatistics();
+
+    /**
+     * Check if payment exists for order ID
+     */
+    boolean existsByOrderId(String orderId);
+
+    /**
+     * Get latest payment for booking
+     */
+    Optional<PaymentTransaction> getLatestPaymentForBooking(String bookingId);
+
+    /**
+     * Mark payment as confirmed
+     */
+    void markPaymentAsConfirmed(String orderId, String paymentId, String transactionId);
+
+    /**
+     * Mark payment as failed
+     */
+    void markPaymentAsFailed(String orderId, String errorMessage);
+
+    /**
+     * Get pending payments older than specified minutes
+     */
+    List<PaymentTransaction> getPendingPaymentsOlderThan(int minutes);
+
+    /**
+     * Cleanup old failed payments
+     */
+    int cleanupOldFailedPayments(int daysOld);
 }

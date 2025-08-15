@@ -122,7 +122,7 @@ export default function PaymentSuccess() {
   };
 
   const handleViewBooking = () => {
-    router.replace(`./bookings/${bookingId}`);
+    router.replace(`../../(tabs)/bookings`);
   };
 
   const handleGoHome = () => {
