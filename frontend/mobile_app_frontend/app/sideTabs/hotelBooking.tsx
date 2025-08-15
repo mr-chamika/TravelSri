@@ -419,7 +419,7 @@ export default function HotelsBookingScreen() {
                                                     <View>
                                                         <View className="relative h-40">
                                                             <Image
-                                                                source={{ uri: hotel.thumbnail }}
+                                                                source={{ uri: `data:image/jpeg;base64,${hotel.thumbnail}` }}
                                                                 className="w-full h-full"
                                                                 contentFit="cover"
                                                             />
