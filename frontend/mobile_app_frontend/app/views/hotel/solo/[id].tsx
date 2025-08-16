@@ -1,19 +1,22 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Platform, Alert, Modal } from "react-native";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import { useEffect, useState } from "react";
 import { useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-cssInterop(Image, { className: "style" });
 import { jwtDecode } from "jwt-decode";
+
+cssInterop(Image, { className: "style" });
+
 interface MyToken {
     sub: string;
     roles: string[];
     username: string;
     email: string;
-    id: string
+    id: string;
 }
+
 interface BookingData {
     selectedDates: string;
     selectedoutDates: string;
@@ -25,32 +28,42 @@ interface BookingData {
 
 export interface HotelView {
     _id: string;
+    name: string;
+    location: string;
+    distance?: string;
+    description: string;
     images: string[];
+    thumbnail: string;
     stars: number;
     ratings: number;
     reviewCount: number;
-    price: number;
-    name: string;
-    location: string;
-    description: string;
+    price: string;
+    originalPrice?: number;
+    singlePrice?: number;
+    doublePrice?: number;
+    availableSingle: number;
+    availableDouble: number;
+    maxSingle: number;
+    maxDouble: number;
     policies: string[];
     roomTypes: string[];
     facilities: string[];
-    availableSingle: number;
-    availableDouble: number;
+    freeFeatures: string[];
+    specialOffer?: string;
     mobileNumber: string;
+    taxes?: string;
+    priceDescription?: string;
+    unavailable?: string[];
 }
 
 interface Review {
-
-    _id: string,
-    serviseId: string,
-    text: string,
-    country: string,
-    stars: number,
-    author: string,
-    dp: string,
-
+    _id: string;
+    serviseId: string;
+    text: string;
+    country: string;
+    stars: number;
+    author: string;
+    dp: string;
 }
 
 interface Facility {
@@ -61,12 +74,10 @@ interface Facility {
 }
 
 interface RoomType {
-
     _id: string;
     name: string;
     pricePerRoom: number;
     capacity: number;
-
 }
 
 export interface Booking {
@@ -89,6 +100,7 @@ export interface Booking {
     mobileNumber: string;
 }
 
+// Import your images
 const pic = require('../../../../assets/images/tabbar/towert.png');
 const location = require('../../../../assets/images/pin.png');
 const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelthumb.png');
@@ -97,313 +109,53 @@ const single = require('../../../../assets/images/tabbar/create/hotel/single.png
 const double = require('../../../../assets/images/tabbar/create/hotel/double.png');
 const back = require('../../../../assets/images/back.png');
 
-export default function Views() {
+export default function HotelDetailsView() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
-    const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
-    const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
-    const [totalPrice, setTotalPrice] = useState(0);
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [carouselWidth, setCarouselWidth] = useState(0);
-    const [bookingData, setBookingData] = useState<BookingData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [capacityWarning, setCapacityWarning] = useState('');
+    // States
     const [hotelv, setHotelv] = useState<HotelView | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-    const [booking, setBooking] = useState<Booking | null>(null)
+    const [booking, setBooking] = useState<Booking | null>(null);
+    const [bookingData, setBookingData] = useState<BookingData | null>(null);
+    const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
+    const [totalPrice, setTotalPrice] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [carouselWidth, setCarouselWidth] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [capacityWarning, setCapacityWarning] = useState('');
+    
+    // Info modal states
+    const [showPriceInfo, setShowPriceInfo] = useState(false);
+    const [showPolicyInfo, setShowPolicyInfo] = useState(false);
+    const [showRoomInfo, setShowRoomInfo] = useState(false);
 
-
-    useEffect(() => {
-
-        const gethotel = async () => {
-
-            try {
-
-                const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
-
-                const params = new URLSearchParams();
-                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
-                const data1: HotelView = await res1.json()
-
-                //console.log(data1)
-                setHotelv(data1)
-                //setHotel(data1)
-
-                if (data1?.facilities && data1?.facilities.length > 0) {
-
-                    data1?.facilities.forEach(facilityId => {
-                        params.append('ids', facilityId);
-                    })
-
-
-
-
-                    const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
-                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
-
-                    if (res3) {
-
-                        const data3 = await res3.json()
-                        //console.log(data3)
-                        setFacilities(data3)
-
-                    }
-                }
-
-                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
-                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
-
-                if (res2) {
-
-                    const data2 = await res2.json()
-                    //console.log(data2)
-                    setReviews(data2)
-
-                }
-
-                if (data1?.roomTypes && data1?.roomTypes.length > 0) {
-                    const params1 = new URLSearchParams();
-
-                    data1.roomTypes.forEach(roomId => {
-                        params1.append('ids', roomId);
-                    })
-
-
-                    const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
-                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
-
-                    if (res4) {
-
-                        const data4 = await res4.json()
-                        //console.log(data4)
-                        setRoomTypes(data4)
-
-                    }
-                }
-
-
-            } catch (err) {
-
-                console.log(`Error in hotel data getting : ${err}`)
-
-            }
-
-        }
-        gethotel()
-
-    }, [])
-
-
-    /* const groupCollection = [
-        {
-            id: '1',
-            image: [thumbnail, thumbnail],
-            title: 'Shangri-La',
-            ratings: 600,
-            stars: 4,
-            reviewCount: 269,
-            location: 'Colombo',
-            price: 9000, // Base price for the hotel (can be per night or per stay)
-            description: 'Shangri-La Hotels and Resorts is a Hong Kong-based multinational hospitality company founded in 1971 by Malaysian tycoon Robert Kuok. Named after the mythical utopia from James Hilton’s novel Lost Horizon, it symbolizes serenity and luxury. The brand operates over 100 five-star luxury hotels and resorts across Asia, Europe, the Middle East, North America, and Oceania, with notable properties like Shangri-La Hotel Singapore, its first location, and Shangri-La Colombo in Sri Lanka. Renowned for its "hospitality from the heart," Shangri-La offers world-class service, exquisite dining, and inspirational architecture in premier city addresses and tranquil retreats',
-            policies: [
-                "Check-in from 13:00 until 00:00",
-                "Check-out from 00:00 until 12:00",
-                "WiFi is available in all areas and is free of charge.",
-                "Free public parking is possible on site (reservation is needed).",
-                "No booking or credit card fees"
-            ],
-            reviewers: [
-                {
-                    id: '1',
-                    name: 'Sunny',
-                    from: 'America',
-                    images: pic,
-                    review: 'mmh maru',
-                    ratings: 3
-                },
-                {
-                    id: '2',
-                    name: 'Lena',
-                    from: 'Spain',
-                    images: pic,
-                    review: "set na meka",
-                    ratings: 2
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                }
-            ],
-            faci: [
-                {
-                    id: '1',
-                    name: 'Swimming pool',
-                    images: pic
-                },
-                {
-                    id: '2',
-                    name: 'Free WiFi',
-                    images: pic
-                },
-                {
-                    id: '3',
-                    name: 'Free breakfast',
-                    images: pic
-                },
-                {
-                    id: '4',
-                    name: '1 bathtub',
-                    images: pic
-                },
-                {
-                    id: '5',
-                    name: 'Room service',
-                    images: pic
-                },
-                {
-                    id: '6',
-                    name: 'Bar',
-                    images: pic
-                }
-            ],
-            roomsType: [
-                {
-                    id:'1',
-                    name: "singleBedroom",
-                    capacity: 5, // Total available single rooms
-                    pricePerRoom: 5000,
-                    persons: 1 // Price per single room per day,
-                    
-                },
-                {
-                    id:'2',
-                    name: "doubleBedroom",
-                    capacity: 2, // Total available double rooms
-                    pricePerRoom: 8000,
-                    persons: 2// Price per double room per day
-                }
-            ]
-        },
-    ];
- */
-    const rating = hotelv && hotelv?.reviewCount > 0
-        ? parseFloat(((hotelv?.ratings / hotelv?.reviewCount) * 2).toFixed(1))
+    // Calculate rating from hotel data
+    const rating = hotelv && hotelv.reviewCount > 0
+        ? parseFloat(((hotelv.ratings / hotelv.reviewCount) * 2).toFixed(1))
         : 0;
 
-    /*  useEffect(() => {
-         getItem(id);
-     }, [id]); */
-
-    useEffect(() => {
-        calculateTotalPrice();
-    }, [selectedRoomCounts, hotelv?.price]); // Recalculate when room counts or base item price changes
-
-    /* const getItem = (Id: string | string[]) => {
-        const foundItem = groupCollection.find(collection => collection.id === Id);
-        if (foundItem) {
-            setItem(foundItem);
-            // Initialize selectedRoomCounts based on available room types
-            const initialRoomCounts: { [key: number]: number } = {};
-            foundItem.rooms.forEach((_, index) => {
-                initialRoomCounts[index] = 0; // Start with 0 selected rooms for each type
-            });
-            setSelectedRoomCounts(initialRoomCounts);
-        }
-    }; */
-
-    const handleRoomCountChange = (index: number, change: number) => {
-        // Calculate total guests once
-        const totalGuests = (bookingData?.adults || 0) + (bookingData?.children || 0);
-
-        setSelectedRoomCounts(prevCounts => {
-            const room = roomTypes[index];
-            if (!room) return prevCounts;
-
-            // Determine the maximum number of available rooms
-            let maxAvailableRooms = 0;
-            if (room.name === "Standard Single Bedroom") {
-                maxAvailableRooms = hotelv?.availableSingle || 0;
-            } else {
-                maxAvailableRooms = hotelv?.availableDouble || 0;
-            }
-
-            // Calculate and clamp the new count for the current room type
-            const currentCount = prevCounts[index] || 0;
-            const newCount = currentCount + change;
-
-            if (change > 0 && currentCount >= maxAvailableRooms) {
-                setCapacityWarning(`No more ${room.name}s are available.`);
-                return prevCounts; // Return the previous state without changes
-            }
-
-            const clampedCount = Math.max(0, Math.min(newCount, maxAvailableRooms));
-
-            // Create the new state object for room counts
-            const newSelectedRoomCounts = {
-                ...prevCounts,
-                [index]: clampedCount,
-            };
-
-            // --- NEW MINIMUM GUEST COUNT LOGIC ---
-            // Calculate the new total capacity based on the updated counts
-            let newTotalCapacity = 0;
-            Object.entries(newSelectedRoomCounts).forEach(([idx, count]) => {
-                const r = roomTypes[parseInt(idx)];
-                if (r) {
-                    newTotalCapacity += count * r.capacity;
-                }
-            });
-
-            // Set a warning if the new capacity is less than the total guests
-            if (newTotalCapacity < totalGuests) {
-                setCapacityWarning(`You need to select rooms for at least ${totalGuests} guests.`);
-            } else {
-                setCapacityWarning(''); // Clear the warning if capacity is sufficient
-            }
-
-            return newSelectedRoomCounts;
-        });
+    // Get rating description
+    const getRatingDescription = (rating: number) => {
+        if (rating >= 4.5) return "Exceptional";
+        if (rating >= 4.0) return "Excellent";
+        if (rating >= 3.5) return "Very Good";
+        if (rating >= 3.0) return "Good";
+        if (rating >= 2.5) return "Fair";
+        return "Poor";
     };
+
+    // Load booking data from AsyncStorage
     useEffect(() => {
-        // Create an async function to load the data
         const loadBookingData = async () => {
             try {
                 const jsonValue = await AsyncStorage.getItem("soloHotelBook");
                 if (jsonValue !== null) {
-                    // If data exists, parse it and set it to state
                     const data = JSON.parse(jsonValue);
                     setBookingData(data);
+                    console.log('Loaded booking data:', data);
                 }
             } catch (e) {
                 console.error("Failed to load data from AsyncStorage", e);
@@ -411,30 +163,315 @@ export default function Views() {
                 setIsLoading(false);
             }
         };
-
         loadBookingData();
-    }, []); // The empty array [] ensures this runs only once when the screen loads
+    }, []);
 
+    // Fetch hotel data
+    useEffect(() => {
+        const getHotelData = async () => {
+            if (!id) return;
+            
+            try {
+                console.log('Fetching hotel data for ID:', id);
+                
+                // Fetch hotel details
+                const hotelRes = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`);
+                if (!hotelRes.ok) {
+                    throw new Error(`Hotel fetch failed: ${hotelRes.status}`);
+                }
+                
+                const hotelData: HotelView = await hotelRes.json();
+                console.log('Hotel data received:', hotelData);
+                setHotelv(hotelData);
 
-    const calculateTotalPrice = () => {
-        let total = hotelv?.price || 0; // Start with the base hotel price
+                // Fetch facilities if available
+                if (hotelData?.facilities && hotelData.facilities.length > 0) {
+                    const facilityParams = new URLSearchParams();
+                    hotelData.facilities.forEach(facilityId => {
+                        facilityParams.append('ids', facilityId);
+                    });
+
+                    try {
+                        const facilitiesRes = await fetch(`http://localhost:8080/traveler/facis-view?${facilityParams.toString()}`);
+                        if (facilitiesRes.ok) {
+                            const facilitiesData = await facilitiesRes.json();
+                            console.log('Facilities data:', facilitiesData);
+                            setFacilities(facilitiesData);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching facilities:', err);
+                    }
+                }
+
+                // Fetch reviews
+                try {
+                    const reviewsRes = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`);
+                    if (reviewsRes.ok) {
+                        const reviewsData = await reviewsRes.json();
+                        console.log('Reviews data:', reviewsData);
+                        setReviews(reviewsData);
+                    }
+                } catch (err) {
+                    console.error('Error fetching reviews:', err);
+                }
+
+                // Fetch room types if available
+                if (hotelData?.roomTypes && hotelData.roomTypes.length > 0) {
+                    const roomParams = new URLSearchParams();
+                    hotelData.roomTypes.forEach(roomId => {
+                        roomParams.append('ids', roomId);
+                    });
+
+                    try {
+                        const roomTypesRes = await fetch(`http://localhost:8080/traveler/roomtypes-view?${roomParams.toString()}`);
+                        if (roomTypesRes.ok) {
+                            const roomTypesData = await roomTypesRes.json();
+                            console.log('Room types data:', roomTypesData);
+                            setRoomTypes(roomTypesData);
+                        }
+                    } catch (err) {
+                        console.error('Error fetching room types:', err);
+                    }
+                }
+
+            } catch (err) {
+                console.error('Error fetching hotel data:', err);
+                Alert.alert('Error', 'Failed to load hotel data. Please try again.');
+            }
+        };
+
+        getHotelData();
+    }, [id]);
+
+    // Auto-select default rooms based on guest count (minimum cost)
+    const autoSelectRooms = useCallback(() => {
+        if (!bookingData || roomTypes.length === 0 || Object.keys(selectedRoomCounts).length > 0) return;
+
+        const totalGuests = bookingData.adults + bookingData.children;
+        let minCost = Infinity;
+        let bestCombination: { [key: number]: number } = {};
+
+        // Generate all possible room combinations that can accommodate guests
+        const generateCombinations = (remainingGuests: number, roomIndex: number, currentCombination: { [key: number]: number }, currentCost: number) => {
+            if (remainingGuests <= 0) {
+                if (currentCost < minCost) {
+                    minCost = currentCost;
+                    bestCombination = { ...currentCombination };
+                }
+                return;
+            }
+
+            if (roomIndex >= roomTypes.length) return;
+
+            const room = roomTypes[roomIndex];
+            const maxAvailable = room.name.toLowerCase().includes("single") 
+                ? (hotelv?.availableSingle || 0) 
+                : (hotelv?.availableDouble || 0);
+
+            // Try different quantities of this room type
+            for (let quantity = 0; quantity <= maxAvailable; quantity++) {
+                const guestsAccommodated = quantity * room.capacity;
+                const cost = quantity * room.pricePerRoom;
+                
+                if (guestsAccommodated <= remainingGuests || remainingGuests <= 0) {
+                    const newCombination = { ...currentCombination };
+                    if (quantity > 0) {
+                        newCombination[roomIndex] = quantity;
+                    }
+                    
+                    generateCombinations(
+                        remainingGuests - guestsAccommodated,
+                        roomIndex + 1,
+                        newCombination,
+                        currentCost + cost
+                    );
+                }
+            }
+        };
+
+        generateCombinations(totalGuests, 0, {}, 0);
+
+        // Verify the best combination can accommodate all guests
+        let totalCapacity = 0;
+        Object.entries(bestCombination).forEach(([index, count]) => {
+            const room = roomTypes[parseInt(index)];
+            if (room) {
+                totalCapacity += count * room.capacity;
+            }
+        });
+
+        if (totalCapacity >= totalGuests) {
+            setSelectedRoomCounts(bestCombination);
+        }
+    }, [bookingData, roomTypes, hotelv, selectedRoomCounts]);
+
+    // Calculate total price including room selections and booking duration
+    const calculateTotalPrice = useCallback(() => {
+        if (!hotelv || !bookingData) return;
+
+        let basePrice = parseInt(hotelv.price) || 0;
+        let roomsTotal = 0;
+
+        // Calculate room costs
         roomTypes.forEach((room, index) => {
             const count = selectedRoomCounts[index] || 0;
-            total += count * room.pricePerRoom;
+            roomsTotal += count * room.pricePerRoom;
         });
-        setTotalPrice(total);
+
+        // Calculate total for all nights
+        const totalNightly = (basePrice + roomsTotal) * (bookingData.nights || 1);
+        setTotalPrice(totalNightly);
+    }, [hotelv, roomTypes, selectedRoomCounts, bookingData]);
+
+    // Check if current selection is optimal (minimum cost)
+    const isOptimalSelection = useCallback(() => {
+        if (!bookingData || roomTypes.length === 0) return true;
+        
+        const totalGuests = bookingData.adults + bookingData.children;
+        let minCost = Infinity;
+        let optimalCombination: { [key: number]: number } = {};
+
+        // Recalculate optimal combination
+        const generateCombinations = (remainingGuests: number, roomIndex: number, currentCombination: { [key: number]: number }, currentCost: number) => {
+            if (remainingGuests <= 0) {
+                if (currentCost < minCost) {
+                    minCost = currentCost;
+                    optimalCombination = { ...currentCombination };
+                }
+                return;
+            }
+
+            if (roomIndex >= roomTypes.length) return;
+
+            const room = roomTypes[roomIndex];
+            const maxAvailable = room.name.toLowerCase().includes("single") 
+                ? (hotelv?.availableSingle || 0) 
+                : (hotelv?.availableDouble || 0);
+
+            for (let quantity = 0; quantity <= maxAvailable; quantity++) {
+                const guestsAccommodated = quantity * room.capacity;
+                const cost = quantity * room.pricePerRoom;
+                
+                if (guestsAccommodated <= remainingGuests || remainingGuests <= 0) {
+                    const newCombination = { ...currentCombination };
+                    if (quantity > 0) {
+                        newCombination[roomIndex] = quantity;
+                    }
+                    
+                    generateCombinations(
+                        remainingGuests - guestsAccommodated,
+                        roomIndex + 1,
+                        newCombination,
+                        currentCost + cost
+                    );
+                }
+            }
+        };
+
+        generateCombinations(totalGuests, 0, {}, 0);
+
+        // Compare current selection with optimal
+        const currentKeys = Object.keys(selectedRoomCounts).sort();
+        const optimalKeys = Object.keys(optimalCombination).sort();
+        
+        if (currentKeys.length !== optimalKeys.length) return false;
+        
+        return currentKeys.every(key => selectedRoomCounts[parseInt(key)] === optimalCombination[parseInt(key)]);
+    }, [bookingData, roomTypes, hotelv, selectedRoomCounts]);
+
+    // Reset to minimum cost selection
+    const resetToMinimumCost = () => {
+        setSelectedRoomCounts({});
+        setTimeout(() => autoSelectRooms(), 100);
+    };
+    useEffect(() => {
+        autoSelectRooms();
+    }, [autoSelectRooms]);
+
+    // Recalculate price when dependencies change
+    useEffect(() => {
+        calculateTotalPrice();
+    }, [calculateTotalPrice]);
+
+    // Handle room count changes with comprehensive validation
+    const handleRoomCountChange = (index: number, change: number) => {
+        if (!bookingData) return;
+
+        const totalGuests = bookingData.adults + bookingData.children;
+
+        setSelectedRoomCounts(prevCounts => {
+            const room = roomTypes[index];
+            if (!room) return prevCounts;
+
+            // Determine max available rooms
+            let maxAvailableRooms = 0;
+            if (room.name.toLowerCase().includes("single")) {
+                maxAvailableRooms = hotelv?.availableSingle || 0;
+            } else {
+                maxAvailableRooms = hotelv?.availableDouble || 0;
+            }
+
+            const currentCount = prevCounts[index] || 0;
+            const newCount = currentCount + change;
+
+            // Validate room availability
+            if (change > 0 && currentCount >= maxAvailableRooms) {
+                setCapacityWarning(`No more ${room.name}s available. Only ${maxAvailableRooms} rooms of this type are available.`);
+                return prevCounts;
+            }
+
+            // Ensure count doesn't go below 0
+            const clampedCount = Math.max(0, Math.min(newCount, maxAvailableRooms));
+
+            const newSelectedRoomCounts = {
+                ...prevCounts,
+                [index]: clampedCount,
+            };
+
+            // Calculate total capacity and cost with new selection
+            let newTotalCapacity = 0;
+            let totalRoomCost = 0;
+            Object.entries(newSelectedRoomCounts).forEach(([idx, count]) => {
+                const r = roomTypes[parseInt(idx)];
+                if (r) {
+                    newTotalCapacity += count * r.capacity;
+                    totalRoomCost += count * r.pricePerRoom;
+                }
+            });
+
+            // Comprehensive validation messages
+            if (newTotalCapacity === 0) {
+                setCapacityWarning('Please select at least one room for your stay.');
+            } else if (newTotalCapacity < totalGuests) {
+                const shortfall = totalGuests - newTotalCapacity;
+                setCapacityWarning(`Insufficient capacity. You need accommodation for ${shortfall} more guest${shortfall > 1 ? 's' : ''}. Current selection accommodates ${newTotalCapacity} guests but you have ${totalGuests} guests.`);
+            } else if (newTotalCapacity > totalGuests + 2) {
+                const excess = newTotalCapacity - totalGuests;
+                setCapacityWarning(`You've selected rooms for ${excess} extra guests. This will increase your cost but you can proceed if you prefer more space.`);
+            } else {
+                setCapacityWarning('');
+            }
+
+            return newSelectedRoomCounts;
+        });
     };
 
+    // Handle carousel scroll
     const handleScroll = useCallback((event: any) => {
         if (carouselWidth > 0) {
-            // Calculate the index based on scroll position and width
             const newIndex = Math.round(event.nativeEvent.contentOffset.x / carouselWidth);
             setActiveIndex(newIndex);
         }
     }, [carouselWidth]);
 
+    // Handle booking submission
     const handleBooking = async () => {
+        if (!hotelv || !bookingData) {
+            Alert.alert('Error', 'Missing hotel or booking data');
+            return;
+        }
 
+        // Check capacity
         let totalCapacity = 0;
         Object.entries(selectedRoomCounts).forEach(([index, count]) => {
             const room = roomTypes[parseInt(index)];
@@ -443,301 +480,725 @@ export default function Views() {
             }
         });
 
-        if (bookingData && totalCapacity < bookingData?.adults + bookingData?.children) {
-
-            alert('Select enough accomodation')
+        if (totalCapacity < bookingData.adults + bookingData.children) {
+            Alert.alert('Insufficient Accommodation', 'Please select enough rooms for all guests.');
             return;
-
         }
 
-
-
-        const keys = await AsyncStorage.getItem("token");
-
-        if (keys) {
-
-            const token: MyToken = jwtDecode(keys)
-
-
-            const book = { ...booking }
-            book.userId = token.id
-            book.serviceId = id.toString();
-            book.type = 'hotel';
-            book.thumbnail = hotelv?.images[0];
-            book.title = hotelv?.name;
-
-            var x = new Array();
-
-            Object.entries(selectedRoomCounts).forEach(n => { if (n[1] > 0) x.push(n[0] == '0' ? n[1] + ` Single bed room ${n[1] > 1 ? 's' : ''}` : n[1] + ` Double bed room ${n[1] > 1 ? 's' : ''}`) })
-
-            book.subtitle = x;
-            book.location = hotelv?.location;
-            if (bookingData) {
-
-                book.bookingDates = [bookingData.selectedDates, bookingData.selectedoutDates];
-                book.guests = bookingData?.adults + bookingData?.children;
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token) {
+                Alert.alert('Authentication Required', 'Please log in to make a booking.');
+                return;
             }
-            book.stars = hotelv?.stars;
-            book.ratings = rating;
-            book.paymentStatus = false;
 
-            var y = new Array();
+            const decodedToken: MyToken = jwtDecode(token);
 
-            facilities.map((x, i) => {
+            // Prepare booking data
+            const bookingPayload: Partial<Booking> = {
+                userId: decodedToken.id,
+                serviceId: id.toString(),
+                type: 'hotel',
+                thumbnail: hotelv.thumbnail || hotelv.images?.[0],
+                title: hotelv.name,
+                location: hotelv.location,
+                bookingDates: [bookingData.selectedDates, bookingData.selectedoutDates],
+                guests: bookingData.adults + bookingData.children,
+                stars: hotelv.stars,
+                ratings: rating,
+                paymentStatus: false,
+                price: totalPrice,
+                status: 'active',
+                mobileNumber: hotelv.mobileNumber
+            };
 
-                y.push(x.title);
+            // Add room details to subtitle
+            const roomDetails: string[] = [];
+            Object.entries(selectedRoomCounts).forEach(([index, count]) => {
+                if (count > 0) {
+                    const roomType = roomTypes[parseInt(index)].name;
+                    roomDetails.push(`${count} ${roomType}${count > 1 ? 's' : ''}`);
+                }
+            });
+            bookingPayload.subtitle = roomDetails;
 
-            })
+            // Add facilities
+            const facilityNames = facilities.map(f => f.title);
+            bookingPayload.facilities = facilityNames;
 
-            book.facilities = y;
-            book.price = totalPrice;
-            book.status = 'active';
-            book.mobileNumber = hotelv?.mobileNumber;
+            console.log('Submitting booking:', bookingPayload);
 
-            await fetch(`http://localhost:8080/traveler/create-booking`, {
-
+            const response = await fetch('http://localhost:8080/traveler/create-booking', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(book)
+                body: JSON.stringify(bookingPayload)
+            });
 
-            })
-                .then(res => res.text())
-                .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
-                .catch(err => console.log("Error from booking create " + err))
+            if (response.ok) {
+                const result = await response.text();
+                console.log('Booking created:', result);
+                Alert.alert('Success', 'Booking created successfully!', [
+                    { text: 'OK', onPress: () => router.replace('/(tabs)/bookings') }
+                ]);
+            } else {
+                throw new Error(`Booking failed: ${response.status}`);
+            }
 
+        } catch (err) {
+            console.error('Booking error:', err);
+            Alert.alert('Booking Failed', 'Unable to create booking. Please try again.');
         }
+    };
 
+    // Info Modal Component
+    const InfoModal = ({ visible, onClose, title, content }: { 
+        visible: boolean; 
+        onClose: () => void; 
+        title: string; 
+        content: string; 
+    }) => (
+        <Modal
+            animationType="fade"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <View className="flex-1 justify-center items-center bg-black/50">
+                <View className="bg-white rounded-xl p-6 mx-4 max-w-md">
+                    <View className="flex-row justify-between items-center mb-4">
+                        <Text className="text-xl font-bold text-gray-900">{title}</Text>
+                        <TouchableOpacity
+                            onPress={onClose}
+                            className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center"
+                        >
+                            <Text className="text-gray-600 font-bold">×</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text className="text-gray-700 text-base leading-6">{content}</Text>
+                </View>
+            </View>
+        </Modal>
+    );
+
+    // Loading state
+    if (isLoading || !hotelv) {
+        return (
+            <View className="flex-1 justify-center items-center bg-yellow-50">
+                <View className="w-16 h-16 bg-yellow-400 rounded-full items-center justify-center mb-4">
+                    <Text className="text-2xl">🏨</Text>
+                </View>
+                <Text className="text-lg text-yellow-800 font-medium">Loading hotel details...</Text>
+            </View>
+        );
     }
 
     return (
-        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
-            <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
+        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'} bg-yellow-50`}>
+            {/* Header */}
+            <View className="flex-row items-center justify-between p-4 bg-white shadow-sm">
+                <TouchableOpacity 
+                    onPress={() => router.back()}
+                    className="w-12 h-12 bg-yellow-100 rounded-full items-center justify-center"
+                >
+                    <Text className="text-yellow-700 text-xl font-bold">←</Text>
+                </TouchableOpacity>
+                <Text className="text-xl font-bold text-gray-800">🏨 Hotel Details</Text>
+                <View className="w-12 h-12 bg-yellow-100 rounded-full items-center justify-center">
+                    <Text className="text-yellow-700 text-xl">❤️</Text>
+                </View>
+            </View>
 
             <ScrollView
-                className="w-full h-[97%]"
-                contentContainerClassName="flex-col px-3 py-5 gap-7"
+                className="flex-1"
+                contentContainerStyle={{ paddingBottom: 120 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="w-full gap-5">
-                    <View className="">
-                        <View className="w-full items-center h-56"
-
-                            onLayout={(event) => {
-                                setCarouselWidth(event.nativeEvent.layout.width);
-                            }}
-
+                {/* Hotel Images Carousel */}
+                <View className="h-72 bg-gray-200 relative"
+                    onLayout={(event) => setCarouselWidth(event.nativeEvent.layout.width)}
+                >
+                    {carouselWidth > 0 && hotelv.images && hotelv.images.length > 0 && (
+                        <ScrollView
+                            horizontal
+                            pagingEnabled
+                            onScroll={handleScroll}
+                            scrollEventThrottle={16}
+                            showsHorizontalScrollIndicator={false}
                         >
-                            {carouselWidth > 0 && (
-                                <ScrollView
-                                    horizontal
-                                    pagingEnabled
-                                    onScroll={handleScroll}
-                                    scrollEventThrottle={16}
-                                    showsHorizontalScrollIndicator={false}
-
-                                    contentContainerStyle={Platform.select({
-                                        web: {
-                                            scrollSnapType: 'x mandatory',
-                                            overflowX: 'scroll',
-                                        } as any, // Use 'as any' to satisfy TypeScript
-                                    })}
-
-                                >
-                                    {hotelv?.images.map((x, index) => (
-                                        <View key={index} style={{ width: carouselWidth }} className="p-1 h-full snap-center">
-                                            <Image
-                                                source={{ uri: `data:image/jpeg;base64,${x}` }}
-                                                // 2. The Image now fills the padded container.
-                                                className="h-full w-full border-2 border-gray-300"
-                                                contentFit="cover"
-                                            />
-                                        </View>
-                                    ))}
-                                </ScrollView>
-                            )}
-                        </View>
-                        <View className="flex-row justify-between pt-1">
-                            <View>
-                                <View className="flex-row items-center gap-3">
-                                    <Text className="font-black text-xl">{hotelv?.name}</Text>
-                                    <View className="flex-row">
-                                        {[...Array(hotelv?.stars)].map((_, index) => (
-                                            <Image
-                                                key={index}
-                                                source={star} // Your imported star image
-                                                className="w-4 h-4 mx-0.5"
-                                            />
-                                        ))}
-                                    </View>
-                                </View>
-                                <View className="flex-row items-center">
-                                    <Image className="w-4 h-4" source={location} />
-                                    <Text className="text-start">{hotelv?.location}</Text>
-                                </View>
-                            </View>
-                            <View className="flex-row items-start">
-                                {/* <Image className="w-5 h-5" source={star} /> */}
-                                <Text className="text-sm rounded-lg bg-yellow-300 py-1 px-2 font-medium">{rating.toFixed(1)}</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View className=" bg-gray-100 rounded-lg shadow-md m-1 px-2">
-                        <Text className=" text-2xl font-semibold py-2">Facilities</Text>
-                        <View className="flex-wrap flex-row justify-evenly">
-
-                            {facilities.map((x, i) => (
-                                <View key={i} className="p-3 rounded-2xl">
-                                    <View className="items-center">
-                                        <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.image}` }} />
-                                        <Text className="text-center">{x.title}</Text>
-                                    </View>
+                            {hotelv.images.map((image, index) => (
+                                <View key={index} style={{ width: carouselWidth }} className="h-full">
+                                    <Image
+                                        source={{ uri: `data:image/jpeg;base64,${image}` }}
+                                        className="h-full w-full"
+                                        contentFit="cover"
+                                    />
                                 </View>
                             ))}
+                        </ScrollView>
+                    )}
+                    
+                    {/* Image indicators */}
+                    {hotelv.images && hotelv.images.length > 1 && (
+                        <View className="absolute bottom-4 left-0 right-0 flex-row justify-center">
+                            {hotelv.images.map((_, index) => (
+                                <View
+                                    key={index}
+                                    className={`w-2 h-2 rounded-full mx-1 ${
+                                        index === activeIndex ? 'bg-yellow-400' : 'bg-white/70'
+                                    }`}
+                                />
+                            ))}
+                        </View>
+                    )}
 
+                    {/* Photo count badge */}
+                    <View className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full">
+                        <Text className="text-white text-sm font-medium">
+                            📸 {activeIndex + 1}/{hotelv.images?.length || 0}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Hotel Info */}
+                <View className="bg-white mx-4 mt-4 rounded-xl p-6 shadow-sm">
+                    <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 pr-4">
+                            <Text className="text-2xl font-bold text-gray-900 mb-2">
+                                {hotelv.name}
+                            </Text>
+                            <View className="flex-row items-center mb-3">
+                                <Text className="text-yellow-600 text-lg mr-2">📍</Text>
+                                <Text className="text-gray-700 flex-1">{hotelv.location}</Text>
+                            </View>
+                            {hotelv.distance && (
+                                <View className="flex-row items-center mb-3">
+                                    <Text className="text-yellow-600 text-lg mr-2">🚗</Text>
+                                    <Text className="text-gray-600">{hotelv.distance}</Text>
+                                </View>
+                            )}
+                            <View className="flex-row items-center">
+                                <View className="flex-row mr-3">
+                                    {[...Array(hotelv.stars)].map((_, index) => (
+                                        <Text key={index} className="text-yellow-400 text-lg">⭐</Text>
+                                    ))}
+                                </View>
+                                <Text className="text-gray-600 text-sm">{hotelv.stars} Star Hotel</Text>
+                            </View>
+                        </View>
+                        <View className="items-end">
+                            <View className="bg-yellow-100 px-4 py-2 rounded-full mb-3 border border-yellow-200">
+                                <View className="flex-row items-center">
+                                    <Text className="text-yellow-800 font-bold text-lg mr-1">{rating.toFixed(1)}</Text>
+                                    <Text className="text-yellow-600">⭐</Text>
+                                </View>
+                                <Text className="text-yellow-700 text-xs text-center">
+                                    {getRatingDescription(rating)}
+                                </Text>
+                            </View>
+                            <View className="items-end">
+                                <View className="flex-row items-center">
+                                    <Text className="text-2xl font-bold text-green-600">
+                                        LKR {hotelv.price}
+                                    </Text>
+                                    <TouchableOpacity
+                                        onPress={() => setShowPriceInfo(true)}
+                                        className="ml-2 w-6 h-6 bg-yellow-100 rounded-full items-center justify-center"
+                                    >
+                                        <Text className="text-yellow-600 text-sm font-bold">ℹ️</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <Text className="text-xs text-gray-500">
+                                    {hotelv.priceDescription || 'per night'}
+                                </Text>
+                            </View>
                         </View>
                     </View>
-                    <View className=" bg-gray-100 rounded-lg shadow-md m-1 px-3">
 
-                        {bookingData ? (
-                            <View >
-                                {/* Row for Location */}
-                                <View className="flex-row justify-between items-center py-3">
-                                    <Text className="text-base text-gray-600">Location</Text>
-                                    <Text className="text-base font-bold text-gray-900">{bookingData.location}</Text>
+                    {/* Contact Button */}
+                    <TouchableOpacity className="bg-yellow-400 flex-row items-center justify-center py-3 rounded-lg mb-4">
+                        <Text className="text-lg mr-2">📞</Text>
+                        <Text className="text-yellow-900 font-semibold">Contact Hotel</Text>
+                    </TouchableOpacity>
+
+                    {/* Special Offer Banner */}
+                    {hotelv.specialOffer && (
+                        <View className="bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg mb-4 border border-yellow-200">
+                            <View className="flex-row items-center">
+                                <Text className="text-2xl mr-3">🎉</Text>
+                                <View className="flex-1">
+                                    <Text className="text-orange-800 font-bold text-sm mb-1">SPECIAL OFFER</Text>
+                                    <Text className="text-orange-700 text-sm">{hotelv.specialOffer}</Text>
                                 </View>
+                            </View>
+                        </View>
+                    )}
 
-                                <View className="h-px bg-gray-200" />
+                    {/* Free Features */}
+                    {hotelv.freeFeatures && hotelv.freeFeatures.length > 0 && (
+                        <View className="mb-4">
+                            <Text className="text-lg font-semibold text-gray-900 mb-3">✨ Free Amenities</Text>
+                            <View className="flex-row flex-wrap">
+                                {hotelv.freeFeatures.map((feature, index) => (
+                                    <View key={index} className="bg-green-100 px-3 py-2 rounded-full mr-2 mb-2 border border-green-200">
+                                        <Text className="text-green-700 text-sm font-medium">
+                                            ✅ {feature}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
 
-                                {/* Row for Dates */}
-                                <View className="flex-row justify-between items-center py-3">
-                                    <Text className="text-base text-gray-600">Check-in</Text>
-                                    <Text className="text-base font-semibold text-gray-900">{bookingData.selectedDates}</Text>
+                    {/* Description */}
+                    {hotelv.description && (
+                        <View className="mb-4">
+                            <Text className="text-lg font-semibold text-gray-900 mb-2">📋 About This Hotel</Text>
+                            <Text className="text-gray-700 text-base leading-6">
+                                {hotelv.description}
+                            </Text>
+                        </View>
+                    )}
+
+                    {/* Tax Information */}
+                    {hotelv.taxes && (
+                        <View className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <View className="flex-row items-start">
+                                <Text className="text-blue-600 text-lg mr-2">💡</Text>
+                                <Text className="text-blue-800 text-sm flex-1">{hotelv.taxes}</Text>
+                            </View>
+                        </View>
+                    )}
+                </View>
+
+                {/* Booking Summary */}
+                {bookingData && (
+                    <View className="mx-4 my-4 bg-yellow-100 rounded-xl p-6 border-2 border-yellow-200">
+                        <View className="flex-row items-center mb-4">
+                            <Text className="text-2xl mr-3">📅</Text>
+                            <Text className="text-xl font-bold text-yellow-900">Your Booking</Text>
+                        </View>
+                        <View className="space-y-3">
+                            <View className="flex-row justify-between items-center">
+                                <View className="flex-row items-center">
+                                    <Text className="text-yellow-700 text-lg mr-2">🏃‍♂️</Text>
+                                    <Text className="text-yellow-800 font-medium">Check-in</Text>
                                 </View>
-                                <View className="flex-row justify-between items-center pb-3">
-                                    <Text className="text-base text-gray-600">Check-out</Text>
-                                    <Text className="text-base font-semibold text-gray-900">{bookingData.selectedoutDates}</Text>
+                                <Text className="text-yellow-900 font-bold">{bookingData.selectedDates}</Text>
+                            </View>
+                            <View className="flex-row justify-between items-center">
+                                <View className="flex-row items-center">
+                                    <Text className="text-yellow-700 text-lg mr-2">🏃‍♀️</Text>
+                                    <Text className="text-yellow-800 font-medium">Check-out</Text>
                                 </View>
+                                <Text className="text-yellow-900 font-bold">{bookingData.selectedoutDates}</Text>
+                            </View>
+                            <View className="flex-row justify-between items-center">
+                                <View className="flex-row items-center">
+                                    <Text className="text-yellow-700 text-lg mr-2">👥</Text>
+                                    <Text className="text-yellow-800 font-medium">Guests</Text>
+                                </View>
+                                <Text className="text-yellow-900 font-bold">
+                                    {bookingData.adults} Adults, {bookingData.children} Children
+                                </Text>
+                            </View>
+                            <View className="flex-row justify-between items-center">
+                                <View className="flex-row items-center">
+                                    <Text className="text-yellow-700 text-lg mr-2">🌙</Text>
+                                    <Text className="text-yellow-800 font-medium">Nights</Text>
+                                </View>
+                                <Text className="text-yellow-900 font-bold">{bookingData.nights}</Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
-                                <View className="h-px bg-gray-200" />
+                {/* Unavailable Days */}
+                {hotelv.unavailable && hotelv.unavailable.length > 0 && (
+                    <View className="mx-4 mb-4 bg-red-50 rounded-xl p-4 border border-red-200">
+                        <View className="flex-row items-center mb-3">
+                            <Text className="text-2xl mr-3">🚫</Text>
+                            <Text className="text-lg font-semibold text-red-900">Unavailable Days</Text>
+                        </View>
+                        <Text className="text-red-700 mb-3">This hotel is not available on the following days:</Text>
+                        <View className="flex-row flex-wrap">
+                            {hotelv.unavailable.map((day, index) => (
+                                <View key={index} className="bg-red-200 px-3 py-2 rounded-full mr-2 mb-2">
+                                    <Text className="text-red-800 font-medium">{day}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                )}
 
-                                {/* Row for Guests and Nights */}
-                                <View className="flex-row justify-between items-center py-3">
-                                    <Text className="text-base text-gray-600">Guests</Text>
-                                    <Text className="text-base font-bold text-gray-900">
-                                        {bookingData.adults} Adults, {bookingData.children} Children
+                {/* Facilities */}
+                {facilities.length > 0 && (
+                    <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
+                        <View className="flex-row items-center mb-4">
+                            <Text className="text-lg font-semibold text-gray-900">Facilities</Text>
+                        </View>
+                        <View className="flex-row flex-wrap">
+                            {facilities.map((facility, index) => {
+                                // Map facility names to appropriate icons
+                                const getFacilityIcon = (title: string | null | undefined) => {
+                                    if (!title || typeof title !== 'string') return '🏨';
+                                    const lowerTitle = title.toLowerCase();
+                                    if (lowerTitle.includes('wifi') || lowerTitle.includes('internet')) return '📶';
+                                    if (lowerTitle.includes('pool') || lowerTitle.includes('swimming')) return '🏊';
+                                    if (lowerTitle.includes('gym') || lowerTitle.includes('fitness')) return '💪';
+                                    if (lowerTitle.includes('spa') || lowerTitle.includes('massage')) return '💆';
+                                    if (lowerTitle.includes('restaurant') || lowerTitle.includes('dining')) return '🍽️';
+                                    if (lowerTitle.includes('bar') || lowerTitle.includes('lounge')) return '🍸';
+                                    if (lowerTitle.includes('parking')) return '🅿️';
+                                    if (lowerTitle.includes('ac') || lowerTitle.includes('air')) return '❄️';
+                                    if (lowerTitle.includes('tv') || lowerTitle.includes('television')) return '📺';
+                                    if (lowerTitle.includes('laundry') || lowerTitle.includes('cleaning')) return '🧺';
+                                    if (lowerTitle.includes('concierge') || lowerTitle.includes('service')) return '🛎️';
+                                    if (lowerTitle.includes('elevator') || lowerTitle.includes('lift')) return '🛗';
+                                    if (lowerTitle.includes('balcony') || lowerTitle.includes('terrace')) return '🏞️';
+                                    if (lowerTitle.includes('safe') || lowerTitle.includes('security')) return '🔒';
+                                    if (lowerTitle.includes('room service')) return '🛏️';
+                                    return '🏨';
+                                };
+
+                                return (
+                                    <View key={index} className="bg-yellow-50 rounded-lg p-3 m-1 border border-yellow-200">
+                                        <View className="flex-row items-center">
+                                            <Text className="text-lg mr-2">{getFacilityIcon(facility.title)}</Text>
+                                            <Text className="text-sm text-gray-700 font-medium">
+                                                {facility.title}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+
+                {/* Charge Breakdown */}
+                {bookingData && (totalPrice > 0 || Object.keys(selectedRoomCounts).some(key => selectedRoomCounts[parseInt(key)] > 0)) && (
+                    <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <View className="flex-row items-center">
+                                <Text className="text-lg font-semibold text-gray-900">Charge Breakdown</Text>
+                                {isOptimalSelection() ? (
+                                    <View className="ml-2 bg-green-100 px-2 py-1 rounded-full">
+                                        <Text className="text-green-800 text-xs font-medium">Minimum Cost Option</Text>
+                                    </View>
+                                ) : (
+                                    <View className="ml-2 bg-orange-100 px-2 py-1 rounded-full">
+                                        <Text className="text-orange-800 text-xs font-medium">Customized Selection</Text>
+                                    </View>
+                                )}
+                            </View>
+                            {!isOptimalSelection() && (
+                                <TouchableOpacity
+                                    onPress={resetToMinimumCost}
+                                    className="bg-blue-100 px-3 py-1 rounded-full"
+                                >
+                                    <Text className="text-blue-800 text-xs font-medium">Reset to Min Cost</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                        
+                        {/* Base Hotel Price */}
+                        <View className="bg-gray-50 rounded-lg p-3 mb-3">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-gray-700 font-medium">Base Hotel Rate</Text>
+                                <Text className="text-gray-900 font-semibold">LKR {parseInt(hotelv.price).toLocaleString()}</Text>
+                            </View>
+                            <Text className="text-xs text-gray-600">per night × {bookingData.nights} nights</Text>
+                        </View>
+
+                        {/* Room Charges */}
+                        {Object.entries(selectedRoomCounts).map(([index, count]) => {
+                            if (count === 0) return null;
+                            const room = roomTypes[parseInt(index)];
+                            if (!room) return null;
+                            
+                            return (
+                                <View key={index} className="bg-blue-50 rounded-lg p-3 mb-3">
+                                    <View className="flex-row justify-between items-center mb-1">
+                                        <Text className="text-blue-700 font-medium">
+                                            {count}x {room.name}
+                                        </Text>
+                                        <Text className="text-blue-900 font-semibold">
+                                            LKR {(count * room.pricePerRoom * bookingData.nights).toLocaleString()}
+                                        </Text>
+                                    </View>
+                                    <Text className="text-xs text-blue-600">
+                                        LKR {room.pricePerRoom.toLocaleString()} per room × {count} room{count > 1 ? 's' : ''} × {bookingData.nights} nights
+                                    </Text>
+                                    <Text className="text-xs text-blue-600 mt-1">
+                                        Accommodates up to {count * room.capacity} guests
                                     </Text>
                                 </View>
-                                <View className="flex-row justify-between items-center pb-3">
-                                    <Text className="text-base text-gray-600">Total Nights</Text>
-                                    <Text className="text-base font-bold text-gray-900">{bookingData.nights}</Text>
+                            );
+                        })}
+
+                        {/* Cost Comparison */}
+                        {!isOptimalSelection() && (
+                            <View className="bg-amber-50 p-3 rounded-lg mb-3 border border-amber-200">
+                                <View className="flex-row items-center mb-1">
+                                    <Text className="text-amber-600 text-sm mr-2">💡</Text>
+                                    <Text className="text-amber-800 font-medium text-sm">Cost Comparison</Text>
+                                </View>
+                                <Text className="text-amber-700 text-xs">
+                                    Your selection costs more than the minimum option. You can save money by clicking "Reset to Min Cost" above.
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Subtotal */}
+                        <View className="border-t border-gray-200 pt-3">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-gray-700">Subtotal per night:</Text>
+                                <Text className="text-gray-900 font-medium">
+                                    LKR {Math.round(totalPrice / (bookingData.nights || 1)).toLocaleString()}
+                                </Text>
+                            </View>
+                            <View className="flex-row justify-between items-center mb-3">
+                                <Text className="text-gray-700">Number of nights:</Text>
+                                <Text className="text-gray-900 font-medium">{bookingData.nights}</Text>
+                            </View>
+                            <View className="flex-row justify-between items-center bg-yellow-100 p-3 rounded-lg">
+                                <Text className="text-yellow-800 font-bold text-lg">Total Amount:</Text>
+                                <Text className="text-yellow-900 font-bold text-xl">
+                                    LKR {totalPrice.toLocaleString()}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Guest Capacity Summary */}
+                        <View className="mt-3 bg-green-50 p-3 rounded-lg border border-green-200">
+                            <View className="flex-row justify-between items-center">
+                                <Text className="text-green-700 font-medium">Total Guest Capacity:</Text>
+                                <Text className="text-green-800 font-semibold">
+                                    {Object.entries(selectedRoomCounts).reduce((total, [index, count]) => {
+                                        const room = roomTypes[parseInt(index)];
+                                        return total + (room ? count * room.capacity : 0);
+                                    }, 0)} guests
+                                </Text>
+                            </View>
+                            <Text className="text-xs text-green-600 mt-1">
+                                Your booking: {bookingData.adults} adults + {bookingData.children} children = {bookingData.adults + bookingData.children} guests
+                            </Text>
+                        </View>
+                    </View>
+                )}
+                {roomTypes.length > 0 && (
+                    <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <Text className="text-lg font-semibold text-gray-900">Choose Your Rooms</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowRoomInfo(true)}
+                                className="w-6 h-6 bg-yellow-100 rounded-full items-center justify-center"
+                            >
+                                <Text className="text-yellow-600 text-xs font-bold">i</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {/* Availability Summary */}
+                        <View className="bg-yellow-50 p-3 rounded-lg mb-4 border border-yellow-200">
+                            <Text className="text-yellow-800 font-medium text-sm mb-1">Room Availability</Text>
+                            <View className="flex-row justify-between">
+                                <Text className="text-yellow-700 text-xs">🛏️ Single: {hotelv.availableSingle} available</Text>
+                                <Text className="text-yellow-700 text-xs">🛏️🛏️ Double: {hotelv.availableDouble} available</Text>
+                            </View>
+                        </View>
+
+                        {roomTypes.map((room, index) => (
+                            <View key={index} className="bg-gray-50 rounded-lg p-4 mb-3">
+                                <View className="flex-row items-center">
+                                    {/* Room Icon */}
+                                    <View className="w-12 h-12 bg-yellow-100 rounded-lg items-center justify-center mr-3">
+                                        <Text className="text-lg">
+                                            {room.name.toLowerCase().includes("single") ? "🛏️" : "🛏️🛏️"}
+                                        </Text>
+                                    </View>
+                                    
+                                    {/* Room Details */}
+                                    <View className="flex-1">
+                                        <Text className="font-semibold text-gray-900 text-base">{room.name}</Text>
+                                        <Text className="text-sm text-gray-600">Up to {room.capacity} guests</Text>
+                                        <Text className="text-sm text-green-600">
+                                            {room.name.toLowerCase().includes("single") ? hotelv.availableSingle : hotelv.availableDouble} rooms available
+                                        </Text>
+                                        <Text className="text-lg font-bold text-green-600 mt-1">
+                                            LKR {room.pricePerRoom.toLocaleString()}<Text className="text-sm text-gray-500 font-normal">/night</Text>
+                                        </Text>
+                                    </View>
+                                    
+                                    {/* Counter Controls */}
+                                    <View className="flex-row items-center">
+                                        <TouchableOpacity
+                                            className="w-10 h-10 bg-gray-200 rounded-full items-center justify-center"
+                                            onPress={() => handleRoomCountChange(index, -1)}
+                                        >
+                                            <Text className="text-lg font-bold text-gray-600">−</Text>
+                                        </TouchableOpacity>
+                                        <View className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center mx-2">
+                                            <Text className="text-lg font-bold text-yellow-900">
+                                                {selectedRoomCounts[index] || 0}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity
+                                            className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center"
+                                            onPress={() => handleRoomCountChange(index, 1)}
+                                        >
+                                            <Text className="text-lg font-bold text-yellow-900">+</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                        
+                        {capacityWarning ? (
+                            <View className={`p-3 rounded-lg border ${
+                                capacityWarning.includes('Insufficient') ? 'bg-red-50 border-red-200' :
+                                capacityWarning.includes('extra guests') ? 'bg-orange-50 border-orange-200' :
+                                'bg-amber-50 border-amber-200'
+                            }`}>
+                                <View className="flex-row items-start">
+                                    <Text className={`text-lg mr-2 ${
+                                        capacityWarning.includes('Insufficient') ? 'text-red-600' :
+                                        capacityWarning.includes('extra guests') ? 'text-orange-600' :
+                                        'text-amber-600'
+                                    }`}>
+                                        {capacityWarning.includes('Insufficient') ? '❌' :
+                                         capacityWarning.includes('extra guests') ? '💰' : '⚠️'}
+                                    </Text>
+                                    <Text className={`font-medium text-sm flex-1 ${
+                                        capacityWarning.includes('Insufficient') ? 'text-red-800' :
+                                        capacityWarning.includes('extra guests') ? 'text-orange-800' :
+                                        'text-amber-800'
+                                    }`}>
+                                        {capacityWarning}
+                                    </Text>
                                 </View>
                             </View>
                         ) : (
-                            <Text>No booking data found.</Text>
+                            <View className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                <View className="flex-row items-center">
+                                    <Text className="text-green-600 text-lg mr-2">✅</Text>
+                                    <Text className="text-green-800 font-medium text-sm">
+                                        Perfect! Your room selection accommodates all guests comfortably.
+                                    </Text>
+                                </View>
+                            </View>
                         )}
                     </View>
-                    <View className="gap-3">
-                        {/* <Text className="px-3 text-sm italic text-justify text-gray-500 font-semibold">{item.description}</Text> */}
+                )}
 
-                        <View className=" bg-gray-100 rounded-lg shadow-md m-1">
-                            <Text className=" text-2xl font-semibold px-2 py-1">Choose Rooms</Text>
-                            {roomTypes.map((r, i) => (
-                                <View key={i} className="flex-row px-2 py-3 gap-12 items-center justify-between">
-                                    <View className="flex-row items-center gap-14">
-                                        <Image className="w-10 h-10" source={r.name == "Standard Single Bedroom" ? single : double} />
-                                        <Text>Available Rooms: {r.name == "Standard Single Bedroom" ? hotelv?.availableSingle : hotelv?.availableDouble}</Text>
+                {/* Reviews */}
+                {reviews.length > 0 && (
+                    <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <Text className="text-lg font-semibold text-gray-900">Guest Reviews</Text>
+                            <View className="bg-yellow-100 px-2 py-1 rounded-full">
+                                <Text className="text-yellow-800 text-xs font-medium">{reviews.length} reviews</Text>
+                            </View>
+                        </View>
+                        <ScrollView className="max-h-64" nestedScrollEnabled>
+                            {reviews.map((review, index) => (
+                                <View key={index} className="bg-gray-50 rounded-lg p-3 mb-3">
+                                    <View className="flex-row items-center justify-between mb-2">
+                                        <View className="flex-row items-center flex-1">
+                                            <View className="w-8 h-8 bg-yellow-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-sm">👤</Text>
+                                            </View>
+                                            <View className="flex-1">
+                                                <Text className="font-medium text-gray-900 text-sm">
+                                                    {review.author}
+                                                </Text>
+                                                <Text className="text-xs text-gray-600">
+                                                    {review.country}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View className="bg-yellow-100 px-2 py-1 rounded-full">
+                                            <Text className="text-xs font-medium text-yellow-800">⭐ {review.stars}/5</Text>
+                                        </View>
                                     </View>
-                                    <View className="flex-row items-center gap-3">
-                                        <TouchableOpacity
-                                            className="bg-gray-300 pb-1 rounded-full w-8 h-8 items-center justify-center"
-                                            onPress={() => handleRoomCountChange(i, -1)}
-                                        >
-                                            <Text className="font-bold text-lg">-</Text>
-                                        </TouchableOpacity>
-                                        <Text className="text-lg font-bold">{selectedRoomCounts[i] || 0}</Text>
-                                        <TouchableOpacity
-                                            className="bg-gray-300 pb-1 rounded-full w-8 h-8 items-center justify-center"
-                                            onPress={() => handleRoomCountChange(i, 1)}
-                                        >
-                                            <Text className="font-bold text-lg">+</Text>
-                                        </TouchableOpacity>
-                                    </View>
+                                    <Text className="text-gray-700 text-sm leading-5">{review.text}</Text>
                                 </View>
                             ))}
-
-                            <Text
-                                className={`
-        text-red-500 font-semibold px-2 pb-2 text-center 
-        ${capacityWarning ? 'opacity-100' : 'opacity-0'}
-    `}
-                            >
-                                {capacityWarning || '\u00A0'}
-                            </Text>
-
-                        </View>
-
-
-                        {reviews.length > 0 && <View className="gap-3">
-                            <View className=" bg-gray-100 rounded-lg shadow-md m-1">
-                                <Text className="px-2 text-2xl font-semibold">Reviews</Text>
-                                <ScrollView
-                                    className="w-full h-64 mb-1"
-                                    contentContainerClassName=" flex-col px-2 py-2 gap-5 "
-                                    showsVerticalScrollIndicator={false}
-                                    nestedScrollEnabled={true}
-                                >
-                                    {reviews.map((x, i) => (
-                                        <View key={i} className="bg-gray-200 px-3 rounded-2xl">
-                                            <View className="flex-row items-center">
-                                                <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
-                                                <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
-                                                <View className="flex-row items-center gap-1">
-                                                    <Image className="w-5 h-5" source={star} />
-                                                    <Text>{x.stars}/5</Text>
-                                                </View>
-                                            </View>
-                                            <Text className="text-lg mx-5 my-2">{x.text}</Text>
-                                        </View>
-                                    ))}
-                                </ScrollView>
-                            </View>
-                            <View className="p-4 bg-gray-100 rounded-lg shadow-md m-1">
-                                <Text className="text-lg font-bold text-gray-800 mb-3">Policies</Text>
-                                <View className="space-y-4">
-                                    {hotelv?.policies.map((policy, i) => (
-
-                                        <View className="flex-row items-center" key={i}>
-                                            {/* You can use a simple text character or an icon */}
-                                            <Text className="text-blue-500 mr-2 text-lg">✓</Text>
-                                            <Text className="text-base font-semibold text-gray-700">{policy}</Text>
-                                        </View>
-
-
-                                    ))}
-                                </View>
-                            </View>
-                        </View>}
-
-
-
+                        </ScrollView>
                     </View>
-                </View>
+                )}
 
-                <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
-                    <Text className="px-3 font-extrabold text-xl">{totalPrice}.00 LKR/day</Text>
+                {/* Policies */}
+                {hotelv.policies && hotelv.policies.length > 0 && (
+                    <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
+                        <View className="flex-row items-center justify-between mb-4">
+                            <Text className="text-lg font-semibold text-gray-900">Hotel Policies</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowPolicyInfo(true)}
+                                className="w-6 h-6 bg-yellow-100 rounded-full items-center justify-center"
+                            >
+                                <Text className="text-yellow-600 text-xs font-bold">i</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {hotelv.policies.map((policy, index) => (
+                            <View key={index} className="flex-row items-start mb-2 bg-gray-50 p-3 rounded-lg">
+                                <Text className="text-green-500 mr-3 text-sm">✓</Text>
+                                <Text className="text-gray-700 flex-1 text-sm leading-5">{policy}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+            </ScrollView>
+
+            {/* Fixed Bottom Bar */}
+            <View className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-200 p-4 shadow-lg">
+                <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                        <View className="flex-row items-center">
+                            <Text className="text-lg mr-2">💰</Text>
+                            <Text className="text-sm text-gray-600">Total Price</Text>
+                        </View>
+                        <Text className="text-2xl font-bold text-green-600">
+                            LKR {totalPrice.toLocaleString()}
+                        </Text>
+                        {bookingData && (
+                            <Text className="text-xs text-gray-500">
+                                for {bookingData.nights} night{bookingData.nights > 1 ? 's' : ''}
+                            </Text>
+                        )}
+                    </View>
                     <TouchableOpacity
-                        className=" bg-[#84848460] rounded-xl w-[30%]"
-                        // onPress={() => router.push(`/views/payment/${hotelv?._id}`)}
+                        className="bg-yellow-400 px-8 py-4 rounded-xl shadow-lg"
                         onPress={handleBooking}
                     >
-                        <View className="py-2 px-3 flex-row justify-between items-center w-full" >
-                            <Text>Book Now</Text>
-                            <Image className="w-5 h-5" source={back} />
+                        <View className="flex-row items-center">
+                            <Text className="text-2xl mr-2">🏨</Text>
+                            <Text className="text-yellow-900 font-bold text-lg">Book Now</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
+            </View>
+
+            {/* Info Modals */}
+            <InfoModal
+                visible={showPriceInfo}
+                onClose={() => setShowPriceInfo(false)}
+                title="💰 Price Information"
+                content="This is the base price per night for the hotel room. Additional charges may apply for extra services, taxes, and selected room upgrades. The total price will be calculated based on your room selection and number of nights."
+            />
+
+            <InfoModal
+                visible={showPolicyInfo}
+                onClose={() => setShowPolicyInfo(false)}
+                title="📋 Hotel Policies"
+                content="These are the hotel's terms and conditions that guests must follow during their stay. Please read them carefully before booking. Policies may include check-in/check-out times, cancellation rules, pet policies, and other important guidelines."
+            />
+
+            <InfoModal
+                visible={showRoomInfo}
+                onClose={() => setShowRoomInfo(false)}
+                title="🛏️ Room Selection Guide"
+                content="Choose the number and type of rooms based on your guest count. Single rooms accommodate fewer guests, while double rooms can host more. Make sure to select enough room capacity for all your guests. Room prices are per night and will be added to the base hotel price."
+            />
         </View>
     );
 }

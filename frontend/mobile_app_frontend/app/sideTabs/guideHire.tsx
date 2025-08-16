@@ -409,7 +409,7 @@ export default function Guide() {
                             {/* Location and Experience Row */}
                             <View className="flex-row items-center mt-2">
                                 <View className="flex-row items-center mr-4">
-                                    <Text className="text-blue-500 text-base mr-1">📍</Text>
+                                    <Text className="text-yellows-500 text-base mr-1">📍</Text>
                                     <Text className="text-sm text-gray-600 font-medium">{guide.location}</Text>
                                 </View>
                                 <View className="flex-row items-center">
@@ -491,11 +491,11 @@ export default function Guide() {
                 </View>
 
                 {/* Action Footer */}
-                <View className="px-5 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-gray-100">
+                <View className="px-5 py-4 bg-gradient-to-r from-yellow-50 to-purple-50 border-t border-gray-100">
                     <View className="flex-row items-center justify-between">
                         {/* Duration Info */}
                         <View className="flex-row items-center">
-                            <Text className="text-blue-600 text-sm mr-1">📅</Text>
+                            <Text className="text-yellow-600 text-sm mr-1">📅</Text>
                             <Text className="text-Black-700 text-sm font-medium">
                                 {numberOfDays} day{numberOfDays > 1 ? 's' : ''} selected
                             </Text>
@@ -556,8 +556,8 @@ export default function Guide() {
                                     {/* Compact Date Selection Section */}
                                     <View className="mb-8">
                                         <View className="flex-row items-center mb-4">
-                                            <View className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center mr-3">
-                                                <Text className="text-blue-600 font-bold text-sm">📅</Text>
+                                            <View className="w-8 h-8 bg-yellow-100 rounded-full items-center justify-center mr-3">
+                                                <Text className="text-yellow-600 font-bold text-sm">📅</Text>
                                             </View>
                                             <Text className="text-lg font-semibold text-gray-800">Select Your Dates</Text>
                                         </View>
@@ -580,7 +580,7 @@ export default function Guide() {
                                                         </View>
                                                     )}
                                                 </View>
-                                                <Text className="text-blue-600 text-lg">{showDatePicker ? '▲' : '▼'}</Text>
+                                                <Text className="text-yellow-600 text-lg">{showDatePicker ? '▲' : '▼'}</Text>
                                             </View>
                                         </TouchableOpacity>
 
@@ -593,7 +593,7 @@ export default function Guide() {
                                                         onPress={() => navigateMonth('prev')}
                                                         className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
                                                     >
-                                                        <Text className="text-blue-600 font-bold">‹</Text>
+                                                        <Text className="text-yellow-600 font-bold">‹</Text>
                                                     </TouchableOpacity>
                                                     
                                                     <Text className="text-lg font-semibold text-gray-800">
@@ -604,7 +604,7 @@ export default function Guide() {
                                                         onPress={() => navigateMonth('next')}
                                                         className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
                                                     >
-                                                        <Text className="text-blue-600 font-bold">›</Text>
+                                                        <Text className="text-yellow-600 font-bold">›</Text>
                                                     </TouchableOpacity>
                                                 </View>
 
@@ -623,9 +623,9 @@ export default function Guide() {
                                                             disabled={dateObj.isPast}
                                                             className={`w-10 h-10 items-center justify-center rounded-full m-0.5 ${
                                                                 dateObj.isSelected 
-                                                                    ? 'bg-blue-500' 
+                                                                    ? 'bg-yellow-500' 
                                                                     : dateObj.isToday 
-                                                                        ? 'bg-blue-100 border border-blue-300' 
+                                                                        ? 'bg-yellow-100 border border-yellow-300' 
                                                                         : dateObj.isPast 
                                                                             ? 'bg-gray-100' 
                                                                             : 'bg-white hover:bg-gray-50'
@@ -645,8 +645,8 @@ export default function Guide() {
                                                 </View>
                                                 
                                                 {selectedDates.length > 0 && (
-                                                    <View className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                                                        <Text className="text-sm font-medium text-blue-700">
+                                                    <View className="mt-4 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+                                                        <Text className="text-sm font-medium text-yellow-700">
                                                             Selected: {selectedDates.map(date => 
                                                                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                                                             ).join(', ')}
@@ -715,9 +715,9 @@ export default function Guide() {
                                                         <TouchableOpacity
                                                             key={index}
                                                             onPress={() => setDestination(place)}
-                                                            className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 mr-2 mb-2"
+                                                            className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2 mr-2 mb-2"
                                                         >
-                                                            <Text className="text-blue-700 text-sm font-medium">
+                                                            <Text className="text-yellow-700 text-sm font-medium">
                                                                 {place}
                                                             </Text>
                                                         </TouchableOpacity>
@@ -741,17 +741,17 @@ export default function Guide() {
                                                 onPress={() => setBookingType('visit')}
                                                 className={`flex-1 p-4 rounded-2xl border-2 ${
                                                     bookingType === 'visit' 
-                                                        ? 'border-blue-500 bg-blue-50' 
+                                                        ? 'border-yellow-500 bg-yellow-50' 
                                                         : 'border-gray-200 bg-white'
                                                 }`}
                                             >
                                                 <Text className={`text-center font-semibold ${
-                                                    bookingType === 'visit' ? 'text-blue-700' : 'text-gray-600'
+                                                    bookingType === 'visit' ? 'text-yellow-700' : 'text-gray-600'
                                                 }`}>
                                                     Local Guide
                                                 </Text>
                                                 <Text className={`text-center text-sm mt-1 ${
-                                                    bookingType === 'visit' ? 'text-blue-600' : 'text-gray-500'
+                                                    bookingType === 'visit' ? 'text-yellow-600' : 'text-gray-500'
                                                 }`}>
                                                     Day trips & tours
                                                 </Text>
@@ -761,17 +761,17 @@ export default function Guide() {
                                                 onPress={() => setBookingType('travel')}
                                                 className={`flex-1 p-4 rounded-2xl border-2 ${
                                                     bookingType === 'travel' 
-                                                        ? 'border-blue-500 bg-blue-50' 
+                                                        ? 'border-yellow-500 bg-yellow-50' 
                                                         : 'border-gray-200 bg-white'
                                                 }`}
                                             >
                                                 <Text className={`text-center font-semibold ${
-                                                    bookingType === 'travel' ? 'text-blue-700' : 'text-gray-600'
+                                                    bookingType === 'travel' ? 'text-yellow-700' : 'text-gray-600'
                                                 }`}>
                                                     Travel Guide
                                                 </Text>
                                                 <Text className={`text-center text-sm mt-1 ${
-                                                    bookingType === 'travel' ? 'text-blue-600' : 'text-gray-500'
+                                                    bookingType === 'travel' ? 'text-yellow-600' : 'text-gray-500'
                                                 }`}>
                                                     Multi-day trips
                                                 </Text>
@@ -796,7 +796,7 @@ export default function Guide() {
                                                 <Text className={`text-base ${lan ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
                                                     {lan || 'Select preferred language'}
                                                 </Text>
-                                                <Text className="text-blue-600 text-lg">
+                                                <Text className="text-yellow-600 text-lg">
                                                     {showLanguageDropdown ? '▲' : '▼'}
                                                 </Text>
                                             </View>
@@ -827,11 +827,11 @@ export default function Guide() {
                                                                 setLanguageSearch('');
                                                             }}
                                                             className={`px-4 py-3 border-b border-gray-50 ${
-                                                                lan === language ? 'bg-blue-50' : ''
+                                                                lan === language ? 'bg-yellow-50' : ''
                                                             }`}
                                                         >
                                                             <Text className={`text-base ${
-                                                                lan === language ? 'text-blue-700 font-medium' : 'text-gray-700'
+                                                                lan === language ? 'text-yellow-700 font-medium' : 'text-gray-700'
                                                             }`}>
                                                                 {language}
                                                             </Text>
@@ -845,9 +845,9 @@ export default function Guide() {
                                     {/* Submit Button */}
                                     <TouchableOpacity
                                         onPress={handleSubmit}
-                                        className="bg-blue-600 rounded-2xl py-4 shadow-lg"
+                                        className="bg-yellow-300 rounded-2xl py-4 shadow-lg"
                                     >
-                                        <Text className="text-white text-center text-lg font-bold">
+                                        <Text className="text-black text-center text-lg font-bold">
                                             Find Guides
                                         </Text>
                                     </TouchableOpacity>
@@ -872,9 +872,9 @@ export default function Guide() {
                                 <Text className="text-lg font-bold text-gray-800">Available Guides</Text>
                                 <TouchableOpacity 
                                     onPress={() => setModalVisible(true)}
-                                    className="w-10 h-10 bg-blue-100 rounded-full items-center justify-center"
+                                    className="w-10 h-10 bg-yellow-100 rounded-full items-center justify-center"
                                 >
-                                    <Text className="text-blue-600 font-medium">⚙️</Text>
+                                    <Text className="text-yellow-600 font-medium">⚙️</Text>
                                 </TouchableOpacity>
                             </View>
                             
@@ -908,7 +908,7 @@ export default function Guide() {
                                     <Text className="text-red-600 text-base text-center mb-4">{guideError}</Text>
                                     <TouchableOpacity 
                                         onPress={() => bookingDetails && fetchFilteredGuides(bookingDetails)}
-                                        className="bg-blue-600 px-6 py-3 rounded-xl"
+                                        className="bg-yellow-600 px-6 py-3 rounded-xl"
                                     >
                                         <Text className="text-white font-medium">Try Again</Text>
                                     </TouchableOpacity>
@@ -924,7 +924,7 @@ export default function Guide() {
                                     </Text>
                                     <TouchableOpacity 
                                         onPress={() => setModalVisible(true)}
-                                        className="bg-blue-600 px-6 py-3 rounded-xl"
+                                        className="bg-yellow-600 px-6 py-3 rounded-xl"
                                     >
                                         <Text className="text-white font-medium">Modify Search</Text>
                                     </TouchableOpacity>

@@ -74,7 +74,7 @@ public class TravelerController {
     public ResponseEntity<HotelViewdto> HotelsData(@RequestParam String id) {
 
         Optional<HotelViewdto> list = repo2.findHotelViewdtoById(id);
-        if (list.isEmpty()) {
+        if (!list.isPresent()) {
 
             return ResponseEntity.notFound().build();
 
