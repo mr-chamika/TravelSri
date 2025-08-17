@@ -812,6 +812,9 @@ const SignupPage = () => {
           facilities: []
         };
         
+        // Log the submission data for debugging
+        console.log('Submitting hotel registration data:', submissionData);
+        
         // Make API call to backend
         const response = await fetch('http://localhost:8080/hotels/register', {
           method: 'POST',
@@ -893,10 +896,10 @@ const SignupPage = () => {
 
         {/* Registration form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Account Information</h2> */}
+          <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Account Information</h2>
           
           {/* Email field */}
-          {/* <div>
+          <div>
             <label className="block mb-1 text-sm font-medium text-gray-700">Email Address*</label>
             <div className="relative">
               <input
@@ -912,10 +915,29 @@ const SignupPage = () => {
               <span className="absolute left-3 top-2.5 text-gray-400 material-icons">email</span>
             </div>
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-          </div> */}
+          </div>
+          
+          {/* Username field */}
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Username*</label>
+            <div className="relative">
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 pl-10 border ${
+                  errors.username ? 'border-red-500' : 'border-gray-300'
+                } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
+                placeholder="Choose a username"
+              />
+              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">person</span>
+            </div>
+            {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
+          </div>
 
           {/* Password fields */}
-          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">Password*</label>
               <div className="relative">
@@ -965,7 +987,7 @@ const SignupPage = () => {
               </div>
               {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
-          </div> */}
+          </div>
           
           <h2 className="text-lg font-semibold text-gray-700 border-b pb-2 pt-4">Hotel Information</h2>
           

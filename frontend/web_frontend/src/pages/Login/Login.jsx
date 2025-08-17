@@ -85,79 +85,104 @@ const LoginPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Login attempt with:', loginData);
-
+    
     // Clear any previous error messages
     hideFlash();
-
+    
     // Set loading state
     setIsLoading(true);
-
-    // Here we would typically make an API call to validate credentials
-    // Adding a small delay to simulate API call
-    setTimeout(() => {
-      validateCredentials(loginData.username, loginData.password);
-    }, 800);
+    
+    // Call validateCredentials function with username and password
+    validateCredentials(loginData.username, loginData.password);
   };
 
   // Function to validate credentials
-  const validateCredentials = (username, password) => {
-    // In a real application, this would be an API call
-    // For testing purposes, we'll use some hardcoded valid credentials
-    const validCredentials = [
-      { username: 'admin', password: 'admin123', role: 'admin' },
-      { username: 'hotel', password: 'hotel123', role: 'hotel' },
-      { username: 'user', password: 'user123', role: 'user' }
-    ];
-
-    // Check if credentials match any valid user
-    const user = validCredentials.find(
-      cred => cred.username === username && cred.password === password
-    );
-
-    if (user) {
-      // Success! Show success message and navigate to dashboard
-      showFlash('success', 'Login successful! Welcome back!');
-
-      // Create the base user session data
-      const userData = {
-        username: user.username,
-        role: user.role,
-        isLoggedIn: true
-      };
-
-      // If rememberMe is checked, also store the credentials securely
-      if (rememberMe) {
-        userData.rememberMe = true;
-        // In a real app, we'd implement secure credential storage
-        // This is just for demonstration
-        localStorage.setItem('rememberedUser', username);
-      } else {
-        // If not remembering the user, ensure we don't have any saved credentials
-        localStorage.removeItem('rememberedUser');
-      }
-
-      // Store the user session
-      localStorage.setItem('user', JSON.stringify(userData));
-
-      // Redirect after a short delay to show the success message
-      setTimeout(() => {
-        // Navigate based on user role
-        switch (user.role) {
-          case 'admin':
-            window.location.href = '/admin/dashboard';
-            break;
-          case 'hotel':
-            window.location.href = '/hotel/dashboard';
-            break;
-          default:
-            window.location.href = '/dashboard';
+  const validateCredentials = async (username, password) => {
+    try {
+      // Make an actual API call to validate credentials
+      const response = await fetch('http://localhost:8080/hotels/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      // Parse the JSON response
+      const data = await response.json();
+      
+      if (response.ok && data.token) {
+        // Success! Show success message and navigate to dashboard
+        showFlash('success', 'Login successful! Welcome back!');
+        
+        // Parse the JWT token to get user details
+        const base64Url = data.token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const tokenData = JSON.parse(window.atob(base64));
+        
+        // Get user role and type from token
+        const userType = tokenData.type || 'user';
+        const role = tokenData.roles && tokenData.roles.length > 0 
+          ? tokenData.roles[0].replace('ROLE_', '').toLowerCase() 
+          : 'user';
+        
+        // Create the base user session data
+        const userData = {
+          username: tokenData.sub,
+          id: tokenData.id,
+          email: tokenData.email || data.email, // Use email from response if available
+          hotelName: data.hotelName || tokenData.hotelName,
+          role: role,
+          type: userType,
+          token: data.token,
+          isLoggedIn: true
+        };
+        
+        // Store tokens in both places for compatibility
+        localStorage.setItem('hotelAuthToken', data.token);
+        localStorage.setItem('token', data.token); // For use with roomService
+        localStorage.setItem('authToken', data.token); // For use with bookingService
+        
+        // Log token for debugging
+        console.log('Token stored successfully in localStorage')
+        
+        // If rememberMe is checked, store the username
+        if (rememberMe) {
+          userData.rememberMe = true;
+          localStorage.setItem('rememberedUser', username);
+        } else {
+          // If not remembering the user, ensure we don't have any saved credentials
+          localStorage.removeItem('rememberedUser');
         }
-      }, 1500);
-    } else {
-      // Failed login - show error message
-      showFlash('error', 'Invalid username or password. Please try again.');
+        
+        // Store the user session in both formats for compatibility
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('hotelUserData', JSON.stringify(userData));
+        
+        // Redirect after a short delay to show the success message
+        setTimeout(() => {
+          // Navigate based on user role
+          switch (role) {
+            case 'admin':
+              window.location.href = '/admin';
+              break;
+            case 'hotel':
+              window.location.href = '/hotel/dashboard';
+              break;
+            default:
+              window.location.href = '/dashboard';
+          }
+        }, 1500);
+      } else {
+        // Failed login - show error message from server or generic error
+        const errorMessage = data.error || 'Invalid username or password. Please try again.';
+        showFlash('error', errorMessage);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showFlash('error', 'Server error. Please try again later.');
     }
-
+    
     // Reset loading state
     setIsLoading(false);
   };

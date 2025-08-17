@@ -25,6 +25,11 @@ public class AdminHotelBookingServiceImpl implements AdminHotelBookingService {
     }
     
     @Override
+    public List<AdminHotelBooking> getBookingsByHotelId(String hotelId) {
+        return bookingRepo.findByHotelId(hotelId);
+    }
+    
+    @Override
     public AdminHotelBooking getBookingById(String id) {
         Optional<AdminHotelBooking> bookingOpt = bookingRepo.findById(id);
         return bookingOpt.orElse(null);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import roomService from '../../../services/roomService';
+import toast from 'react-hot-toast';
 
 /* -------------------------------------------------------------- */
 /*  RoomManagement Component                                      */
@@ -10,18 +11,15 @@ const RoomManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Toast notification state
-  const [toast, setToast] = useState({
-    show: false,
-    message: '',
-    type: 'success', // 'success', 'error', or 'info'
-  });
-
-  // Function to show toast messages
+  // Function to show toast messages using react-hot-toast
   const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    // Auto-hide after 4 seconds
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+    if (type === 'success') {
+      toast.success(message);
+    } else if (type === 'error') {
+      toast.error(message);
+    } else {
+      toast(message);
+    }
   };
 
   // Fetch all rooms from API
@@ -50,7 +48,7 @@ const RoomManagement = () => {
 
   /* --- Add-room modal state --- */
   const blankRoom = {
-    number: '',
+    roomNumber: '',
     type: 'Standard Room',
     status: 'Available',
     price: '',
@@ -101,14 +99,24 @@ const RoomManagement = () => {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log("Submitting new room with data:", newRoom);
+      
+      // Ensure roomNumber is a string
+      if (newRoom.roomNumber) {
+        newRoom.roomNumber = String(newRoom.roomNumber);
+      }
+      
       // Send new room data to API
       const savedRoom = await roomService.createRoom(newRoom);
+      console.log("Received saved room from API:", savedRoom);
+      
       // Update local state with the saved room (which will include the ID from the server)
       setRooms([...rooms, savedRoom]);
       setShowAddModal(false);
       setNewRoom(blankRoom);
+      
       // Show success message
-      showToast(`Room ${savedRoom.number} has been successfully added`, 'success');
+      showToast(`Room ${savedRoom.roomNumber} has been successfully added`, 'success');
     } catch (err) {
       console.error("Error adding room:", err);
       showToast(`Failed to add room: ${err.message || 'Unknown error'}`, 'error');
@@ -126,7 +134,7 @@ const RoomManagement = () => {
       setRooms(prev => prev.map(r => r.id===editedRoom.id ? updatedRoom : r));
       setShowEditModal(false);
       // Show success message
-      showToast(`Room ${updatedRoom.number} has been successfully updated`, 'success');
+      showToast(`Room ${updatedRoom.roomNumber} has been successfully updated`, 'success');
     } catch (err) {
       console.error("Error updating room:", err);
       showToast(`Failed to update room: ${err.message || 'Unknown error'}`, 'error');
@@ -156,7 +164,7 @@ const RoomManagement = () => {
       setShowDeleteModal(false);
       
       // Show success message
-      showToast(`Room ${roomToDelete.number} has been successfully deleted`, 'success');
+      showToast(`Room ${roomToDelete.roomNumber} has been successfully deleted`, 'success');
       
       // Reset the roomToDelete
       setRoomToDelete(null);
@@ -191,29 +199,7 @@ const RoomManagement = () => {
   /* 9. RENDER -------------------------------------------------- */
   return (
     <div className="p-6">
-      {/* Toast Notification */}
-      {toast.show && (
-        <div 
-          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-md shadow-md flex items-center transform transition-all duration-300 ease-in-out translate-y-0 opacity-100
-            ${toast.type === 'success' ? 'bg-green-500 text-white' : ''}
-            ${toast.type === 'error' ? 'bg-red-500 text-white' : ''}
-            ${toast.type === 'info' ? 'bg-blue-500 text-white' : ''}
-          `}
-        >
-          <span className="material-icons mr-2">
-            {toast.type === 'success' ? 'check_circle' : ''}
-            {toast.type === 'error' ? 'error' : ''}
-            {toast.type === 'info' ? 'info' : ''}
-          </span>
-          {toast.message}
-          <button 
-            className="ml-4 text-white opacity-70 hover:opacity-100 transition-opacity" 
-            onClick={() => setToast(prev => ({ ...prev, show: false }))}
-          >
-            <span className="material-icons text-sm">close</span>
-          </button>
-        </div>
-      )}
+      {/* Toast notifications will be handled by react-hot-toast */}
 
       {/* Header */}
       <header className="flex justify-between items-center mb-6">
@@ -269,7 +255,7 @@ const RoomManagement = () => {
             <div key={room.id} className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold">Room {room.number}</h3>
+                  <h3 className="text-xl font-bold">Room {room.roomNumber}</h3>
                   <p className="text-gray-600">{room.type}</p>
                 </div>
                 <StatusPill status={room.status}/>
@@ -344,7 +330,7 @@ const RoomManagement = () => {
 
       {/* ---------------- View Modal ---------------- */}
       {showViewModal && selectedRoom && (
-        <Modal title={`Room ${selectedRoom.number} Details`} onClose={()=>setShowViewModal(false)}>
+        <Modal title={`Room ${selectedRoom.roomNumber} Details`} onClose={()=>setShowViewModal(false)}>
           <div className="grid grid-cols-2 gap-6 text-gray-800">
             <Detail label="Room Type" value={selectedRoom.type}/>
             <Detail label="Status" status value={selectedRoom.status}/>
@@ -370,7 +356,7 @@ const RoomManagement = () => {
         <Modal title="Confirm Deletion" onClose={() => setShowDeleteModal(false)}>
           <div className="text-center py-6">
             <span className="material-icons text-red-500 text-5xl mb-4">warning</span>
-            <h3 className="text-lg font-semibold mb-2">Are you sure you want to delete Room {roomToDelete.number}?</h3>
+            <h3 className="text-lg font-semibold mb-2">Are you sure you want to delete Room {roomToDelete.roomNumber}?</h3>
             <p className="text-gray-600 mb-6">
               This action cannot be undone. This will permanently remove the room from your inventory.
             </p>
@@ -418,7 +404,7 @@ const Detail = ({label,value,status=false})=>(
 const RoomFormFields = ({roomData,roomTypes,availableAmenities,onChange,onAmenityToggle})=>(
   <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <LabeledInput label="Room Number*" name="number" value={roomData.number} onChange={onChange} required/>
+      <LabeledInput label="Room Number*" name="roomNumber" value={roomData.roomNumber} onChange={onChange} required/>
       <LabeledSelect label="Room Type*" name="type" value={roomData.type} options={roomTypes} onChange={onChange}/>
       <LabeledInput label="Price per Night (LKR)*" type="number" name="price" value={roomData.price} min="0" step="0.01" onChange={onChange} required/>
       <LabeledSelect label="Status*" name="status" value={roomData.status} options={['Available','Booked','Reserved','Maintenance']} onChange={onChange}/>
