@@ -1,7 +1,37 @@
 import axios from 'axios';
 
 // Set the base URL to your backend API
-const API_URL = 'http://localhost:8080/api/pendingTrip';
+// Make sure the API URL is correctly formatted
+let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Remove trailing slash if present
+if (baseUrl.endsWith('/')) {
+  baseUrl = baseUrl.slice(0, -1);
+}
+// Add /api if not already present
+const apiBase = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+const API_URL = `${apiBase}/pendingTrip`;
+
+// Create an axios instance with authentication
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Add authentication to requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Create a service for managing pending trips
 const pendingTripService = {
@@ -11,11 +41,29 @@ const pendingTripService = {
    */
   getAllPendingTrips: async () => {
     try {
-      const response = await axios.get(`${API_URL}/getall`);
-      return response.data;
+      // Check for token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        return []; // Return empty array instead of throwing error
+      }
+      
+      // Make request with explicit token
+      const response = await apiClient.get('/getall', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching pending trips:', error);
-      throw error;
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+        return []; // Return empty array on auth error
+      }
+      // Return empty array rather than throwing
+      return [];
     }
   },
   
@@ -26,11 +74,28 @@ const pendingTripService = {
    */
   getPendingTripById: async (id) => {
     try {
-      const response = await axios.get(`${API_URL}/get/${id}`);
+      // Check for token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        return null; // Return null instead of throwing error
+      }
+      
+      // Make request with explicit token
+      const response = await apiClient.get(`/get/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       return response.data;
     } catch (error) {
       console.error(`Error fetching pending trip with ID ${id}:`, error);
-      throw error;
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+        return null;
+      }
+      return null; // Return null rather than throwing
     }
   },
   

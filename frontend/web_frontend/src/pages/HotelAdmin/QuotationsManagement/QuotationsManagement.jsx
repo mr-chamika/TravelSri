@@ -763,6 +763,7 @@ const QuotationsManagement = () => {
   const [quotations, setQuotations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [deleteInProgress, setDeleteInProgress] = useState(null); // Track which quotation is being deleted
   const [filterStatus, setFilterStatus] = useState('All');
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -1051,10 +1052,22 @@ const QuotationsManagement = () => {
     // Fetch real data from backend
     const fetchData = async () => {
       try {
+        // Check authentication first
+        const authToken = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+        if (!authToken) {
+          console.warn('No authentication token found');
+          setError('You are not logged in. Please login to access quotation management.');
+          setIsLoading(false);
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+          return;
+        }
+        
         // Fetch hotel data
         const hotel = await hotelService.getCurrentHotel();
         if (hotel) {
           setHotelData({
+            id: hotel.id || '',
             hotelName: hotel.hotelName || hotel.name || 'Hotel',
             managerName: hotel.managerName || hotel.contactPersonName || '',
             email: hotel.email || '',
@@ -1079,13 +1092,28 @@ const QuotationsManagement = () => {
         
         // Fetch actual quotations from API
         const fetchedQuotations = await quotationService.getAllQuotations();
-        setQuotations(fetchedQuotations);
+        if (fetchedQuotations && fetchedQuotations.length > 0) {
+          setQuotations(fetchedQuotations);
+        } else {
+          console.log('No quotations found or API returned empty array, using mock data as fallback');
+          // Use empty array instead of mock data to avoid confusion
+          setQuotations([]);
+        }
       } catch (err) {
         console.error('Error loading data:', err);
-        setError('Failed to load data. Please try again.');
-        // Fallback to mock data if API fails
+        
+        // Handle authentication errors specifically
+        if (err.response && err.response.status === 401) {
+          setError('Your session has expired. Please login again.');
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+        } else {
+          setError('Failed to load data. Please try again.');
+        }
+        
+        // Fallback to mock data for packages only, but not for quotations
         setGroupPackages(mockGroupTripPackages);
-        setQuotations(mockQuotations);
+        setQuotations([]);
       } finally {
         setIsLoading(false);
       }
@@ -1376,10 +1404,21 @@ const QuotationsManagement = () => {
     e.preventDefault();
     
     try {
+      // First check if user is authenticated
+      const authToken = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!authToken) {
+        console.error('Authentication token not found');
+        showFlashMessage('You are not logged in. Please login to create quotations.', 'error');
+        // Optionally redirect to login page
+        // window.location.href = '/hotel/login';
+        return;
+      }
+      
       // Calculate total amount
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
       
+      // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
         ...newQuotation,
         accommodationType: "Group Accommodation", // Generic accommodation type
@@ -1387,6 +1426,23 @@ const QuotationsManagement = () => {
         totalAmount: accommodationTotal,
         finalAmount: finalTotal,
         quoteNumber: `HQ-${Date.now().toString().substr(-6)}`, // Generate a unique quote number
+        
+        // Ensure consistent field names for hotel details
+        hotelId: newQuotation.hotelId || hotelData.id || '',
+        hotelName: newQuotation.hotelName || hotelData.hotelName || '',
+        hotelAddress: newQuotation.hotelAddress || hotelData.address || '',
+        hotelWebsite: newQuotation.hotelWebsite || hotelData.website || '',
+        
+        // Ensure consistent field names for contact details
+        contactPersonName: newQuotation.contactPersonName || hotelData.managerName || '',
+        contactEmail: newQuotation.contactEmail || hotelData.email || '',
+        contactPhone: newQuotation.contactPhone || hotelData.phone || '',
+        
+        // Ensure both new and old field names are sent for pool facilities
+        poolFacilities: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
+        airportTransfer: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
+        poolAccessPrice: newQuotation.poolAccessPrice || newQuotation.transportationPrice || 0,
+        transportationPrice: newQuotation.poolAccessPrice || newQuotation.transportationPrice || 0,
       };
       
       // Call the API to create quotation
@@ -1394,9 +1450,22 @@ const QuotationsManagement = () => {
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       console.log('Created quotation response:', createdQuotation);
       
-      // Get fresh data from the server to ensure we have the latest list
-      const updatedQuotations = await quotationService.getAllQuotations();
-      setQuotations(updatedQuotations);
+      // Even if the API call fails with 401 but returns a mock object, we proceed
+      // to give the user a better experience, but we won't refetch the list from API
+      
+      try {
+        // Try to get fresh data from the server
+        const updatedQuotations = await quotationService.getAllQuotations();
+        if (updatedQuotations && updatedQuotations.length > 0) {
+          setQuotations(updatedQuotations);
+        } else {
+          // If we get an empty array, add our local object to the list
+          setQuotations(prev => [...prev, createdQuotation]);
+        }
+      } catch (fetchError) {
+        // If fetching fails, just add the created quotation to the list
+        setQuotations(prev => [...prev, createdQuotation]);
+      }
       
       // Reset form and close modal
       setShowQuotationModal(false);
@@ -1406,7 +1475,36 @@ const QuotationsManagement = () => {
       showFlashMessage('Accommodation quotation sent successfully!', 'success');
     } catch (error) {
       console.error('Error creating quotation:', error);
-      // Show more detailed error message
+      
+      // Handle authentication errors specifically
+      if (error.response && error.response.status === 401) {
+        showFlashMessage('Your session has expired. Please login again.', 'error');
+        
+        // This is a workaround: create a local quotation object to give better UX
+        const accommodationTotal = calculateAccommodationTotal(newQuotation);
+        const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+        
+        const mockQuotation = {
+          ...newQuotation,
+          id: `local-${Date.now()}`,
+          quoteNumber: `HQ-${Date.now().toString().substr(-6)}`,
+          createdAt: new Date().toISOString(),
+          status: 'Pending',
+          totalAmount: accommodationTotal,
+          finalAmount: finalTotal,
+        };
+        
+        // Add to state and close modal
+        setQuotations(prev => [...prev, mockQuotation]);
+        setShowQuotationModal(false);
+        setNewQuotation(blankQuotation);
+        
+        // Show a warning message
+        showFlashMessage('Created quotation locally due to authentication issue. Please login again for full functionality.', 'warning');
+        return;
+      }
+      
+      // Show more detailed error message for other errors
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create quotation';
       showFlashMessage(`Failed to create quotation: ${errorMessage}. Please try again.`, 'error');
     }
@@ -1542,34 +1640,144 @@ const QuotationsManagement = () => {
   };
   
   // Show delete confirmation
-  const handleDeleteClick = (id) => {
+  const handleDeleteClick = (id, quoteNumber) => {
+    // Handle case when id comes directly or from the quotation object
+    if (typeof id === 'object' && id !== null) {
+      quoteNumber = id.quoteNumber;
+      id = id.id;
+    }
+    
     // Find the quotation to show in confirmation message
-    const quotation = quotations.find(q => q.id === id);
-    if (!quotation) return;
+    const quotation = id ? quotations.find(q => q.id === id) : quotations.find(q => q.quoteNumber === quoteNumber);
+    
+    // If no quotation is found with the ID, try finding by quote number
+    if (!quotation && quoteNumber) {
+      const quotationByNumber = quotations.find(q => q.quoteNumber === quoteNumber);
+      if (quotationByNumber) {
+        console.log("Found quotation by quote number instead of ID:", quotationByNumber);
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Delete Quotation',
+          message: `Are you sure you want to delete quotation ${quotationByNumber.quoteNumber}? This action cannot be undone.`,
+          onConfirm: () => confirmDelete(quotationByNumber.id, quotationByNumber.quoteNumber),
+          onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    }
+    
+    if (!quotation) {
+      console.error("Cannot find quotation with ID or quote number:", { id, quoteNumber });
+      showFlashMessage('Cannot find quotation to delete', 'error');
+      return;
+    }
+    
+    console.log("Preparing to delete quotation:", {
+      id: quotation.id,
+      quoteNumber: quotation.quoteNumber
+    });
     
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Quotation',
       message: `Are you sure you want to delete quotation ${quotation.quoteNumber}? This action cannot be undone.`,
-      onConfirm: () => confirmDelete(id),
+      onConfirm: () => confirmDelete(quotation.id, quotation.quoteNumber),
       onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
     });
   };
   
   // Confirm delete
-  const confirmDelete = async (id) => {
+  const confirmDelete = async (id, quoteNumber) => {
     try {
-      await quotationService.deleteQuotation(id);
+      setIsLoading(true); // Show loading indicator while deleting
+      setConfirmDialog(prev => ({ ...prev, isOpen: false })); // Close dialog first for better UX
       
-      // Remove from state
-      setQuotations(prev => prev.filter(q => q.id !== id));
+      // Determine whether we're deleting by ID or quote number
+      const useQuoteNumber = (!id || id === undefined || id === null || id === '') && quoteNumber;
       
-      // Close dialog and show success message
-      setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-      showFlashMessage('Quotation deleted successfully!', 'success');
+      // Log the deletion attempt for debugging
+      console.log(`Attempting to delete quotation:`, { id, quoteNumber, useQuoteNumber });
+      
+      let result;
+      
+      if (useQuoteNumber) {
+        // Use quote number for deletion
+        showFlashMessage(`Deleting quotation #${quoteNumber}...`, 'info');
+        result = await quotationService.deleteQuotationByQuoteNumber(quoteNumber);
+        console.log(`Delete by quote number ${quoteNumber} result:`, result);
+      } else {
+        // Use ID for deletion
+        const quotationToDelete = quotations.find(q => q.id === id);
+        const displayNumber = quotationToDelete?.quoteNumber || 'unknown';
+        showFlashMessage(`Deleting quotation #${displayNumber}...`, 'info');
+        result = await quotationService.deleteQuotation(id);
+        console.log(`Delete by ID ${id} result:`, result);
+      }
+      
+      if (result.success) {
+        // If API call was successful, update the state to remove the deleted quotation
+        if (useQuoteNumber) {
+          setQuotations(prev => prev.filter(q => q.quoteNumber !== quoteNumber));
+        } else {
+          setQuotations(prev => prev.filter(q => q.id !== id));
+        }
+        
+        // Show success message
+        const successMessage = useQuoteNumber
+          ? `Quotation #${quoteNumber} deleted successfully!`
+          : 'Quotation deleted successfully!';
+        
+        showFlashMessage(successMessage, 'success');
+        
+        // Refresh the list after a short delay to ensure UI consistency
+        setTimeout(() => {
+          refreshQuotationList();
+        }, 500);
+      } else {
+        // If API call failed
+        if (result.authError) {
+          // If authentication error, show appropriate message
+          showFlashMessage(`Authentication error: ${result.error}`, 'error');
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+        } else {
+          // For other errors, show generic message
+          const errorMessage = useQuoteNumber
+            ? `Failed to delete quotation #${quoteNumber}: ${result.error}`
+            : `Failed to delete quotation: ${result.error}`;
+          
+          showFlashMessage(errorMessage, 'error');
+        }
+      }
     } catch (error) {
-      console.error('Error deleting quotation:', error);
-      showFlashMessage('Failed to delete quotation. Please try again.', 'error');
+      console.error('Error in delete operation:', error);
+      showFlashMessage('An unexpected error occurred. Please try again.', 'error');
+      // Close dialog
+      setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+    } finally {
+      setIsLoading(false); // Hide loading indicator
+    }
+  };
+  
+  // Function to refresh the quotation list
+  const refreshQuotationList = async () => {
+    try {
+      setIsLoading(true);
+      // showFlashMessage('Refreshing quotation list...', 'info');
+      
+      // Fetch fresh data from API
+      const updatedQuotations = await quotationService.getAllQuotations();
+      if (updatedQuotations && Array.isArray(updatedQuotations)) {
+        setQuotations(updatedQuotations);
+        // showFlashMessage('Quotation list refreshed successfully!', 'success');
+      } else {
+        showFlashMessage('No quotations found.', 'info');
+      }
+    } catch (error) {
+      console.error('Error refreshing quotation list:', error);
+      showFlashMessage('Failed to refresh quotation list. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -2343,8 +2551,19 @@ const StatusBadge = ({ status }) => {
         ))}
       </div>
 
-      {/* Quotations table */}
+      {/* Quotations table with refresh button */}
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b">
+          <h3 className="text-lg font-medium text-gray-700">Accommodation Quotations</h3>
+          {/* <button 
+            onClick={refreshQuotationList}
+            className="flex items-center px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+            title="Refresh quotation list"
+          >
+            <span className="material-icons text-sm mr-1">refresh</span>
+            Refresh
+          </button> */}
+        </div>
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -2421,6 +2640,28 @@ const StatusBadge = ({ status }) => {
                         onClick={() => handleViewDetails(q)}
                       >
                         <span className="material-icons text-xs mr-1">visibility</span> View
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Log information about the quotation for debugging
+                          console.log("Delete clicked for quotation:", {
+                            id: q.id,
+                            quoteNumber: q.quoteNumber,
+                          });
+                          
+                          // Check if we have either an ID or a quote number
+                          if ((q.id !== undefined && q.id !== null && q.id !== '') || q.quoteNumber) {
+                            console.log(`Initiating deletion of quotation with ${q.id ? 'ID: ' + q.id : 'Quote #: ' + q.quoteNumber}`);
+                            handleDeleteClick(q);
+                          } else {
+                            console.error("Cannot delete: both quotation ID and quote number are invalid");
+                            showFlashMessage('Cannot delete: invalid quotation identifier', 'error');
+                          }
+                        }}
+                        className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-xs font-medium flex items-center"
+                        disabled={isLoading}
+                      >
+                        <span className="material-icons text-xs mr-1">delete</span> Delete
                       </button>
                     </div>
                   </td>
