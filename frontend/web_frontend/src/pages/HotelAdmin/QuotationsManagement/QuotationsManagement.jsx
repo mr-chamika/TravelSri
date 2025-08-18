@@ -3,7 +3,7 @@ import quotationService from '../../../services/quotationService';
 import { Link } from 'react-router-dom';
 
 // Input component
-const Input = ({ label, type = 'text', name, value, onChange, required = false, disabled = false }) => (
+const Input = ({ label, type = 'text', name, value, onChange, min, max, required = false, disabled = false }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
       {label}
@@ -15,6 +15,8 @@ const Input = ({ label, type = 'text', name, value, onChange, required = false, 
       onChange={onChange}
       disabled={disabled}
       required={required}
+      min={min}
+      max={max}
       className={`w-full px-3 py-2 border ${
         disabled ? 'bg-gray-100' : 'bg-white'
       } border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
@@ -791,17 +793,21 @@ const QuotationsManagement = () => {
     contactPersonName: hotelData.managerName, // Pre-fill with hotel manager name
     contactEmail: hotelData.email, // Pre-fill with hotel email
     contactPhone: hotelData.phone, // Pre-fill with hotel phone
-    accommodationType: '',
+    accommodationType: '', // Keep for backward compatibility
     checkInDate: '',
     checkOutDate: '',
     groupSize: 10,
-    roomsRequired: 5,
+    roomsRequired: 5, // Total rooms, now calculated from roomDistributions
     mealPlan: 'Breakfast Only',
     specialRequirements: '',
     totalAmount: 0,
     discountOffered: 0,
     hotelName: hotelData.hotelName, // Use the hotel name from hotelData
     airportTransfer: false,
+    // New field for multiple accommodation types
+    roomDistributions: [
+      { accommodationType: '', quantity: 1, occupants: 2, id: Date.now() }
+    ],
   };
   const [newQuotation, setNewQuotation] = useState(blankQuotation);
   
@@ -1086,6 +1092,68 @@ const QuotationsManagement = () => {
   // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   
+  // Add room distribution
+  const addRoomDistribution = () => {
+    setNewQuotation(prev => ({
+      ...prev,
+      roomDistributions: [
+        ...prev.roomDistributions,
+        { accommodationType: '', quantity: 0, occupants: 0 }
+      ]
+    }));
+  };
+  
+  // Remove room distribution
+  const removeRoomDistribution = (index) => {
+    setNewQuotation(prev => ({
+      ...prev,
+      roomDistributions: prev.roomDistributions.filter((_, i) => i !== index)
+    }));
+  };
+  
+  // Handle changes to room distribution
+  const handleRoomDistributionChange = (index, field, value) => {
+    
+    setNewQuotation(prev => {
+      // Create a deep copy of all distributions to avoid reference issues
+      const newDistributions = prev.roomDistributions.map(dist => ({...dist}));
+      
+      // Set the field value
+      newDistributions[index][field] = value;
+      
+      // If changing room type, set default values for quantity and occupants
+      if (field === 'accommodationType' && value) {
+        // Always ensure quantity has a valid default (minimum 1)
+        newDistributions[index].quantity = newDistributions[index].quantity < 1 ? 1 : newDistributions[index].quantity;
+        
+        // Set occupants based on room type
+        if (value.includes('Suite') || value.includes('Family')) {
+          newDistributions[index].occupants = 4;
+        } else if (value.includes('Deluxe')) {
+          newDistributions[index].occupants = 3;
+        } else {
+          newDistributions[index].occupants = 2;
+        }
+        
+        // Ensure the ID is present for React key stability
+        if (!newDistributions[index].id) {
+          newDistributions[index].id = Date.now() + index;
+        }
+      }
+      
+      // Calculate total rooms and update roomsRequired
+      const totalRooms = newDistributions.reduce((sum, dist) => sum + (parseInt(dist.quantity) || 0), 0);
+      const totalOccupants = newDistributions.reduce((sum, dist) => sum + (parseInt(dist.occupants) || 0), 0);
+      
+      return {
+        ...prev,
+        roomDistributions: newDistributions,
+        roomsRequired: totalRooms,
+        groupSize: Math.max(prev.groupSize, totalOccupants) // Update group size if needed
+      };
+    });
+  };
+  
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1106,13 +1174,26 @@ const QuotationsManagement = () => {
   
   // Calculate accommodation total before discount
   const calculateAccommodationTotal = (quotation) => {
-    if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.accommodationType || !quotation.groupSize) return 0;
+    if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.groupSize) return 0;
     
     const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
-    const roomsNeeded = quotation.roomsRequired || Math.ceil(quotation.groupSize / 2);
     
-    // Calculate room costs
-    const roomCost = (roomPrices[quotation.accommodationType] || 0) * roomsNeeded * nights;
+    // Check if we have room distributions or use the legacy accommodationType
+    let roomCost = 0;
+    
+    if (quotation.roomDistributions && quotation.roomDistributions.length > 0 && 
+        quotation.roomDistributions.some(dist => dist.accommodationType && dist.quantity > 0)) {
+      // Calculate costs for each room type in the distribution
+      quotation.roomDistributions.forEach(distribution => {
+        if (distribution.accommodationType && distribution.quantity > 0) {
+          roomCost += (roomPrices[distribution.accommodationType] || 0) * distribution.quantity * nights;
+        }
+      });
+    } else if (quotation.accommodationType) {
+      // Fallback to the legacy single accommodation type
+      const roomsNeeded = quotation.roomsRequired || Math.ceil(quotation.groupSize / 2);
+      roomCost = (roomPrices[quotation.accommodationType] || 0) * roomsNeeded * nights;
+    }
     
     // Calculate meal plan costs if applicable
     const mealPlanCost = quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' ? 
@@ -1163,13 +1244,18 @@ const QuotationsManagement = () => {
   // Handle creating quotation from group package
   const handleCreateQuotation = (tripPackage) => {
     // Pre-fill the quotation form with group package details and hotel contact info
+    const roomCount = Math.ceil(tripPackage.maxGroupSize / 2);
     setNewQuotation({
       ...blankQuotation,
       packageName: tripPackage.packageName,
       checkInDate: tripPackage.travelStartDate,
       checkOutDate: tripPackage.travelEndDate,
       groupSize: tripPackage.maxGroupSize,
-      roomsRequired: Math.ceil(tripPackage.maxGroupSize / 2),
+      roomsRequired: roomCount,
+      // Set default room distribution with Standard Rooms
+      roomDistributions: [
+        { accommodationType: 'Standard Rooms', quantity: roomCount, occupants: tripPackage.maxGroupSize, id: Date.now() }
+      ],
       // Contact details are already pre-filled from blankQuotation which uses hotelData
     });
     
@@ -1187,20 +1273,29 @@ const QuotationsManagement = () => {
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
       
+      // Ensure we have accommodationType set for backward compatibility
+      const mainAccommodationType = newQuotation.roomDistributions && 
+        newQuotation.roomDistributions.length > 0 && 
+        newQuotation.roomDistributions[0].accommodationType || '';
+      
       const quotationToAdd = {
         ...newQuotation,
+        accommodationType: newQuotation.accommodationType || mainAccommodationType,
         totalAmount: accommodationTotal,
         finalAmount: finalTotal,
         quoteNumber: `HQ-${Date.now().toString().substr(-6)}`, // Generate a unique quote number
       };
       
       // Call the API to create quotation
+      console.log('Sending quotation data:', quotationToAdd);
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
+      console.log('Created quotation response:', createdQuotation);
       
       // Get fresh data from the server to ensure we have the latest list
       const updatedQuotations = await quotationService.getAllQuotations();
       setQuotations(updatedQuotations);
       
+      // Reset form and close modal
       setShowQuotationModal(false);
       setNewQuotation(blankQuotation);
       
@@ -1208,7 +1303,9 @@ const QuotationsManagement = () => {
       showFlashMessage('Accommodation quotation sent successfully!', 'success');
     } catch (error) {
       console.error('Error creating quotation:', error);
-      showFlashMessage('Failed to create quotation. Please try again.', 'error');
+      // Show more detailed error message
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create quotation';
+      showFlashMessage(`Failed to create quotation: ${errorMessage}. Please try again.`, 'error');
     }
   };
   
@@ -2322,14 +2419,6 @@ const StatusBadge = ({ status }) => {
                     placeholder="e.g., Cultural Sri Lanka Tour"
                     required
                   />
-                  <Select
-                    label="Accommodation Type*"
-                    name="accommodationType"
-                    value={newQuotation.accommodationType}
-                    onChange={handleInputChange}
-                    options={accommodationTypes}
-                    required
-                  />
                   <Input
                     label="Group Size*"
                     type="number"
@@ -2360,15 +2449,92 @@ const StatusBadge = ({ status }) => {
                     onChange={handleInputChange}
                     required
                   />
-                  <Input
-                    label="Number of Rooms*"
-                    type="number"
-                    name="roomsRequired"
-                    min="1"
-                    value={newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <div className="md:col-span-3 bg-gray-50 p-3 rounded-md border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm font-medium text-gray-700">Stay Duration:</div>
+                      <div className="text-sm font-medium">
+                        {calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4 mt-2">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-2 text-sm">bed</span>
+                    Room Allocation
+                  </h5>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    {newQuotation.roomDistributions.map((distribution, index) => (
+                      <div key={distribution.id || index}>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 pb-3 border-b border-gray-200">
+                          <Select
+                            label={`Room Type ${index + 1}`}
+                            value={distribution.accommodationType}
+                            onChange={(e) => handleRoomDistributionChange(index, 'accommodationType', e.target.value)}
+                            options={accommodationTypes}
+                            required
+                          />
+                          <Input
+                            label="Number of Rooms"
+                            type="number"
+                            value={distribution.quantity || 1}
+                            min="1"
+                            onChange={(e) => handleRoomDistributionChange(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                            required
+                          />
+                          <Input
+                            label="Number of Occupants"
+                            type="number"
+                            value={distribution.occupants || 2}
+                            min="1"
+                            onChange={(e) => handleRoomDistributionChange(index, 'occupants', Math.max(1, parseInt(e.target.value) || 1))}
+                            required
+                          />
+                          <div className="flex items-end pb-1">
+                            <button 
+                              type="button"
+                              onClick={() => removeRoomDistribution(index)}
+                              className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition flex items-center justify-center h-10"
+                            >
+                              <span className="material-icons text-sm">delete</span>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Show room price info when type is selected */}
+                        {distribution.accommodationType && (
+                          <div className="mb-3 ml-2 text-xs text-gray-600 flex items-center">
+                            <span className="material-icons text-yellow-500 text-xs mr-1">info</span>
+                            Price: LKR {roomPrices[distribution.accommodationType] || 0} per night x {distribution.quantity || 1} rooms = 
+                            LKR {(roomPrices[distribution.accommodationType] || 0) * (distribution.quantity || 1)} per night
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <div className="flex justify-center mt-2">
+                      <button
+                        type="button"
+                        onClick={addRoomDistribution}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded flex items-center text-sm"
+                      >
+                        <span className="material-icons text-sm mr-1">add</span>
+                        Add Room Type
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="md:col-span-3 bg-gray-50 p-3 rounded-md border border-gray-200 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-gray-700">Total Rooms:</div>
+                    <div className="text-sm font-medium">
+                      {newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)} rooms
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Based on room allocation above or calculated from group size
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -2433,7 +2599,8 @@ const StatusBadge = ({ status }) => {
               <section>
                 <h4 className="text-lg font-medium mb-3">Price Calculation</h4>
                 
-                {(!newQuotation.checkInDate || !newQuotation.checkOutDate || !newQuotation.accommodationType || !newQuotation.groupSize) ? (
+                {(!newQuotation.checkInDate || !newQuotation.checkOutDate || !newQuotation.groupSize || 
+                  (newQuotation.roomDistributions && newQuotation.roomDistributions.length === 0)) ? (
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 flex items-center">
                     <span className="material-icons text-yellow-600 mr-3">info</span>
                     <p className="text-yellow-700">
@@ -2449,19 +2616,56 @@ const StatusBadge = ({ status }) => {
                       </h5>
                     </div>
                     <div className="p-4">
+                      {/* Room distributions price breakdown */}
+                      {newQuotation.roomDistributions && newQuotation.roomDistributions.some(dist => dist.accommodationType && dist.quantity > 0) ? (
+                        <>
+                          <h6 className="font-medium mb-2 flex items-center">
+                            <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
+                            Room Breakdown
+                          </h6>
+                          
+                          {newQuotation.roomDistributions.map((dist, index) => (
+                            dist.accommodationType && dist.quantity > 0 ? (
+                              <div key={dist.id || index} className="mb-3 bg-white rounded-lg p-3 border border-gray-100">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="font-medium">{dist.accommodationType}</span>
+                                  <span>{dist.quantity} room{dist.quantity !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div className="text-gray-600">Rate:</div>
+                                  <div className="text-right">LKR {roomPrices[dist.accommodationType] || 0}/night</div>
+                                  
+                                  <div className="text-gray-600">Occupants:</div>
+                                  <div className="text-right">{dist.occupants} people</div>
+                                  
+                                  <div className="text-gray-600">Subtotal:</div>
+                                  <div className="text-right font-medium">
+                                    LKR {((roomPrices[dist.accommodationType] || 0) * 
+                                      dist.quantity * 
+                                      calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null
+                          ))}
+                        </>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="text-gray-600 flex items-center">
+                            <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
+                            Room Rate:
+                          </div>
+                          <div className="text-right font-medium">LKR {roomPrices[newQuotation.accommodationType] || 0} per room/night</div>
+                          
+                          <div className="text-gray-600 flex items-center">
+                            <span className="material-icons text-yellow-600 text-sm mr-2">meeting_room</span>
+                            Number of Rooms:
+                          </div>
+                          <div className="text-right font-medium">{newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)} rooms</div>
+                        </div>
+                      )}
+                      
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="text-gray-600 flex items-center">
-                          <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
-                          Room Rate:
-                        </div>
-                        <div className="text-right font-medium">LKR {roomPrices[newQuotation.accommodationType] || 0} per room/night</div>
-                        
-                        <div className="text-gray-600 flex items-center">
-                          <span className="material-icons text-yellow-600 text-sm mr-2">meeting_room</span>
-                          Number of Rooms:
-                        </div>
-                        <div className="text-right font-medium">{newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)} rooms</div>
-                        
                         <div className="text-gray-600 flex items-center">
                           <span className="material-icons text-yellow-600 text-sm mr-2">nightlife</span>
                           Stay Duration:
@@ -2479,9 +2683,7 @@ const StatusBadge = ({ status }) => {
                           Accommodation Subtotal:
                         </div>
                         <div className="text-right font-medium border-b pb-2">
-                          LKR {((roomPrices[newQuotation.accommodationType] || 0) * 
-                            (newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)) * 
-                            calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                          LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}
                         </div>
                         
                         {newQuotation.mealPlan && newQuotation.mealPlan !== 'Breakfast Only' && (
@@ -2549,6 +2751,15 @@ const StatusBadge = ({ status }) => {
                             <div className="text-gray-600">Base Amount:</div>
                             <div className="text-right">LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}</div>
                             
+                            {newQuotation.roomDistributions && newQuotation.roomDistributions.length > 0 && (
+                              <>
+                                <div className="text-gray-600">Total Rooms:</div>
+                                <div className="text-right">
+                                  {newQuotation.roomDistributions.reduce((total, dist) => total + (dist.quantity || 0), 0)} rooms
+                                </div>
+                              </>
+                            )}
+                            
                             <div className="text-gray-600">After Discount:</div>
                             <div className="text-right font-medium">LKR {calculateFinalTotal(newQuotation)}</div>
                           </div>
@@ -2592,10 +2803,14 @@ const StatusBadge = ({ status }) => {
                 <button
                   type="submit"
                   className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium flex items-center"
-                  disabled={!newQuotation.checkInDate || !newQuotation.checkOutDate || !newQuotation.accommodationType || !newQuotation.contactEmail}
+                  disabled={!newQuotation.checkInDate || 
+                           !newQuotation.checkOutDate || 
+                           !(newQuotation.roomDistributions.some(d => d.accommodationType)) || 
+                           !newQuotation.contactEmail}
                 >
                   <span className="material-icons text-sm mr-2">send</span>
-                  {newQuotation.checkInDate && newQuotation.checkOutDate && newQuotation.accommodationType && newQuotation.groupSize ? 
+                  {newQuotation.checkInDate && newQuotation.checkOutDate && 
+                   newQuotation.roomDistributions.some(d => d.accommodationType) && newQuotation.groupSize ? 
                     `Send Quotation (LKR ${calculateFinalTotal(newQuotation)})` : 
                     'Send Accommodation Quotation'}
                 </button>

@@ -431,7 +431,7 @@ export default function App() {
                                                 source={p}
                                             />
                                             <Text className=" text-md italic text-center">
-                                                {x.members} Members
+                                                Upto {x.members} Members
                                             </Text>
                                         </View>
                                         <View className='flex-row items-center gap-4 my-1'>

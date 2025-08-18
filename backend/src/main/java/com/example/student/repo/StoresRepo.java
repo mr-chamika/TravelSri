@@ -11,8 +11,11 @@ import java.util.Optional;
 @Repository
 public interface StoresRepo extends MongoRepository<User,String> {
 
-    @Query("{'_id': ?0, 'role': 'stores'}")
-    Optional<User> findStoreById(String id);
+    @Query("{'_id': ?0, 'role': 'merchant'}")
+    Optional<User> findById(String id);
     List<User> findByBusinessNameContainingIgnoreCase(String keyword);
+
+    @Query("{'role': 'merchant'}")
+    List<User> findAllShops();
 
 }

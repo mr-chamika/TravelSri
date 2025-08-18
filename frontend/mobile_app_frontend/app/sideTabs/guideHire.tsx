@@ -150,6 +150,7 @@ export default function Guide() {
     const [guidesS, setGuidesS] = useState<Guide[]>([])
 
     const [destination, setDestination] = useState('');
+    const [travelDescription, setTravelDescription] = useState('');
     const [bookingType, setBookingType] = useState('visit')
 
     const onDayPress = (day: { dateString: string }) => {
@@ -175,7 +176,7 @@ export default function Guide() {
 
             const book: BookingDetails = {
                 dates: selectedDates,
-                destination: destination,
+                destination: bookingType == 'visit' ? destination : travelDescription,
                 type: bookingType,
                 language: lan
             };
@@ -289,30 +290,8 @@ export default function Guide() {
                                             />
                                         </View>
 
-                                        {/* Destination Input */}
-                                        <View className='mb-3'>
-                                            <Text className="text-base font-medium text-gray-700 mb-2">Destination or Place</Text>
-                                            <TextInput
-                                                placeholder="Galle"
-                                                value={destination}
-                                                onChangeText={setDestination}
-                                                className="text-black border border-gray-300 rounded-xl px-4 ml-3 py-3 text-base"
-                                            />
-                                        </View>
-
-                                        {/* Language Input */}
-                                        <View className='mb-3'>
-                                            <Text className="text-base font-medium text-gray-700 mb-2">Preferred Language</Text>
-                                            <TextInput
-                                                placeholder="sinhala"
-                                                value={lan} // Use your new 'language' state
-                                                onChangeText={setLan} // And 'setLanguage' setter
-                                                className="text-black border ml-3 border-gray-300 rounded-xl px-4 py-3 text-base"
-                                            />
-                                        </View>
-
                                         {/* Booking Type Radio Buttons */}
-                                        <View>
+                                        <View className='py-3'>
                                             <Text className="text-base font-medium text-gray-700 mb-3">Booking Type</Text>
                                             <View className="gap-2 ml-3">
                                                 {/* Option 1 */}
@@ -338,6 +317,43 @@ export default function Guide() {
                                                 </TouchableOpacity>
                                             </View>
                                         </View>
+
+                                        {/* Destination Input */}
+                                        {bookingType == 'visit' &&
+                                            <View className='mb-3'>
+                                                <Text className="text-base font-medium text-gray-700 mb-2">Destination or Place</Text>
+                                                <TextInput
+                                                    placeholder="Galle"
+                                                    value={destination}
+                                                    onChangeText={setDestination}
+                                                    className="text-black border border-gray-300 rounded-xl px-4 ml-3 py-3 text-base"
+                                                />
+                                            </View>
+
+                                        }
+
+                                        {bookingType == 'travel' &&
+                                            <View className='mb-3'>
+                                                <Text className="text-base font-medium text-gray-700 mb-2">Travel Description</Text>
+                                                <TextInput
+                                                    placeholder="We are about to go ..."
+                                                    value={travelDescription}
+                                                    onChangeText={setTravelDescription}
+                                                    className="text-black border border-gray-300 rounded-xl px-4 ml-3 py-3 text-base"
+                                                />
+                                            </View>
+                                        }
+                                        {/* Language Input */}
+                                        <View className='mb-3'>
+                                            <Text className="text-base font-medium text-gray-700 mb-2">Preferred Language</Text>
+                                            <TextInput
+                                                placeholder="sinhala"
+                                                value={lan} // Use your new 'language' state
+                                                onChangeText={setLan} // And 'setLanguage' setter
+                                                className="text-black border ml-3 border-gray-300 rounded-xl px-4 py-3 text-base"
+                                            />
+                                        </View>
+
                                     </View>
                                 </ScrollView>
 
@@ -366,20 +382,22 @@ export default function Guide() {
                             </View>
                             {bookingDetails && (
                                 <View className="bg-white rounded-lg p-4 mx-4 mb-2 shadow">
-                                    <View className="justify-between flex-row">
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Destination</Text>
-                                            <Text className="text-base font-semibold text-gray-800">{bookingDetails.destination}</Text>
+                                    <View className={` ${bookingDetails.type == 'visit' ? 'flex-row' : 'flex-col'}`}>
+                                        <View className={`${bookingDetails.type == 'visit' && 'w-[35%]'}`}>
+                                            <Text className="text-sm text-gray-500">{bookingDetails.type == 'visit' ? 'Destination' : 'Travel Description'}</Text>
+                                            <Text className="text-base font-semibold text-gray-800 overflow-hidden">{bookingDetails.destination}</Text>
                                         </View>
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Booking Type</Text>
-                                            <Text className="text-base font-semibold text-gray-800 capitalize">
-                                                {bookingDetails.type === 'visit' ? 'Place Visit' : 'Travel Along'}
-                                            </Text>
-                                        </View>
-                                        <View>
-                                            <Text className="text-sm text-gray-500">Language</Text>
-                                            <Text className="text-base font-semibold text-gray-800">{bookingDetails.language}</Text>
+                                        <View className={`justify-between ${bookingDetails.type == 'visit' && 'flex-row w-[65%]'}`}>
+                                            <View>
+                                                <Text className="text-sm text-gray-500">Booking Type</Text>
+                                                <Text className="text-base font-semibold text-gray-800 capitalize">
+                                                    {bookingDetails.type === 'visit' ? 'Place Visit' : 'Travel with guide'}
+                                                </Text>
+                                            </View>
+                                            <View>
+                                                <Text className="text-sm text-gray-500">Language</Text>
+                                                <Text className="text-base font-semibold text-gray-800">{bookingDetails.language}</Text>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
@@ -463,7 +481,7 @@ export default function Guide() {
                                     </View>
                                     <View>
                                         <Text className="self-start p-3 text-xl font-semibold">Suggested Guides</Text>
-                                        {guidesS.map((guide) => {
+                                        {guidesS && guidesS.length > 0 && guidesS.map((guide) => {
 
                                             const rating = guide.reviewCount > 0
                                                 ? parseFloat(((guide.stars / guide.reviewCount) * 2).toFixed(1))
@@ -535,7 +553,7 @@ export default function Guide() {
                                                     <View className="mb-3">
                                                         <Text className="text-xs font-semibold text-gray-700 mb-1.5">Specializations:</Text>
                                                         <View className="flex-row flex-wrap gap-1.5">
-                                                            {guide.specializations.map((spec, index) => (
+                                                            {guide.specializations && guide.specializations.length > 0 && guide.specializations.map((spec, index) => (
                                                                 <View key={index} className="bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-300">
                                                                     <Text className="text-yellow-800 text-[11px] font-medium">{spec}</Text>
                                                                 </View>
@@ -559,10 +577,10 @@ export default function Guide() {
 
                                                         <View className="flex-row gap-2">
 
-                                                            <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
+                                                            {/* <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
                                                                 <Image source={tele} className='w-6 h-6' />
                                                                 <Text className="text-sm text-gray-800 font-semibold">{guide.mobileNumber}</Text>
-                                                            </View>
+                                                            </View> */}
                                                         </View>
                                                     </View>
                                                 </TouchableOpacity>
@@ -572,7 +590,7 @@ export default function Guide() {
                                 </View>
                             }
 
-                            {guides.length > 0 && guides.map((guide, index) => {
+                            {guides && guides.length > 0 && guides.map((guide, index) => {
 
                                 const rating = guide.reviewCount > 0
                                     ? parseFloat(((guide.stars / guide.reviewCount) * 2).toFixed(1))
@@ -671,7 +689,7 @@ export default function Guide() {
                                     <View className="mb-3">
                                         <Text className="text-xs font-semibold text-gray-700 mb-1.5">Specializations:</Text>
                                         <View className="flex-row flex-wrap gap-1.5">
-                                            {guide.specializations.map((spec, index) => (
+                                            {guide.specializations && guide.specializations.length > 0 && guide.specializations.map((spec, index) => (
                                                 <View key={index} className="bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-300">
                                                     <Text className="text-yellow-800 text-[11px] font-medium">{spec}</Text>
                                                 </View>

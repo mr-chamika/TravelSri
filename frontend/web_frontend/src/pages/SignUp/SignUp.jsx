@@ -720,61 +720,143 @@ const SignupPage = () => {
   };
   
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Prepare form data for submission
-      // In a real API submission, you would create a FormData object to handle file uploads
-      const submissionData = {
-        ...formData,
-        // Include location data if available
-        locationCoordinates: formData.location ? {
-          latitude: formData.location.lat,
-          longitude: formData.location.lng
-        } : null
-      };
-      
-      // Convert image objects to a format suitable for API submission
-      if (formData.hotelImages && formData.hotelImages.length > 0) {
-        // In a real implementation, you would append each file to FormData
-        // For demonstration, just show the number of images being submitted
-        console.log(`Submitting ${formData.hotelImages.length} hotel images`);
-      }
-      
-      // Handle business document uploads
-      if (formData.businessDocuments) {
-        // Log the business documents being submitted
-        const documentTypes = Object.keys(formData.businessDocuments).filter(
-          key => formData.businessDocuments[key] !== null
-        );
+      try {
+        // Show loading state
+        showFlash('info', 'Submitting registration...');
         
-        console.log(`Submitting ${documentTypes.length} business documents:`, documentTypes.join(', '));
+        // Prepare form data for submission to backend
+        const submissionData = {
+          // Account Information
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          
+          // Hotel Information
+          hotelName: formData.hotelName,
+          hotelAddress: formData.hotelAddress,
+          baseAreaLocation: formData.baseAreaLocation,
+          city: formData.city,
+          district: formData.district,
+          postalCode: formData.postalCode,
+          
+          // Location data
+          latitude: formData.location ? formData.location.lat : null,
+          longitude: formData.location ? formData.location.lng : null,
+          
+          // Hotel details
+          website: formData.website,
+          starRating: formData.starRating ? parseInt(formData.starRating) : null,
+          
+          // Contact Information
+          contactPerson: formData.contactPerson,
+          contactPosition: formData.contactPosition,
+          contactEmail: formData.contactEmail,
+          phoneNumber: formData.phoneNumber,
+          alternatePhoneNumber: formData.alternatePhoneNumber,
+          emergencyContact: formData.emergencyContact,
+          businessLicense: formData.businessLicense,
+          
+          // Business Documents (store file paths - in production, upload files first)
+          businessRegistrationDocPath: formData.businessDocuments?.businessRegistration?.name || null,
+          taxCertificateDocPath: formData.businessDocuments?.taxCertificate?.name || null,
+          hotelCertificationDocPath: formData.businessDocuments?.hotelCertification?.name || null,
+          healthAndSafetyDocPath: formData.businessDocuments?.healthAndSafety?.name || null,
+          otherDocumentsPaths: formData.businessDocuments?.otherDocuments?.map(doc => doc.name) || [],
+          
+          // Hotel Images (store file names - in production, upload files first)
+          hotelImagesPaths: formData.hotelImages?.map(img => img.name) || [],
+          
+          // Room Types (convert to JSON strings for storage)
+          roomTypeDetails: formData.roomTypes?.filter(room => room.added).map(room => JSON.stringify({
+            type: room.type,
+            count: room.count,
+            price: room.price,
+            occupancy: room.occupancy,
+            bedConfiguration: room.beds,
+            amenities: room.amenities || []
+          })) || [],
+          
+          // Terms and Conditions
+          acceptTerms: formData.acceptTerms,
+          acceptPrivacyPolicy: formData.acceptPrivacyPolicy,
+          
+          // Set defaults for backend fields
+          name: formData.hotelName, // Map to existing 'name' field
+          location: `${formData.city}, ${formData.district}`, // Map to existing 'location' field
+          mobileNumber: formData.phoneNumber, // Map to existing 'mobileNumber' field
+          description: `Hotel located in ${formData.baseAreaLocation}, ${formData.city}`, // Default description
+          stars: formData.starRating ? parseInt(formData.starRating) : 0,
+          ratings: 0,
+          reviewCount: 0,
+          originalPrice: 0,
+          currentPrice: 0,
+          singlePrice: 0,
+          doublePrice: 0,
+          availableSingle: 0,
+          availableDouble: 0,
+          maxSingle: 0,
+          maxDouble: 0,
+          images: [],
+          unavailable: [],
+          distance: "",
+          taxes: "",
+          priceDescription: "",
+          freeFeatures: [],
+          policies: [],
+          specialOffer: "",
+          roomTypes: [],
+          facilities: []
+        };
         
-        // In a real API implementation, you would append each document file to FormData
-        // For example:
-        // const formDataObj = new FormData();
-        // Object.keys(formData.businessDocuments).forEach(docType => {
-        //   if (formData.businessDocuments[docType]) {
-        //     if (docType === 'otherDocuments' && Array.isArray(formData.businessDocuments.otherDocuments)) {
-        //       formData.businessDocuments.otherDocuments.forEach((doc, index) => {
-        //         formDataObj.append(`businessDocuments.otherDocuments[${index}]`, doc.file);
-        //       });
-        //     } else {
-        //       formDataObj.append(`businessDocuments.${docType}`, formData.businessDocuments[docType].file);
-        //     }
-        //   }
-        // });
+        // Make API call to backend
+        const response = await fetch('http://localhost:8080/hotels/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(submissionData)
+        });
+        
+        // Handle response based on status and content type
+        let result;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            result = await response.json();
+          } catch (jsonError) {
+            console.error('JSON parsing error:', jsonError);
+            result = { error: 'Invalid response from server' };
+          }
+        } else {
+          // Handle non-JSON responses
+          const textResponse = await response.text();
+          if (response.ok) {
+            result = { message: textResponse || 'Success' };
+          } else {
+            result = { error: textResponse || `Server error (${response.status})` };
+          }
+        }
+        
+        if (response.ok) {
+          showFlash('success', 'Registration successful! Your hotel has been registered. You will be redirected to login.');
+          
+          // Redirect to login page after a delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          showFlash('error', result.error || 'Registration failed. Please try again.');
+        }
+        
+      } catch (error) {
+        console.error('Registration error:', error);
+        showFlash('error', 'Network error. Please check your connection and try again.');
       }
-      
-      // Here you would typically make an API call to register
-      console.log('Signup submitted:', submissionData);
-      showFlash('success', 'Registration successful! Your hotel images and details have been saved. You will be redirected to login.');
-      
-      // Redirect to login page or dashboard after a delay
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 2000);
     } else {
       // Show error message
       showFlash('error', 'Please correct the errors in the form before submitting.');

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import roomService from '../../../services/roomService';
 
 const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     hotelName: 'Shangri-La Hotel',
     address: '123 Beach Road, Colombo, Sri Lanka',
@@ -16,12 +18,7 @@ const ProfilePage = () => {
       'Wi-Fi', 'Swimming Pool', 'Restaurant', 'Bar', 'Spa', 
       'Gym', 'Conference Room', 'Room Service', 'Airport Shuttle'
     ],
-    roomTypes: [
-      { name: 'Standard Room', count: 20 },
-      { name: 'Deluxe Room', count: 15 },
-      { name: 'Suite', count: 10 },
-      { name: 'Executive Suite', count: 5 }
-    ],
+    roomTypes: [],
     paymentOptions: ['Credit Card', 'Cash', 'Bank Transfer'],
     bankDetails: {
       accountName: 'Shangrila Hotel Ltd.',
@@ -33,6 +30,48 @@ const ProfilePage = () => {
   });
 
   const [formErrors, setFormErrors] = useState({});
+
+  // Fetch room inventory data when component mounts
+  useEffect(() => {
+    const fetchRoomInventory = async () => {
+      setIsLoading(true);
+      try {
+        // Get all rooms from the API
+        const rooms = await roomService.getAllRooms();
+        
+        // Group rooms by type and count them
+        const roomTypeMap = {};
+        
+        rooms.forEach(room => {
+          if (!roomTypeMap[room.type]) {
+            roomTypeMap[room.type] = 0;
+          }
+          roomTypeMap[room.type]++;
+        });
+        
+        // Convert to the format needed for formData
+        const roomTypesData = Object.entries(roomTypeMap).map(([name, count]) => ({
+          name,
+          count
+        }));
+        
+        // Update form data with real room types
+        setFormData(prevData => ({
+          ...prevData,
+          roomTypes: roomTypesData
+        }));
+        
+        console.log('Room types loaded from database:', roomTypesData);
+      } catch (error) {
+        console.error('Error fetching room inventory:', error);
+        // Keep default room types if API call fails
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchRoomInventory();
+  }, []); // Empty dependency array means this runs once on mount
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -96,6 +135,10 @@ const ProfilePage = () => {
     if (validateForm()) {
       // In a real application, you would send this data to your backend
       console.log('Form submitted:', formData);
+      
+      // Note: Room types are managed via the room inventory system
+      // and cannot be directly edited here - they reflect the actual database state
+      
       setIsEditing(false);
     }
   };
@@ -474,14 +517,69 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <h3 className="text-lg font-medium mt-6 mb-4">Room Types</h3>
+                <div className="flex justify-between items-center mt-6 mb-4">
+                  <h3 className="text-lg font-medium">Room Types</h3>
+                  <button 
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      setIsLoading(true);
+                      try {
+                        // Get all rooms from the API
+                        const rooms = await roomService.getAllRooms();
+                        
+                        // Group rooms by type and count them
+                        const roomTypeMap = {};
+                        
+                        rooms.forEach(room => {
+                          if (!roomTypeMap[room.type]) {
+                            roomTypeMap[room.type] = 0;
+                          }
+                          roomTypeMap[room.type]++;
+                        });
+                        
+                        // Convert to the format needed for formData
+                        const roomTypesData = Object.entries(roomTypeMap).map(([name, count]) => ({
+                          name,
+                          count
+                        }));
+                        
+                        // Update form data with real room types
+                        setFormData(prevData => ({
+                          ...prevData,
+                          roomTypes: roomTypesData
+                        }));
+                        
+                        console.log('Room types refreshed from database:', roomTypesData);
+                      } catch (error) {
+                        console.error('Error refreshing room inventory:', error);
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                    className="flex items-center text-sm text-yellow-600 hover:text-yellow-700"
+                  >
+                    <span className="material-icons text-sm mr-1">refresh</span>
+                    Refresh
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
-                  {formData.roomTypes.map((room, index) => (
-                    <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                      <p className="font-medium">{room.name}</p>
-                      <p className="text-sm text-gray-600">{room.count} rooms</p>
+                  {isLoading ? (
+                    <div className="col-span-2 text-center py-4">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-yellow-500 mb-2"></div>
+                      <p className="text-gray-600">Loading room inventory...</p>
                     </div>
-                  ))}
+                  ) : formData.roomTypes.length > 0 ? (
+                    formData.roomTypes.map((room, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                        <p className="font-medium">{room.name}</p>
+                        <p className="text-sm text-gray-600">{room.count} rooms</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-2 bg-gray-50 p-3 rounded-lg text-center">
+                      <p className="text-gray-600">No room inventory data available</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

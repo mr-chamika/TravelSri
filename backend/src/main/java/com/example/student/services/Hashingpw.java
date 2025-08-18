@@ -29,6 +29,14 @@ public class Hashingpw {
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
+                                "/hotels/register",
+                                "/hotels/login",
+                                "/hotels/check-email",
+                                "/hotels/check-username",
+                                "/hotels/profile",
+                                "/hotels/reset-password",
+                                "/hotels",
+                                "/hotels/**",
                                 "/guide/groupTours",
                                 "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
                                 "/guide/submittedQuotation/{guideId}", // Fixed: Allow all submittedQuotation endpoints
@@ -97,6 +105,8 @@ public class Hashingpw {
                                 "/api/vehicle/capacity/range",
                                 "/api/vehicle/city/{baseCity}/capacity/min/{minCapacity}",
                                 "/api/vehicle/update/{id}",
+                                "/api/quotations",
+                                "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
                                 "/api/admin-hotel-bookings/{id}",
@@ -141,7 +151,11 @@ public class Hashingpw {
                                 "/api/wallet/money-flow/summary",
                                 "/api/wallet/money-flow/booking/{bookingId}",
                                 "/api/payments/payhere/summary/{bookingId}",
-                                "/api/guide/search"
+                                "/api/guide/search",
+                                "/reviews/by-service",
+                                "/reviews//stats",
+                                "/reviews/service-search",
+                                "/reviews/by-rating"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

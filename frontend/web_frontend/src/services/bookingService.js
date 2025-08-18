@@ -36,21 +36,21 @@ apiClient.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
-
+    
     // If error is a CORS error or network error and we haven't retried yet
-    if ((error.message === 'Network Error' ||
-      (error.response && error.response.status === 0)) &&
-      !originalRequest._retry) {
-
+    if ((error.message === 'Network Error' || 
+        (error.response && error.response.status === 0)) && 
+        !originalRequest._retry) {
+      
       originalRequest._retry = true;
-
+      
       // Wait a bit before retrying
       await new Promise(resolve => setTimeout(resolve, 1000));
-
+      
       // Try again
       return apiClient(originalRequest);
     }
-
+    
     return Promise.reject(error);
   }
 );
@@ -93,7 +93,7 @@ const bookingService = {
         status: bookingData.status,
         totalCost: bookingData.totalAmount
       };
-
+      
       const response = await apiClient.post('/admin-hotel-bookings', transformedData);
       return response.data;
     } catch (error) {
@@ -117,7 +117,7 @@ const bookingService = {
         status: bookingData.status,
         totalCost: bookingData.totalAmount
       };
-
+      
       console.log('Sending update request for booking:', id, transformedData);
       const response = await apiClient.put(`/admin-hotel-bookings/${id}`, transformedData);
       console.log('Update response:', response);

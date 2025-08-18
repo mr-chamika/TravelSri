@@ -254,7 +254,7 @@ const LoginPage = () => {
             {!rememberMe && (
               <p className="text-xs text-gray-500 italic">
                 <span className="material-icons text-gray-400 text-xs align-middle mr-1">info</span>
-                Your login details won't be saved for next time
+                Your login details won't be saved for next time!
               </p>
             )}
           </div>
@@ -285,7 +285,7 @@ const LoginPage = () => {
             onClick={handleSignupRedirect}
             className="text-yellow-500 hover:underline font-medium bg-transparent border-none p-0"
           >
-            Create one
+            Create Account
           </button>
         </p>
       </div>
