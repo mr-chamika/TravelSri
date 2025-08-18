@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import quotationService from '../../../services/quotationService';
+import pendingTripService from '../../../services/pendingTripService';
 import { Link } from 'react-router-dom';
 
 // Input component
@@ -1046,11 +1047,21 @@ const QuotationsManagement = () => {
     setIsLoading(true);
     setError(null);
     
-    // Fetch real quotations data from backend
+    // Fetch real data from backend
     const fetchData = async () => {
       try {
-        // For group packages we can still use mock data for now
-        setGroupPackages(mockGroupTripPackages);
+        // Fetch pending trips and convert them to group packages format
+        const pendingTrips = await pendingTripService.getAllPendingTrips();
+        if (pendingTrips && pendingTrips.length > 0) {
+          // Map backend data to the frontend group packages format
+          const mappedGroupPackages = pendingTrips.map(trip => 
+            pendingTripService.mapPendingTripToGroupPackage(trip)
+          );
+          setGroupPackages(mappedGroupPackages);
+        } else {
+          console.log('No pending trips found, using mock data as fallback');
+          setGroupPackages(mockGroupTripPackages);
+        }
         
         // Fetch actual quotations from API
         const fetchedQuotations = await quotationService.getAllQuotations();
@@ -1059,6 +1070,7 @@ const QuotationsManagement = () => {
         console.error('Error loading data:', err);
         setError('Failed to load data. Please try again.');
         // Fallback to mock data if API fails
+        setGroupPackages(mockGroupTripPackages);
         setQuotations(mockQuotations);
       } finally {
         setIsLoading(false);
@@ -1243,18 +1255,42 @@ const QuotationsManagement = () => {
     return parseFloat(calculateFinalTotal(quotation)) / quotation.groupSize;
   };
   
-  // Format date for display
+  // Format date for display with improved handling of different date formats
   const formatDate = (iso) => {
     if (!iso) return '';
     try {
-      return new Date(iso).toLocaleDateString('en-US', {
+      // Handle Date objects, ISO strings, and LocalDate objects from Java backend
+      let dateObj;
+      
+      if (iso instanceof Date) {
+        // Already a Date object
+        dateObj = iso;
+      } else if (typeof iso === 'string') {
+        // ISO string format
+        dateObj = new Date(iso);
+      } else if (iso && iso.year && iso.month && iso.day) {
+        // Java LocalDate format with year, month, day properties
+        // Note: JavaScript months are 0-indexed, so we subtract 1 from the month
+        dateObj = new Date(iso.year, iso.month - 1, iso.day);
+      } else {
+        // Try to convert whatever format we have
+        dateObj = new Date(iso);
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        console.warn('Invalid date:', iso);
+        return 'Invalid date';
+      }
+      
+      return dateObj.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       });
     } catch (err) {
-      console.error('Date formatting error:', err);
-      return iso;
+      console.error('Date formatting error:', err, iso);
+      return String(iso);
     }
   };
   
@@ -1271,14 +1307,41 @@ const QuotationsManagement = () => {
   
   // Handle creating quotation from group package
   const handleCreateQuotation = (tripPackage) => {
+    // Ensure dates are in the correct format for the form
+    let checkInDate = tripPackage.travelStartDate;
+    let checkOutDate = tripPackage.travelEndDate;
+    
+    // If the dates are LocalDate objects from Java, convert them to ISO strings
+    if (tripPackage.travelStartDate && typeof tripPackage.travelStartDate === 'object' && 
+        tripPackage.travelStartDate.year && tripPackage.travelStartDate.month && tripPackage.travelStartDate.day) {
+      // Convert Java LocalDate to ISO string
+      const year = tripPackage.travelStartDate.year;
+      const month = String(tripPackage.travelStartDate.month).padStart(2, '0'); // Ensure 2 digits
+      const day = String(tripPackage.travelStartDate.day).padStart(2, '0'); // Ensure 2 digits
+      checkInDate = `${year}-${month}-${day}`;
+    }
+    
+    if (tripPackage.travelEndDate && typeof tripPackage.travelEndDate === 'object' && 
+        tripPackage.travelEndDate.year && tripPackage.travelEndDate.month && tripPackage.travelEndDate.day) {
+      // Convert Java LocalDate to ISO string
+      const year = tripPackage.travelEndDate.year;
+      const month = String(tripPackage.travelEndDate.month).padStart(2, '0'); // Ensure 2 digits
+      const day = String(tripPackage.travelEndDate.day).padStart(2, '0'); // Ensure 2 digits
+      checkOutDate = `${year}-${month}-${day}`;
+    }
+    
     // Pre-fill the quotation form with group package details and hotel contact info
     setNewQuotation({
       ...blankQuotation,
       packageName: tripPackage.packageName,
-      checkInDate: tripPackage.travelStartDate,
-      checkOutDate: tripPackage.travelEndDate,
+      checkInDate: checkInDate,
+      checkOutDate: checkOutDate,
       groupSize: tripPackage.maxGroupSize,
-      pricePerPersonPerNight: 0, // Will need to be set by admin
+      pricePerPersonPerNight: 5000, // Default starting price per person per night in LKR
+      mealPlan: 'Breakfast Only',
+      mealPlanPricePerPerson: 1500, // Default meal plan price in LKR
+      // Add reference to the original trip
+      originalTripId: tripPackage.id,
       // Contact details are already pre-filled from blankQuotation which uses hotelData
     });
     
@@ -1524,30 +1587,74 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-gray-700 mb-4">{tripPackage.description}</p>
+              {/* <p className="text-gray-700 mb-4">{tripPackage.description}</p> */}
               
               <div className="mb-4">
-                <h5 className="font-medium text-gray-800 mb-2">Destinations:</h5>
-                <div className="flex flex-wrap gap-2">
-                  {tripPackage.destinations.map((destination, index) => (
-                    <span key={index} className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded text-sm flex items-center">
-                      <span className="material-icons text-xs mr-1">place</span>
-                      {destination}
-                    </span>
-                  ))}
+                <h5 className="font-medium text-gray-800 mb-2">Start Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">flight_takeoff</span>
+                    <span className="font-medium">{tripPackage.startLocation || 'Not specified'}</span>
+                  </div>
+                  {tripPackage.startLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.startLocationDescription}</p>
+                  )}
                 </div>
               </div>
               
               <div className="mb-4">
-                <h5 className="font-medium text-gray-800 mb-2">Activities:</h5>
-                <div className="flex flex-wrap gap-2">
-                  {tripPackage.activities.map((activity, index) => (
-                    <span key={index} className="bg-green-50 text-green-700 px-2 py-1 rounded text-sm">
-                      {activity}
-                    </span>
-                  ))}
+                <h5 className="font-medium text-gray-800 mb-2">End Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">flight_land</span>
+                    <span className="font-medium">{tripPackage.endLocation || 'Not specified'}</span>
+                  </div>
+                  {tripPackage.endLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.endLocationDescription}</p>
+                  )}
                 </div>
               </div>
+              
+              {/* <div className="mb-4">
+                <h5 className="font-medium text-gray-800 mb-2">Pickup Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">location_on</span>
+                    <span className="font-medium">{tripPackage.pickupLocation || 'Same as start location'}</span>
+                    {tripPackage.pickupTime && (
+                      <span className="ml-2 bg-yellow-100 px-2 py-1 rounded text-xs flex items-center">
+                        <span className="material-icons text-xs mr-1">access_time</span>
+                        {tripPackage.pickupTime}
+                      </span>
+                    )}
+                  </div>
+                  {tripPackage.pickupLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.pickupLocationDescription}</p>
+                  )}
+                </div>
+              </div> */}
+              
+              {/* <div className="mb-4">
+                <h5 className="font-medium text-gray-800 mb-2">Route Summary:</h5>
+                <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                  <div className="flex items-center">
+                    <span className="material-icons text-yellow-600 mr-2">timeline</span>
+                    <span className="font-medium">
+                      {tripPackage.startLocation || 'Origin'} → {tripPackage.endLocation || 'Destination'}
+                    </span>
+                    {tripPackage.path && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({tripPackage.path.split(',').length} stops)
+                      </span>
+                    )}
+                  </div>
+                  {tripPackage.routePathDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7 border-t border-gray-100 pt-2">
+                      {tripPackage.routePathDescription}
+                    </p>
+                  )}
+                </div>
+              </div> */}
             </div>
             
             <div className="border-l pl-6">
@@ -1580,28 +1687,6 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
                   {tripPackage.maxGroupSize} people
                 </div>
               </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Inclusions</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  <div className="flex items-center mb-1">
-                    <span className="material-icons text-green-600 text-sm mr-1">
-                      {tripPackage.travelGuideIncluded ? 'check_circle' : 'cancel'}
-                    </span>
-                    <span className={tripPackage.travelGuideIncluded ? 'text-green-700' : 'text-red-700'}>
-                      Travel Guide
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="material-icons text-green-600 text-sm mr-1">
-                      {tripPackage.transportIncluded ? 'check_circle' : 'cancel'}
-                    </span>
-                    <span className={tripPackage.transportIncluded ? 'text-green-700' : 'text-red-700'}>
-                      Transportation
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -1624,7 +1709,7 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
           </div>
           <div className="flex items-center">
             <span className="material-icons text-yellow-500 mr-2">person</span>
-            By: {tripPackage.createdBy}
+            By: Super Admin
           </div>
         </div>
 
@@ -2108,8 +2193,8 @@ const StatusBadge = ({ status }) => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="text-sm">
-                        <div>{formatDate(tripPackage.travelStartDate)}</div>
-                        <div className="text-xs text-gray-500">to {formatDate(tripPackage.travelEndDate)}</div>
+                        <div>{formatDate(new Date(tripPackage.travelStartDate))}</div>
+                        <div className="text-xs text-gray-500">to {formatDate(new Date(tripPackage.travelEndDate))}</div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
