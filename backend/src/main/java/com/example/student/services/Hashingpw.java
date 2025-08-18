@@ -1,15 +1,21 @@
 package com.example.student.services;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
+@EnableWebSecurity
 public class Hashingpw {
 
     @Bean
@@ -155,12 +161,15 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating"
-
+                                "/reviews/by-rating",
+                                "/system/**",
+                                "/ws/**"
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
-                .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .httpBasic(basic->basic.disable()) // Use Basic Auth for the secured endpoints
+.formLogin(form -> form.disable());
 
         return http.build();
     }

@@ -5,6 +5,9 @@ import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from 'jwt-decode';
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
+import Stomp from 'stompjs'
 
 
 cssInterop(Image, { className: "style" });
@@ -66,6 +69,52 @@ export default function Index() {
   const [search, setSearch] = useState('');
   const [username, setUsername] = useState('')
   const [trips, setTrips] = useState<Trip[]>([])
+  const [stompClient, setStompClient] = useState<Stomp.Client | null>(null);
+
+
+  //
+  //var stompClient: Stomp.Client | null = null;
+  useEffect(() => {
+    const socket = new SockJS('http://localhost:8080/ws')
+    const client = Stomp.over(socket)
+    client.connect({}, function (frame?: Stomp.Frame) {
+      if (frame) {
+
+        console.log('Connected to STOMP server')
+        setStompClient(client)
+        // console.log(frame);
+        client?.subscribe('/topic/messages', function (result: Stomp.Message) {
+
+          console.log("message:", result.body)
+
+        })
+      }
+
+    })
+
+    return () => {
+      // Disconnect on component unmount
+      if (client?.connected) {
+        client.disconnect(() => {
+          console.log("STOMP client disconnected.");
+        });
+      }
+    };
+
+  }, [])
+  const sendMessage = () => {
+
+    var text = "publicsss notification"
+
+    if (stompClient?.connected) {
+      stompClient.send("/app/toAll", {}, JSON.stringify({ 'text': text }))
+      console.log("Message sent:", text);
+    } else {
+      console.log("STOMP client is not connected. Message not sent.");
+    }
+  }
+
+  //
 
   const handler = () => {
 
@@ -86,25 +135,61 @@ export default function Index() {
 
   }
 
+  useFocusEffect(
+    useCallback(() => {
 
-  const getTrips = async () => {
-    try {
-      const keys = await AsyncStorage.getItem("token");
-      if (keys) {
 
-        const x: MyToken = jwtDecode(keys)
 
-        const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
-        //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
+      const getAll = async () => {
 
-        const data = await res.json()
+        const keys = await AsyncStorage.getItem("token");
 
-        if (data) {
 
-          //console.log(data)
-          setTrips(data)
+        if (keys) {
+
+          const x = jwtDecode(keys)
+          const y: MyToken = jwtDecode(keys)
+          if (x && x.exp && x.sub) {
+            if (x.exp * 1000 < Date.now()) {
+
+              loggingout()
+              return;
+            }
+            setUsername(x.sub)
+            getTrips(keys)
+
+
+
+
+          }
+
+        } else {
+
+          loggingout();
 
         }
+
+      }
+      getAll();
+
+    }, []) // The empty dependency array here is for useCallback, not the effect itself
+  );
+
+
+  const getTrips = async (keys: string) => {
+    try {
+
+      const x: MyToken = jwtDecode(keys)
+
+      const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
+      //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
+
+      const data = await res.json()
+
+      if (data) {
+
+        //console.log(data)
+        setTrips(data)
 
       }
 
@@ -126,33 +211,6 @@ export default function Index() {
     });
 
   }
-
-  useFocusEffect(
-    useCallback(() => {
-
-      const getAll = async () => {
-
-        const keys = await AsyncStorage.getItem("token");
-        if (keys) {
-
-          const x = jwtDecode(keys)
-          if (x && x.exp && x.sub) {
-            if (x.exp * 1000 < Date.now()) {
-
-              loggingout()
-
-            } else {
-              setUsername(x.sub)
-            }
-          }
-
-        }
-
-      }
-      getAll()
-      getTrips()
-    }, [])
-  );
 
 
   /* useFocusEffect(
@@ -219,6 +277,10 @@ export default function Index() {
       <View className="w-full items-center mt-1 ">
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
+
+        <TouchableOpacity onPress={sendMessage}>
+          <Text>test</Text>
+        </TouchableOpacity>
 
       </View>
       <View className="h-[40%]">
