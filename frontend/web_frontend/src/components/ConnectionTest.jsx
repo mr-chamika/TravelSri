@@ -45,17 +45,17 @@ const ConnectionTest = () => {
         const response = await hotelApiClient.get('/hotels/me');
         
         if (response.status === 200) {
-          setApiMessage('Successfully connected to backend API');
+          // setApiMessage('Successfully connected to backend API');
           setApiStatus('success');
-          toast.success('Backend connection successful!');
+          // toast.success('Backend connection successful!');
         } else {
-          setApiMessage(`API returned status: ${response.status}`);
+          // setApiMessage(`API returned status: ${response.status}`);
           setApiStatus('error');
           toast.error('API connection test returned an unexpected response');
         }
       } catch (error) {
         console.error('API connection test failed:', error);
-        setApiMessage(error.message || 'Connection to backend API failed');
+        // setApiMessage(error.message || 'Connection to backend API failed');
         setApiStatus('error');
         toast.error('Failed to connect to backend API');
       }
@@ -93,17 +93,17 @@ const ConnectionTest = () => {
   };
   
   return (
-    <div className={`border rounded-md p-4 ${getStatusColor()} mb-4`}>
-      <div className="flex items-center">
+    <div className={``}>
+      {/* <div className="flex items-center">
         <span className="material-icons mr-2">{getStatusIcon()}</span>
         <h3 className="font-medium">API Connection Status</h3>
-      </div>
-      <p className="mt-2">{apiMessage || 'Testing connection to backend API...'}</p>
+      </div> */}
+      {/* <p className="mt-2">{apiMessage || 'Testing connection to backend API...'}</p> */}
       
       {apiStatus === 'loading' && (
         <div className="mt-2 flex items-center">
           <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent mr-2"></div>
-          <span>Testing connection...</span>
+          {/* <span>Testing connection...</span> */}
         </div>
       )}
     </div>

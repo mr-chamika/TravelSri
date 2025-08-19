@@ -273,7 +273,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div className="border-r pr-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Package Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || 'Not specified'}</div>
+                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hotel Name</label>
@@ -340,7 +340,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Travel Schedule</label>
                 <div className="bg-yellow-50 p-2 rounded border border-yellow-200 text-sm">
-                  <span className="font-medium">Group Trip Package:</span> {editedQuotation.packageName || 'Not specified'}
+                  <span className="font-medium">Group Trip Package:</span> {editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}
                 </div>
               </div>
             </div>
@@ -792,7 +792,7 @@ const QuotationsManagement = () => {
   
   // Form state for new hotel accommodation quotation
   const blankQuotation = {
-    packageName: '',
+    packageName: 'Custom Group Package',
     contactPersonName: hotelData.managerName, // Pre-fill with hotel manager name
     contactEmail: hotelData.email, // Pre-fill with hotel email
     contactPhone: hotelData.phone, // Pre-fill with hotel phone
@@ -1336,6 +1336,50 @@ const QuotationsManagement = () => {
     }
   };
   
+  // Calculate duration between two dates
+  const calculateDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return 0;
+    
+    try {
+      let start, end;
+      
+      // Handle different date formats (similar to formatDate function)
+      if (startDate instanceof Date) {
+        start = startDate;
+      } else if (typeof startDate === 'string') {
+        start = new Date(startDate);
+      } else if (startDate && startDate.year && startDate.month && startDate.day) {
+        start = new Date(startDate.year, startDate.month - 1, startDate.day);
+      } else {
+        start = new Date(startDate);
+      }
+      
+      if (endDate instanceof Date) {
+        end = endDate;
+      } else if (typeof endDate === 'string') {
+        end = new Date(endDate);
+      } else if (endDate && endDate.year && endDate.month && endDate.day) {
+        end = new Date(endDate.year, endDate.month - 1, endDate.day);
+      } else {
+        end = new Date(endDate);
+      }
+      
+      // Check if dates are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return 0;
+      }
+      
+      // Calculate difference in days
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays;
+    } catch (err) {
+      console.error('Duration calculation error:', err);
+      return 0;
+    }
+  };
+  
   // Show flash message
   const showFlashMessage = (message, type = 'success') => {
     setFlashMessage({ visible: true, message, type });
@@ -1414,6 +1458,12 @@ const QuotationsManagement = () => {
         return;
       }
       
+      // Validate package name - ensure it's not empty
+      if (!newQuotation.packageName || newQuotation.packageName.trim() === '') {
+        showFlashMessage('Please provide a Group Package Name', 'error');
+        return;
+      }
+      
       // Calculate total amount
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
@@ -1421,6 +1471,9 @@ const QuotationsManagement = () => {
       // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
         ...newQuotation,
+        packageName: newQuotation.packageName.trim() || 'Custom Group Package', // Keep for frontend consistency
+        pendingTripName: newQuotation.packageName.trim() || 'Custom Group Package', // Backend field name
+        pendingTripId: newQuotation.originalTripId || '', // Map original trip ID to backend field
         accommodationType: "Group Accommodation", // Generic accommodation type
         roomDistributions: [], // Empty array as room distribution will be decided later
         totalAmount: accommodationTotal,
@@ -1447,8 +1500,10 @@ const QuotationsManagement = () => {
       
       // Call the API to create quotation
       console.log('Sending quotation data:', quotationToAdd);
+      console.log('Package name being sent to database:', quotationToAdd.packageName);
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       console.log('Created quotation response:', createdQuotation);
+      console.log('Package name in response:', createdQuotation.packageName || createdQuotation.pendingTripName);
       
       // Even if the API call fails with 401 but returns a mock object, we proceed
       // to give the user a better experience, but we won't refetch the list from API
@@ -2044,7 +2099,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             Package Information
           </h4>
           <div className="bg-yellow-50 p-4 rounded-lg">
-            <h5 className="font-medium text-lg">{quotation.packageName || 'N/A'}</h5>
+            <h5 className="font-medium text-lg">{quotation.packageName || quotation.pendingTripName || 'Custom Package'}</h5>
             <p className="text-gray-600">Accommodation Type: {quotation.accommodationType || 'Standard'}</p>
           </div>
         </section>
@@ -2567,28 +2622,31 @@ const StatusBadge = ({ status }) => {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Quote #
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Quote Number
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Package Name
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Accommodation Type
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-in Date
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Check-In Date
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-out Date
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Duration
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Group Size
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Quote Amount
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Amount
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -2596,72 +2654,70 @@ const StatusBadge = ({ status }) => {
           <tbody className="divide-y divide-gray-200">
             {currentQuotations.length === 0 ? (
               <tr>
-                <td colSpan="8" className="py-6 text-center text-gray-500">
-                  {isLoading ? 'Loading quotations...' : 'No quotations found.'}
+                <td colSpan="9" className="py-6 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="material-icons text-3xl text-gray-300 mb-2">inbox</span>
+                    <p>No quotations found.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
-              currentQuotations.map((q) => (
-                <tr key={q.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4">{q.quoteNumber}</td>
+              currentQuotations.map((q, index) => (
+                <tr 
+                  key={q.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleViewDetails(q)}
+                >
                   <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium">{q.packageName || 'Group Package'}</p>
-                      <p className="text-xs text-gray-500">{q.contactPersonName} ({q.contactEmail})</p>
-                    </div>
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md text-xs font-medium">
+                      {q.quoteNumber}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">{q.accommodationType || 'Hotel'}</td>
-                  <td className="py-3 px-4">{formatDate(q.departureDate || q.checkInDate)}</td>
-                  <td className="py-3 px-4">{q.groupSize} people</td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col">
-                      <p className="text-sm">{q.status}</p>
-                      {q.reviewDate && (
-                        <span className="text-xs text-gray-500">
-                          {formatDate(q.reviewDate)}
-                        </span>
-                      )}
-                    </div>
+                  <td className="py-3 px-4 font-medium">
+                    {q.packageName || q.pendingTripName || 'Custom Package'}
                   </td>
                   <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium">LKR {q.totalAmount?.toFixed(2)}</p>
-                      {q.discountOffered > 0 && (
-                        <p className="text-xs text-green-600">
-                          {q.discountOffered}% discount
-                        </p>
-                      )}
+                    {formatDate(q.departureDate || q.checkInDate)}
+                  </td>
+                  <td className="py-3 px-4">
+                    {formatDate(q.returnDate || q.checkOutDate)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="material-icons text-yellow-500 text-xs mr-1">schedule</span>
+                      {calculateDuration(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} days
                     </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="material-icons text-yellow-500 text-xs mr-1">group</span>
+                      {q.groupSize} people
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                      q.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                      q.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                      q.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {q.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 font-medium">
+                    LKR {q.totalAmount ? q.totalAmount.toFixed(2) : '0.00'}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
-                      <button 
-                        className="bg-yellow-300 hover:bg-yellow-400 text-black px-3 py-1 rounded-md text-xs font-medium flex items-center"
-                        onClick={() => handleViewDetails(q)}
-                      >
-                        <span className="material-icons text-xs mr-1">visibility</span> View
-                      </button>
                       <button
-                        onClick={() => {
-                          // Log information about the quotation for debugging
-                          console.log("Delete clicked for quotation:", {
-                            id: q.id,
-                            quoteNumber: q.quoteNumber,
-                          });
-                          
-                          // Check if we have either an ID or a quote number
-                          if ((q.id !== undefined && q.id !== null && q.id !== '') || q.quoteNumber) {
-                            console.log(`Initiating deletion of quotation with ${q.id ? 'ID: ' + q.id : 'Quote #: ' + q.quoteNumber}`);
-                            handleDeleteClick(q);
-                          } else {
-                            console.error("Cannot delete: both quotation ID and quote number are invalid");
-                            showFlashMessage('Cannot delete: invalid quotation identifier', 'error');
-                          }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(q);
                         }}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-xs font-medium flex items-center"
-                        disabled={isLoading}
+                        className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded-md text-xs flex items-center"
                       >
-                        <span className="material-icons text-xs mr-1">delete</span> Delete
+                        <span className="material-icons text-xs mr-1">visibility</span>
+                        View
                       </button>
                     </div>
                   </td>
