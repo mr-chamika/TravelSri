@@ -1,5 +1,6 @@
 package com.example.student.controller;
 
+import com.example.student.model.Notification;
 import com.example.student.model.dto.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -24,6 +25,14 @@ public class NotificationController {
     @MessageMapping("/toAll")
     @SendTo("/topic/messages")
     public String sendMessage(final Message message) throws Exception{
+
+        Notification notification = new Notification();
+
+        notification.setMessage(message.getText());
+        notification.setRecipientId(message.getTo());
+        notification.setType("public");
+
+
 
         return message.getText();
 

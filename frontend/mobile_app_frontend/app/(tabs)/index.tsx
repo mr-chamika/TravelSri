@@ -6,8 +6,7 @@ import { Image } from 'expo-image'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from 'jwt-decode';
 import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
-import Stomp from 'stompjs'
+
 
 
 cssInterop(Image, { className: "style" });
@@ -69,37 +68,36 @@ export default function Index() {
   const [search, setSearch] = useState('');
   const [username, setUsername] = useState('')
   const [trips, setTrips] = useState<Trip[]>([])
-  const [stompClient, setStompClient] = useState<Stomp.Client | null>(null);
-  const [privateStompClient, setPrivateStompClient] = useState<Stomp.Client | null>(null);
+  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
 
 
   //
-
+  //broadcast notifications
   useEffect(() => {
-    const socket = new SockJS('http://localhost:8080/ws')
-    const client = Stomp.over(socket)
-    client.connect({}, function (frame?: Stomp.Frame) {
-      if (frame) {
 
-        console.log('Connected to STOMP server')
-        setStompClient(client)
+    const client = new Client({
 
-        client?.subscribe('/topic/messages', function (result: Stomp.Message) {
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
 
-          console.log("message:", result.body)
+        console.log('Connected to public STOMP server');
+        client.subscribe('/topic/messages', (message) => {
+
+          console.log("message:", message.body)
 
         })
       }
 
     })
 
+    client.activate();
+    setStompClient(client)
+
     return () => {
 
-      if (client?.connected) {
-        client.disconnect(() => {
-          console.log("STOMP client disconnected.");
-        });
-      }
+      client.deactivate();
     };
 
   }, [])
@@ -109,11 +107,20 @@ export default function Index() {
 
     var text = "publicsss notification"
 
-    if (stompClient?.connected) {
-      stompClient.send("/app/toAll", {}, JSON.stringify({ 'text': text }))
-      console.log("Message sent:", text);
+    if (stompClient && stompClient.connected) {
+
+      stompClient.publish({
+
+        destination: '/app/toAll',
+        body: JSON.stringify({ 'text': text })
+
+      })
+      console.log("Message sent:", text)
+
     } else {
-      console.log("STOMP client is not connected. Message not sent.");
+
+      console.log("STOMP client is not connected. Message not sent.")
+
     }
   }
 
@@ -123,53 +130,54 @@ export default function Index() {
   // Use useEffect to manage the connection lifecycle
   useEffect(() => {
 
-    // Add a function to handle the private connection and subscription
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('Connected to private STOMP server');
+        setPrivateStompClient(client);
+
+        client.subscribe(`/user/queue/notifications`, (message) => {
+          console.log("Private message for you : ", message.body);
+        });
+      },
+      onStompError: (frame) => {
+
+        console.error('Additional details: ' + frame.body)
+
+      }
+
+    })
+
     const connectAndSubscribePrivate = async () => {
       const keys = await AsyncStorage.getItem("token");
       if (keys) {
-        const { id } = jwtDecode(keys) as MyToken;
 
-        const privateSocket = new SockJS('http://localhost:8080/ws');
-        const privateClient = Stomp.over(privateSocket);
-
-        const connectHeaders = {
+        client.connectHeaders = {
           Authorization: `Bearer ${keys}`,
         };
 
-        // ADD TH INE to see the headers in your client console
-        console.log("Client is attempting to connect with these headers:", connectHeaders);
+        client.activate();
+        setPrivateStompClient(client)
 
+        console.log("Client is attempting to connect with these headers:", client.connectHeaders);
 
-        // Reconnection logic is now in the error callback of connect()
-        privateClient.connect(connectHeaders, (frame) => {
-          console.log('Connected to private STOMP server');
-          setPrivateStompClient(privateClient);
-          console.log(frame)
-          // Corrected subscriptin URL using the user ID
-          privateClient.subscribe(`/user/queue/notifications`, (result: Stomp.Message) => {
-            console.log("Private message for user", id, ":", result.body);
-          });
-        })
-
-        return privateClient;
       }
-      return null; // Return nll if there's no token
+
     };
-    // jj the async function to connect
-    const privateClientPromise = connectAndSubscribePrivate();
+    connectAndSubscribePrivate();
 
     // Cleanup function
     return () => {
       // This part is fine and will handle cleanup when the component unmounts
-      if (privateClientPromise && privateClientPromise.then) {
-        privateClientPromise.then(client => {
-          if (client?.connected) {
-            client.disconnect(() => {
-              console.log("Private STOMP client disconnected.");
-            });
-          }
-        });
+      if (client) {
+
+        client.deactivate();
+        console.log("Private STOMP client disconnected.");
+
       }
+
     };
   }, []);
 
@@ -177,10 +185,16 @@ export default function Index() {
 
     var text = "private notification"
 
-    if (privateStompClient?.connected) {
-      privateStompClient.send("/app/private", {}, JSON.stringify({ 'text': text, 'to': userId }))
-      console.log("Message sent:", text);
-      console.log("To:", userId);
+    if (privateStompClient && privateStompClient.connected) {
+      privateStompClient.publish({
+
+        destination: "/app/private",
+        body: JSON.stringify({ 'text': text, 'to': userId })
+
+      })
+
+      console.log("Message sent to : ", userId)
+
     } else {
       console.log("STOMP client is not connected. Private Message not sent.");
     }
