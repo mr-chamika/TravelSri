@@ -2102,7 +2102,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
           </h4>
           <div className="bg-yellow-50 p-4 rounded-lg">
             <h5 className="font-medium text-lg">{quotation.packageName || quotation.pendingTripName || 'Custom Package'}</h5>
-            <p className="text-gray-600">Accommodation Type: {quotation.accommodationType || 'Standard'}</p>
+            {/* <p className="text-gray-600">Accommodation Types: {quotation.accommodationType || 'Standard'}</p> */}
           </div>
         </section>
         
@@ -2113,14 +2113,14 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             Contact Information
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            {/* <div>
               <h5 className="font-medium mb-2">Client Details</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p><strong>Contact Person:</strong> {quotation.contactPersonName}</p>
                 <p><strong>Email:</strong> {quotation.contactEmail}</p>
                 <p><strong>Phone:</strong> {quotation.contactPhone}</p>
               </div>
-            </div>
+            </div> */}
             <div>
               <h5 className="font-medium mb-2">Hotel Details</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -2128,7 +2128,6 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                 <p><strong>Contact Person:</strong> {quotation.managerName || hotelData.managerName}</p>
                 <p><strong>Contact Email:</strong> {quotation.contactEmail || hotelData.email}</p>
                 <p><strong>Contact Phone:</strong> {quotation.contactPhone || hotelData.phone}</p>
-                <p><strong>Accommodation Type:</strong> {quotation.accommodationType}</p>
               </div>
             </div>
           </div>
@@ -2193,61 +2192,331 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             </div>
           </div>
         </section>
-        
-        {/* Price Details */}
+
+        {/* Final Quotation Summary Card */}
         <section className="mb-6">
           <h4 className="text-lg font-medium mb-3 flex items-center">
-            <span className="material-icons mr-2 text-green-600">payments</span>
-            Price Details
+            <span className="material-icons mr-2 text-yellow-600">attach_money</span>
+            Price Calculation
           </h4>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <div className="text-gray-600">Price Per Person:</div>
-              <div className="text-right font-medium">
-                LKR {quotation.pricePerPersonPerNight || 0} per person/night
+          
+          <div className="bg-yellow-50 border border-yellow-100 rounded-lg overflow-hidden">
+            <div className="bg-yellow-100 px-4 py-2 border-b border-yellow-200">
+              <h5 className="font-medium flex items-center">
+                <span className="material-icons mr-2 text-sm">calculate</span>
+                Quote Calculation
+              </h5>
+            </div>
+            <div className="p-4">
+              {/* Price Summary at a glance */}
+              <div className="mb-4 bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-center mb-2 border-b pb-2">
+                  <span className="font-medium text-lg flex items-center">
+                    <span className="material-icons text-yellow-600 mr-2">summarize</span>
+                    Price Summary
+                  </span>
+                  <span className="font-bold text-lg text-yellow-700">
+                    LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="col-span-2 text-center bg-yellow-50 py-1 mb-1 rounded">
+                    <span className="font-medium">Base Rate: LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} per person/night</span>
+                  </div>
+                  
+                  <div className="text-gray-600">Total Per Person:</div>
+                  <div className="text-right font-medium">LKR {quotation.groupSize ? 
+                    ((quotation.finalAmount || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100))) / quotation.groupSize).toFixed(2) : '0.00'}</div>
+                  
+                  <div className="text-gray-600">Group Size:</div>
+                  <div className="text-right">{quotation.groupSize} people</div>
+                  
+                  <div className="text-gray-600">Duration:</div>
+                  <div className="text-right">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                  
+                  <div className="text-gray-600 border-t pt-1 mt-1">Total Amount:</div>
+                  <div className="text-right font-medium border-t pt-1 mt-1">LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* Accommodation price breakdown */}
+              <div className="mb-3 bg-white rounded-lg p-3 border border-gray-100">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-medium flex items-center">
+                    <span className="material-icons text-yellow-600 text-sm mr-1">hotel</span>
+                    Accommodation
+                  </span>
+                  <span>Group Accommodation</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-gray-600">Price Per Person:</div>
+                  <div className="text-right">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')}/night</div>
+                  
+                  <div className="text-gray-600">Group Size:</div>
+                  <div className="text-right">{quotation.groupSize} people</div>
+                  
+                  <div className="text-gray-600">Nights:</div>
+                  <div className="text-right">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                  
+                  <div className="text-gray-600">Accommodation Formula:</div>
+                  <div className="text-right text-xs">
+                    LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} × {quotation.groupSize} people × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights
+                  </div>
+                  
+                  <div className="text-gray-600 font-medium">Accommodation Subtotal:</div>
+                  <div className="text-right font-medium text-yellow-700">
+                    LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                  </div>
+                </div>
               </div>
               
-              <div className="text-gray-600">Group Size:</div>
-              <div className="text-right font-medium">{quotation.groupSize} people</div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="text-gray-600 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">nightlife</span>
+                  Stay Duration:
+                </div>
+                <div className="text-right font-medium">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                
+                <div className="text-gray-600 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">groups</span>
+                  Group Size:
+                </div>
+                <div className="text-right font-medium">{quotation.groupSize} people</div>
+                
+                <div className="text-gray-600 border-b pb-2 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">apartment</span>
+                  Accommodation Subtotal:
+                </div>
+                <div className="text-right font-medium border-b pb-2">
+                  LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                </div>
+                
+                {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 && (
+                  <>
+                    <div className="text-gray-600 flex items-center">
+                      <span className="material-icons text-yellow-600 text-sm mr-2">restaurant</span>
+                      Meal Plan ({quotation.mealPlan}):
+                    </div>
+                    <div className="text-right font-medium">
+                      LKR {(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 col-span-2">
+                      <div className="flex justify-between">
+                        <span>LKR {quotation.mealPlanPricePerPerson || 0}/person/day × {quotation.groupSize} people × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} days</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {quotation.airportTransfer && quotation.transportationPrice > 0 && (
+                  <>
+                    <div className="text-gray-600 flex items-center">
+                      <span className="material-icons text-yellow-600 text-sm mr-2">pool</span>
+                      Pool Facilities:
+                    </div>
+                    <div className="text-right font-medium">
+                      LKR {quotation.transportationPrice?.toFixed(2) || '0.00'}
+                    </div>
+                  </>
+                )}
+                
+                <div className="text-gray-700 font-medium border-t border-gray-200 pt-2 mt-2 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                  Subtotal:
+                </div>
+                <div className="text-right font-medium border-t border-gray-200 pt-2 mt-2">
+                  LKR {((quotation.totalAmount || 0) + 
+                    (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                    (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                </div>
+                
+                {quotation.discountOffered > 0 && (
+                  <>
+                    <div className="text-green-600 flex items-center">
+                      <span className="material-icons text-green-600 text-sm mr-2">discount</span>
+                      Discount ({quotation.discountOffered}%):
+                    </div>
+                    <div className="text-right text-green-600 font-medium">
+                      -LKR {((quotation.totalAmount || 0) * (quotation.discountOffered || 0) / 100).toFixed(2)}
+                    </div>
+                  </>
+                )}
+              </div>
               
-              <div className="text-gray-600">Stay Duration:</div>
-              <div className="text-right font-medium">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
-              
-              <div className="text-gray-600">Accommodation Subtotal:</div>
-              <div className="text-right font-medium">LKR {quotation.totalAmount.toFixed(2)}</div>
-              
-              {quotation.mealPlanPricePerPerson > 0 && (
-                <>
-                  <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
-                  <div className="text-right font-medium">
-                    LKR {(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+              <div className="bg-yellow-100 p-4 rounded-lg border border-yellow-200 shadow-md">
+                <div className="flex justify-between font-bold text-lg">
+                  <span className="flex items-center">
+                    <span className="material-icons mr-2">payments</span>
+                    Final Quotation Total:
+                  </span>
+                  <span className="font-bold text-xl text-yellow-800">
+                    LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                  </span>
+                </div>
+                
+                {/* Comprehensive price breakdown with visual enhancements */}
+                <div className="mt-3 bg-white p-4 rounded border border-yellow-100 shadow-sm">
+                  <h6 className="font-medium text-yellow-800 flex items-center mb-3 border-b border-yellow-100 pb-1">
+                    <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                    Complete Price Breakdown
+                  </h6>
+                  
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded">
+                      Base Accommodation
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Room Rate:</div>
+                    <div className="text-gray-600">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} × {quotation.groupSize} people</div>
+                    <div className="text-right font-medium">
+                      LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * quotation.groupSize).toFixed(2)}/night
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Stay Duration:</div>
+                    <div className="text-gray-600">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                    <div className="text-right">×{calculateNights(quotation.checkInDate, quotation.checkOutDate)}</div>
+                    
+                    <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1">Accommodation Total:</div>
+                    <div className="border-t border-gray-100 pt-1"></div>
+                    <div className="text-right font-medium border-t border-gray-100 pt-1">
+                      LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                    </div>
+                    
+                    <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded mt-2">
+                      Add-on Services
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                      {quotation.mealPlan || 'No Meal Plan'}:
+                    </div>
+                    <div className="text-gray-600">
+                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
+                      `LKR ${quotation.mealPlanPricePerPerson || 0} × ${quotation.groupSize} people × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                    </div>
+                    <div className="text-right">
+                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? `LKR ${(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">pool</span>
+                      Pool Facilities:
+                    </div>
+                    <div className="text-gray-600">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice || 2000} (flat fee)` : '-'}
+                    </div>
+                    <div className="text-right">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice?.toFixed(2) || '0.00'}` : 'LKR 0.00'}
+                    </div>
+                    
+                    <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                      Subtotal (before discount):
+                    </div>
+                    <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                    <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1">
+                      LKR {((quotation.totalAmount || 0) + 
+                        (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                        (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                    </div>
+                    
+                    {quotation.discountOffered > 0 && (
+                      <>
+                        <div className="text-green-600 font-medium pl-2 flex items-center">
+                          <span className="material-icons text-green-600 text-xs mr-1">discount</span>
+                          Discount ({quotation.discountOffered}%):
+                        </div>
+                        <div className="text-green-600">
+                          {quotation.discountOffered}% of LKR {((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                        </div>
+                        <div className="text-right text-green-600 font-medium">
+                          -LKR {(((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100).toFixed(2)}
+                        </div>
+                        
+                        <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                          Final Amount (after discount):
+                        </div>
+                        <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                        <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1 text-yellow-700">
+                          LKR {(((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
-              
-              {quotation.airportTransfer && quotation.transportationPrice > 0 && (
-                <>
-                  <div className="text-gray-600">Pool Facilities:</div>
-                  <div className="text-right font-medium">
-                    LKR {quotation.transportationPrice.toFixed(2)}
+                </div>
+                
+                <div className="mt-4 bg-blue-50 p-3 rounded border border-blue-100 shadow-sm">
+                  <h6 className="font-medium text-blue-800 flex items-center mb-2 border-b border-blue-100 pb-1">
+                    <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                    Per Person Cost Breakdown
+                  </h6>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-gray-600 pl-2">Accommodation:</div>
+                    <div className="text-gray-600">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')}/night × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                    <div className="text-right font-medium">
+                      LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Meal Plan ({quotation.mealPlan || 'None'}):</div>
+                    <div className="text-gray-600">
+                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
+                      `LKR ${quotation.mealPlanPricePerPerson}/day × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                    </div>
+                    <div className="text-right font-medium">
+                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
+                      `LKR ${(quotation.mealPlanPricePerPerson * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Pool Facilities:</div>
+                    <div className="text-gray-600">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? 'Included (shared)' : 'Not included'}
+                    </div>
+                    <div className="text-right font-medium">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? 
+                      `LKR ${(quotation.transportationPrice / quotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
+                    </div>
+                    
+                    {quotation.discountOffered > 0 && (
+                      <>
+                        <div className="text-green-600 pl-2">Discount ({quotation.discountOffered}%):</div>
+                        <div className="text-green-600">Applied to total</div>
+                        <div className="text-right text-green-600 font-medium">
+                          -LKR {(((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
+                        </div>
+                      </>
+                    )}
+                    
+                    <div className="text-gray-700 font-medium border-t border-blue-100 pt-1 mt-1 pl-2">
+                      Total Per Person:
+                    </div>
+                    <div className="border-t border-blue-100 pt-1 mt-1"></div>
+                    <div className="text-right font-medium border-t border-blue-100 pt-1 mt-1 text-blue-700">
+                      LKR {quotation.groupSize ? 
+                        (((quotation.totalAmount || 0) + 
+                          (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                          (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100) / quotation.groupSize).toFixed(2) : '0.00'}
+                    </div>
                   </div>
-                </>
-              )}
-              
-              {quotation.discountOffered > 0 && (
-                <>
-                  <div className="text-green-600">Discount ({quotation.discountOffered}%):</div>
-                  <div className="text-right text-green-600 font-medium">
-                    -LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}
+                  
+                  <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-1 rounded flex items-center justify-center">
+                    <span className="material-icons text-xs mr-1">info</span>
+                    This is what each person will pay for the full accommodation package.
                   </div>
-                </>
-              )}
-            </div>
-            
-            <div className="border-t border-green-200 pt-2 mt-2">
-              <div className="flex justify-between items-center font-bold text-lg">
-                <span>Final Amount:</span>
-                <span>LKR {quotation.finalAmount?.toFixed(2) || (quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-600 flex items-center bg-yellow-50 p-2 rounded">
+                  <span className="material-icons text-yellow-600 mr-2">info</span>
+                  This total amount will be the final quotation price sent to the group trip coordinator.
+                </div>
               </div>
             </div>
           </div>
