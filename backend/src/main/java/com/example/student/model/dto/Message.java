@@ -8,5 +8,6 @@ import lombok.NoArgsConstructor;
 public class Message {
 
     private String text;
+    private String to;
 
 }

@@ -6,8 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
@@ -26,12 +29,13 @@ public class Hashingpw {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(withDefaults()) // Apply the global CORS configuration
-                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/user/signup",
                                 "/user/login",
+                                "/ws/**",
+                                "/ws",
+                                "/system/**",
+                                "/user/signup",
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
@@ -161,16 +165,25 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating",
-                                "/system/**",
-                                "/ws/**"
+                                "/reviews/by-rating"
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
+
+                )
+                .formLogin(form -> form
+                        .loginPage("/user/login") // Specify a custom login page
+                        .usernameParameter("email")
+                        .permitAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .httpBasic(basic->basic.disable()) // Use Basic Auth for the secured endpoints
-.formLogin(form -> form.disable());
+                .cors(withDefaults()) // Apply the global CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .formLogin(form -> form.disable())
+                .httpBasic(basic->basic.disable()) ;// Use Basic Auth for the secured endpoints
+        //.formLogin(form -> form.disable());
+
 
         return http.build();
     }
+
 }

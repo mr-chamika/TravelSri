@@ -70,10 +70,11 @@ export default function Index() {
   const [username, setUsername] = useState('')
   const [trips, setTrips] = useState<Trip[]>([])
   const [stompClient, setStompClient] = useState<Stomp.Client | null>(null);
+  const [privateStompClient, setPrivateStompClient] = useState<Stomp.Client | null>(null);
 
 
   //
-  //var stompClient: Stomp.Client | null = null;
+
   useEffect(() => {
     const socket = new SockJS('http://localhost:8080/ws')
     const client = Stomp.over(socket)
@@ -82,7 +83,7 @@ export default function Index() {
 
         console.log('Connected to STOMP server')
         setStompClient(client)
-        // console.log(frame);
+
         client?.subscribe('/topic/messages', function (result: Stomp.Message) {
 
           console.log("message:", result.body)
@@ -93,7 +94,7 @@ export default function Index() {
     })
 
     return () => {
-      // Disconnect on component unmount
+
       if (client?.connected) {
         client.disconnect(() => {
           console.log("STOMP client disconnected.");
@@ -102,6 +103,8 @@ export default function Index() {
     };
 
   }, [])
+
+
   const sendMessage = () => {
 
     var text = "publicsss notification"
@@ -111,6 +114,75 @@ export default function Index() {
       console.log("Message sent:", text);
     } else {
       console.log("STOMP client is not connected. Message not sent.");
+    }
+  }
+
+  // Add a function to handle the private connection and subscription
+
+
+  // Use useEffect to manage the connection lifecycle
+  useEffect(() => {
+
+    // Add a function to handle the private connection and subscription
+    const connectAndSubscribePrivate = async () => {
+      const keys = await AsyncStorage.getItem("token");
+      if (keys) {
+        const { id } = jwtDecode(keys) as MyToken;
+
+        const privateSocket = new SockJS('http://localhost:8080/ws');
+        const privateClient = Stomp.over(privateSocket);
+
+        const connectHeaders = {
+          Authorization: `Bearer ${keys}`,
+        };
+
+        // ADD TH INE to see the headers in your client console
+        console.log("Client is attempting to connect with these headers:", connectHeaders);
+
+
+        // Reconnection logic is now in the error callback of connect()
+        privateClient.connect(connectHeaders, (frame) => {
+          console.log('Connected to private STOMP server');
+          setPrivateStompClient(privateClient);
+          console.log(frame)
+          // Corrected subscriptin URL using the user ID
+          privateClient.subscribe(`/user/queue/notifications`, (result: Stomp.Message) => {
+            console.log("Private message for user", id, ":", result.body);
+          });
+        })
+
+        return privateClient;
+      }
+      return null; // Return nll if there's no token
+    };
+    // jj the async function to connect
+    const privateClientPromise = connectAndSubscribePrivate();
+
+    // Cleanup function
+    return () => {
+      // This part is fine and will handle cleanup when the component unmounts
+      if (privateClientPromise && privateClientPromise.then) {
+        privateClientPromise.then(client => {
+          if (client?.connected) {
+            client.disconnect(() => {
+              console.log("Private STOMP client disconnected.");
+            });
+          }
+        });
+      }
+    };
+  }, []);
+
+  const sendPrivateMessage = (userId: string) => {
+
+    var text = "private notification"
+
+    if (privateStompClient?.connected) {
+      privateStompClient.send("/app/private", {}, JSON.stringify({ 'text': text, 'to': userId }))
+      console.log("Message sent:", text);
+      console.log("To:", userId);
+    } else {
+      console.log("STOMP client is not connected. Private Message not sent.");
     }
   }
 
@@ -280,6 +352,9 @@ export default function Index() {
 
         <TouchableOpacity onPress={sendMessage}>
           <Text>test</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
+          <Text>private</Text>
         </TouchableOpacity>
 
       </View>
