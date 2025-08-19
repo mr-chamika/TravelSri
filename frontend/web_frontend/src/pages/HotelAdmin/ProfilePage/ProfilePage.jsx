@@ -1,52 +1,104 @@
 import React, { useState, useEffect } from 'react';
 import roomService from '../../../services/roomService';
+import hotelProfileService from '../../../services/hotelProfileService';
+import { useHotel } from '../../../contexts/HotelContext';
+import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
+  const { hotel, loading: hotelLoading, updateHotelProfile } = useHotel();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [formData, setFormData] = useState({
-    hotelName: 'Shangri-La Hotel',
-    address: '123 Beach Road, Colombo, Sri Lanka',
-    email: 'info@shangrilahotel.com',
-    phone: '+94 11 234 5678',
-    website: 'www.shangrilahotel.com',
-    description: 'Luxury beachfront hotel offering premium amenities, world-class dining, and exceptional service. Located in the heart of Colombo with easy access to attractions.',
-    checkInTime: '16:00',
-    checkOutTime: '08:00',
-    starRating: 5,
-    facilities: [
-      'Wi-Fi', 'Swimming Pool', 'Restaurant', 'Bar', 'Spa', 
-      'Gym', 'Conference Room', 'Room Service', 'Airport Shuttle'
-    ],
+    hotelName: '',
+    address: '',
+    email: '',
+    phone: '',
+    website: '',
+    description: '',
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
+    starRating: 3,
+    facilities: [],
     roomTypes: [],
-    paymentOptions: ['Credit Card', 'Cash', 'Bank Transfer'],
+    paymentOptions: ['Credit Card', 'Cash'],
     bankDetails: {
-      accountName: 'Shangrila Hotel Ltd.',
-      accountNumber: '0123456789',
-      bankName: 'Bank of Ceylon',
-      branch: 'Colombo Main',
-      swiftCode: 'BCEYLKLX'
+      accountName: '',
+      accountNumber: '',
+      bankName: '',
+      branch: '',
+      swiftCode: ''
     }
   });
 
   const [formErrors, setFormErrors] = useState({});
 
+  // Update form data when hotel profile loads from context
+  useEffect(() => {
+    if (hotel) {
+      setIsProfileLoading(false);
+      // Map the backend data structure to our form structure
+      setFormData(prevData => ({
+        ...prevData,
+        hotelName: hotel.hotelName || '',
+        address: hotel.hotelAddress || '',
+        email: hotel.email || '',
+        phone: hotel.phoneNumber || '',
+        website: hotel.website || '',
+        description: hotel.description || '',
+        // Convert check-in/out times to proper format if available
+        checkInTime: hotel.checkInTime || '14:00',
+        checkOutTime: hotel.checkOutTime || '12:00',
+        starRating: hotel.stars || hotel.starRating || 3,
+        // Use facilities from profile if available, otherwise keep defaults
+        facilities: hotel.facilities || prevData.facilities,
+        // Payment options might not be in the backend model
+        paymentOptions: hotel.paymentOptions || prevData.paymentOptions,
+        // Set bank details if available
+        bankDetails: {
+          accountName: hotel.bankDetails?.accountName || '',
+          accountNumber: hotel.bankDetails?.accountNumber || '',
+          bankName: hotel.bankDetails?.bankName || '',
+          branch: hotel.bankDetails?.branch || '',
+          swiftCode: hotel.bankDetails?.swiftCode || ''
+        }
+      }));
+      console.log('Hotel profile loaded from context:', hotel);
+    }
+  }, [hotel]);
+
   // Fetch room inventory data when component mounts
   useEffect(() => {
+    // Fetch room inventory data
     const fetchRoomInventory = async () => {
       setIsLoading(true);
       try {
         // Get all rooms from the API
         const rooms = await roomService.getAllRooms();
         
+        if (!rooms || rooms.length === 0) {
+          console.log('No rooms found or empty response');
+          // Set some default room types as a fallback
+          setFormData(prevData => ({
+            ...prevData,
+            roomTypes: [
+              { name: 'Standard Room', count: 0 },
+              { name: 'Deluxe Room', count: 0 },
+              { name: 'Suite', count: 0 }
+            ]
+          }));
+          return;
+        }
+        
         // Group rooms by type and count them
         const roomTypeMap = {};
         
         rooms.forEach(room => {
-          if (!roomTypeMap[room.type]) {
-            roomTypeMap[room.type] = 0;
+          const roomType = room.type || room.roomType || 'Standard';
+          if (!roomTypeMap[roomType]) {
+            roomTypeMap[roomType] = 0;
           }
-          roomTypeMap[room.type]++;
+          roomTypeMap[roomType]++;
         });
         
         // Convert to the format needed for formData
@@ -58,7 +110,7 @@ const ProfilePage = () => {
         // Update form data with real room types
         setFormData(prevData => ({
           ...prevData,
-          roomTypes: roomTypesData
+          roomTypes: roomTypesData.length > 0 ? roomTypesData : prevData.roomTypes
         }));
         
         console.log('Room types loaded from database:', roomTypesData);
@@ -70,8 +122,11 @@ const ProfilePage = () => {
       }
     };
     
-    fetchRoomInventory();
-  }, []); // Empty dependency array means this runs once on mount
+    // Only fetch room inventory if we're not in profile loading state
+    if (!hotelLoading && hotel) {
+      fetchRoomInventory();
+    }
+  }, [hotelLoading, hotel]); // Dependency on hotel loading state
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -130,16 +185,44 @@ const ProfilePage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // In a real application, you would send this data to your backend
-      console.log('Form submitted:', formData);
-      
-      // Note: Room types are managed via the room inventory system
-      // and cannot be directly edited here - they reflect the actual database state
-      
-      setIsEditing(false);
+      try {
+        // Show loading state
+        setIsLoading(true);
+        
+        // Convert form data to backend model structure
+        const profileData = {
+          hotelName: formData.hotelName,
+          hotelAddress: formData.address,
+          email: formData.email,
+          phoneNumber: formData.phone,
+          website: formData.website,
+          description: formData.description,
+          checkInTime: formData.checkInTime,
+          checkOutTime: formData.checkOutTime,
+          stars: formData.starRating,
+          facilities: formData.facilities,
+          paymentOptions: formData.paymentOptions,
+          bankDetails: formData.bankDetails
+        };
+        
+        // Send data to backend using the context function
+        await updateHotelProfile(profileData);
+        console.log('Profile updated successfully');
+        
+        // Show success message
+        toast.success('Profile updated successfully!');
+        
+        // Exit editing mode
+        setIsEditing(false);
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        toast.error('Failed to update profile. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -175,7 +258,15 @@ const ProfilePage = () => {
         )}
       </div>
 
-      {isEditing ? (
+      {isProfileLoading ? (
+        // Loading state
+        <div className="bg-white rounded-lg shadow-sm p-6 flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
+            <p className="text-lg text-gray-600">Loading hotel profile...</p>
+          </div>
+        </div>
+      ) : isEditing ? (
         // Edit Form
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

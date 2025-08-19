@@ -1,16 +1,23 @@
 package com.example.student.services;
 
+import com.example.student.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class Hashingpw {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -22,6 +29,8 @@ public class Hashingpw {
         http
                 .cors(withDefaults()) // Apply the global CORS configuration
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Make the security context stateless
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/user/signup",
@@ -109,8 +118,9 @@ public class Hashingpw {
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
+                                "/api/admin-hotel-bookings",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}",
+                                "/api/admin-hotel-bookings/test-auth",
                                 "/auth/**",
                                 "/shopitems/all",
                                 "/shopitems/view",
@@ -155,7 +165,9 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating"
+                                "/reviews/by-rating",
+                                "/api/test/public",
+                                "/hotel-rooms/**"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

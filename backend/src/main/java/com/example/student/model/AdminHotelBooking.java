@@ -13,6 +13,7 @@ import java.time.LocalDate;
 public class AdminHotelBooking {
     @Id
     private String id;
+    private String hotelId; // Link to the hotel that owns this booking
     private String guestName;
     private String guestEmail;
     private String roomType;
