@@ -2,6 +2,7 @@ package com.example.student.controller;
 
 import com.example.student.model.Notification;
 import com.example.student.model.dto.Message;
+import com.example.student.repo.NotificationRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -18,6 +19,9 @@ public class NotificationController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private NotificationRepo notificationRepo;
+
     public NotificationController(SimpMessagingTemplate simpMessagingTemplate) {
         this.messagingTemplate = simpMessagingTemplate;
     }
@@ -32,7 +36,7 @@ public class NotificationController {
         notification.setRecipientId(message.getTo());
         notification.setType("public");
 
-
+        notificationRepo.save(notification);
 
         return message.getText();
 
