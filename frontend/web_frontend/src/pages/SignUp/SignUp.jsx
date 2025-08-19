@@ -35,6 +35,11 @@ const SignupPage = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [map, setMap] = useState(null);
+  const [autocomplete, setAutocomplete] = useState(null);
+  const [marker, setMarker] = useState(null);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   
   // Function to handle redirect to login page
   const handleLoginRedirect = (e) => {
@@ -88,30 +93,167 @@ const SignupPage = () => {
   
   // Function to load Google Maps API script
   const loadGoogleMapsScript = () => {
-    // For testing purposes - simulate the Maps API being loaded
-    setMapLoaded(true);
-    return;
-    
-    /* Uncomment this when you have an API key
     if (window.google && window.google.maps) {
       setMapLoaded(true);
       return;
     }
 
     const script = document.createElement('script');
-    // Note: Replace YOUR_API_KEY with a valid Google Maps API key
-    script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyApf662eX5O6bPf0iiXkMidkcytrIgOSzM&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = () => setMapLoaded(true);
     document.head.appendChild(script);
-    */
   };
 
   // Load Google Maps API when component mounts
   useEffect(() => {
     loadGoogleMapsScript();
   }, []);
+
+  // Initialize Google Maps when API is loaded and map should be shown
+  useEffect(() => {
+    if (mapLoaded && showMap && window.google && !map) {
+      initializeMap();
+    }
+  }, [mapLoaded, showMap]);
+
+  // Initialize mini map when location is selected
+  useEffect(() => {
+    if (selectedLocation && mapLoaded && window.google) {
+      const timer = setTimeout(() => {
+        const miniMapElement = document.getElementById('mini-map');
+        if (miniMapElement) {
+          const miniMap = new window.google.maps.Map(miniMapElement, {
+            center: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            zoomControl: true,
+            gestureHandling: 'cooperative',
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'on' }]
+              },
+              {
+                featureType: 'transit',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }]
+              }
+            ]
+          });
+          
+          new window.google.maps.Marker({
+            position: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+            map: miniMap,
+            title: selectedLocation.address,
+            icon: {
+              url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#ef4444">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              `),
+              scaledSize: new window.google.maps.Size(32, 32),
+              anchor: new window.google.maps.Point(16, 32)
+            }
+          });
+        }
+      }, 100); // Small delay to ensure DOM is ready
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectedLocation, mapLoaded]);
+
+  // Function to initialize Google Maps
+  const initializeMap = () => {
+    const mapContainer = document.getElementById('google-map');
+    if (!mapContainer) return;
+
+    // Default center on Sri Lanka
+    const defaultCenter = { lat: 7.8731, lng: 80.7718 };
+    
+    // Create map
+    const newMap = new window.google.maps.Map(mapContainer, {
+      center: selectedLocation || defaultCenter,
+      zoom: selectedLocation ? 15 : 8,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    setMap(newMap);
+
+    // Initialize autocomplete
+    const autocompleteInput = document.getElementById('autocomplete-input');
+    if (autocompleteInput) {
+      const newAutocomplete = new window.google.maps.places.Autocomplete(autocompleteInput, {
+        componentRestrictions: { country: 'lk' }, // Restrict to Sri Lanka
+        fields: ['formatted_address', 'geometry', 'address_components', 'name'],
+        types: ['establishment', 'geocode']
+      });
+
+      newAutocomplete.addListener('place_changed', () => {
+        const place = newAutocomplete.getPlace();
+        handleLocationSelect(place);
+      });
+
+      setAutocomplete(newAutocomplete);
+    }
+
+    // Add click listener to map
+    newMap.addListener('click', (event) => {
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+      
+      // Reverse geocode to get address
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          handleLocationSelect(results[0]);
+        } else {
+          // If reverse geocoding fails, create a basic place object
+          const basicPlace = {
+            formatted_address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            geometry: {
+              location: { lat: () => lat, lng: () => lng }
+            },
+            address_components: []
+          };
+          handleLocationSelect(basicPlace);
+        }
+      });
+    });
+
+    // If there's already a selected location, show it on the map
+    if (selectedLocation) {
+      updateMapMarker(newMap, selectedLocation);
+    }
+  };
+
+  // Function to update map marker
+  const updateMapMarker = (mapInstance, location) => {
+    // Remove existing marker
+    if (marker) {
+      marker.setMap(null);
+    }
+
+    // Create new marker
+    const newMarker = new window.google.maps.Marker({
+      position: { lat: location.lat, lng: location.lng },
+      map: mapInstance,
+      title: location.address || 'Selected Location',
+      animation: window.google.maps.Animation.DROP,
+    });
+
+    setMarker(newMarker);
+
+    // Center map on marker
+    mapInstance.setCenter({ lat: location.lat, lng: location.lng });
+    mapInstance.setZoom(15);
+  };
   
   // Function to handle map location selection
   const handleLocationSelect = (place) => {
@@ -147,35 +289,15 @@ const SignupPage = () => {
         }
       }
   
-      // For testing - ensure we always have some values
-      const latValue = typeof lat === 'function' ? lat() : (lat || 7.8731);
-      const lngValue = typeof lng === 'function' ? lng() : (lng || 80.7718);
+      // Get lat/lng values (handle both function and direct access)
+      const latValue = typeof lat === 'function' ? lat() : lat;
+      const lngValue = typeof lng === 'function' ? lng() : lng;
   
-      // Update form data with location information
-      // Try to extract area name from address components or formatted address
-      let baseArea = '';
-      if (place.address_components && Array.isArray(place.address_components)) {
-        // Look for neighborhood, sublocality, or landmark in address components
-        const areaComponent = place.address_components.find(component => 
-          component.types.some(type => ['neighborhood', 'sublocality', 'sublocality_level_1', 'landmark'].includes(type))
-        );
-        if (areaComponent) {
-          baseArea = areaComponent.long_name;
-        }
-      }
-      
-      // If no specific area found, try to use the formatted address parts
-      if (!baseArea && place.formatted_address) {
-        const addressParts = place.formatted_address.split(',');
-        if (addressParts.length > 1) {
-          baseArea = addressParts[1].trim();
-        }
-      }
-      
+      // Update form data with location information (baseAreaLocation should be filled manually)
       setFormData(prev => ({
         ...prev,
-        hotelAddress: address || place.formatted_address.split(',')[0] || prev.hotelAddress || '',
-        baseAreaLocation: baseArea || prev.baseAreaLocation || '',
+        hotelAddress: address || place.formatted_address?.split(',')[0] || prev.hotelAddress || '',
+        // baseAreaLocation: left for manual input - not auto-filled
         city: city || prev.city || '',
         district: district || prev.district || '',
         postalCode: postalCode || prev.postalCode || '',
@@ -185,16 +307,21 @@ const SignupPage = () => {
         }
       }));
       
-      setSelectedLocation({
+      const newLocation = {
         lat: latValue,
         lng: lngValue,
-        address: place.formatted_address
-      });
+        address: place.formatted_address || `${latValue.toFixed(6)}, ${lngValue.toFixed(6)}`
+      };
+      
+      setSelectedLocation(newLocation);
+      
+      // Update map marker if map is initialized
+      if (map) {
+        updateMapMarker(map, newLocation);
+      }
       
       showFlash('success', 'Location selected successfully!');
       
-      // Don't close map automatically for testing
-      // setShowMap(false);
     } catch (error) {
       console.error("Error processing location:", error);
       showFlash('error', 'Error selecting location. Please try again.');
@@ -665,7 +792,7 @@ const SignupPage = () => {
       // This is not a blocking error but we'll display a warning
       showFlash('info', 'Consider selecting your exact hotel location on the map for better visibility to customers');
     } else {
-      // For testing - log the location that would be sent to the backend
+      // Location data ready for backend submission
       console.log('Location data ready for backend:', {
         coordinates: formData.location,
         address: formData.hotelAddress,
@@ -896,99 +1023,6 @@ const SignupPage = () => {
 
         {/* Registration form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Account Information</h2>
-          
-          {/* Email field */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">Email Address*</label>
-            <div className="relative">
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 pl-10 border ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                placeholder="you@example.com"
-              />
-              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">email</span>
-            </div>
-            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
-          </div>
-          
-          {/* Username field */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">Username*</label>
-            <div className="relative">
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className={`w-full px-4 py-2 pl-10 border ${
-                  errors.username ? 'border-red-500' : 'border-gray-300'
-                } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                placeholder="Choose a username"
-              />
-              <span className="absolute left-3 top-2.5 text-gray-400 material-icons">person</span>
-            </div>
-            {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username}</p>}
-          </div>
-
-          {/* Password fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">Password*</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 pl-10 pr-10 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                  placeholder="••••••••"
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400 material-icons">lock</span>
-                <button
-                  type="button"
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-yellow-500"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  <span className="material-icons text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
-            </div>
-            
-            <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700">Confirm Password*</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2 pl-10 pr-10 border ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                  } rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400`}
-                  placeholder="••••••••"
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400 material-icons">lock</span>
-                <button
-                  type="button"
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-yellow-500"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  <span className="material-icons text-sm">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
-            </div>
-          </div>
-          
           <h2 className="text-lg font-semibold text-gray-700 border-b pb-2 pt-4">Hotel Information</h2>
           
           {/* Hotel name */}
@@ -1041,231 +1075,87 @@ const SignupPage = () => {
                   const newValue = !showMap;
                   setShowMap(newValue);
                   if (newValue) {
-                    // When opening map, let the user know it's in test mode
-                    showFlash('info', 'Test mode: Select a location from the options or search for a place');
+                    // When opening map, let the user know about real map functionality
+                    showFlash('info', 'Click on the map or search to select your hotel location. Real-time Google Maps data.');
                   }
                 }}
                 className="text-sm text-yellow-600 hover:text-yellow-800 flex items-center"
               >
                 <span className="material-icons text-sm mr-1">{showMap ? 'close' : 'map'}</span>
-                {showMap ? 'Close Map' : 'Select on Map (Test Mode)'}
+                {showMap ? 'Close Map' : 'Select on Map'}
               </button>
             </div>
             
+            {showMap && !mapLoaded && (
+              <div className="mb-4 relative">
+                <div className="border border-gray-300 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center" style={{ height: '400px', width: '100%' }}>
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-2"></div>
+                    <p className="text-gray-600 text-sm">Loading Google Maps...</p>
+                    <p className="text-gray-500 text-xs mt-1">Please wait while we load the interactive map</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {showMap && mapLoaded && (
               <div className="mb-4 relative">
-                <div className="border border-gray-300 rounded-md overflow-hidden bg-gray-100" style={{ height: '300px', width: '100%' }} id="map">
-                  {/* Mock map interface for testing */}
-                  <div className="p-4 h-full flex flex-col">
-                    <div className="mb-4">
-                      <input
-                        id="autocomplete-input"
-                        type="text"
-                        placeholder="Search for a location..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        defaultValue={selectedLocation?.address || ''}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            // Mock location search for testing
-                            const searchValue = e.target.value;
-                            if (searchValue) {
-                              const mockPlace = {
-                                formatted_address: searchValue,
-                                geometry: {
-                                  location: {
-                                    lat: () => 7.8731 + Math.random() * 0.1,
-                                    lng: () => 80.7718 + Math.random() * 0.1
-                                  }
-                                },
-                                address_components: [
-                                  {
-                                    long_name: searchValue.split(',')[0]?.trim() || '',
-                                    types: ['route']
-                                  },
-                                  {
-                                    long_name: searchValue.split(',')[1]?.trim() || 'Colombo',
-                                    types: ['locality']
-                                  },
-                                  {
-                                    long_name: searchValue.split(',')[2]?.trim() || 'Western Province',
-                                    types: ['administrative_area_level_2']
-                                  },
-                                  {
-                                    long_name: searchValue.split(',')[3]?.trim() || '00100',
-                                    types: ['postal_code']
-                                  }
-                                ]
-                              };
-                              handleLocationSelect(mockPlace);
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-                    
-                    <div className="flex-1 relative bg-gray-200 rounded-md overflow-hidden flex items-center justify-center">
-                      {/* Mock map image background */}
-                      <div className="absolute inset-0 bg-cover bg-center opacity-40"
-                           style={{ backgroundImage: `url('https://maps.googleapis.com/maps/api/staticmap?center=Sri+Lanka&zoom=7&size=600x400&maptype=roadmap')` }}>
-                      </div>
-                      
-                      {selectedLocation ? (
-                        <div className="text-center z-10 bg-white bg-opacity-80 p-3 rounded-md shadow-md">
-                          <div className="text-sm mb-2">
-                            <span className="font-medium">Selected Location:</span> {selectedLocation.address}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            Lat: {selectedLocation.lat.toFixed(6)}, Lng: {selectedLocation.lng.toFixed(6)}
-                          </div>
+                <div className="border border-gray-300 rounded-md overflow-hidden bg-gray-100" style={{ height: '400px', width: '100%' }}>
+                  {/* Google Maps Search Box */}
+                  <div className="absolute top-3 left-3 right-3 z-10">
+                    <input
+                      id="autocomplete-input"
+                      type="text"
+                      placeholder="Search for your hotel location..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
+                    />
+                  </div>
+                  
+                  {/* Google Maps Container */}
+                  <div id="google-map" style={{ height: '100%', width: '100%' }}></div>
+                  
+                  {/* Map Controls */}
+                  <div className="absolute bottom-3 left-3 right-3 z-10">
+                    {selectedLocation && (
+                      <div className="bg-white bg-opacity-95 p-3 rounded-md shadow-lg">
+                        <div className="text-sm mb-2">
+                          <span className="font-medium">Selected Location:</span> {selectedLocation.address}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Coordinates: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
                           <button
                             type="button"
-                            className="mt-2 text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                            className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
                             onClick={() => {
-                              // Mock selecting a random location nearby
-                              const mockPlace = {
-                                formatted_address: `${formData.hotelAddress === "hoteladmin@travelsri.com" ? "123 Main St" : (formData.hotelAddress || '123 Main St')}, ${formData.city || 'Colombo'}, ${formData.district || 'Western Province'}`,
-                                geometry: {
-                                  location: {
-                                    lat: () => 7.8731 + Math.random() * 0.1,
-                                    lng: () => 80.7718 + Math.random() * 0.1
-                                  }
-                                },
-                                address_components: [
-                                  {
-                                    long_name: formData.hotelAddress === "hoteladmin@travelsri.com" ? "123 Main St" : (formData.hotelAddress || '123 Main St'),
-                                    types: ['route']
-                                  },
-                                  {
-                                    long_name: formData.city || 'Colombo',
-                                    types: ['locality']
-                                  },
-                                  {
-                                    long_name: formData.district || 'Western Province',
-                                    types: ['administrative_area_level_2']
-                                  },
-                                  {
-                                    long_name: formData.postalCode || '00100',
-                                    types: ['postal_code']
-                                  }
-                                ]
-                              };
-                              handleLocationSelect(mockPlace);
+                              if (map && selectedLocation) {
+                                map.setCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
+                                map.setZoom(17);
+                              }
                             }}
                           >
-                            Update Location
+                            Zoom to Location
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            onClick={() => {
+                              setShowMap(false);
+                              showFlash('success', 'Location saved! You can reopen the map to select a different location.');
+                            }}
+                          >
+                            Use This Location
                           </button>
                         </div>
-                      ) : (
-                        <div className="text-center z-10 bg-white bg-opacity-80 p-4 rounded-md shadow-md">
-                          <div className="text-gray-600 mb-2">Click the buttons below to select a test location</div>
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            <button
-                              type="button"
-                              className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                              onClick={() => {
-                                const mockPlace = {
-                                  formatted_address: "Galle Face Hotel, 2 Galle Road, Colombo 00300",
-                                  geometry: {
-                                    location: {
-                                      lat: () => 6.9271,
-                                      lng: () => 79.8425
-                                    }
-                                  },
-                                  address_components: [
-                                    { long_name: "2 Galle Road", types: ['route'] },
-                                    { long_name: "Colombo", types: ['locality'] },
-                                    { long_name: "Colombo District", types: ['administrative_area_level_2'] },
-                                    { long_name: "00300", types: ['postal_code'] }
-                                  ]
-                                };
-                                handleLocationSelect(mockPlace);
-                              }}
-                            >
-                              Colombo
-                            </button>
-                            <button
-                              type="button"
-                              className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                              onClick={() => {
-                                const mockPlace = {
-                                  formatted_address: "Hotel Road, Kandy 20000",
-                                  geometry: {
-                                    location: {
-                                      lat: () => 7.2906,
-                                      lng: () => 80.6337
-                                    }
-                                  },
-                                  address_components: [
-                                    { long_name: "Hotel Road", types: ['route'] },
-                                    { long_name: "Kandy", types: ['locality'] },
-                                    { long_name: "Kandy District", types: ['administrative_area_level_2'] },
-                                    { long_name: "20000", types: ['postal_code'] }
-                                  ]
-                                };
-                                handleLocationSelect(mockPlace);
-                              }}
-                            >
-                              Kandy
-                            </button>
-                            <button
-                              type="button"
-                              className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                              onClick={() => {
-                                const mockPlace = {
-                                  formatted_address: "Beach Road, Negombo 11500",
-                                  geometry: {
-                                    location: {
-                                      lat: () => 7.2095,
-                                      lng: () => 79.8369
-                                    }
-                                  },
-                                  address_components: [
-                                    { long_name: "Beach Road", types: ['route'] },
-                                    { long_name: "Negombo", types: ['locality'] },
-                                    { long_name: "Gampaha District", types: ['administrative_area_level_2'] },
-                                    { long_name: "11500", types: ['postal_code'] }
-                                  ]
-                                };
-                                handleLocationSelect(mockPlace);
-                              }}
-                            >
-                              Negombo
-                            </button>
-                            <button
-                              type="button"
-                              className="text-xs bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                              onClick={() => {
-                                const mockPlace = {
-                                  formatted_address: "Resort Road, Galle 80000",
-                                  geometry: {
-                                    location: {
-                                      lat: () => 6.0535,
-                                      lng: () => 80.2210
-                                    }
-                                  },
-                                  address_components: [
-                                    { long_name: "Resort Road", types: ['route'] },
-                                    { long_name: "Galle", types: ['locality'] },
-                                    { long_name: "Galle District", types: ['administrative_area_level_2'] },
-                                    { long_name: "80000", types: ['postal_code'] }
-                                  ]
-                                };
-                                handleLocationSelect(mockPlace);
-                              }}
-                            >
-                              Galle
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="mt-2 flex justify-between text-xs text-gray-500">
-                      <span>This is a test map interface until API key is available</span>
-                      <span>Click buttons or search to simulate location selection</span>
-                    </div>
+                      </div>
+                    )}
                   </div>
+                </div>
+                
+                <div className="mt-2 flex justify-between text-xs text-gray-500">
+                  <span>Click on the map or search to select your hotel location</span>
+                  <span>Sri Lanka locations only</span>
                 </div>
               </div>
             )}
@@ -1288,11 +1178,120 @@ const SignupPage = () => {
               {errors.hotelAddress && <p className="mt-1 text-xs text-red-500">{errors.hotelAddress}</p>}
               
               {selectedLocation && (
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-100 rounded-md">
-                  <p className="text-xs text-yellow-800 flex items-center">
-                    <span className="material-icons text-xs mr-1">check_circle</span>
-                    Location selected successfully
-                  </p>
+                <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                  {/* Header */}
+                  <div className="bg-green-50 px-4 py-3 border-b border-green-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="material-icons text-green-600 text-sm mr-2">location_on</span>
+                        <h4 className="text-sm font-semibold text-green-800">Selected Hotel Location</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMap(true);
+                          showFlash('info', 'Map opened! Click on the map or search to select a new location.');
+                          // Scroll to map after a brief delay
+                          setTimeout(() => {
+                            const mapSection = document.querySelector('#google-map');
+                            if (mapSection) {
+                              mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                          }, 300);
+                        }}
+                        className="text-xs text-green-600 hover:text-green-800 flex items-center transition-colors"
+                      >
+                        <span className="material-icons text-xs mr-1">edit</span>
+                        Change Location
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Location Details */}
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Address Information */}
+                      <div>
+                        <div className="mb-3">
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</label>
+                          <p className="text-sm text-gray-800 mt-1">{selectedLocation.address}</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <label className="font-medium text-gray-500 uppercase tracking-wide">Latitude</label>
+                            <p className="text-gray-700 mt-1">{selectedLocation.lat.toFixed(6)}</p>
+                          </div>
+                          <div>
+                            <label className="font-medium text-gray-500 uppercase tracking-wide">Longitude</label>
+                            <p className="text-gray-700 mt-1">{selectedLocation.lng.toFixed(6)}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3 flex items-center text-xs text-gray-500">
+                          <span className="material-icons text-xs mr-1">info</span>
+                          This location will be visible to customers searching for hotels in your area
+                        </div>
+                      </div>
+                      
+                      {/* Mini Map Display */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">Map Preview</label>
+                        <div className="relative border border-gray-200 rounded-md overflow-hidden" style={{ height: '150px' }}>
+                          <div id="mini-map" style={{ height: '100%', width: '100%' }}></div>
+                          
+                          {/* Map Overlay Controls */}
+                          <div className="absolute top-2 right-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.google && selectedLocation) {
+                                  // Create or update mini map
+                                  const miniMapElement = document.getElementById('mini-map');
+                                  if (miniMapElement) {
+                                    const miniMap = new window.google.maps.Map(miniMapElement, {
+                                      center: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+                                      zoom: 15,
+                                      mapTypeControl: false,
+                                      streetViewControl: false,
+                                      fullscreenControl: false,
+                                      zoomControl: true,
+                                      gestureHandling: 'cooperative'
+                                    });
+                                    
+                                    new window.google.maps.Marker({
+                                      position: { lat: selectedLocation.lat, lng: selectedLocation.lng },
+                                      map: miniMap,
+                                      title: selectedLocation.address,
+                                      icon: {
+                                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#ef4444">
+                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                          </svg>
+                                        `),
+                                        scaledSize: new window.google.maps.Size(32, 32),
+                                        anchor: new window.google.maps.Point(16, 32)
+                                      }
+                                    });
+                                  }
+                                }
+                              }}
+                              className="bg-white bg-opacity-90 p-1 rounded shadow-sm hover:bg-opacity-100 transition-all"
+                              title="Refresh Map"
+                            >
+                              <span className="material-icons text-sm text-gray-600">refresh</span>
+                            </button>
+                          </div>
+                          
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <div className="bg-white bg-opacity-90 px-2 py-1 rounded text-xs text-gray-700 text-center">
+                              Click and drag to explore • Scroll to zoom
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -2252,7 +2251,13 @@ const SignupPage = () => {
               </div>
               <div className="ml-3 text-sm">
                 <label className="text-gray-700">
-                  I accept the <a href="#" className="text-yellow-500 hover:underline">Terms and Conditions</a>*
+                  I accept the <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="text-yellow-500 hover:underline focus:outline-none"
+                  >
+                    Terms and Conditions
+                  </button>*
                 </label>
                 {errors.acceptTerms && <p className="mt-1 text-xs text-red-500">{errors.acceptTerms}</p>}
               </div>
@@ -2272,7 +2277,13 @@ const SignupPage = () => {
               </div>
               <div className="ml-3 text-sm">
                 <label className="text-gray-700">
-                  I accept the <a href="#" className="text-yellow-500 hover:underline">Privacy Policy</a>*
+                  I accept the <button
+                    type="button"
+                    onClick={() => setShowPrivacyModal(true)}
+                    className="text-yellow-500 hover:underline focus:outline-none"
+                  >
+                    Privacy Policy
+                  </button>*
                 </label>
                 {errors.acceptPrivacyPolicy && <p className="mt-1 text-xs text-red-500">{errors.acceptPrivacyPolicy}</p>}
               </div>
@@ -2300,6 +2311,552 @@ const SignupPage = () => {
           </a>
         </p>
       </div>
+      
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #facc15 70%, #eab308 100%)'
+        }}>
+          <div className="bg-white rounded-lg max-w-4xl w-full h-[90vh] flex flex-col">
+            {/* Modal Header - Fixed */}
+            <div className="bg-yellow-500 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center">
+                <span className="material-icons text-white mr-2">privacy_tip</span>
+                <h2 className="text-xl font-bold text-white">TravelSri Privacy Policy</h2>
+              </div>
+              <button
+                onClick={() => setShowPrivacyModal(false)}
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose max-w-none">
+                
+                {/* Introduction */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Privacy Policy Overview</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    At TravelSri, we are committed to protecting your privacy and ensuring the security of your personal 
+                    information. This Privacy Policy explains how we collect, use, store, and protect your data when you 
+                    use our platform as a hotel partner or guest.
+                  </p>
+                  <p className="text-gray-600 leading-relaxed mt-3">
+                    <strong>Last Updated:</strong> August 19, 2025 | <strong>Effective Date:</strong> August 19, 2025
+                  </p>
+                </div>
+
+                {/* Section 1 - Information We Collect */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">1. Information We Collect</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>1.1 Hotel Partner Information:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Business registration details and licensing information</li>
+                      <li>Hotel contact information (name, address, phone, email)</li>
+                      <li>Banking and payment details for transaction processing</li>
+                      <li>Property photos, descriptions, and promotional content</li>
+                      <li>Room availability, pricing, and booking preferences</li>
+                      <li>Quality ratings, reviews, and performance metrics</li>
+                    </ul>
+                    
+                    <p><strong>1.2 Guest Information (Collected on Behalf of Hotels):</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Personal details (name, contact information, identification)</li>
+                      <li>Booking preferences and travel history</li>
+                      <li>Payment information and transaction records</li>
+                      <li>Communication records and support interactions</li>
+                      <li>Website usage data and browsing patterns</li>
+                    </ul>
+                    
+                    <p><strong>1.3 Technical Information:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>IP addresses, browser types, and device information</li>
+                      <li>Location data (for mapping and local services)</li>
+                      <li>Cookies and similar tracking technologies</li>
+                      <li>Platform usage analytics and performance data</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Section 2 - How We Use Your Information */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">2. How We Use Your Information</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>2.1 Service Provision:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Process and manage hotel registrations and partnerships</li>
+                      <li>Facilitate booking transactions and payment processing</li>
+                      <li>Provide customer support and resolve disputes</li>
+                      <li>Maintain platform functionality and user accounts</li>
+                    </ul>
+                    
+                    <p><strong>2.2 Business Operations:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Verify hotel credentials and ensure service quality</li>
+                      <li>Generate reports and analytics for business insights</li>
+                      <li>Improve platform features and user experience</li>
+                      <li>Conduct research and development activities</li>
+                    </ul>
+                    
+                    <p><strong>2.3 Marketing and Communication:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Send booking confirmations and service updates</li>
+                      <li>Promote hotel properties and special offers</li>
+                      <li>Conduct customer satisfaction surveys</li>
+                      <li>Provide personalized recommendations and content</li>
+                    </ul>
+                    
+                    <p><strong>2.4 Legal and Compliance:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Comply with legal obligations and regulatory requirements</li>
+                      <li>Prevent fraud, abuse, and unauthorized access</li>
+                      <li>Resolve legal disputes and enforce our terms</li>
+                      <li>Maintain records for audit and compliance purposes</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Section 3 - Information Sharing */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">3. Information Sharing and Disclosure</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>3.1 Hotel Partners:</strong> Guest booking information is shared with relevant hotels to facilitate service delivery and guest accommodation.</p>
+                    
+                    <p><strong>3.2 Service Providers:</strong> We may share information with trusted third-party service providers who assist in:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Payment processing and financial transactions</li>
+                      <li>Technical infrastructure and platform maintenance</li>
+                      <li>Customer support and communication services</li>
+                      <li>Marketing and advertising activities</li>
+                      <li>Legal and compliance consulting</li>
+                    </ul>
+                    
+                    <p><strong>3.3 Legal Requirements:</strong> We may disclose information when required by law, court order, or government regulation.</p>
+                    
+                    <p><strong>3.4 Business Transfers:</strong> Information may be transferred in connection with mergers, acquisitions, or business asset sales.</p>
+                    
+                    <p><strong>3.5 We Do NOT:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Sell personal information to third parties for profit</li>
+                      <li>Share data with unauthorized external organizations</li>
+                      <li>Use information for purposes unrelated to our services</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Section 4 - Data Security */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">4. Data Security and Protection</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>4.1 Security Measures:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>SSL/TLS encryption for data transmission</li>
+                      <li>Secure database storage with access controls</li>
+                      <li>Regular security audits and vulnerability assessments</li>
+                      <li>Employee training on data protection best practices</li>
+                      <li>Multi-factor authentication for sensitive accounts</li>
+                    </ul>
+                    
+                    <p><strong>4.2 Access Controls:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Limited access to personal data on a need-to-know basis</li>
+                      <li>User authentication and authorization systems</li>
+                      <li>Regular monitoring of data access and usage</li>
+                      <li>Immediate revocation of access for former employees</li>
+                    </ul>
+                    
+                    <p><strong>4.3 Incident Response:</strong> In case of a data breach, we will notify affected parties and relevant authorities within 72 hours as required by law.</p>
+                  </div>
+                </div>
+
+                {/* Section 5 - Data Retention */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">5. Data Retention and Storage</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>5.1 Retention Periods:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Hotel partner data: Retained during active partnership + 7 years for legal/tax purposes</li>
+                      <li>Guest booking data: Retained for 5 years or as required by hospitality regulations</li>
+                      <li>Financial records: Retained for 7 years for accounting and audit purposes</li>
+                      <li>Marketing data: Retained until consent is withdrawn or account is deactivated</li>
+                      <li>Technical logs: Retained for 2 years for security and troubleshooting</li>
+                    </ul>
+                    
+                    <p><strong>5.2 Data Disposal:</strong> When retention periods expire, data is securely deleted or anonymized using industry-standard methods.</p>
+                    
+                    <p><strong>5.3 Backup Systems:</strong> Data backups are maintained for business continuity but are subject to the same retention and security policies.</p>
+                  </div>
+                </div>
+
+                {/* Section 6 - Your Rights */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">6. Your Privacy Rights</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>6.1 Access Rights:</strong> You can request access to personal information we hold about you.</p>
+                    
+                    <p><strong>6.2 Correction Rights:</strong> You can request correction of inaccurate or incomplete information.</p>
+                    
+                    <p><strong>6.3 Deletion Rights:</strong> You can request deletion of your personal information (subject to legal retention requirements).</p>
+                    
+                    <p><strong>6.4 Portability Rights:</strong> You can request a copy of your data in a commonly used, machine-readable format.</p>
+                    
+                    <p><strong>6.5 Objection Rights:</strong> You can object to certain types of data processing, particularly for marketing purposes.</p>
+                    
+                    <p><strong>6.6 Consent Withdrawal:</strong> You can withdraw consent for data processing at any time (where processing is based on consent).</p>
+                    
+                    <p><strong>To Exercise Rights:</strong> Contact us at privacy@travelsri.com or use the contact details provided below.</p>
+                  </div>
+                </div>
+
+                {/* Section 7 - Cookies and Tracking */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">7. Cookies and Tracking Technologies</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>7.1 Types of Cookies We Use:</strong></p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li><strong>Essential Cookies:</strong> Required for platform functionality and security</li>
+                      <li><strong>Functional Cookies:</strong> Remember your preferences and settings</li>
+                      <li><strong>Analytics Cookies:</strong> Help us understand how users interact with our platform</li>
+                      <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements and track campaign effectiveness</li>
+                    </ul>
+                    
+                    <p><strong>7.2 Cookie Management:</strong> You can control cookie settings through your browser preferences. Note that disabling certain cookies may affect platform functionality.</p>
+                    
+                    <p><strong>7.3 Third-Party Tools:</strong> We use analytics tools (like Google Analytics) and social media plugins that may set their own cookies.</p>
+                  </div>
+                </div>
+
+                {/* Section 8 - International Transfers */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">8. International Data Transfers</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>8.1 Data Location:</strong> Your data is primarily stored on servers located in Sri Lanka and may be transferred to other countries for processing.</p>
+                    
+                    <p><strong>8.2 Transfer Safeguards:</strong> When transferring data internationally, we ensure adequate protection through:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Adequacy decisions by relevant data protection authorities</li>
+                      <li>Standard contractual clauses approved by regulatory bodies</li>
+                      <li>Certification schemes and codes of conduct</li>
+                      <li>Binding corporate rules for intra-group transfers</li>
+                    </ul>
+                    
+                    <p><strong>8.3 Legal Basis:</strong> International transfers are based on legitimate business interests and adequate safeguards to protect your rights.</p>
+                  </div>
+                </div>
+
+                {/* Section 9 - Children's Privacy */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">9. Children's Privacy Protection</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>9.1 Age Restrictions:</strong> Our services are not intended for children under 18 years of age. Hotel partners must be legally authorized business entities.</p>
+                    
+                    <p><strong>9.2 Parental Consent:</strong> If we become aware that we have collected information from a child under 18, we will take steps to delete such information.</p>
+                    
+                    <p><strong>9.3 Family Bookings:</strong> When processing bookings that include minors, we collect only information necessary for accommodation services.</p>
+                  </div>
+                </div>
+
+                {/* Section 10 - Updates and Changes */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">10. Policy Updates and Changes</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>10.1 Policy Updates:</strong> We may update this Privacy Policy periodically to reflect changes in our practices or legal requirements.</p>
+                    
+                    <p><strong>10.2 Notification:</strong> Significant changes will be communicated through:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Email notifications to registered hotel partners</li>
+                      <li>Prominent notices on our platform</li>
+                      <li>Updated effective dates on this policy</li>
+                    </ul>
+                    
+                    <p><strong>10.3 Continued Use:</strong> Continued use of our services after policy updates constitutes acceptance of the revised terms.</p>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="border-t pt-6 mt-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Contact Information</h3>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Data Protection Officer:</strong><br/>
+                      TravelSri Privacy Team<br/>
+                      Email: privacy@travelsri.com<br/>
+                      Phone: +94 11 123 4567
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Business Address:</strong><br/>
+                      TravelSri (Pvt) Ltd<br/>
+                      123 Business District<br/>
+                      Colombo 01, Sri Lanka
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <strong>Response Time:</strong> We will respond to privacy-related inquiries within 30 days of receipt.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Reading Completion Notice */}
+                <div className="mt-8 p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <div className="flex items-center text-yellow-800">
+                    <span className="material-icons mr-2">info</span>
+                    <p className="text-sm">
+                      <strong>Important:</strong> Please read all sections above completely before accepting this Privacy Policy.
+                      The Accept and Cancel buttons are below this notice.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons - Inside Scrollable Content */}
+                <div className="mt-8 border-t pt-6 bg-gray-50 px-6 py-6 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-4 text-center">
+                    <span className="flex items-center justify-center">
+                      <span className="material-icons text-xs mr-1">security</span>
+                      By accepting, you acknowledge reading and agreeing to our Privacy Policy
+                    </span>
+                  </div>
+                  <div className="flex space-x-3 justify-center">
+                    <button
+                      onClick={() => setShowPrivacyModal(false)}
+                      className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, acceptPrivacyPolicy: true }));
+                        setShowPrivacyModal(false);
+                        showFlash('success', 'Privacy Policy accepted successfully!');
+                      }}
+                      className="px-6 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors font-medium flex items-center"
+                    >
+                      <span className="material-icons text-sm mr-1">check_circle</span>
+                      Accept Privacy Policy
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4" style={{
+          background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #facc15 70%, #eab308 100%)'
+        }}>
+          <div className="bg-white rounded-lg max-w-4xl w-full h-[90vh] flex flex-col">
+            {/* Modal Header - Fixed */}
+            <div className="bg-yellow-400 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center">
+                <span className="material-icons text-black mr-2">description</span>
+                <h2 className="text-xl font-bold text-black">TravelSri Terms and Conditions</h2>
+              </div>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                className="text-black hover:text-gray-700 transition-colors"
+              >
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose max-w-none">
+                
+                {/* Introduction */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Agreement Overview</h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    Welcome to TravelSri! These Terms and Conditions ("Agreement") govern the relationship between 
+                    TravelSri Platform ("TravelSri", "we", "us") and your hotel property ("Hotel", "you", "Partner") 
+                    for the use of our online tourism platform and booking services.
+                  </p>
+                </div>
+
+                {/* Section 1 - Service Description */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">1. Service Description</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>1.1 Platform Services:</strong> TravelSri provides an online platform connecting hotels with travelers seeking accommodation in Sri Lanka.</p>
+                    <p><strong>1.2 Booking Management:</strong> We facilitate online reservations, payment processing, and customer communication.</p>
+                    <p><strong>1.3 Marketing Support:</strong> Your hotel will be featured on our platform with photos, descriptions, and booking capabilities.</p>
+                    <p><strong>1.4 Customer Support:</strong> We provide 24/7 customer support for booking inquiries and issues.</p>
+                  </div>
+                </div>
+
+                {/* Section 2 - Hotel Obligations */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">2. Hotel Partner Obligations</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>2.1 Accurate Information:</strong> Provide truthful, accurate, and current information about your property, rooms, amenities, and services.</p>
+                    <p><strong>2.2 Availability Management:</strong> Maintain real-time room availability and pricing on our platform.</p>
+                    <p><strong>2.3 Service Standards:</strong> Deliver services as described and maintain quality standards consistent with your property classification.</p>
+                    <p><strong>2.4 Legal Compliance:</strong> Operate in compliance with all applicable local laws, tourism regulations, and safety standards.</p>
+                    <p><strong>2.5 Documentation:</strong> Maintain valid business registration, tourism licenses, and insurance coverage.</p>
+                    <p><strong>2.6 Guest Relations:</strong> Provide professional service to all guests booked through TravelSri platform.</p>
+                  </div>
+                </div>
+
+                {/* Section 3 - Booking and Payment Terms */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">3. Booking and Payment Terms</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>3.1 Reservation Acceptance:</strong> All bookings made through TravelSri are binding once confirmed.</p>
+                    <p><strong>3.2 Payment Processing:</strong> TravelSri will collect payments from guests and remit to hotels according to agreed schedules.</p>
+                    <p><strong>3.3 Commission Structure:</strong> Hotels agree to pay TravelSri a commission percentage as specified in the partnership agreement.</p>
+                    <p><strong>3.4 Cancellation Policy:</strong> Hotels must honor the cancellation policies displayed on the platform.</p>
+                    <p><strong>3.5 No-Show Policy:</strong> Hotels may charge guests for no-shows according to stated policies.</p>
+                    <p><strong>3.6 Payment Schedule:</strong> Payments will be processed within 7-14 business days after guest checkout.</p>
+                  </div>
+                </div>
+
+                {/* Section 4 - TravelSri Responsibilities */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">4. TravelSri Platform Responsibilities</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>4.1 Platform Maintenance:</strong> Maintain a functional, secure online booking platform.</p>
+                    <p><strong>4.2 Marketing Services:</strong> Promote partner hotels through digital marketing and SEO optimization.</p>
+                    <p><strong>4.3 Secure Transactions:</strong> Provide secure payment processing and data protection.</p>
+                    <p><strong>4.4 Customer Support:</strong> Handle guest inquiries, booking modifications, and dispute resolution.</p>
+                    <p><strong>4.5 Reporting:</strong> Provide detailed booking reports and performance analytics.</p>
+                    <p><strong>4.6 Technology Support:</strong> Offer technical assistance for platform usage and integration.</p>
+                  </div>
+                </div>
+
+                {/* Section 5 - Content and Intellectual Property */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">5. Content and Intellectual Property</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>5.1 Hotel Content:</strong> Hotels grant TravelSri rights to use provided photos, descriptions, and promotional materials.</p>
+                    <p><strong>5.2 Content Quality:</strong> All content must be high-quality, accurate, and professionally appropriate.</p>
+                    <p><strong>5.3 Platform Rights:</strong> TravelSri retains ownership of platform technology, design, and proprietary systems.</p>
+                    <p><strong>5.4 User Reviews:</strong> Guest reviews and ratings will be displayed transparently on the platform.</p>
+                    <p><strong>5.5 Content Moderation:</strong> TravelSri reserves the right to moderate and remove inappropriate content.</p>
+                  </div>
+                </div>
+
+                {/* Section 6 - Data Protection and Privacy */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">6. Data Protection and Privacy</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>6.1 Guest Data:</strong> Guest personal information will be handled according to our Privacy Policy.</p>
+                    <p><strong>6.2 Data Security:</strong> Both parties will maintain appropriate security measures for customer data.</p>
+                    <p><strong>6.3 Data Usage:</strong> Hotel and guest data will only be used for legitimate business purposes.</p>
+                    <p><strong>6.4 Compliance:</strong> All data handling will comply with applicable privacy laws and regulations.</p>
+                    <p><strong>6.5 Data Sharing:</strong> Guest contact information will be shared only as necessary for service delivery.</p>
+                  </div>
+                </div>
+
+                {/* Section 7 - Quality Standards */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">7. Quality Standards and Performance</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>7.1 Service Quality:</strong> Hotels must maintain consistent service standards and guest satisfaction ratings.</p>
+                    <p><strong>7.2 Facility Standards:</strong> Properties must meet basic safety, cleanliness, and operational standards.</p>
+                    <p><strong>7.3 Response Times:</strong> Hotels must respond to booking confirmations within 24 hours.</p>
+                    <p><strong>7.4 Performance Monitoring:</strong> TravelSri may monitor service quality through guest feedback and reviews.</p>
+                    <p><strong>7.5 Improvement Requirements:</strong> Hotels may be required to address recurring quality issues.</p>
+                  </div>
+                </div>
+
+                {/* Section 8 - Liability and Insurance */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">8. Liability and Insurance</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>8.1 Hotel Liability:</strong> Hotels are fully responsible for guest safety, property damage, and service delivery.</p>
+                    <p><strong>8.2 Platform Liability:</strong> TravelSri's liability is limited to platform-related technical issues only.</p>
+                    <p><strong>8.3 Insurance Requirements:</strong> Hotels must maintain adequate liability insurance coverage.</p>
+                    <p><strong>8.4 Guest Claims:</strong> Hotels will handle and resolve guest complaints and damage claims directly.</p>
+                    <p><strong>8.5 Indemnification:</strong> Hotels indemnify TravelSri against claims arising from hotel operations.</p>
+                  </div>
+                </div>
+
+                {/* Section 9 - Termination */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">9. Agreement Termination</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>9.1 Termination Rights:</strong> Either party may terminate this agreement with 30 days written notice.</p>
+                    <p><strong>9.2 Immediate Termination:</strong> TravelSri may terminate immediately for breach of terms or quality issues.</p>
+                    <p><strong>9.3 Post-Termination:</strong> Existing bookings will be honored, and final payments processed.</p>
+                    <p><strong>9.4 Data Return:</strong> Upon termination, all shared data will be returned or destroyed as requested.</p>
+                    <p><strong>9.5 Outstanding Obligations:</strong> Financial obligations will survive termination until fully settled.</p>
+                  </div>
+                </div>
+
+                {/* Section 10 - Dispute Resolution */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">10. Dispute Resolution</h3>
+                  <div className="space-y-3 text-gray-600">
+                    <p><strong>10.1 Communication:</strong> Disputes should first be addressed through direct communication.</p>
+                    <p><strong>10.2 Mediation:</strong> Unresolved disputes will be subject to mediation procedures.</p>
+                    <p><strong>10.3 Governing Law:</strong> This agreement is governed by the laws of Sri Lanka.</p>
+                    <p><strong>10.4 Jurisdiction:</strong> Disputes will be resolved in the appropriate courts of Sri Lanka.</p>
+                    <p><strong>10.5 Language:</strong> English will be the primary language for all legal proceedings.</p>
+                  </div>
+                </div>
+
+                {/* Agreement Details */}
+                <div className="border-t pt-6 mt-8">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 text-center">
+                      <strong>Last Updated:</strong> August 19, 2025<br/>
+                      <strong>Version:</strong> 1.0<br/>
+                      <strong>Contact:</strong> legal@travelsri.com | +94 11 123 4567
+                    </p>
+                  </div>
+                </div>
+
+                {/* Reading Completion Notice */}
+                <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center text-yellow-800">
+                    <span className="material-icons mr-2">info</span>
+                    <p className="text-sm">
+                      <strong>Important:</strong> Please read all sections above completely before accepting these terms and conditions.
+                      The Accept and Cancel buttons are below this notice.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons - Inside Scrollable Content */}
+                <div className="mt-8 border-t pt-6 bg-gray-50 px-6 py-6 rounded-lg">
+                  <div className="text-sm text-gray-600 mb-4 text-center">
+                    <span className="flex items-center justify-center">
+                      <span className="material-icons text-xs mr-1">assignment</span>
+                      By accepting, you agree to all terms and conditions stated above
+                    </span>
+                  </div>
+                  <div className="flex space-x-3 justify-center">
+                    <button
+                      onClick={() => setShowTermsModal(false)}
+                      className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, acceptTerms: true }));
+                        setShowTermsModal(false);
+                        showFlash('success', 'Terms and Conditions accepted successfully!');
+                      }}
+                      className="px-6 py-2 bg-yellow-400 text-black rounded-md hover:bg-yellow-500 transition-colors font-medium flex items-center"
+                    >
+                      <span className="material-icons text-sm mr-1">check_circle</span>
+                      Accept Terms
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
