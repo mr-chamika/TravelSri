@@ -1419,7 +1419,8 @@ const QuotationsManagement = () => {
     // Pre-fill the quotation form with group package details and real hotel contact info
     setNewQuotation({
       ...blankQuotation,
-      packageName: tripPackage.packageName,
+      packageName: tripPackage.packageName || tripPackage.title,
+      title: tripPackage.packageName || tripPackage.title, // Store trip title explicitly
       checkInDate: checkInDate,
       checkOutDate: checkOutDate,
       groupSize: tripPackage.maxGroupSize,
@@ -1471,8 +1472,9 @@ const QuotationsManagement = () => {
       // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
         ...newQuotation,
-        packageName: newQuotation.packageName.trim() || 'Custom Group Package', // Keep for frontend consistency
-        pendingTripName: newQuotation.packageName.trim() || 'Custom Group Package', // Backend field name
+        packageName: newQuotation.packageName.trim() || newQuotation.title?.trim() || 'Custom Group Package', // Keep for frontend consistency
+        pendingTripName: newQuotation.packageName.trim() || newQuotation.title?.trim() || 'Custom Group Package', // Backend field name - trip title
+        title: newQuotation.title || newQuotation.packageName, // Explicit trip title field
         pendingTripId: newQuotation.originalTripId || '', // Map original trip ID to backend field
         accommodationType: "Group Accommodation", // Generic accommodation type
         roomDistributions: [], // Empty array as room distribution will be decided later
@@ -1713,7 +1715,7 @@ const QuotationsManagement = () => {
         setConfirmDialog({
           isOpen: true,
           title: 'Delete Quotation',
-          message: `Are you sure you want to delete quotation ${quotationByNumber.quoteNumber}? This action cannot be undone.`,
+          message: `Are you sure you want to delete quotation ${quotationByNumber.quoteNumber} for "${quotationByNumber.packageName || quotationByNumber.pendingTripName || quotationByNumber.title || 'Custom Trip'}"? This action cannot be undone.`,
           onConfirm: () => confirmDelete(quotationByNumber.id, quotationByNumber.quoteNumber),
           onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
         });
@@ -1735,7 +1737,7 @@ const QuotationsManagement = () => {
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Quotation',
-      message: `Are you sure you want to delete quotation ${quotation.quoteNumber}? This action cannot be undone.`,
+      message: `Are you sure you want to delete quotation ${quotation.quoteNumber} for "${quotation.packageName || quotation.pendingTripName || quotation.title || 'Custom Trip'}"? This action cannot be undone.`,
       onConfirm: () => confirmDelete(quotation.id, quotation.quoteNumber),
       onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
     });
@@ -2266,17 +2268,17 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
         
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
-          {quotation.status === 'Pending' && (
+          {(quotation.status === 'Pending' || quotation.status === 'Under Review') && (
             <button
               onClick={() => onDelete(quotation.id)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center"
+              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
             >
               <span className="material-icons text-sm mr-1">delete</span> Delete
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm flex items-center"
+            className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm flex items-center transition-colors duration-200"
           >
             <span className="material-icons text-sm mr-1">close</span> Close
           </button>
@@ -2674,7 +2676,7 @@ const StatusBadge = ({ status }) => {
                     </span>
                   </td>
                   <td className="py-3 px-4 font-medium">
-                    {q.packageName || q.pendingTripName || 'Custom Package'}
+                    {q.packageName || q.pendingTripName || q.title || 'Custom Trip'}
                   </td>
                   <td className="py-3 px-4">
                     {formatDate(q.departureDate || q.checkInDate)}
@@ -3439,7 +3441,7 @@ const StatusBadge = ({ status }) => {
             onClose={() => setShowDetailModal(false)}
             onDelete={(id) => {
               setShowDetailModal(false); // First close the modal
-              setTimeout(() => handleDeleteClick(id), 100); // Then trigger delete with slight delay
+              setTimeout(() => handleDeleteClick(selectedQuotation.id, selectedQuotation.quoteNumber), 100); // Then trigger delete with both id and quote number
             }}
           />
         </div>
