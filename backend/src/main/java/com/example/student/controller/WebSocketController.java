@@ -8,13 +8,12 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
 
 @Controller
-public class NotificationController {
+public class WebSocketController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -22,7 +21,7 @@ public class NotificationController {
     @Autowired
     private NotificationRepo notificationRepo;
 
-    public NotificationController(SimpMessagingTemplate simpMessagingTemplate) {
+    public WebSocketController(SimpMessagingTemplate simpMessagingTemplate) {
         this.messagingTemplate = simpMessagingTemplate;
     }
 
@@ -50,6 +49,15 @@ public class NotificationController {
             System.out.println("Authentication error from NotificationController");
 
         }
+
+        Notification notification = new Notification();
+
+        notification.setMessage(message.getText());
+        notification.setRecipientId(message.getTo());
+        notification.setType("private");
+
+        notificationRepo.save(notification);
+
         messagingTemplate.convertAndSendToUser(message.getTo(),"/queue/notifications",message.getText());
 
     }
