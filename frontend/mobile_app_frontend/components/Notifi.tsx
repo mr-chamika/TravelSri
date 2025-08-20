@@ -31,8 +31,6 @@ interface Notification {
 
 export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
-  const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
-  const [stompClient, setStompClient] = useState<Client | null>(null);
   const [mtoken, setMtoken] = useState('')
 
   const [notifications, setNotifications] = useState<Notification[]>([
@@ -168,7 +166,6 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
     })
 
     client.activate();
-    setStompClient(client)
 
     return () => {
 
@@ -186,9 +183,8 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to private STOMP server');
-        setPrivateStompClient(client);
 
-        client.subscribe(`/user/queue/notifications`, (message) => {
+        client.subscribe(`/user/queue/notifications`, () => {
           getNotifi();
         });
       },
@@ -209,7 +205,6 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
         };
 
         client.activate();
-        setPrivateStompClient(client)
 
         console.log("Client is attempting to connect with these headers:", client.connectHeaders);
 
