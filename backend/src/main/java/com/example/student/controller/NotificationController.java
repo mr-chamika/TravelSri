@@ -16,11 +16,9 @@ public class NotificationController {
     private NotificationRepo notificationRepo;
 
     @GetMapping("/get")
-    public void getNotification(@RequestParam String id) {
+    public List<Notification> getNotification(@RequestParam String id) {
 
-       List<Notification> list =  notificationRepo.findByRecipientId(id);
-
-       System.out.println(list);
+       return notificationRepo.findNotifications(id);
 
     }
 

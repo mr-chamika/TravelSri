@@ -1,17 +1,28 @@
 import { View, Modal, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, CreditCard, Users, Clock, X } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { Client } from '@stomp/stompjs';
 
 interface NotifyModalProps {
   isVisible: boolean;
   onClose: () => void;
 }
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
+
 interface Notification {
   _id: string;
   recipientId: string;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
   type: string;//"public" || "private"
   link: string;
@@ -19,6 +30,11 @@ interface Notification {
 }
 
 export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
+
+  const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
+  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [mtoken, setMtoken] = useState('')
+
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       _id: '1',
@@ -26,7 +42,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
       type: "public",//"public" || "private"
       link: 'link1',
       message: 'You have received a new booking request for your photography service.',
-      timestamp: '2025-08-19T21:27:28.450+00:00',
+      createdAt: '2025-08-19T21:27:28.450+00:00',
       isRead: false,
 
     }/*,
@@ -77,6 +93,150 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
     },
     // ... other notifications*/
   ]);
+
+  const getNotifi = async () => {
+
+    try {
+
+      const keys = await AsyncStorage.getItem("token")
+
+      if (keys) {
+
+        const token: MyToken = jwtDecode(keys)
+        setMtoken(token.id)
+        const res = await fetch(`http://localhost:8080/notification/get?id=${token.id}`)
+
+        if (res) {
+
+          const data = await res.json()
+          //console.log(data)
+
+          if (data.length > 0) {
+
+            setNotifications(data)
+
+          } else {
+
+            setNotifications([])
+
+          }
+
+
+        } else {
+
+          console.log("Check your connections...")
+
+        }
+
+      }
+
+
+    } catch (err) {
+
+      console.log('Error from notifications getting : ', err);
+      setNotifications([])
+
+    }
+
+  }
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to public STOMP server');
+        client.subscribe('/topic/messages', (message) => {
+
+          const handle = async () => {
+
+            const messageData = JSON.parse(message.body);
+
+            if (mtoken != messageData.to) {
+              getNotifi();
+            }
+          }
+
+          handle();
+
+        })
+      }
+
+    })
+
+    client.activate();
+    setStompClient(client)
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('Connected to private STOMP server');
+        setPrivateStompClient(client);
+
+        client.subscribe(`/user/queue/notifications`, (message) => {
+          getNotifi();
+        });
+      },
+      onStompError: (frame) => {
+
+        console.error('Additional details: ' + frame.body)
+
+      }
+
+    })
+
+    const connectAndSubscribePrivate = async () => {
+      const keys = await AsyncStorage.getItem("token");
+      if (keys) {
+
+        client.connectHeaders = {
+          Authorization: `Bearer ${keys}`,
+        };
+
+        client.activate();
+        setPrivateStompClient(client)
+
+        console.log("Client is attempting to connect with these headers:", client.connectHeaders);
+
+      }
+
+    };
+    connectAndSubscribePrivate();
+
+    // Cleanup function
+    return () => {
+      // This part is fine and will handle cleanup when the component unmounts
+      if (client) {
+
+        client.deactivate();
+        console.log("Private STOMP client disconnected.");
+
+      }
+
+    };
+  }, []);
+
+
+  useEffect(() => {
+
+    getNotifi();
+
+  }, [isVisible])
 
   function formatTimestampPlainJS(isoString: string) {
     const date = new Date(isoString);
@@ -138,7 +298,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
                       <View className="flex-row items-center h-5">
                         <Clock size={12} color="#9E9E9E" />
                         <Text className="text-xs text-gray-500 font-medium ml-1">
-                          {formatTimestampPlainJS(notification.timestamp)}
+                          {formatTimestampPlainJS(notification.createdAt)}
                         </Text>
                       </View>
                     </View>

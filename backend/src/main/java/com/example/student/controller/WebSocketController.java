@@ -27,17 +27,17 @@ public class WebSocketController {
 
     @MessageMapping("/toAll")
     @SendTo("/topic/messages")
-    public String sendMessage(final Message message) throws Exception{
+    public Message sendMessage(final Message message) throws Exception{
 
         Notification notification = new Notification();
 
         notification.setMessage(message.getText());
-        notification.setRecipientId(message.getTo());
+        notification.setSenderId(message.getTo());
         notification.setType("public");
 
         notificationRepo.save(notification);
 
-        return message.getText();
+        return message;
 
     }
 

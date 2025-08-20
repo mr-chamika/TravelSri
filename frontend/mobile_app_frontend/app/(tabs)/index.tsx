@@ -70,7 +70,7 @@ export default function Index() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
-
+  const [mtoken, setMtoken] = useState('')
 
   //
   //broadcast notifications
@@ -83,10 +83,15 @@ export default function Index() {
       onConnect: () => {
 
         console.log('Connected to public STOMP server');
+
         client.subscribe('/topic/messages', (message) => {
+          const handle = async () => {
 
-          console.log("message:", message.body)
-
+            const x = JSON.parse(message.body)
+            if (x.to != mtoken) {
+            }
+          }
+          handle();
         })
       }
 
@@ -107,15 +112,14 @@ export default function Index() {
 
     var text = "publicsss notification"
 
-    if (stompClient && stompClient.connected) {
+    if (stompClient && stompClient.connected && mtoken) {
 
       stompClient.publish({
 
         destination: '/app/toAll',
-        body: JSON.stringify({ 'text': text })
+        body: JSON.stringify({ 'text': text, 'to': mtoken })
 
       })
-      console.log("Message sent:", text)
 
     } else {
 
@@ -139,7 +143,7 @@ export default function Index() {
         setPrivateStompClient(client);
 
         client.subscribe(`/user/queue/notifications`, (message) => {
-          console.log("Private message for you : ", message.body);
+
         });
       },
       onStompError: (frame) => {
@@ -189,11 +193,9 @@ export default function Index() {
       privateStompClient.publish({
 
         destination: "/app/private",
-        body: JSON.stringify({ 'text': text, 'to': userId })
+        body: JSON.stringify({ 'text': text, 'to': userId })//'to' is receivers id
 
       })
-
-      console.log("Message sent to : ", userId)
 
     } else {
       console.log("STOMP client is not connected. Private Message not sent.");
@@ -202,29 +204,8 @@ export default function Index() {
 
   //
 
-  const handler = () => {
-
-    console.log(search)
-
-    fetch('http://192.168.215.38:3000/api/users', {
-
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: search })
-
-    })
-      .then((res) => res.json())
-      .then(data => { console.log(data) })
-      .catch(err => console.log(err))
-
-  }
-
   useFocusEffect(
     useCallback(() => {
-
-
 
       const getAll = async () => {
 
@@ -266,7 +247,7 @@ export default function Index() {
     try {
 
       const x: MyToken = jwtDecode(keys)
-
+      setMtoken(x.id)
       const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
       //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
 

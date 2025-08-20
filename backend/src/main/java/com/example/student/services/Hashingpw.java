@@ -165,7 +165,8 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating"
+                                "/reviews/by-rating",
+                                "/notification/**"
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
 

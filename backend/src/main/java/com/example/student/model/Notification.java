@@ -14,6 +14,7 @@ public class Notification {
     @Id
     private String _id;
     private String recipientId;
+    private String senderId;
     private String message;
     private boolean isRead = false;
     private String link;//link to navigate when clicked
