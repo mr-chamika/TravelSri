@@ -30,6 +30,8 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
     const [mtoken, setMtoken] = useState('')
     const [alrt, setAlert] = useState(false)
+    const [role, setRole] = useState('')
+
 
     const isModalOnRef = useRef(on);
     useEffect(() => {
@@ -104,7 +106,7 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
                 const x: MyToken = jwtDecode(keys)
                 setMtoken(x.id)
-
+                setRole(x.roles.toString())
                 client.connectHeaders = {
                     Authorization: `Bearer ${keys}`,
                 };
@@ -130,6 +132,43 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
         };
     }, []);
+
+    //for all shops
+
+    useEffect(() => {
+
+        const client = new Client({
+
+            brokerURL: 'ws://localhost:8080/ws/websocket',
+            reconnectDelay: 5000,
+            onConnect: () => {
+
+                console.log('Connected to public STOMP server');
+
+                client.subscribe('/topicShops/messages', (message) => {
+                    const handle = async () => {
+
+                        if (role == "merchant") {
+
+                            if (!isModalOnRef.current) { setAlert(true); }
+
+                        }
+                    }
+                    handle();
+                })
+            }
+
+        })
+
+        client.activate();
+
+        return () => {
+
+            client.deactivate();
+        };
+
+    }, [])
+
 
 
     return (

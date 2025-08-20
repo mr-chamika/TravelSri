@@ -61,4 +61,21 @@ public class WebSocketController {
         messagingTemplate.convertAndSendToUser(message.getTo(),"/queue/notifications",message.getText());
 
     }
+
+    @MessageMapping("/toAllShops")
+    @SendTo("/topicShops/messages")
+    public Message sendMessageToShop(final Message message) throws Exception{
+
+        Notification notification = new Notification();
+
+        notification.setMessage(message.getText());
+        notification.setSenderId(message.getTo());
+        notification.setType("public");
+
+        notificationRepo.save(notification);
+
+        return message;
+
+    }
+
 }

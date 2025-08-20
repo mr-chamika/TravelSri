@@ -69,8 +69,10 @@ export default function Index() {
   const [username, setUsername] = useState('')
   const [trips, setTrips] = useState<Trip[]>([])
   const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [stompShopClient, setStompShopClient] = useState<Client | null>(null);
   const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
   const [mtoken, setMtoken] = useState('')
+  const [role, setRole] = useState('')
 
   //
   //broadcast notifications
@@ -106,6 +108,37 @@ export default function Index() {
     };
 
   }, [])
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to public STOMP server');
+
+        client.subscribe('/topicShops/messages', (message) => {
+          const handle = async () => {
+
+            if (role == "merchant") {
+            }
+          }
+          handle();
+        })
+      }
+
+    })
+
+    client.activate();
+    setStompShopClient(client)
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
 
 
   const sendMessage = () => {
@@ -117,6 +150,28 @@ export default function Index() {
       stompClient.publish({
 
         destination: '/app/toAll',
+        body: JSON.stringify({ 'text': text, 'to': mtoken })
+
+      })
+
+    } else {
+
+      console.log("STOMP client is not connected. Message not sent.")
+
+    }
+  }
+
+  //to all merchants
+
+  const sendMessageToShops = () => {
+
+    var text = "publicsss notification to shops"
+
+    if (stompShopClient && stompShopClient.connected && mtoken) {
+
+      stompShopClient.publish({
+
+        destination: '/app/toAllShops',
         body: JSON.stringify({ 'text': text, 'to': mtoken })
 
       })
@@ -248,6 +303,7 @@ export default function Index() {
 
       const x: MyToken = jwtDecode(keys)
       setMtoken(x.id)
+      setRole(x.roles.toString())
       const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
       //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
 
@@ -350,6 +406,9 @@ export default function Index() {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
           <Text>private</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={sendMessageToShops}>
+          <Text>all shops</Text>
         </TouchableOpacity>
 
       </View>
