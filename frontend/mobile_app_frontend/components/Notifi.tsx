@@ -8,114 +8,100 @@ interface NotifyModalProps {
 }
 
 interface Notification {
-  id: string;
-  type: string;
-  title: string;
+  _id: string;
+  recipientId: string;
   message: string;
   timestamp: string;
   isRead: boolean;
-  priority: string;
+  type: string;//"public" || "private"
+  link: string;
+
 }
 
 export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
   const [notifications, setNotifications] = useState<Notification[]>([
     {
-      id: '1',
-      type: 'booking',
-      title: 'New booking request from Nisal Gamage',
+      _id: '1',
+      recipientId: '68a4ec4065c9df5a144ada34',
+      type: "public",//"public" || "private"
+      link: 'link1',
       message: 'You have received a new booking request for your photography service.',
-      timestamp: '2 mins ago',
+      timestamp: '2025-08-19T21:27:28.450+00:00',
       isRead: false,
-      priority: 'high',
-    },
+
+    }/*,
     {
-      id: '2',
-      type: 'payment',
-      title: 'Payment confirmed for booking #1234',
+      _id: '2',
+
+
       message: 'Your payment of $150 has been successfully processed.',
       timestamp: '1 hour ago',
       isRead: false,
-      priority: 'medium',
+
     },
     {
-      id: '3',
-      type: 'group',
-      title: 'New group tour request for 7 people',
+      _id: '3',
+
+
       message: 'A group tour has been requested for next weekend.',
       timestamp: '3 hours ago',
       isRead: true,
-      priority: 'medium',
+
     },
     {
-      id: '4',
-      type: 'booking',
-      title: 'New booking request from Nisal Gamage',
+      _id: '4',
+
+
       message: 'You have received a new booking request for your photography service.',
       timestamp: '2 mins ago',
       isRead: false,
-      priority: 'high',
+
     },
     {
-      id: '5',
-      type: 'payment',
-      title: 'Payment confirmed for booking #1234',
+      _id: '5',
+
+
       message: 'Your payment of $150 has been successfully processed.',
       timestamp: '1 hour ago',
       isRead: false,
-      priority: 'medium',
+
     },
     {
-      id: '6',
-      type: 'group',
-      title: 'New group tour request for 7 people',
+      _id: '6',
+
+
       message: 'A group tour has been requested for next weekend.',
       timestamp: '3 hours ago',
       isRead: true,
-      priority: 'medium',
+
     },
-    // ... other notifications
+    // ... other notifications*/
   ]);
 
-  // **Correction**: Helper functions now return NativeWind class names.
-  const getBackgroundColorClass = (notification: Notification): string => {
-    if (notification.isRead) {
-      return 'bg-gray-50';
-    }
-    switch (notification.priority) {
-      case 'high':
-        return 'bg-orange-100';
-      case 'medium':
-        return 'bg-purple-100';
-      default:
-        return 'bg-green-100';
-    }
-  };
+  function formatTimestampPlainJS(isoString: string) {
+    const date = new Date(isoString);
+    const today = new Date();
 
-  const getBorderColorClass = (notification: Notification): string => {
-    switch (notification.type) {
-      case 'booking':
-        return 'border-orange-500';
-      case 'payment':
-        return 'border-green-500';
-      case 'group':
-        return 'border-blue-500';
-      default:
-        return 'border-gray-300';
-    }
-  };
+    // Manually check if the year, month, and day are the same
+    const isSameDay = date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate();
 
-  const getIcon = (notification: Notification) => {
-    switch (notification.type) {
-      case 'booking':
-        return <Bell size={20} color="#FF6B35" />;
-      case 'payment':
-        return <CreditCard size={20} color="#4CAF50" />;
-      case 'group':
-        return <Users size={20} color="#2196F3" />;
-      default:
-        return <Bell size={20} color="#757575" />;
+    if (isSameDay) {
+      // If it's today, format as time
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }); // Example: "3:45 PM"
+    } else {
+      // Otherwise, format as date
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      }); // Example: "Aug 19"
     }
-  };
+  }
 
   return (
     <Modal
@@ -138,34 +124,32 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
             ) : (
               notifications.map((notification) => (
                 <TouchableOpacity
-                  key={notification.id}
+                  key={notification._id}
                   className={`
-                    my-1.5 mx-2 rounded-xl border-l-4 shadow-md
-                    ${getBackgroundColorClass(notification)}
-                    ${getBorderColorClass(notification)}
+                    my-1.5 mx-2 rounded-xl border-l-4 shadow-md bg-gray-50
                   `}
                   activeOpacity={0.7}
                 >
                   <View className="relative p-4">
                     <View className="flex-row justify-between items-center mb-2">
                       <View className="w-8 h-8 rounded-full bg-white justify-center items-center shadow">
-                        {getIcon(notification)}
+                        <Bell size={20} color="#757575" />
                       </View>
                       <View className="flex-row items-center h-5">
                         <Clock size={12} color="#9E9E9E" />
                         <Text className="text-xs text-gray-500 font-medium ml-1">
-                          {notification.timestamp}
+                          {formatTimestampPlainJS(notification.timestamp)}
                         </Text>
                       </View>
                     </View>
 
                     <View>
-                      <Text className={`
+                      {/* <Text className={`
                         text-base font-semibold text-gray-800 mb-1 leading-5
                         ${!notification.isRead && 'font-bold text-black'}
                       `}>
                         {notification.title}
-                      </Text>
+                      </Text> */}
                       <Text className="text-sm text-gray-600 leading-5">
                         {notification.message}
                       </Text>
