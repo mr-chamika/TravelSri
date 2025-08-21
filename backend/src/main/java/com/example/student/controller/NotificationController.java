@@ -16,9 +16,9 @@ public class NotificationController {
     private NotificationRepo notificationRepo;
 
     @GetMapping("/get")
-    public List<Notification> getNotification(@RequestParam String id) {
+    public List<Notification> getNotification(@RequestParam String id,@RequestParam String role) {
 
-       return notificationRepo.findNotifications(id);
+       return notificationRepo.findNotifications(id,role);
 
     }
 

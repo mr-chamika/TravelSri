@@ -31,8 +31,6 @@ interface Notification {
 
 export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
-  const [mtoken, setMtoken] = useState('')
-
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       _id: '1',
@@ -43,7 +41,9 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
       createdAt: '2025-08-19T21:27:28.450+00:00',
       isRead: false,
 
-    }/*,
+    }
+
+    /*,
     {
       _id: '2',
 
@@ -101,8 +101,8 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
       if (keys) {
 
         const token: MyToken = jwtDecode(keys)
-        setMtoken(token.id)
-        const res = await fetch(`http://localhost:8080/notification/get?id=${token.id}`)
+
+        const res = await fetch(`http://localhost:8080/notification/get?id=${token.id}&role=${token.roles[0]}`)
 
         if (res) {
 
@@ -153,13 +153,61 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
             const messageData = JSON.parse(message.body);
 
-            if (mtoken != messageData.to) {
-              getNotifi();
+            const keys = await AsyncStorage.getItem("token")
+
+            if (keys) {
+
+              const x: MyToken = jwtDecode(keys)
+              //console.log(x.id)
+
+              if (x.id != messageData.to) {
+                getNotifi();
+              }
             }
           }
-
           handle();
 
+        })
+      }
+
+    })
+
+    client.activate();
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to merchant STOMP server');
+
+        client.subscribe('/topicShops/messages', (message) => {
+          const handle = async () => {
+            const keys = await AsyncStorage.getItem("token")
+
+            if (keys) {
+
+              const x: MyToken = jwtDecode(keys)
+              //console.log(x.roles[0])
+              if (x.roles[0] == "merchant") {
+
+                getNotifi()
+
+              }
+            }
+          }
+          handle();
         })
       }
 

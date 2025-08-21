@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface NotificationRepo extends MongoRepository<Notification,String> {
 
-    @Query("{$and:[{$or:[{'recipientId': ?0},{recipientId: null}]},{'senderId':{$ne: ?0} }]}")
-    List<Notification> findNotifications(String id);
+    @Query("{$and:[{$or:[{'recipientId': ?0},{'type': 'public'},{'type': ?1}]},{'senderId':{$ne: ?0} }]}")
+    List<Notification> findNotifications(String id,String role);
 }

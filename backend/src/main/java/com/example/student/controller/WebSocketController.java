@@ -70,7 +70,7 @@ public class WebSocketController {
 
         notification.setMessage(message.getText());
         notification.setSenderId(message.getTo());
-        notification.setType("public");
+        notification.setType("merchant");
 
         notificationRepo.save(notification);
 

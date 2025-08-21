@@ -28,53 +28,13 @@ interface MyToken {
 
 export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
-    const [mtoken, setMtoken] = useState('')
     const [alrt, setAlert] = useState(false)
-    const [role, setRole] = useState('')
-
 
     const isModalOnRef = useRef(on);
     useEffect(() => {
         isModalOnRef.current = on;
     }, [on]);
 
-    useEffect(() => {
-
-        const client = new Client({
-
-            brokerURL: 'ws://localhost:8080/ws/websocket',
-            reconnectDelay: 5000,
-            onConnect: () => {
-
-                console.log('Connected to public STOMP server');
-                client.subscribe('/topic/messages', (message) => {
-
-                    const handle = async () => {
-
-                        const messageData = JSON.parse(message.body);
-
-                        if (mtoken != messageData.to) {
-
-                            if (!isModalOnRef.current) { setAlert(true); }
-
-                        }
-                    }
-
-                    handle();
-
-                })
-            }
-
-        })
-
-        client.activate();
-
-        return () => {
-
-            client.deactivate();
-        };
-
-    }, [])
 
 
     useEffect(() => {
@@ -104,9 +64,6 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
             const keys = await AsyncStorage.getItem("token");
             if (keys) {
 
-                const x: MyToken = jwtDecode(keys)
-                setMtoken(x.id)
-                setRole(x.roles.toString())
                 client.connectHeaders = {
                     Authorization: `Bearer ${keys}`,
                 };
@@ -134,6 +91,51 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
     }, []);
 
     //for all shops
+    useEffect(() => {
+
+        const client = new Client({
+
+            brokerURL: 'ws://localhost:8080/ws/websocket',
+            reconnectDelay: 5000,
+            onConnect: () => {
+
+                console.log('Connected to public STOMP server');
+                client.subscribe('/topic/messages', (message) => {
+
+                    const handle = async () => {
+
+                        const keys = await AsyncStorage.getItem("token")
+
+                        if (keys) {
+
+                            const mtoken: MyToken = jwtDecode(keys)
+
+                            const messageData = JSON.parse(message.body);
+                            //console.log('from topbar', mtoken.id)
+                            //console.log('from topbar', messageData.to)
+                            if (mtoken.id != messageData.to) {
+
+                                if (!isModalOnRef.current) { setAlert(true); }
+
+                            }
+                        }
+                    }
+
+                    handle();
+
+                })
+            }
+
+        })
+
+        client.activate();
+
+        return () => {
+
+            client.deactivate();
+        };
+
+    }, [])
 
     useEffect(() => {
 
@@ -147,11 +149,17 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
                 client.subscribe('/topicShops/messages', (message) => {
                     const handle = async () => {
+                        const keys = await AsyncStorage.getItem("token")
 
-                        if (role == "merchant") {
+                        if (keys) {
 
-                            if (!isModalOnRef.current) { setAlert(true); }
+                            const x: MyToken = jwtDecode(keys)
+                            //console.log(x.roles[0])
+                            if (x.roles[0] == "merchant") {
 
+                                if (!isModalOnRef.current) { setAlert(true); }
+
+                            }
                         }
                     }
                     handle();
