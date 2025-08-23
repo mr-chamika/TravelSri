@@ -199,7 +199,8 @@ public class Hashingpw {
                                 "/api/payments/refund/full/{bookingId}",
                                 "/api/payments/payout/confirmation-fee/{bookingId}",
                                 "/api/payments/payout/final/{bookingId}",
-                                "/api/payments/validate/{bookingId}"
+                                "/api/payments/validate/{bookingId}",
+                                "/api/bookings/hotel/create"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

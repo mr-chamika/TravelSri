@@ -4,7 +4,6 @@ import com.example.student.model.Booking;
 import com.example.student.model.dto.BookingRequest;
 import com.example.student.model.dto.Bookingdto;
 import com.example.student.repo.BookingRepo;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +62,27 @@ public class BookingServiceImpl implements IBookingService {
         dto.setCreatedAt(booking.getCreatedAt());
         dto.setUpdatedAt(booking.getUpdatedAt());
 
+        // Hotel-specific fields
+        if (booking.isHotelBooking()) {
+            dto.setCheckInDate(booking.getCheckInDate());
+            dto.setCheckOutDate(booking.getCheckOutDate());
+            dto.setNumberOfRooms(booking.getNumberOfRooms());
+            dto.setNumberOfNights(booking.getNumberOfNights());
+            dto.setSelectedRoomTypes(booking.getSelectedRoomTypes());
+            dto.setHotelName(booking.getHotelName());
+            dto.setHotelLocation(booking.getHotelLocation());
+            dto.setAdults(booking.getAdults());
+            dto.setChildren(booking.getChildren());
+        }
+
+        // Vehicle-specific fields
+        if ("vehicle".equals(booking.getProviderType())) {
+            dto.setPickupLocation(booking.getPickupLocation());
+            dto.setDropoffLocation(booking.getDropoffLocation());
+            dto.setPickupTime(booking.getPickupTime());
+            dto.setOneWayTrip(booking.getOneWayTrip());
+        }
+
         return dto;
     }
 
@@ -73,13 +93,17 @@ public class BookingServiceImpl implements IBookingService {
                 .collect(Collectors.toList());
     }
 
-    // EXISTING METHODS - Implement your original booking methods here
     @Override
     public Booking createBooking(BookingRequest request) {
         try {
-            // Implement your existing booking creation logic
+            logger.info("Creating {} booking for traveler: {}", request.getProviderType(), request.getTravelerId());
+
+            // Validate the request
+            request.validate();
+
             Booking booking = new Booking();
-            // Map fields from request to booking
+
+            // Map common fields
             booking.setTravelerId(request.getTravelerId());
             booking.setProviderId(request.getProviderId());
             booking.setProviderType(request.getProviderType());
@@ -88,13 +112,82 @@ public class BookingServiceImpl implements IBookingService {
             booking.setServiceStartDate(request.getServiceStartDate());
             booking.setServiceEndDate(request.getServiceEndDate());
             booking.setTotalAmount(request.getTotalAmount());
+            booking.setCurrency("LKR"); // Always LKR
+            booking.setSpecialRequests(request.getSpecialRequests());
+            booking.setNumberOfGuests(request.getNumberOfGuests());
+            booking.setLanguagePreference(request.getLanguagePreference());
+            booking.setContactInformation(request.getContactInformation());
+
+            // Set initial status
             booking.setStatus("PENDING_PAYMENT");
             booking.setPaymentStatus("PENDING");
-            booking.onCreate(); // Set timestamps and calculate fees
 
-            return bookingRepo.save(booking);
+            // Provider-specific handling
+            if ("hotel".equals(request.getProviderType())) {
+                logger.info("Setting up hotel-specific booking details");
+
+                // Hotel-specific fields
+                booking.setCheckInDate(request.getCheckInDate());
+                booking.setCheckOutDate(request.getCheckOutDate());
+                booking.setNumberOfRooms(request.getNumberOfRooms());
+                booking.setNumberOfNights(request.getNumberOfNights());
+                booking.setSelectedRoomTypes(request.getRoomTypes());
+                booking.setAdults(request.getAdults());
+                booking.setChildren(request.getChildren());
+                booking.setHotelLocation(request.getLocation());
+                booking.setHotelName(request.getTitle());
+                booking.setHotelThumbnail(request.getThumbnail());
+                booking.setHotelStars(request.getStars());
+                booking.setHotelRating(request.getRatings());
+                booking.setHotelFacilities(request.getFacilities());
+
+                // Create room preferences string
+                StringBuilder roomPrefs = new StringBuilder();
+                if (request.getRoomTypes() != null && request.getRoomTypes().length > 0) {
+                    roomPrefs.append("Rooms: ").append(String.join(", ", request.getRoomTypes()));
+                }
+                if (request.getMealPlan() != null) {
+                    if (roomPrefs.length() > 0) roomPrefs.append("; ");
+                    roomPrefs.append("Meal: ").append(request.getMealPlan());
+                }
+                if (request.getRoomPreferences() != null) {
+                    if (roomPrefs.length() > 0) roomPrefs.append("; ");
+                    roomPrefs.append(request.getRoomPreferences());
+                }
+                booking.setRoomPreferences(roomPrefs.toString());
+
+                // Set service description for hotels
+                if (request.getServiceDescription() == null) {
+                    String description = String.format("Hotel stay at %s for %d nights (%s to %s)",
+                            request.getTitle() != null ? request.getTitle() : "hotel",
+                            request.getNumberOfNights() != null ? request.getNumberOfNights() : 1,
+                            request.getCheckInDate() != null ? request.getCheckInDate() : "check-in",
+                            request.getCheckOutDate() != null ? request.getCheckOutDate() : "check-out");
+                    booking.setServiceDescription(description);
+                }
+
+            } else if ("guide".equals(request.getProviderType())) {
+                // Guide-specific fields
+                booking.setGuideType(request.getGuideType());
+
+            } else if ("vehicle".equals(request.getProviderType())) {
+                // Vehicle-specific fields
+                booking.setPickupLocation(request.getPickupLocation());
+                booking.setDropoffLocation(request.getDropoffLocation());
+                booking.setPickupTime(request.getPickupTime());
+                booking.setOneWayTrip(request.getOneWayTrip());
+            }
+
+            // Set timestamps and calculate fees
+            booking.onCreate();
+
+            Booking savedBooking = bookingRepo.save(booking);
+            logger.info("Successfully created {} booking with ID: {}", request.getProviderType(), savedBooking.getId());
+
+            return savedBooking;
+
         } catch (Exception e) {
-            logger.error("Error creating booking", e);
+            logger.error("Error creating {} booking", request.getProviderType(), e);
             throw new RuntimeException("Failed to create booking", e);
         }
     }
@@ -115,6 +208,7 @@ public class BookingServiceImpl implements IBookingService {
             if (travelerId == null || travelerId.trim().isEmpty()) {
                 throw new IllegalArgumentException("Traveler ID cannot be null or empty");
             }
+
             List<Booking> bookings = bookingRepo.findByTravelerId(travelerId);
             return convertToDtoList(bookings);
         } catch (Exception e) {
@@ -129,6 +223,7 @@ public class BookingServiceImpl implements IBookingService {
             if (providerId == null || providerId.trim().isEmpty()) {
                 throw new IllegalArgumentException("Provider ID cannot be null or empty");
             }
+
             List<Booking> bookings = bookingRepo.findByProviderId(providerId);
             return convertToDtoList(bookings);
         } catch (Exception e) {
@@ -143,14 +238,25 @@ public class BookingServiceImpl implements IBookingService {
             Optional<Booking> optBooking = bookingRepo.findById(bookingId);
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
+
                 if (!booking.getProviderId().equals(providerId)) {
                     throw new RuntimeException("Provider not authorized for this booking");
                 }
+
+                if (!"PENDING_PROVIDER_ACCEPTANCE".equals(booking.getStatus())) {
+                    throw new RuntimeException("Booking cannot be accepted in current status: " + booking.getStatus());
+                }
+
                 booking.setStatus("CONFIRMED");
                 booking.setProviderAcceptedAt(LocalDateTime.now());
                 booking.onUpdate();
+
+                logger.info("{} booking {} accepted by provider {}",
+                        booking.getProviderType(), bookingId, providerId);
+
                 return bookingRepo.save(booking);
             }
+
             throw new RuntimeException("Booking not found: " + bookingId);
         } catch (Exception e) {
             logger.error("Error accepting booking", e);
@@ -164,15 +270,22 @@ public class BookingServiceImpl implements IBookingService {
             Optional<Booking> optBooking = bookingRepo.findById(bookingId);
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
+
                 if (!booking.getProviderId().equals(providerId)) {
                     throw new RuntimeException("Provider not authorized for this booking");
                 }
+
                 booking.setStatus("CANCELLED_BY_PROVIDER");
                 booking.setProviderRejectedAt(LocalDateTime.now());
                 booking.setRejectionReason("Rejected by provider");
                 booking.onUpdate();
+
+                logger.info("{} booking {} rejected by provider {}",
+                        booking.getProviderType(), bookingId, providerId);
+
                 return bookingRepo.save(booking);
             }
+
             throw new RuntimeException("Booking not found: " + bookingId);
         } catch (Exception e) {
             logger.error("Error rejecting booking", e);
@@ -186,15 +299,26 @@ public class BookingServiceImpl implements IBookingService {
             Optional<Booking> optBooking = bookingRepo.findById(bookingId);
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
+
                 if (!booking.getTravelerId().equals(travelerId)) {
                     throw new RuntimeException("Traveler not authorized for this booking");
                 }
+
+                if (!booking.canBeCancelledByTraveler()) {
+                    throw new RuntimeException("Booking cannot be cancelled by traveler in current status or time window");
+                }
+
                 booking.setStatus("CANCELLED_BY_TRAVELER");
                 booking.setCancellationReason("Cancelled by traveler");
                 booking.setCancellationType("TRAVELER_CANCELLED");
                 booking.onUpdate();
+
+                logger.info("{} booking {} cancelled by traveler {}",
+                        booking.getProviderType(), bookingId, travelerId);
+
                 return bookingRepo.save(booking);
             }
+
             throw new RuntimeException("Booking not found: " + bookingId);
         } catch (Exception e) {
             logger.error("Error cancelling booking", e);
@@ -208,10 +332,20 @@ public class BookingServiceImpl implements IBookingService {
             Optional<Booking> optBooking = bookingRepo.findById(bookingId);
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
+
+                if (!"CONFIRMED".equals(booking.getStatus())) {
+                    throw new RuntimeException("Only confirmed bookings can be completed");
+                }
+
                 booking.setStatus("COMPLETED");
                 booking.onUpdate();
+
+                logger.info("{} booking {} marked as completed",
+                        booking.getProviderType(), bookingId);
+
                 return bookingRepo.save(booking);
             }
+
             throw new RuntimeException("Booking not found: " + bookingId);
         } catch (Exception e) {
             logger.error("Error completing booking", e);
@@ -219,7 +353,7 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
-    // NEW PAYHERE INTEGRATION METHODS
+    // PayHere integration methods
     @Override
     public Optional<Booking> getBookingByPayHereOrderId(String orderId) {
         try {
@@ -244,7 +378,11 @@ public class BookingServiceImpl implements IBookingService {
     @Override
     public Booking saveBooking(Booking booking) {
         try {
-            booking.onCreate();
+            if (booking.getCreatedAt() == null) {
+                booking.onCreate();
+            } else {
+                booking.onUpdate();
+            }
             return bookingRepo.save(booking);
         } catch (Exception e) {
             logger.error("Error saving booking", e);
@@ -252,7 +390,7 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
-    // PAYMENT STATUS METHODS
+    // Payment status methods
     @Override
     public List<Booking> getBookingsByPaymentStatus(String paymentStatus) {
         try {
@@ -283,7 +421,7 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
-    // PAYOUT METHODS
+    // Payout methods
     @Override
     public List<Booking> getBookingsForConfirmationFeePayout() {
         try {
@@ -312,9 +450,20 @@ public class BookingServiceImpl implements IBookingService {
             if (optBooking.isPresent()) {
                 Booking booking = optBooking.get();
                 booking.setPaymentStatus(paymentStatus);
+
+                // Update booking status based on payment status
+                if ("SUCCESS".equals(paymentStatus)) {
+                    if ("PENDING_PAYMENT".equals(booking.getStatus())) {
+                        booking.setStatus("PENDING_PROVIDER_ACCEPTANCE");
+                    }
+                } else if ("FAILED".equals(paymentStatus)) {
+                    booking.setStatus("PAYMENT_FAILED");
+                }
+
                 booking.onUpdate();
                 return bookingRepo.save(booking);
             }
+
             throw new RuntimeException("Booking not found: " + bookingId);
         } catch (Exception e) {
             logger.error("Error updating booking payment status", e);
@@ -322,7 +471,7 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
-    // STATISTICS METHODS
+    // Statistics methods
     @Override
     public long countBookingsByStatus(String status) {
         try {
@@ -353,7 +502,7 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
-    // SEARCH AND FILTER METHODS
+    // Search and filter methods
     @Override
     public List<Booking> getBookingsByStatus(String status) {
         try {
@@ -370,7 +519,6 @@ public class BookingServiceImpl implements IBookingService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDateTime start = LocalDate.parse(startDate, formatter).atStartOfDay();
             LocalDateTime end = LocalDate.parse(endDate, formatter).atTime(23, 59, 59);
-
             return bookingRepo.findByCreatedAtBetween(start, end);
         } catch (Exception e) {
             logger.error("Error finding bookings by date range: {} to {}", startDate, endDate, e);

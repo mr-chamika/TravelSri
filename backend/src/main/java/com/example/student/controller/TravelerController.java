@@ -6,6 +6,8 @@ import com.example.student.repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 
 
@@ -472,6 +474,37 @@ SolotripViewdto s = new SolotripViewdto(
 
         return "Success";
     }
+
+    // Add this method to your existing TravelerController.java
+
+    @PostMapping("/create-hotel-booking")
+    @Deprecated
+    public ResponseEntity<?> CreateHotelBooking(@RequestBody Map<String, Object> legacyRequest) {
+        // This endpoint now redirects to the new unified booking system
+        try {
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("deprecated", true);
+            response.put("message", "This endpoint is deprecated. Please use /api/bookings/hotel/create for new hotel bookings with PayHere integration.");
+            response.put("newEndpoint", "/api/bookings/hotel/create");
+            response.put("paymentIntegration", "PayHere LKR only");
+            response.put("features", List.of(
+                    "Unified booking system",
+                    "PayHere payment integration",
+                    "Room type selection",
+                    "Financial breakdown (5% commission, 10% confirmation fee, 75% payout)",
+                    "Status management",
+                    "Payout automation"
+            ));
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Please use the new unified booking system: /api/bookings/hotel/create");
+        }
+    }
+
+
 
     @GetMapping("/bookings-all")
     public ResponseEntity<?> GetAllBookings(@RequestParam String userId) {

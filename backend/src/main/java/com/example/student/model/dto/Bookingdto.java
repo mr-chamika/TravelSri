@@ -1,5 +1,3 @@
-// Make sure your Bookingdto.java has these fields:
-
 package com.example.student.model.dto;
 
 import lombok.AllArgsConstructor;
@@ -15,107 +13,96 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Bookingdto {
+    // Basic booking information
     private String id;
     private String travelerId;
     private String providerId;
-    private String providerType;
+    private String providerType; // "guide", "vehicle", "hotel"
     private String serviceName;
     private String serviceDescription;
     private LocalDateTime serviceStartDate;
     private LocalDateTime serviceEndDate;
+
+    // Financial information
     private BigDecimal totalAmount;
     private String currency;
-    private BigDecimal platformCommission;
-    private BigDecimal providerConfirmationFee;
+    private BigDecimal platformCommission; // 5%
+    private BigDecimal providerConfirmationFee; // 10%
+
+    // Booking status and timeline
     private String status;
     private String paymentStatus;
     private LocalDateTime bookingTime;
-    private LocalDateTime cancellationDeadline;
-    private LocalDateTime refundDeadline;
+    private LocalDateTime cancellationDeadline; // 20 hours from booking
+    private LocalDateTime refundDeadline; // 2 days before service
 
-    // PayHere fields
+    // PayHere payment related fields
     private String payHereOrderId;
     private String payHerePaymentId;
 
-    // Payout tracking
-    private boolean confirmationFeePaid;
-    private boolean finalPayoutPaid;
-    private LocalDateTime confirmationFeePaidAt;
-    private LocalDateTime finalPayoutPaidAt;
-
-    // Provider interaction
+    // Provider interaction tracking
     private LocalDateTime providerAcceptedAt;
     private String rejectionReason;
     private String cancellationReason;
 
-    // Additional details
+    // Payout tracking
+    private boolean confirmationFeePaid;
+    private boolean finalPayoutPaid;
+
+    // Additional booking details
     private String specialRequests;
     private Integer numberOfGuests;
     private String languagePreference;
-    private String guideType;
+    private String guideType; // "visit", "travel"
+
+    // Hotel-specific fields
+    private String checkInDate;
+    private String checkOutDate;
+    private Integer numberOfRooms;
+    private Integer numberOfNights;
+    private String[] selectedRoomTypes;
+    private String hotelName;
+    private String hotelLocation;
+    private Integer adults;
+    private Integer children;
+
+    // Vehicle-specific fields
+    private String pickupLocation;
+    private String dropoffLocation;
+    private String pickupTime;
+    private Boolean oneWayTrip;
 
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Computed fields (read-only)
-    private String statusDescription;
-    private String paymentStatusDescription;
-    private boolean canBeCancelled;
-    private boolean canBeRefunded;
-
-    // Constructor for computed fields
-    public String getStatusDescription() {
-        if (status == null) return "Unknown";
-
-        switch (status) {
-            case "PENDING_PAYMENT":
-                return "Waiting for payment";
-            case "PENDING_PROVIDER_ACCEPTANCE":
-                return "Waiting for provider to accept";
-            case "CONFIRMED":
-                return "Booking confirmed";
-            case "COMPLETED":
-                return "Service completed";
-            case "CANCELLED_BY_TRAVELER":
-                return "Cancelled by traveler";
-            case "CANCELLED_BY_PROVIDER":
-                return "Cancelled by provider";
-            case "REFUNDED":
-                return "Refunded";
-            default:
-                return status.replace("_", " ").toLowerCase();
-        }
+    // Helper methods
+    public boolean isHotelBooking() {
+        return "hotel".equals(this.providerType);
     }
 
-    public String getPaymentStatusDescription() {
-        if (paymentStatus == null) return "Unknown";
-
-        switch (paymentStatus) {
-            case "PENDING":
-                return "Payment pending";
-            case "SUCCESS":
-                return "Payment successful";
-            case "FAILED":
-                return "Payment failed";
-            case "REFUNDED":
-                return "Fully refunded";
-            case "PARTIALLY_REFUNDED":
-                return "Partially refunded";
-            default:
-                return paymentStatus.replace("_", " ").toLowerCase();
-        }
+    public boolean isGuideBooking() {
+        return "guide".equals(this.providerType);
     }
 
-    public boolean getCanBeCancelled() {
-        return cancellationDeadline != null &&
-                LocalDateTime.now().isBefore(cancellationDeadline) &&
-                ("PENDING_PROVIDER_ACCEPTANCE".equals(status) || "CONFIRMED".equals(status));
+    public boolean isVehicleBooking() {
+        return "vehicle".equals(this.providerType);
     }
 
-    public boolean getCanBeRefunded() {
-        return refundDeadline != null &&
-                LocalDateTime.now().isBefore(refundDeadline) &&
-                "CONFIRMED".equals(status);
+    public boolean isPaymentSuccessful() {
+        return "SUCCESS".equals(this.paymentStatus);
+    }
+
+    public boolean isConfirmed() {
+        return "CONFIRMED".equals(this.status);
+    }
+
+    public boolean isCompleted() {
+        return "COMPLETED".equals(this.status);
+    }
+
+    public boolean isPending() {
+        return "PENDING_PAYMENT".equals(this.status) ||
+                "PENDING_PROVIDER_ACCEPTANCE".equals(this.status);
     }
 }

@@ -162,20 +162,21 @@ public class PayHereController {
     @PostMapping("/create-checkout")
     public ResponseEntity<Map<String, Object>> createPayHereCheckout(@RequestBody CheckoutRequest request) {
         try {
-            logger.info("=== PAYHERE PAYMENT CREATION START ===");
-            logger.info("✅ Using Merchant ID: {}", merchantId);
-            logger.info("✅ Sandbox Mode: {}", sandboxMode);
-            logger.info("✅ Supported Currency: {}", SUPPORTED_CURRENCY);
+            logger.info("=== UNIFIED PAYHERE PAYMENT CREATION START ===");
+            logger.info("Using Merchant ID: {}", merchantId);
+            logger.info("Sandbox Mode: {}", sandboxMode);
+            logger.info("Supported Currency: {}", SUPPORTED_CURRENCY);
             logger.info("Creating PayHere payment for booking: {}", request.getBookingId());
 
-            // ✅ FIXED: Always use LKR currency
+            // Always use LKR currency
             String currency = SUPPORTED_CURRENCY;
             BigDecimal totalAmount = new BigDecimal("1000.00"); // Default amount
+            String bookingType = "unknown"; // Track booking type
 
             if (request.getBookingId() != null && !request.getBookingId().trim().isEmpty()) {
                 Optional<Booking> optBooking = bookingService.getBookingById(request.getBookingId());
                 if (!optBooking.isPresent()) {
-                    logger.error("❌ Booking not found: {}", request.getBookingId());
+                    logger.error("Booking not found: {}", request.getBookingId());
                     Map<String, Object> errorResponse = new HashMap<>();
                     errorResponse.put("success", false);
                     errorResponse.put("message", "Booking not found");
@@ -184,28 +185,28 @@ public class PayHereController {
 
                 Booking booking = optBooking.get();
                 totalAmount = booking.getTotalAmount();
+                bookingType = booking.getProviderType() != null ? booking.getProviderType() : "unknown";
 
-                // ✅ CRITICAL FIX: Force LKR currency and update booking regardless of current currency
-                logger.info("✅ Found booking: ID={}, Amount={}", booking.getId(), totalAmount);
-                logger.info("✅ Enforcing LKR currency for all payments");
+                logger.info("Found {} booking: ID={}, Amount={}", bookingType, booking.getId(), totalAmount);
+                logger.info("Enforcing LKR currency for all payments");
 
                 // Update the booking to ensure it uses LKR currency
                 if (booking.getCurrency() == null || !SUPPORTED_CURRENCY.equals(booking.getCurrency())) {
-                    logger.info("✅ Updating booking currency from {} to {}",
+                    logger.info("Updating booking currency from {} to {}",
                             booking.getCurrency(), SUPPORTED_CURRENCY);
                     booking.setCurrency(SUPPORTED_CURRENCY);
                     booking.onUpdate();
                     bookingService.updateBooking(booking);
                 }
 
-                logger.info("✅ Booking processed: ID={}, Amount={}, Currency={}",
-                        booking.getId(), totalAmount, SUPPORTED_CURRENCY);
+                logger.info("Booking processed: ID={}, Type={}, Amount={}, Currency={}",
+                        booking.getId(), bookingType, totalAmount, SUPPORTED_CURRENCY);
             }
 
-            // ✅ FIXED: Override with request amount if provided (currency is always LKR)
+            // Override with request amount if provided
             if (request.getAmount() != null && request.getAmount() > 0) {
                 totalAmount = new BigDecimal(request.getAmount());
-                logger.info("✅ Amount overridden from request: {}", totalAmount);
+                logger.info("Amount overridden from request: {}", totalAmount);
             }
 
             // Generate order ID
@@ -215,49 +216,35 @@ public class PayHereController {
             double amount = totalAmount.doubleValue();
             logger.info("Final Amount: {} {}", amount, currency);
 
-            // ✅ FIXED: Customer details from request with proper fallbacks
-            String firstName = request.getFirstName();
-            if (firstName == null || firstName.trim().isEmpty()) firstName = "John";
+            // Customer details with booking-type-specific defaults
+            String firstName = getCustomerFirstName(request, bookingType);
+            String lastName = getCustomerLastName(request, bookingType);
+            String email = getCustomerEmail(request, bookingType);
+            String phone = getCustomerPhone(request, bookingType);
+            String address = getCustomerAddress(request, bookingType);
+            String city = getCustomerCity(request, bookingType);
+            String country = getCustomerCountry(request, bookingType);
+            String items = getItemsDescription(request, bookingType);
 
-            String lastName = request.getLastName();
-            if (lastName == null || lastName.trim().isEmpty()) lastName = "Doe";
+            logger.info("Customer details processed for {} booking: {} {}, {}, {}",
+                    bookingType, firstName, lastName, email, phone);
 
-            String email = request.getEmail();
-            if (email == null || email.trim().isEmpty()) email = "customer@example.com";
-
-            String phone = request.getPhone();
-            if (phone == null || phone.trim().isEmpty()) phone = "+94771234567";
-
-            String address = request.getAddress();
-            if (address == null || address.trim().isEmpty()) address = "Colombo";
-
-            String city = request.getCity();
-            if (city == null || city.trim().isEmpty()) city = "Colombo";
-
-            String country = request.getCountry();
-            if (country == null || country.trim().isEmpty()) country = "Sri Lanka";
-
-            String items = request.getItems();
-            if (items == null || items.trim().isEmpty()) items = "Guide Service Booking";
-
-            logger.info("✅ Customer details processed: {} {}, {}, {}", firstName, lastName, email, phone);
-
-            // ✅ FIXED: Generate hash using LKR currency only
+            // Generate hash using LKR currency only
             String hash = generatecode(orderId, amount, merchantSecret, merchantId);
             logger.info("Generated Hash: {}", hash);
 
-            // ✅ Direct app redirect URLs
+            // Create booking-type-aware redirect URLs
             String bookingIdForUrl = request.getBookingId() != null ? request.getBookingId() : orderId;
-            String returnUrl = String.format("%s/api/payments/payhere/return/payment-success?orderId=%s&bookingId=%s&amount=%.2f&currency=%s",
-                    appBaseUrl, orderId, bookingIdForUrl, amount, currency);
-            String cancelUrl = String.format("%s/api/payhere/cancle/payment-cancelled?orderId=%s&bookingId=%s&reason=user_cancelled",appBaseUrl,
-                    orderId, bookingIdForUrl);
+            String returnUrl = String.format("%s/api/payments/payhere/return/payment-success?orderId=%s&bookingId=%s&amount=%.2f&currency=%s&type=%s",
+                    appBaseUrl, orderId, bookingIdForUrl, amount, currency, bookingType);
+            String cancelUrl = String.format("%s/api/payhere/cancle/payment-cancelled?orderId=%s&bookingId=%s&reason=user_cancelled&type=%s",
+                    appBaseUrl, orderId, bookingIdForUrl, bookingType);
 
-            logger.info("✅ App redirect URLs:");
+            logger.info("Redirect URLs for {} booking:", bookingType);
             logger.info("Return URL: {}", returnUrl);
             logger.info("Cancel URL: {}", cancelUrl);
 
-            // ✅ Create payment object
+            // Create payment object
             Map<String, Object> paymentObject = createPaymentObject(
                     merchantId, returnUrl, cancelUrl, firstName, lastName, email, phone,
                     address, city, country, orderId, items, currency, amount, hash, request.getBookingId()
@@ -271,14 +258,14 @@ public class PayHereController {
                 return ResponseEntity.badRequest().body(errorResponse);
             }
 
-            // ✅ Verify hash generation
+            // Verify hash generation
             String testHash = generatecode(orderId, amount, merchantSecret, merchantId);
             boolean hashMatches = testHash.equals(hash);
             logger.info("Hash verification - Generated: {}, Expected: {}, Match: {}",
                     testHash, hash, hashMatches);
 
             if (!hashMatches) {
-                logger.error("❌ HASH MISMATCH!");
+                logger.error("HASH MISMATCH!");
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
                 errorResponse.put("message", "Hash generation error");
@@ -290,7 +277,7 @@ public class PayHereController {
                 saveInitialPaymentTransaction(request.getBookingId(), orderId, totalAmount, currency);
             }
 
-            // ✅ Create response
+            // Create response
             String checkoutUrl = sandboxMode ?
                     "https://sandbox.payhere.lk/pay/checkout" :
                     "https://www.payhere.lk/pay/checkout";
@@ -300,19 +287,95 @@ public class PayHereController {
                     checkoutUrl, returnUrl, cancelUrl, hashMatches
             );
 
-            logger.info("✅ PayHere payment created successfully");
-            logger.info("=== PAYHERE PAYMENT CREATION END ===");
+            // Add booking type to response for frontend use
+            response.put("bookingType", bookingType);
+
+            logger.info("PayHere {} payment created successfully", bookingType);
+            logger.info("=== UNIFIED PAYHERE PAYMENT CREATION END ===");
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.error("❌ ERROR creating PayHere payment", e);
+            logger.error("ERROR creating PayHere payment", e);
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Failed to create payment: " + e.getMessage());
             errorResponse.put("error", e.getClass().getSimpleName());
             errorResponse.put("supportedCurrency", SUPPORTED_CURRENCY);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // Helper methods for booking-type-specific customer defaults
+    private String getCustomerFirstName(CheckoutRequest request, String bookingType) {
+        if (request.getFirstName() != null && !request.getFirstName().trim().isEmpty()) {
+            return request.getFirstName();
+        }
+
+        switch (bookingType.toLowerCase()) {
+            case "hotel": return "Hotel Guest";
+            case "guide": return "Tour Customer";
+            case "vehicle": return "Passenger";
+            default: return "Customer";
+        }
+    }
+
+    private String getCustomerLastName(CheckoutRequest request, String bookingType) {
+        if (request.getLastName() != null && !request.getLastName().trim().isEmpty()) {
+            return request.getLastName();
+        }
+
+        switch (bookingType.toLowerCase()) {
+            case "hotel": return "Traveler";
+            case "guide": return "Traveler";
+            case "vehicle": return "Traveler";
+            default: return "User";
+        }
+    }
+
+    private String getCustomerEmail(CheckoutRequest request, String bookingType) {
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            return request.getEmail();
+        }
+
+        switch (bookingType.toLowerCase()) {
+            case "hotel": return "guest@hotel.lk";
+            case "guide": return "tourist@guide.lk";
+            case "vehicle": return "passenger@vehicle.lk";
+            default: return "customer@travelsri.lk";
+        }
+    }
+
+    private String getCustomerPhone(CheckoutRequest request, String bookingType) {
+        return request.getPhone() != null && !request.getPhone().trim().isEmpty()
+                ? request.getPhone() : "+94771234567";
+    }
+
+    private String getCustomerAddress(CheckoutRequest request, String bookingType) {
+        return request.getAddress() != null && !request.getAddress().trim().isEmpty()
+                ? request.getAddress() : "Colombo";
+    }
+
+    private String getCustomerCity(CheckoutRequest request, String bookingType) {
+        return request.getCity() != null && !request.getCity().trim().isEmpty()
+                ? request.getCity() : "Colombo";
+    }
+
+    private String getCustomerCountry(CheckoutRequest request, String bookingType) {
+        return request.getCountry() != null && !request.getCountry().trim().isEmpty()
+                ? request.getCountry() : "Sri Lanka";
+    }
+
+    private String getItemsDescription(CheckoutRequest request, String bookingType) {
+        if (request.getItems() != null && !request.getItems().trim().isEmpty()) {
+            return request.getItems();
+        }
+
+        switch (bookingType.toLowerCase()) {
+            case "hotel": return "Hotel Reservation";
+            case "guide": return "Guide Service Booking";
+            case "vehicle": return "Vehicle Rental Service";
+            default: return "Travel Service Booking";
         }
     }
 

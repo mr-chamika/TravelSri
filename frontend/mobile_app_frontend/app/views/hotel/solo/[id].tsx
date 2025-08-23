@@ -100,15 +100,6 @@ export interface Booking {
     mobileNumber: string;
 }
 
-// Import your images
-const pic = require('../../../../assets/images/tabbar/towert.png');
-const location = require('../../../../assets/images/pin.png');
-const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelthumb.png');
-const star = require('../../../../assets/images/tabbar/create/hotel/stars.png');
-const single = require('../../../../assets/images/tabbar/create/hotel/single.png');
-const double = require('../../../../assets/images/tabbar/create/hotel/double.png');
-const back = require('../../../../assets/images/back.png');
-
 export default function HotelDetailsView() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -126,6 +117,7 @@ export default function HotelDetailsView() {
     const [carouselWidth, setCarouselWidth] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [capacityWarning, setCapacityWarning] = useState('');
+    const [isBookingInProgress, setIsBookingInProgress] = useState(false);
     
     // Info modal states
     const [showPriceInfo, setShowPriceInfo] = useState(false);
@@ -156,6 +148,8 @@ export default function HotelDetailsView() {
                     const data = JSON.parse(jsonValue);
                     setBookingData(data);
                     console.log('Loaded booking data:', data);
+                } else {
+                    console.log('No booking data found in AsyncStorage');
                 }
             } catch (e) {
                 console.error("Failed to load data from AsyncStorage", e);
@@ -166,10 +160,25 @@ export default function HotelDetailsView() {
         loadBookingData();
     }, []);
 
+    // Debug state changes
+    useEffect(() => {
+        console.log('State debug:', {
+            hotelExists: !!hotelv,
+            bookingDataExists: !!bookingData,
+            roomTypesCount: roomTypes.length,
+            selectedRoomsCount: Object.keys(selectedRoomCounts).length,
+            totalPrice,
+            isLoading
+        });
+    }, [hotelv, bookingData, roomTypes, selectedRoomCounts, totalPrice, isLoading]);
+
     // Fetch hotel data
     useEffect(() => {
         const getHotelData = async () => {
-            if (!id) return;
+            if (!id) {
+                console.log('No hotel ID provided');
+                return;
+            }
             
             try {
                 console.log('Fetching hotel data for ID:', id);
@@ -245,7 +254,16 @@ export default function HotelDetailsView() {
 
     // Auto-select default rooms based on guest count (minimum cost)
     const autoSelectRooms = useCallback(() => {
-        if (!bookingData || roomTypes.length === 0 || Object.keys(selectedRoomCounts).length > 0) return;
+        if (!bookingData || roomTypes.length === 0 || Object.keys(selectedRoomCounts).length > 0) {
+            console.log('Skipping auto-select:', {
+                hasBookingData: !!bookingData,
+                roomTypesLength: roomTypes.length,
+                hasSelectedRooms: Object.keys(selectedRoomCounts).length > 0
+            });
+            return;
+        }
+
+        console.log('Auto-selecting rooms for guests:', bookingData.adults + bookingData.children);
 
         const totalGuests = bookingData.adults + bookingData.children;
         let minCost = Infinity;
@@ -301,13 +319,19 @@ export default function HotelDetailsView() {
         });
 
         if (totalCapacity >= totalGuests) {
+            console.log('Auto-selected rooms:', bestCombination);
             setSelectedRoomCounts(bestCombination);
+        } else {
+            console.log('Could not find adequate room combination');
         }
     }, [bookingData, roomTypes, hotelv, selectedRoomCounts]);
 
     // Calculate total price including room selections and booking duration
     const calculateTotalPrice = useCallback(() => {
-        if (!hotelv || !bookingData) return;
+        if (!hotelv || !bookingData) {
+            console.log('Cannot calculate price - missing data');
+            return;
+        }
 
         let basePrice = parseInt(hotelv.price) || 0;
         let roomsTotal = 0;
@@ -320,6 +344,12 @@ export default function HotelDetailsView() {
 
         // Calculate total for all nights
         const totalNightly = (basePrice + roomsTotal) * (bookingData.nights || 1);
+        console.log('Price calculation:', {
+            basePrice,
+            roomsTotal,
+            nights: bookingData.nights,
+            totalNightly
+        });
         setTotalPrice(totalNightly);
     }, [hotelv, roomTypes, selectedRoomCounts, bookingData]);
 
@@ -381,9 +411,11 @@ export default function HotelDetailsView() {
 
     // Reset to minimum cost selection
     const resetToMinimumCost = () => {
+        console.log('Resetting to minimum cost selection');
         setSelectedRoomCounts({});
         setTimeout(() => autoSelectRooms(), 100);
     };
+
     useEffect(() => {
         autoSelectRooms();
     }, [autoSelectRooms]);
@@ -464,55 +496,60 @@ export default function HotelDetailsView() {
         }
     }, [carouselWidth]);
 
-    // Handle booking submission
+    // UPDATED HOTEL BOOKING HANDLER WITH PAYHERE CHECKOUT REDIRECTION
     const handleBooking = async () => {
-        if (!hotelv || !bookingData) {
-            Alert.alert('Error', 'Missing hotel or booking data');
-            return;
-        }
-
-        // Check capacity
-        let totalCapacity = 0;
-        Object.entries(selectedRoomCounts).forEach(([index, count]) => {
-            const room = roomTypes[parseInt(index)];
-            if (room) {
-                totalCapacity += count * room.capacity;
-            }
-        });
-
-        if (totalCapacity < bookingData.adults + bookingData.children) {
-            Alert.alert('Insufficient Accommodation', 'Please select enough rooms for all guests.');
-            return;
-        }
+        console.log('=== HOTEL BOOKING DEBUG START ===');
+        console.log('🏨 Starting hotel booking with PayHere integration...');
+        
+        if (isBookingInProgress) return;
+        setIsBookingInProgress(true);
 
         try {
+            // Step 1: Validate required data
+            if (!hotelv || !bookingData) {
+                console.log('❌ Missing required data');
+                Alert.alert('Error', 'Missing hotel or booking data');
+                return;
+            }
+
+            // Step 2: Check room selection and capacity
+            const hasSelectedRooms = Object.values(selectedRoomCounts).some(count => count > 0);
+            if (!hasSelectedRooms) {
+                console.log('❌ No rooms selected');
+                Alert.alert('No Rooms Selected', 'Please select at least one room for your stay.');
+                return;
+            }
+
+            // Step 3: Validate guest capacity
+            let totalRoomCapacity = 0;
+            Object.entries(selectedRoomCounts).forEach(([index, count]) => {
+                const room = roomTypes[parseInt(index)];
+                if (room) {
+                    totalRoomCapacity += count * room.capacity;
+                }
+            });
+
+            const totalGuests = bookingData.adults + bookingData.children;
+            if (totalRoomCapacity < totalGuests) {
+                console.log('❌ Insufficient accommodation');
+                Alert.alert('Insufficient Accommodation', 
+                    `You need accommodation for ${totalGuests} guests but selected rooms can only accommodate ${totalRoomCapacity} guests. Please select more rooms.`
+                );
+                return;
+            }
+
+            // Step 4: Get authentication
             const token = await AsyncStorage.getItem("token");
             if (!token) {
+                console.log('❌ No authentication token');
                 Alert.alert('Authentication Required', 'Please log in to make a booking.');
                 return;
             }
 
-            const decodedToken: MyToken = jwtDecode(token);
+            const decodedToken = jwtDecode<MyToken>(token);
+            console.log('✅ Token decoded, user ID:', decodedToken.id);
 
-            // Prepare booking data
-            const bookingPayload: Partial<Booking> = {
-                userId: decodedToken.id,
-                serviceId: id.toString(),
-                type: 'hotel',
-                thumbnail: hotelv.thumbnail || hotelv.images?.[0],
-                title: hotelv.name,
-                location: hotelv.location,
-                bookingDates: [bookingData.selectedDates, bookingData.selectedoutDates],
-                guests: bookingData.adults + bookingData.children,
-                stars: hotelv.stars,
-                ratings: rating,
-                paymentStatus: false,
-                price: totalPrice,
-                status: 'active',
-                mobileNumber: hotelv.mobileNumber
-            };
-
-            // Add room details to subtitle
+            // Step 5: Prepare room details
             const roomDetails: string[] = [];
             Object.entries(selectedRoomCounts).forEach(([index, count]) => {
                 if (count > 0) {
@@ -520,34 +557,183 @@ export default function HotelDetailsView() {
                     roomDetails.push(`${count} ${roomType}${count > 1 ? 's' : ''}`);
                 }
             });
-            bookingPayload.subtitle = roomDetails;
 
-            // Add facilities
-            const facilityNames = facilities.map(f => f.title);
-            bookingPayload.facilities = facilityNames;
+            // Step 6: Calculate service dates
+            const checkInDateTime = new Date(bookingData.selectedDates + 'T15:00:00').toISOString();
+            const checkOutDateTime = new Date(bookingData.selectedoutDates + 'T11:00:00').toISOString();
 
-            console.log('Submitting booking:', bookingPayload);
+            // Step 7: Prepare booking request for unified BookingController
+            const bookingRequest = {
+                // Core booking fields
+                travelerId: decodedToken.id,
+                providerId: Array.isArray(id) ? id[0] : id.toString(),
+                providerType: "hotel",
+                serviceName: hotelv.name,
+                serviceDescription: `Hotel stay at ${hotelv.name} for ${bookingData.nights} nights`,
+                serviceStartDate: checkInDateTime,
+                serviceEndDate: checkOutDateTime,
+                totalAmount: totalPrice,
+                currency: "LKR",
+                numberOfGuests: totalGuests,
+                contactInformation: decodedToken.email,
+                specialRequests: `Check-in: ${bookingData.selectedDates}, Check-out: ${bookingData.selectedoutDates}. Adults: ${bookingData.adults}, Children: ${bookingData.children}. Rooms: ${roomDetails.join(', ')}`,
+                
+                // Hotel-specific fields
+                checkInDate: bookingData.selectedDates,
+                checkOutDate: bookingData.selectedoutDates,
+                numberOfRooms: Object.values(selectedRoomCounts).reduce((sum, count) => sum + count, 0),
+                numberOfNights: bookingData.nights,
+                roomTypes: roomDetails,
+                adults: bookingData.adults,
+                children: bookingData.children,
+                
+                // Additional hotel details for booking record
+                title: hotelv.name,
+                location: hotelv.location,
+                thumbnail: hotelv.thumbnail || (hotelv.images && hotelv.images[0]) || '',
+                stars: hotelv.stars,
+                ratings: rating,
+                facilities: facilities.map(f => f.title),
+                mobileNumber: hotelv.mobileNumber
+            };
 
-            const response = await fetch('http://localhost:8080/traveler/create-booking', {
+            console.log('📋 Hotel booking request prepared:', JSON.stringify(bookingRequest, null, 2));
+
+            // Step 8: Create hotel booking through unified BookingController
+            console.log('🔄 Step 1: Creating hotel booking...');
+            const bookingResponse = await fetch('http://localhost:8080/api/bookings/hotel/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bookingPayload)
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(bookingRequest)
             });
 
-            if (response.ok) {
-                const result = await response.text();
-                console.log('Booking created:', result);
-                Alert.alert('Success', 'Booking created successfully!', [
-                    { text: 'OK', onPress: () => router.replace('/(tabs)/bookings') }
-                ]);
-            } else {
-                throw new Error(`Booking failed: ${response.status}`);
+            if (!bookingResponse.ok) {
+                const errorText = await bookingResponse.text();
+                throw new Error(`Booking creation failed: ${bookingResponse.status} - ${errorText}`);
             }
 
-        } catch (err) {
-            console.error('Booking error:', err);
-            Alert.alert('Booking Failed', 'Unable to create booking. Please try again.');
+            const bookingResult = await bookingResponse.json();
+            console.log('✅ Step 1: Hotel booking created successfully:', bookingResult);
+
+            if (!bookingResult.success) {
+                throw new Error(bookingResult.message || 'Hotel booking creation failed');
+            }
+
+            // Step 9: Create PayHere checkout using the same pattern as guide booking
+            console.log('🔄 Step 2: Creating PayHere checkout...');
+            const checkoutPayload = {
+                bookingId: bookingResult.bookingId,
+                amount: totalPrice,
+                firstName: decodedToken.username || 'Hotel',
+                lastName: 'Guest',
+                email: decodedToken.email || 'guest@hotel.lk',
+                phone: hotelv.mobileNumber || '+94771234567',
+                address: hotelv.location || 'Colombo',
+                city: 'Colombo',
+                country: 'Sri Lanka',
+                items: `${hotelv.name} - ${bookingData.nights} nights`
+            };
+
+            const checkoutResponse = await fetch('http://localhost:8080/api/payments/payhere/create-checkout', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(checkoutPayload)
+            });
+
+            if (!checkoutResponse.ok) {
+                const errorText = await checkoutResponse.text();
+                throw new Error(`Payment checkout creation failed: ${checkoutResponse.status} - ${errorText}`);
+            }
+
+            const paymentResponse = await checkoutResponse.json();
+            console.log('✅ Step 2: PayHere checkout created successfully:', paymentResponse);
+
+            if (!paymentResponse.success) {
+                throw new Error(paymentResponse.message || 'Payment checkout creation failed');
+            }
+
+            // Step 10: Navigate to PayHere checkout page (SAME AS GUIDE BOOKING)
+            if (paymentResponse.success && paymentResponse.paymentObject) {
+                console.log('✅ Step 3: Payment data valid, navigating to PayHere checkout...');
+                
+                // Navigate to PayHere checkout page with payment data (SAME AS GUIDE BOOKING)
+                router.push({
+                    pathname: '../../../views/PayHereCheckout/[id]',
+                    params: {
+                        paymentData: JSON.stringify(paymentResponse.paymentObject),
+                        bookingId: bookingResult.bookingId,
+                        orderId: paymentResponse.orderId,
+                        // Add hotel-specific booking details for confirmation page
+                        bookingType: 'hotel',
+                        hotelName: hotelv.name,
+                        checkInDate: bookingData.selectedDates,
+                        checkOutDate: bookingData.selectedoutDates,
+                        numberOfNights: bookingData.nights.toString(),
+                        totalGuests: totalGuests.toString(),
+                        roomDetails: JSON.stringify(roomDetails),
+                        totalAmount: totalPrice.toString(),
+                        hotelLocation: hotelv.location,
+                        hotelStars: hotelv.stars.toString()
+                    }
+                });
+            } else {
+                console.log('❌ Step 3: Invalid payment response - missing paymentObject');
+                console.log('Available keys in response:', Object.keys(paymentResponse));
+                throw new Error('Invalid payment response from server - missing paymentObject');
+            }
+
+            // Store booking info for potential future use
+            await AsyncStorage.setItem('lastHotelBooking', JSON.stringify({
+                bookingId: bookingResult.bookingId,
+                orderId: paymentResponse.orderId,
+                hotelName: hotelv.name,
+                amount: totalPrice,
+                status: 'pending_payment',
+                checkIn: bookingData.selectedDates,
+                checkOut: bookingData.selectedoutDates,
+                rooms: roomDetails,
+                guests: totalGuests
+            }));
+
+            console.log('✅ Hotel booking process completed successfully');
+
+        } catch (error) {
+            console.error('❌ Hotel booking error:', error);
+            
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+                console.error('Error stack:', error.stack);
+            }
+            
+            // Show user-friendly error messages
+            if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+                errorMessage = 'Network error. Please check your internet connection and try again.';
+            } else if (errorMessage.includes('Authentication')) {
+                errorMessage = 'Authentication failed. Please log in again.';
+            } else if (errorMessage.includes('validation')) {
+                errorMessage = 'Invalid booking data. Please check your selections and try again.';
+            }
+            
+            Alert.alert(
+                'Hotel Booking Failed ❌', 
+                errorMessage + '\n\nIf the problem persists, please contact support.',
+                [
+                    { text: 'Try Again', onPress: () => console.log('User will try again') },
+                    { text: 'Contact Support', onPress: () => console.log('Navigate to support') }
+                ]
+            );
+        } finally {
+            setIsBookingInProgress(false);
+            console.log('🏁 Hotel booking process finished');
         }
+        console.log('=== HOTEL BOOKING DEBUG END ===');
     };
 
     // Info Modal Component
@@ -986,6 +1172,8 @@ export default function HotelDetailsView() {
                         </View>
                     </View>
                 )}
+
+                {/* Room Selection */}
                 {roomTypes.length > 0 && (
                     <View className="mx-4 mb-4 bg-white rounded-xl p-4 shadow-sm">
                         <View className="flex-row items-center justify-between mb-4">
@@ -1149,8 +1337,8 @@ export default function HotelDetailsView() {
                 )}
             </ScrollView>
 
-            {/* Fixed Bottom Bar */}
-            <View className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-200 p-4 shadow-lg">
+            {/* Fixed Bottom Bar - IMPROVED */}
+            <View className="absolute bottom-0 left-0 right-0 bg-white border-t-2 border-yellow-200 p-4 shadow-lg" style={{ zIndex: 1000 }}>
                 <View className="flex-row items-center justify-between">
                     <View className="flex-1">
                         <View className="flex-row items-center">
@@ -1167,12 +1355,20 @@ export default function HotelDetailsView() {
                         )}
                     </View>
                     <TouchableOpacity
-                        className="bg-yellow-400 px-8 py-4 rounded-xl shadow-lg"
-                        onPress={handleBooking}
+                        className={`px-8 py-4 rounded-xl shadow-lg ${isBookingInProgress ? 'bg-gray-400' : 'bg-yellow-400'}`}
+                        onPress={() => {
+                            console.log('📱 Book Now button pressed!');
+                            handleBooking();
+                        }}
+                        disabled={isBookingInProgress}
+                        activeOpacity={0.7}
+                        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                     >
                         <View className="flex-row items-center">
                             <Text className="text-2xl mr-2">🏨</Text>
-                            <Text className="text-yellow-900 font-bold text-lg">Book Now</Text>
+                            <Text className={`font-bold text-lg ${isBookingInProgress ? 'text-gray-600' : 'text-yellow-900'}`}>
+                                {isBookingInProgress ? 'Processing...' : 'Book Now'}
+                            </Text>
                         </View>
                     </TouchableOpacity>
                 </View>

@@ -31,7 +31,7 @@ public class Booking {
 
     // Financial information
     private BigDecimal totalAmount;
-    private String currency = "USD";
+    private String currency = "LKR";
     private BigDecimal platformCommission; // 5%
     private BigDecimal providerConfirmationFee; // 10%
 
@@ -70,6 +70,28 @@ public class Booking {
     private Integer numberOfGuests;
     private String languagePreference;
     private String guideType; // "visit", "travel"
+
+    // Hotel-specific fields
+    private String checkInDate;
+    private String checkOutDate;
+    private Integer numberOfRooms;
+    private Integer numberOfNights;
+    private String[] selectedRoomTypes; // Room types selected
+    private String hotelLocation;
+    private String hotelName;
+    private String hotelThumbnail;
+    private Integer hotelStars;
+    private Double hotelRating;
+    private String[] hotelFacilities;
+    private String roomPreferences; // Room preferences and special requests
+    private Integer adults;
+    private Integer children;
+
+    // Vehicle-specific fields
+    private String pickupLocation;
+    private String dropoffLocation;
+    private String pickupTime;
+    private Boolean oneWayTrip;
 
     // Review and rating
     private boolean reviewCompleted = false;
@@ -214,6 +236,36 @@ public class Booking {
             default:
                 return paymentStatus.replace("_", " ").toLowerCase();
         }
+    }
+
+    // Hotel-specific methods
+    public boolean isHotelBooking() {
+        return "hotel".equals(this.providerType);
+    }
+
+    public String getFormattedCheckIn() {
+        return checkInDate != null ? checkInDate :
+                (serviceStartDate != null ? serviceStartDate.toLocalDate().toString() : null);
+    }
+
+    public String getFormattedCheckOut() {
+        return checkOutDate != null ? checkOutDate :
+                (serviceEndDate != null ? serviceEndDate.toLocalDate().toString() : null);
+    }
+
+    public Integer calculateNights() {
+        if (serviceStartDate != null && serviceEndDate != null) {
+            return Math.toIntExact(java.time.temporal.ChronoUnit.DAYS.between(
+                    serviceStartDate.toLocalDate(), serviceEndDate.toLocalDate()));
+        }
+        return numberOfNights;
+    }
+
+    public String getRoomSummary() {
+        if (selectedRoomTypes != null && selectedRoomTypes.length > 0) {
+            return String.join(", ", selectedRoomTypes);
+        }
+        return numberOfRooms != null ? numberOfRooms + " rooms" : "Rooms not specified";
     }
 
     // Auto-set timestamps
