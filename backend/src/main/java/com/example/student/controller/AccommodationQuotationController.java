@@ -87,4 +87,18 @@ public class AccommodationQuotationController {
             ));
         }
     }
+    
+    @DeleteMapping("/by-number/{quoteNumber}")
+    public ResponseEntity<?> deleteQuotationByNumber(@PathVariable String quoteNumber) {
+        try {
+            service.deleteQuotationByQuoteNumber(quoteNumber);
+            return ResponseEntity.ok(Map.of("success", true, "quoteNumber", quoteNumber));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "error", "Failed to delete quotation by quote number",
+                "message", e.getMessage()
+            ));
+        }
+    }
 }
