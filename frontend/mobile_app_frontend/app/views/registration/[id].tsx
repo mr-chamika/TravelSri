@@ -665,9 +665,9 @@ export default function GuideRegistrationScreen() {
         {/* Daily Rates */}
         <Text style={{ fontSize: 14, fontWeight: 'bold', marginTop: 20, color: '#374151' }}>Daily Rate *</Text>
         <View className="flex-row space-x-3 mb-4">
-          {/* Foreigners Rate (USD) */}
+          {/* Foreigners Rate (LKR) */}
           <View className="flex-1">
-            <Text className="text-gray-700 font-medium mb-2 mt-5 ml-2">for Foreigners (USD) *</Text>
+            <Text className="text-gray-700 font-medium mb-2 mt-5 ml-2">for Foreigners (LKR) *</Text>
             <View className={`border border-gray-300 rounded-lg flex-row items-center px-3 py-2 ${errors.rateForeigners ? 'border-red-500' : ''
               }`}>
               <Text className="text-gray-700 text-base mr-1">$</Text>

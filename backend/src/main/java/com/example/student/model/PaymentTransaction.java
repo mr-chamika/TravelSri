@@ -1,8 +1,6 @@
 package com.example.student.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -15,9 +13,12 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Document(collection = "payment_transactions")
+@Getter
+@Setter
 public class PaymentTransaction {
     @Id
     private String _id;
+    private String transactionId;
     private String bookingId;
     private String payHereOrderId;
     private String payHerePaymentId;
@@ -32,7 +33,30 @@ public class PaymentTransaction {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Custom getter for MongoDB _id
     public String getId() {
         return _id;
     }
+
+    // Custom setter for MongoDB _id
+    public void setId(String id) {
+        this._id = id;
+    }
+
+    public String getPaymentId() {
+        return this.payHerePaymentId;
+    }
+
+    public void setPaymentId(String paymentId) {
+        this.payHerePaymentId = paymentId;
+    }
+
+    public String getOrderId() {
+        return this.payHereOrderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.payHereOrderId = orderId;
+    }
+
 }

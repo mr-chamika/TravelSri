@@ -14,7 +14,7 @@ public class PayHereSecurityService {
     @Autowired
     private PayHereUtils payHereUtils;
 
-    public boolean validateNotification(String merchantId, String orderId, BigDecimal amount,
+    public boolean validateNotification(String merchantId, String orderId, String amount,
                                         String currency, String statusCode, String receivedHash) {
         return payHereUtils.verifyNotificationHash(merchantId, orderId, amount, currency, statusCode, receivedHash);
     }

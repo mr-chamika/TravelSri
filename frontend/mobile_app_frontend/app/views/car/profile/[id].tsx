@@ -1,3 +1,5 @@
+//views/car/profile/[id].tsx
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { useEffect, useState } from "react";
