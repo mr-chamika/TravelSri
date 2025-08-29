@@ -200,7 +200,10 @@ public class Hashingpw {
                                 "/api/payments/payout/confirmation-fee/{bookingId}",
                                 "/api/payments/payout/final/{bookingId}",
                                 "/api/payments/validate/{bookingId}",
-                                "/api/bookings/hotel/create"
+                                "/api/bookings/hotel/create",
+                                "/api/posts/getPosts",
+                                "/api/posts/create",
+                                "/api/posts/like/{postId}"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
