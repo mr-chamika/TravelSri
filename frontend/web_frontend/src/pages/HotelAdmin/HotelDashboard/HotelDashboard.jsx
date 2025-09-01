@@ -22,6 +22,7 @@ import BookingChart from '../../../components/HotelAdminM/HotelAdmin/Dashboard/B
 import DetailedBookingChart from '../../../components/HotelAdminM/HotelAdmin/Dashboard/DetailedBookingChart';
 import Calendar from '../../../components/HotelAdminM/HotelAdmin/Dashboard/Calendar';
 import RecentBookings from '../../../components/HotelAdminM/HotelAdmin/Dashboard/RecentBookings';
+import ConnectionTest from '../../../components/ConnectionTest';
 
 ChartJS.register(
   CategoryScale,
@@ -542,6 +543,9 @@ const HotelDashboard = () => {
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+      
+      {/* Backend Connection Test */}
+      <ConnectionTest />
 
       {/* ---- Stats Cards ---- */}
       <StatsCards dashboardData={dashboardData} />

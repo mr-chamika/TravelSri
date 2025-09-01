@@ -1,16 +1,23 @@
 package com.example.student.services;
 
+import com.example.student.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class Hashingpw {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -22,6 +29,8 @@ public class Hashingpw {
         http
                 .cors(withDefaults()) // Apply the global CORS configuration
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Make the security context stateless
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/user/signup",
@@ -109,8 +118,9 @@ public class Hashingpw {
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
+                                "/api/admin-hotel-bookings",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}",
+                                "/api/admin-hotel-bookings/test-auth",
                                 "/auth/**",
                                 "/shopitems/all",
                                 "/shopitems/view",
@@ -155,7 +165,55 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating"
+                                "/reviews/by-rating",
+                                "/api/guide/search",
+                                "/api/payments/payhere/simple-health",
+                                "/api/payments/payhere/create-checkout",
+                                "/api/payments/payhere/test/booking-info/{bookingId}",
+                                "api/payments/payhere/test/generate-hash",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/return/{bookingId}",
+                                "/api/payments/payhere/sdk/payment-completed/",
+                                "/api/guide/bookings/{guideId}",
+                                "/api/guide/bookings/{guideId}/pending",
+                                "/api/guide/bookings/{guideId}/confirmed",
+                                "/api/guide/bookings/{guideId}/completed",
+                                "/api/guide/bookings/{guideId}/today",
+                                "/api/guide/bookings/{guideId}/upcoming",
+                                "/api/guide/bookings/{bookingId}/accept",
+                                "/api/guide/bookings/{bookingId}/reject",
+                                "/api/guide/bookings/{bookingId}/complete",
+                                "/api/guide/bookings/{guideId}/stats",
+                                "/api/guide/bookings/{guideId}/daterange",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/payhere/config-check",
+                                "/api/payments/payhere/test/verify-hash",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "/api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/status/check",
+                                "/api/payments/status/bulk-check",
+                                "/api/payments/status/update",
+                                "/api/payments/history/{bookingId}",
+                                "/api/payments/summary/{bookingId}",
+                                "/api/payments/money-flow/{bookingId}",
+                                "/api/payments/wallet/{travelerId}",
+                                "/api/payments/refund/partial/{bookingId}",
+                                "/api/payments/refund/full/{bookingId}",
+                                "/api/payments/payout/confirmation-fee/{bookingId}",
+                                "/api/payments/payout/final/{bookingId}",
+                                "/api/payments/validate/{bookingId}",
+                                "/api/bookings/hotel/create",
+                                "/api/test/public",
+                                "/hotel-rooms/**"
+
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

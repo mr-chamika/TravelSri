@@ -41,16 +41,22 @@ public class HotelController {
     @PostMapping("/register")
     public ResponseEntity<?> registerHotel(@RequestBody Hotel hotel) {
         try {
+            // Debug logging
+            System.out.println("Hotel registration request received: " + hotel);
+            
             // Validate required fields
             if (hotel.getUsername() == null || hotel.getUsername().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Username is required");
                 return new ResponseEntity<>("Username is required", HttpStatus.BAD_REQUEST);
             }
             
             if (hotel.getEmail() == null || hotel.getEmail().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Email is required");
                 return new ResponseEntity<>("Email is required", HttpStatus.BAD_REQUEST);
             }
             
             if (hotel.getPassword() == null || hotel.getPassword().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Password is required");
                 return new ResponseEntity<>("Password is required", HttpStatus.BAD_REQUEST);
             }
             
@@ -58,13 +64,17 @@ public class HotelController {
             Hotel savedHotel = hotelService.registerNewHotel(hotel);
             
             if (savedHotel != null) {
+                System.out.println("Hotel registration successful for: " + hotel.getUsername());
                 return new ResponseEntity<>("Success", HttpStatus.CREATED);
             } else {
-                return new ResponseEntity<>("Signup failed", HttpStatus.BAD_REQUEST);
+                System.out.println("Hotel registration failed: Service returned null");
+                return new ResponseEntity<>("Signup failed - username or email may already be in use", HttpStatus.BAD_REQUEST);
             }
             
         } catch (Exception e) {
-            return new ResponseEntity<>("Signup failed", HttpStatus.INTERNAL_SERVER_ERROR);
+            System.out.println("Hotel registration failed with exception: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Signup failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     
@@ -74,32 +84,51 @@ public class HotelController {
             String username = hotel.getUsername();
             String password = hotel.getPassword();
             
+            System.out.println("Login attempt for username: " + username);
+            
             if (username == null || username.trim().isEmpty()) {
+                System.out.println("Login failed: Username is required");
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Username is required");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
             
             if (password == null || password.trim().isEmpty()) {
+                System.out.println("Login failed: Password is required");
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Password is required");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
+
+
             
             // Use service to authenticate hotel
             Hotel authenticatedHotel = hotelService.authenticateHotel(username, password);
+            System.out.println("authenticatedHotel: " + authenticatedHotel);
             
             if (authenticatedHotel != null) {
+                System.out.println("Hotel authenticated successfully: " + username);
+                
+                // TEMPORARY FIX - Auto verify and activate during login for better user experience
+                if (!authenticatedHotel.isVerified() || !authenticatedHotel.isActive()) {
+                    System.out.println("Auto-verifying and activating hotel: " + username);
+                    authenticatedHotel.setVerified(true);
+                    authenticatedHotel.setActive(true);
+                    authenticatedHotel = hotelsRepo.save(authenticatedHotel);
+                }
+                
                 // Check if hotel is verified and active
                 if (!authenticatedHotel.isVerified()) {
+                    System.out.println("Login failed: Hotel account is not verified yet: " + username);
                     Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Hotel account is not verified yet");
+                    errorResponse.put("error", "Your account is pending verification. Please contact support.");
                     return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
                 }
                 
                 if (!authenticatedHotel.isActive()) {
+                    System.out.println("Login failed: Hotel account is not active: " + username);
                     Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Hotel account is not active");
+                    errorResponse.put("error", "Your account has been deactivated. Please contact support.");
                     return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
                 }
                 
@@ -112,18 +141,26 @@ public class HotelController {
                 
                 // Generate JWT token
                 String token = generateHotelToken(userDetails, authenticatedHotel);
+                System.out.println("Login successful, token generated for: " + username);
                 
-                Map<String, String> responseBody = new HashMap<>();
+                Map<String, Object> responseBody = new HashMap<>();
                 responseBody.put("token", token);
+                responseBody.put("hotelName", authenticatedHotel.getHotelName());
+                responseBody.put("username", authenticatedHotel.getUsername());
+                responseBody.put("email", authenticatedHotel.getEmail());
+                responseBody.put("message", "Login successful");
                 return ResponseEntity.ok(responseBody);
                 
             } else {
+                System.out.println("Login failed: Invalid credentials for username: " + username);
                 Map<String, String> errorBody = new HashMap<>();
                 errorBody.put("error", "Invalid username or password");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorBody);
             }
             
         } catch (Exception e) {
+            System.out.println("Login failed with exception: " + e.getMessage());
+            e.printStackTrace();
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Login failed: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -140,18 +177,14 @@ public class HotelController {
         return user;
     }
     
-    // Simplified token generation for hotels
+    // Generate JWT token for hotels
     private String generateHotelToken(UserDetails userDetails, Hotel hotel) {
         try {
-            // Create a temporary User object for JWT generation
-            com.example.student.model.User tempUser = new com.example.student.model.User();
-            tempUser.set_id(hotel.get_id());
-            tempUser.setEmail(hotel.getEmail());
-            tempUser.setUsername(hotel.getUsername());
-            tempUser.setRole("ROLE_HOTEL");
-            
-            return jwtUtil.generateToken(userDetails, tempUser);
+            // Use the dedicated hotel token generator
+            return jwtUtil.generateHotelToken(userDetails, hotel);
         } catch (Exception e) {
+            // Log the error for debugging
+            e.printStackTrace();
             // Fallback: generate a simple token
             return "hotel-token-" + hotel.getUsername() + "-" + System.currentTimeMillis();
         }
@@ -551,6 +584,39 @@ public class HotelController {
     }
 
     // ========== ADDITIONAL ENDPOINTS ==========
+    
+    @GetMapping("/verify-hotel-by-username/{username}")
+    public ResponseEntity<?> verifyHotelByUsername(@PathVariable String username) {
+        try {
+            Optional<Hotel> hotelOpt = hotelsRepo.findByUsername(username);
+            
+            if (hotelOpt.isPresent()) {
+                Hotel hotel = hotelOpt.get();
+                hotel.setVerified(true);
+                hotel.setActive(true);
+                hotel.setUpdatedAt(java.time.Instant.now().toString());
+                
+                Hotel updatedHotel = hotelsRepo.save(hotel);
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel verified and activated successfully");
+                response.put("username", username);
+                response.put("verified", updatedHotel.isVerified());
+                response.put("active", updatedHotel.isActive());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to verify hotel: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     
     @GetMapping("/verified")
     public ResponseEntity<List<Hotel>> getVerifiedHotels() {

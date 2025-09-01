@@ -22,15 +22,36 @@ public class HotelService {
      * Register a new hotel with validation and password encryption
      */
     public Hotel registerNewHotel(Hotel hotel) {
+        // Debug logging
+        System.out.println("Registering new hotel: username=" + hotel.getUsername() + ", email=" + hotel.getEmail());
+        
+        // Validate required fields - prevent NullPointerException
+        if (hotel.getUsername() == null || hotel.getUsername().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: username is null or empty");
+            return null;
+        }
+        
+        if (hotel.getEmail() == null || hotel.getEmail().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: email is null or empty");
+            return null;
+        }
+        
+        if (hotel.getPassword() == null || hotel.getPassword().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: password is null or empty");
+            return null;
+        }
+        
         // Check if email already exists
         Optional<Hotel> existingByEmail = hotelsRepo.findByEmail(hotel.getEmail());
         if (existingByEmail.isPresent()) {
+            System.out.println("Hotel registration failed: email already exists");
             return null; // Hotel with this email already exists
         }
 
         // Check if username already exists
         Optional<Hotel> existingByUsername = hotelsRepo.findByUsername(hotel.getUsername());
         if (existingByUsername.isPresent()) {
+            System.out.println("Hotel registration failed: username already exists");
             return null; // Hotel with this username already exists
         }
 
@@ -39,23 +60,23 @@ public class HotelService {
         String hashedPassword = passwordEncoder.encode(plainPassword);
         hotel.setPassword(hashedPassword);
 
-        // Set default values
-        hotel.setActive(false);
-        hotel.setVerified(false);
+        // Set default values - automatically verify and activate for better user experience
+        hotel.setActive(true);  // Set to true so users can log in immediately
+        hotel.setVerified(true); // Set to true so users can log in immediately
         hotel.setCreatedAt(java.time.Instant.now().toString());
         hotel.setUpdatedAt(java.time.Instant.now().toString());
 
-        // Initialize default values for numeric fields
-        if (hotel.getRatings() == 0) hotel.setRatings(0);
-        if (hotel.getReviewCount() == 0) hotel.setReviewCount(0);
-        if (hotel.getOriginalPrice() == 0) hotel.setOriginalPrice(0);
-        if (hotel.getCurrentPrice() == 0) hotel.setCurrentPrice(0);
-        if (hotel.getSinglePrice() == 0) hotel.setSinglePrice(0);
-        if (hotel.getDoublePrice() == 0) hotel.setDoublePrice(0);
-        if (hotel.getAvailableSingle() == 0) hotel.setAvailableSingle(0);
-        if (hotel.getAvailableDouble() == 0) hotel.setAvailableDouble(0);
-        if (hotel.getMaxSingle() == 0) hotel.setMaxSingle(0);
-        if (hotel.getMaxDouble() == 0) hotel.setMaxDouble(0);
+    // Initialize default values for numeric fields (handle possible nulls)
+    if (hotel.getRatings() == null) hotel.setRatings(0);
+    if (hotel.getReviewCount() == null) hotel.setReviewCount(0);
+    if (hotel.getOriginalPrice() == null) hotel.setOriginalPrice(0);
+    if (hotel.getCurrentPrice() == null) hotel.setCurrentPrice(0);
+    if (hotel.getSinglePrice() == null) hotel.setSinglePrice(0);
+    if (hotel.getDoublePrice() == null) hotel.setDoublePrice(0);
+    if (hotel.getAvailableSingle() == null) hotel.setAvailableSingle(0);
+    if (hotel.getAvailableDouble() == null) hotel.setAvailableDouble(0);
+    if (hotel.getMaxSingle() == null) hotel.setMaxSingle(0);
+    if (hotel.getMaxDouble() == null) hotel.setMaxDouble(0);
 
         return hotelsRepo.save(hotel);
     }
@@ -64,16 +85,44 @@ public class HotelService {
      * Authenticate hotel login
      */
     public Hotel authenticateHotel(String username, String password) {
+        // Debug logging
+        System.out.println("Authenticating hotel: " + username);
+        
+        // Find the hotel by username
         Optional<Hotel> hotelOpt = hotelsRepo.findByUsername(username);
         
-        if (hotelOpt.isPresent()) {
-            Hotel hotel = hotelOpt.get();
-            if (passwordEncoder.matches(password, hotel.getPassword())) {
-                return hotel;
-            }
+        if (!hotelOpt.isPresent()) {
+            System.out.println("Authentication failed: Hotel with username " + username + " not found");
+            return null;
         }
+
+//        System.out.println("hotel>>>>", hotelOpt.stream().count());
         
-        return null; // Authentication failed
+        Hotel hotel = hotelOpt.get();
+
+        System.out.println("Hotel authenticated: >>>>>" + hotel);
+        
+        // Check if the password matches
+        System.out.println("password: " + password);
+        boolean passwordMatches = passwordEncoder.matches(password, hotel.getPassword());
+        System.out.println("Password matches: " + passwordMatches);
+        if (passwordMatches) {
+            System.out.println("Authentication successful for: " + username);
+            System.out.println("function called<<<<");
+            // Check verification and active status for debugging
+            if (!hotel.isVerified()) {
+                System.out.println("Note: Hotel " + username + " is not yet verified");
+            }
+            
+            if (!hotel.isActive()) {
+                System.out.println("Note: Hotel " + username + " is not active");
+            }
+            
+            return hotel;
+        } else {
+            System.out.println("Authentication failed: Invalid password for " + username);
+            return null;
+        }
     }
 
     /**

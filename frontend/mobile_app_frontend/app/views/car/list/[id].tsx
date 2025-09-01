@@ -1,3 +1,5 @@
+//car/list/[id].tsx
+
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
 import { cssInterop } from 'nativewind';
