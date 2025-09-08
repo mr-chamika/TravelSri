@@ -5,11 +5,11 @@ import { Image } from 'expo-image'
 
 cssInterop(Image, { className: "style" });
 
-const pin = require('../../../assets/images/tabbar/create/pin.png')
-const bed = require('../../../assets/images/tabbar/create/bed.png')
-const guide = require('../../../assets/images/tabbar/create/guid.png')
-const equips = require('../../../assets/images/tabbar/create/equips.png')
-const car = require('../../../assets/images/tabbar/create/carr.png')
+const pin = require('../../assets/images/tabbar/create/pin.png')
+const bed = require('../../assets/images/tabbar/create/bed.png')
+const guide = require('../../assets/images/tabbar/create/guid.png')
+const equips = require('../../assets/images/tabbar/create/equips.png')
+const car = require('../../assets/images/tabbar/create/carr.png')
 
 export default function CreateLayout() {
     return (

@@ -7,12 +7,12 @@ import { useRouter } from "expo-router";
 
 cssInterop(Image, { className: "style" });
 
-const pic = require('../../../assets/images/tabbar/create/equips/item.png')
-const pics = require('../../../assets/images/tabbar/create/equips/str.png')
-const search = require('../../../assets/images/search1.png')
-const pin = require('../../../assets/images/tabbar/create/pin.png')
-const tele = require('../../../assets/images/tabbar/create/guide/telephones.png')
-const star = require('../../../assets/images/tabbar/create/hotel/stars.png')
+const pic = require('../../assets/images/tabbar/create/equips/item.png')
+const pics = require('../../assets/images/tabbar/create/equips/str.png')
+const search = require('../../assets/images/search1.png')
+const pin = require('../../assets/images/tabbar/create/pin.png')
+const tele = require('../../assets/images/tabbar/create/guide/telephones.png')
+const star = require('../../assets/images/tabbar/create/hotel/stars.png')
 
 interface Item {
 

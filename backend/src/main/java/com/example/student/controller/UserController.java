@@ -51,7 +51,7 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody User user) {
 
        Optional<User> exists = repo.findByEmail(user.getEmail());
-
+System.out.println(exists.get());
        if(exists.isPresent()) {//user exists
 
            User t = exists.get();

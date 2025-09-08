@@ -56,7 +56,7 @@ public class TravelerController {
     public ResponseEntity<List<THoteldto>> HotelsAll(@RequestParam String location,@RequestParam int guests ) {
 
         List<THoteldto> list = repo2.findAllHoteldtos(location,guests);
-
+System.out.println(list);
         return ResponseEntity.ok(list);
 
     }

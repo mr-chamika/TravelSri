@@ -8,11 +8,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 cssInterop(Image, { className: "style" });
 
-const cross = require('../../../assets/images/cross.png');
-const mark = require('../../../assets/images/tabbar/create/location/mark.png');
-const pic = require('../../../assets/images/tabbar/create/location/h.png');
-const star = require('../../../assets/images/tabbar/create/hotel/stars.png');
-const tele = require('../../../assets/images/tabbar/create/guide/telephones.png')
+const cross = require('../../assets/images/cross.png');
+const mark = require('../../assets/images/tabbar/create/location/mark.png');
+const pic = require('../../assets/images/tabbar/create/location/h.png');
+const star = require('../../assets/images/tabbar/create/hotel/stars.png');
+const tele = require('../../assets/images/tabbar/create/guide/telephones.png')
 
 interface Book {
     dates: string[];

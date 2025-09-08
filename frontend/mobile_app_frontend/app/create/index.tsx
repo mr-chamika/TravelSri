@@ -1,25 +1,26 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 cssInterop(Image, { className: "style" });
 
+
 const router = useRouter();
 //const OPTIONS = ["Colombo", "Kandy", "Galle", "Matara", "Nuwara Eliya", "Anuradhapura", "Polonnaruwa", "Jaffna", "Trincomalee"];
-const but = require('../../../assets/images/tabbar/create/location/drop.png');
-const mark = require('../../../assets/images/tabbar/create/location/mark.png');
-const pic = require('../../../assets/images/tabbar/towert.png');
+const but = require('../../assets/images/tabbar/create/location/drop.png');
+const mark = require('../../assets/images/tabbar/create/location/mark.png');
+const pic = require('../../assets/images/tabbar/towert.png');
 
 /* const routes = [
     { id: '1', from: 'Matara', to: 'Colombo', duration: 1, thumbnail: pic },
     { id: '2', from: 'Uthuwankanda', to: 'Kurunegala', duration: 1, thumbnail: pic },
     { id: '3', from: 'Colombo', to: 'Hanthana', duration: 1, thumbnail: pic },
     { id: '4', from: 'Galle', to: 'Jaffna', duration: 3, thumbnail: pic }
-];
- */
+    ];
+    */
 
 interface Route {
 
@@ -38,6 +39,20 @@ export default function Dropdown() {
     const [hasMadeInitialSelection, setHasMadeInitialSelection] = useState(false);
     const [routes, setRoutes] = useState<Route[]>([])
     const [options, setOptions] = useState<string[]>([])
+
+    const { dayNumber, date, adults, children } = useLocalSearchParams();
+
+    const order = {
+
+        dayNumber: dayNumber,
+        date: date,
+        adults: adults,
+        children: children
+
+    }
+
+    AsyncStorage.setItem('order', JSON.stringify(order))
+
 
     useEffect(() => {
         if (routes.length > 0) {

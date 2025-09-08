@@ -7,7 +7,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { jwtDecode } from 'jwt-decode';
-import SimpleTimePicker from '../../../components/TimeSelector';
+import SimpleTimePicker from '../../components/TimeSelector';
 
 interface MyToken {
     sub: string;
@@ -19,15 +19,15 @@ interface MyToken {
 
 cssInterop(Image, { className: "style" });
 
-const pic = require('../../../assets/images/tabbar/tuktuk.png');
-const bus = require('../../../assets/images/tabbar/bus.png');
-const ac = require('../../../assets/images/tabbar/ac.png');
-const car = require('../../../assets/images/tabbar/car.png');
-const mini = require('../../../assets/images/tabbar/mini.png');
-const sport = require('../../../assets/images/tabbar/sport.png');
-const p = require('../../../assets/images/user2.png');
-const t = require('../../../assets/images/tag.png');
-const mark = require('../../../assets/images/mark.png');
+const pic = require('../../assets/images/tabbar/tuktuk.png');
+const bus = require('../../assets/images/tabbar/bus.png');
+const ac = require('../../assets/images/tabbar/ac.png');
+const car = require('../../assets/images/tabbar/car.png');
+const mini = require('../../assets/images/tabbar/mini.png');
+const sport = require('../../assets/images/tabbar/sport.png');
+const p = require('../../assets/images/user2.png');
+const t = require('../../assets/images/tag.png');
+const mark = require('../../assets/images/mark.png');
 
 interface BookO {
     dates: string[];
@@ -699,7 +699,7 @@ export default function App() {
 
                     //==setSubmitForm(finalFormObject)
                     alert('Plan created and session reset!');
-                    router.push('/(tabs)/create');
+                    //router.push('/(tabs)/create');
                     router.replace('/(tabs)');
                 } else {
 

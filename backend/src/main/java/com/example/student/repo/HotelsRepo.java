@@ -18,7 +18,7 @@ public interface HotelsRepo extends MongoRepository<Hotel,String> {
                     "{ 'location': {$regex: ?0, $options: 'i' } }, " +
                     "{ $expr: { $gte: [ { $add: [ '$availableSingle', '$availableDouble' ] }, ?1 ] } } " +
                     "] }",
-            fields = "{ '_id': 1, 'name': 1, 'location': 1, 'distance': 1, 'ratings': 1, 'reviewCount': 1, 'thumbnail': 1, 'originalPrice': 1, 'currentPrice': 1, 'taxes': 1, 'priceDescription': 1, 'specialOffer': 1, 'freeFeatures': 1 }"
+            fields = "{ '_id': 1, 'name': 1, 'location': 1, 'distance': 1, 'ratings': 1, 'reviewCount': 1, 'thumbnail': 1, 'originalPrice': 1, 'currentPrice': 1, 'taxes': 1, 'priceDescription': 1, 'specialOffer': 1, 'freeFeatures': 1,'singlePrice': 1,'doublePrice': 1,'availableSingle': 1 ,'availableDouble': 1}"
     )List<THoteldto> findAllHoteldtos(String location, int guests);
 
     // In HotelsRepo.java
