@@ -340,7 +340,8 @@ export default function HotelsBookingScreen() {
             }
 
             // Guide Booking Price
-            const guideIndex = await AsyncStorage.getItem('guide');
+            const guideIndex = await AsyncStorage.getItem('selectedGuideBooking');
+
             if (guideIndex && guides) {
                 const guide = guides.find(guide => guide.id === guideIndex);
                 if (guide) {
@@ -355,7 +356,7 @@ export default function HotelsBookingScreen() {
                 const selectedHotel = hotes.find(hotel => hotel._id === hotelBookingData.id); // Find hotel by its ID
 
                 if (selectedHotel) { // Null check for selectedHotel
-                    console.log(selectedHotel)
+                    //console.log(selectedHotel)
                     const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
                     const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
 
@@ -417,7 +418,7 @@ export default function HotelsBookingScreen() {
                                 return (
                                     <TouchableOpacity
                                         key={hotel._id}
-                                        className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-h_idden shadow-md w-[95%]"
+                                        className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-hidden shadow-md w-[95%]"
                                         onPress={() => router.push(`/views/hotel/group/${hotel._id}`)}
                                         activeOpacity={0.7}
                                     >
