@@ -54,7 +54,6 @@ public class Hashingpw {
                                 "/vehicle/all",
                                 "/vehicle/edit",
                                 "/traveler/**",
-                                "/traveler/hotels-all",
                                 "/api/pendingTrip/getall",
                                 "/api/pendingTrip/create",
                                 "/api/pendingTrip/update/{id}",

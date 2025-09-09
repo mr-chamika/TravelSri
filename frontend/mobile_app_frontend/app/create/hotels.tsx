@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createIconSetFromFontello } from "react-native-vector-icons";
+
 
 cssInterop(Image, { className: "style" });
 

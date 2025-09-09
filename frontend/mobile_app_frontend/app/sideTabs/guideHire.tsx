@@ -169,7 +169,7 @@ export default function Guide() {
     const handleSubmit = async () => {
 
         try {
-            if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
+            if (selectedDates.length === 0 || (!destination.trim() && !travelDescription) || !lan.trim()) {
                 alert('Please fill in all fields.');
                 return;
             }
@@ -187,7 +187,7 @@ export default function Guide() {
 
             await AsyncStorage.setItem('soloGuideBook', JSON.stringify(book));
 
-            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`)
+            const res = bookingType == 'visit' ? await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`) : await fetch(`http://localhost:8080/traveler/guides-alls?language=${lan.trim().toLowerCase()}`)
 
             if (res.ok) {
 

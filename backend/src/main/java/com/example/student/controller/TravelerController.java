@@ -150,6 +150,19 @@ System.out.println(list);
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/guides-alls")
+    public ResponseEntity<?> GuidesAlls(String language) {
+        List<Guidedto> list = userRepo.findAllGuidedtoss(language);
+
+
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body("No guides found");
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
+
     @GetMapping("/guide-all")
     public ResponseEntity<List<Guidedto>> GuideAll() {
         List<Guidedto> list = userRepo.findAllGuidedto();
