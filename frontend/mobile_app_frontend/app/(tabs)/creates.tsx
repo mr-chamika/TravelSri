@@ -52,6 +52,99 @@ interface DayPlan {
   };
 }
 
+const TravelersPickerModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+  tripSettings: TripSettings;
+  setTripSettings: React.Dispatch<React.SetStateAction<TripSettings>>;
+}> = ({ visible, onClose, tripSettings, setTripSettings }) => (
+  <Modal
+    visible={visible}
+    transparent={true}
+    animationType="slide"
+    onRequestClose={onClose}
+  >
+    <View className="flex-1 justify-end bg-black/50">
+      <View className="bg-white rounded-t-2xl pb-4 ios:pb-8">
+        <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
+          <Text className="text-lg font-semibold text-gray-800">Select Travelers</Text>
+          <TouchableOpacity onPress={onClose}>
+            <Icon name="close" size={24} color="#1f2937" />
+          </TouchableOpacity>
+        </View>
+        <View className="p-4">
+          {/* Adults */}
+          <View className="flex-row justify-between items-center py-4 border-b border-gray-100">
+            <View className="flex-row items-center flex-1">
+              <Icon name="adult" size={24} color="#a16207" />
+              <View className="ml-3">
+                <Text className="text-base font-semibold text-gray-800">Adults</Text>
+                <Text className="text-sm text-gray-500">Age 18+</Text>
+              </View>
+            </View>
+            <View className="flex-row items-center gap-4">
+              <TouchableOpacity
+                className={`w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center ${tripSettings.adults <= 1 ? 'bg-gray-100 border-gray-200' : ''}`}
+                onPress={() => {
+                  if (tripSettings.adults > 1) {
+                    setTripSettings(prev => ({ ...prev, adults: prev.adults - 1 }));
+                  }
+                }}
+                disabled={tripSettings.adults <= 1}
+              >
+                <Icon name="minus" size={20} color={tripSettings.adults <= 1 ? '#9ca3af' : '#a16207'} />
+              </TouchableOpacity>
+              <Text className="text-lg font-semibold text-gray-800 min-w-[30px] text-center">{tripSettings.adults}</Text>
+              <TouchableOpacity
+                className="w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center"
+                onPress={() => setTripSettings(prev => ({ ...prev, adults: prev.adults + 1 }))}
+              >
+                <Icon name="plus" size={20} color="#a16207" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Children */}
+          <View className="flex-row justify-between items-center py-4">
+            <View className="flex-row items-center flex-1">
+              <Icon name="child" size={24} color="#a16207" />
+              <View className="ml-3">
+                <Text className="text-base font-semibold text-gray-800">Children</Text>
+                <Text className="text-sm text-gray-500">Age 2-17</Text>
+              </View>
+            </View>
+            <View className="flex-row items-center gap-4">
+              <TouchableOpacity
+                className={`w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center ${tripSettings.children <= 0 ? 'bg-gray-100 border-gray-200' : ''}`}
+                onPress={() => {
+                  if (tripSettings.children > 0) {
+                    setTripSettings(prev => ({ ...prev, children: prev.children - 1 }));
+                  }
+                }}
+                disabled={tripSettings.children <= 0}
+              >
+                <Icon name="minus" size={20} color={tripSettings.children <= 0 ? '#9ca3af' : '#a16207'} />
+              </TouchableOpacity>
+              <Text className="text-lg font-semibold text-gray-800 min-w-[30px] text-center">{tripSettings.children}</Text>
+              <TouchableOpacity
+                className="w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center"
+                onPress={() => setTripSettings(prev => ({ ...prev, children: prev.children + 1 }))}
+              >
+                <Icon name="plus" size={20} color="#a16207" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          className="bg-yellow-300 m-4 py-3.5 rounded-lg items-center"
+          onPress={onClose}
+        >
+          <Text className="text-base font-semibold text-yellow-800">Done</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
 const TripPlannerScreen: React.FC = () => {
   const router = useRouter();
 
@@ -170,103 +263,6 @@ const TripPlannerScreen: React.FC = () => {
             onPress={() => setShowDatePicker(false)}
           >
             <Text className="text-base font-semibold text-yellow-800">Confirm Date</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const TravelersPickerModal: React.FC = () => (
-    <Modal
-      visible={showTravelersPicker}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowTravelersPicker(false)}
-    >
-      <View className="flex-1 justify-end bg-black/50">
-        <View className="bg-white rounded-t-2xl pb-4 ios:pb-8">
-          <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
-            <Text className="text-lg font-semibold text-gray-800">Select Travelers</Text>
-            <TouchableOpacity onPress={() => setShowTravelersPicker(false)}>
-              <Icon name="close" size={24} color="#1f2937" />
-            </TouchableOpacity>
-          </View>
-
-          <View className="p-4">
-            {/* Adults */}
-            <View className="flex-row justify-between items-center py-4 border-b border-gray-100">
-              <View className="flex-row items-center flex-1">
-                <Icon name="adult" size={24} color="#a16207" />
-                <View className="ml-3">
-                  <Text className="text-base font-semibold text-gray-800">Adults</Text>
-                  <Text className="text-sm text-gray-500">Age 18+</Text>
-                </View>
-              </View>
-
-              <View className="flex-row items-center gap-4">
-                <TouchableOpacity
-                  className={`w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center ${tripSettings.adults <= 1 ? 'bg-gray-100 border-gray-200' : ''}`}
-                  onPress={() => {
-                    if (tripSettings.adults > 1) {
-                      setTripSettings(prev => ({ ...prev, adults: prev.adults - 1 }));
-                    }
-                  }}
-                  disabled={tripSettings.adults <= 1}
-                >
-                  <Icon name="minus" size={20} color={tripSettings.adults <= 1 ? '#9ca3af' : '#a16207'} />
-                </TouchableOpacity>
-
-                <Text className="text-lg font-semibold text-gray-800 min-w-[30px] text-center">{tripSettings.adults}</Text>
-
-                <TouchableOpacity
-                  className="w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center"
-                  onPress={() => setTripSettings(prev => ({ ...prev, adults: prev.adults + 1 }))}
-                >
-                  <Icon name="plus" size={20} color="#a16207" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Children */}
-            <View className="flex-row justify-between items-center py-4">
-              <View className="flex-row items-center flex-1">
-                <Icon name="child" size={24} color="#a16207" />
-                <View className="ml-3">
-                  <Text className="text-base font-semibold text-gray-800">Children</Text>
-                  <Text className="text-sm text-gray-500">Age 2-17</Text>
-                </View>
-              </View>
-
-              <View className="flex-row items-center gap-4">
-                <TouchableOpacity
-                  className={`w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center ${tripSettings.children <= 0 ? 'bg-gray-100 border-gray-200' : ''}`}
-                  onPress={() => {
-                    if (tripSettings.children > 0) {
-                      setTripSettings(prev => ({ ...prev, children: prev.children - 1 }));
-                    }
-                  }}
-                  disabled={tripSettings.children <= 0}
-                >
-                  <Icon name="minus" size={20} color={tripSettings.children <= 0 ? '#9ca3af' : '#a16207'} />
-                </TouchableOpacity>
-
-                <Text className="text-lg font-semibold text-gray-800 min-w-[30px] text-center">{tripSettings.children}</Text>
-
-                <TouchableOpacity
-                  className="w-9 h-9 rounded-full bg-yellow-50 border border-yellow-300 items-center justify-center"
-                  onPress={() => setTripSettings(prev => ({ ...prev, children: prev.children + 1 }))}
-                >
-                  <Icon name="plus" size={20} color="#a16207" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            className="bg-yellow-300 m-4 py-3.5 rounded-lg items-center"
-            onPress={() => setShowTravelersPicker(false)}
-          >
-            <Text className="text-base font-semibold text-yellow-800">Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -437,7 +433,12 @@ const TripPlannerScreen: React.FC = () => {
 
       {/* Modals */}
       <DatePickerModal />
-      <TravelersPickerModal />
+      <TravelersPickerModal
+        visible={showTravelersPicker}
+        onClose={() => setShowTravelersPicker(false)}
+        tripSettings={tripSettings}
+        setTripSettings={setTripSettings}
+      />
     </SafeAreaView>
   );
 };
