@@ -200,7 +200,14 @@ export default function Views() {
 
     const handleBooking = async () => {
 
-        router.push('/create/car')
+        if (vehicle) {
+            await AsyncStorage.setItem('selectedCar', vehicle?._id);
+            router.push('/create/car')
+        } else {
+
+            alert('Error : vehicle not detected')
+
+        }
 
     }
 

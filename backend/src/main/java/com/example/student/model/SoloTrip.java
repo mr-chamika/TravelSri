@@ -16,36 +16,34 @@ import java.util.List;
 public class SoloTrip {
 
 
-    public SoloTrip(String routeId,String creatorId, String hotelId, int adults, int children, int nights, int doubleBeds, int singleBeds, List<String> hdatesBooked, String hlocation, int hprice, String guideId, List<String> gdatesBooked, String glocation, String glanguage, int gprice, String carId, List<String> cdatesBooked, String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,String thumbnail,String start,String destination,String status,String startDate,String map) {
-        this.creatorId = creatorId;
+    public SoloTrip(String routeId,String creatorId,String date, String hotelId, int adults, int children, int doubleBeds, int singleBeds,int hprice, String guideId,String type, String glocation, String glanguage, int gprice, String carId,String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,boolean isOneway,String thumbnail,String start,String destination,String status,String startDate,String map) {
         this.routeId = routeId;
+        this.creatorId = creatorId;
+        this.date = date;
 
         // Hotel fields
         this.hotelId = hotelId;
         this.adults = adults;
         this.children = children;
-        this.nights = nights;
         this.doubleBeds = doubleBeds;
         this.singleBeds = singleBeds;
-        this.hdatesBooked = hdatesBooked;
-        this.hlocation = hlocation;
         this.hprice = hprice;
 
         // Guide fields
         this.guideId = guideId;
-        this.gdatesBooked = gdatesBooked;
+        this.type = type;
         this.glocation = glocation;
         this.glanguage = glanguage;
         this.gprice = gprice;
 
         // Car fields
         this.carId = carId;
-        this.cdatesBooked = cdatesBooked;
         this.clanguage = clanguage;
         this.endLocation = endLocation;
         this.startLocation = startLocation;
         this.bookedTime = bookedTime;
         this.cprice = cprice;
+        this.isOneway=isOneway;
 
         this.thumbnail = thumbnail;
         this.start = start;
@@ -59,6 +57,7 @@ public class SoloTrip {
     @Id
     private String _id;
     private String creatorId;
+    private String date;
     //route selection
     private String routeId;
 
@@ -66,16 +65,13 @@ public class SoloTrip {
     private String hotelId;
     private int adults;
     private int children;
-    private int nights;
     private int doubleBeds;
     private int singleBeds;
-    private List<String> hdatesBooked;
-    private String hlocation;
     private int hprice;
 
     //guide selection
     private String guideId;
-    private List<String> gdatesBooked;
+    private String type;
     private String glocation;
     private String glanguage;
     private int gprice;
@@ -83,12 +79,12 @@ public class SoloTrip {
 
     //car details
     private String carId;
-    private List<String> cdatesBooked;
     private String clanguage;
     private String endLocation;
     private String startLocation;
     private String bookedTime;
     private int cprice;
+    private boolean isOneway;
 
     //other
     private String thumbnail;

@@ -185,7 +185,6 @@ export default function App() {
         };
 
         // 3. Update the component's state to reflect the completed booking
-        console.log(newBooking)
         setBookingData(newBooking);
         setModalVisible(false);
         setIsBookingComplete(true);

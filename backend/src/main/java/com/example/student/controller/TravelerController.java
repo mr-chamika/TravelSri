@@ -317,8 +317,7 @@ System.out.println(list);
     public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language,String id) {
 
         List<Driverdto> list= vehicleRepo.findByCatId(location,language,id);
-System.out.println(id);
-System.out.println(list);
+
         return ResponseEntity.ok(list);
 
     }
@@ -357,32 +356,30 @@ System.out.println(list);
         SoloTrip x = new SoloTrip(
                 obj.getRouteId(),
                 obj.getCreatorId(),
+                obj.getDate(),
                 obj.getHotelId(),
                 obj.getAdults(),
                 obj.getChildren(),
-                obj.getNights(),
                 obj.getDoubleBeds(),
                 obj.getSingleBeds(),
-                obj.getHdatesBooked(),
-                obj.getHlocation(),
                 obj.getHprice(),
                 obj.getGuideId(),
-                obj.getGdatesBooked(),
+                obj.getType(),
                 obj.getGlocation(),
                 obj.getGlanguage(),
                 obj.getGprice(),
                 obj.getCarId(),
-                obj.getCdatesBooked(),
                 obj.getClanguage(),
                 obj.getEndLocation(),
                 obj.getStartLocation(),
                 obj.getBookedTime(),
                 obj.getCprice(),
+                obj.isOneway(),
                 r.get().getThumbnail(),
                 r.get().getFrom(),
                 r.get().getTo(),
                 "pending",
-                obj.getCdatesBooked().get(0),
+                obj.getDate(),
 r.get().getMapRoute()
                 );
 
@@ -445,9 +442,10 @@ SolotripViewdto s = new SolotripViewdto(
         x.get_id(),
         x.getCreatorId(),
         x.getRouteId(),
+        x.getDate(),
         x.getHotelId(),
         h.getName(),
-        x.getHlocation(),
+        h.getLocation(),
         x.getHprice(),
         x.getGuideId(),
         x.getGlocation(),

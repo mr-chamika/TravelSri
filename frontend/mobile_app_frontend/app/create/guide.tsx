@@ -71,7 +71,7 @@ export default function Guide() {
 
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null);
-    const [book, setBook] = useState<Book[] | null>([]);
+    const [book, setBook] = useState<Book | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [travelDescription, setTravelDescription] = useState('');
 
@@ -148,7 +148,7 @@ export default function Guide() {
 
         }
 
-        const newBooking = [{ loc: destination, lan: lan }];
+        const newBooking = { loc: destination ? destination : travelDescription, lan: lan, type: bookingType };
         setBook(newBooking);
 
         try {
@@ -181,7 +181,7 @@ export default function Guide() {
             // --- Reset local state before loading from storage ---
             setSelectedDates({});
             setSelectedCardIndex(null);
-            setBook([]);
+            setBook(null);
             setLocation('');
             setLan('');
             setShowDropdown(false);
@@ -223,7 +223,7 @@ export default function Guide() {
             console.error('Error loading data from AsyncStorage (guide):', error);
             setSelectedDates({});
             setSelectedCardIndex(null);
-            setBook([]);
+            setBook(null);
             setLocation('');
             setLan('');
             setShowDropdown(false);
