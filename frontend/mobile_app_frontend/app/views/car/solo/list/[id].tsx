@@ -232,6 +232,7 @@ export default function App() {
         try {
             const sessionExists = await AsyncStorage.getItem('solocbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('solocbookingComplete')
+            console.log(sessionExists + " " + bookingCompleteStatus)
 
             setSelectedDates([]);
             setIsBookingComplete(false);
@@ -261,6 +262,28 @@ export default function App() {
                     setLanguage(parsedBooking.language);
                     //setSelectedTime(parsedBooking.time);
                     setTime(parsedBooking.time)
+
+                    const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${startLocation}&language=${language}`)
+
+                    const data = await res.json();
+
+                    if (data) {
+
+                        //console.log(data)
+                        setVehicles(data)
+
+                    }
+                    const res1 = await fetch(`http://localhost:8080/traveler/category-get`)
+
+                    const data1 = await res1.json();
+
+                    if (data1) {
+
+                        //console.log(data1)
+                        setCategories(data1)
+
+                    }
+
                 }
 
             } else {

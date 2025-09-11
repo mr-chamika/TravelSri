@@ -293,19 +293,34 @@ export default function HotelsBookingScreen() {
                 const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
                 //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
-                if (res) {
+                if (res.ok) {
 
                     const data = await res.json()
-                    setHotels(data)
 
-                    const minimalHotles = data.map((hotel: x) => ({
-                        id: hotel._id,
-                        singlePrice: hotel.singlePrice,
-                        doublePrice: hotel.doublePrice,
-                    }));
-                    await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+                    if (data.length > 0) {
 
-                    // FIX: Update selection mark after hotels are loaded
+                        setHotels(data)
+
+                        const minimalHotles = data.map((hotel: x) => ({
+                            id: hotel._id,
+                            singlePrice: hotel.singlePrice,
+                            doublePrice: hotel.doublePrice,
+                        }));
+                        await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+                        // FIX: Update selection mark after hotels are loaded
+                    } else {
+
+                        setHotels([])
+                        await AsyncStorage.removeItem('selectedHotelBooking')
+                        console.log('No hotels found')
+
+                    }
+
+                } else {
+
+                    setHotels([])
+                    await AsyncStorage.removeItem('selectedHotelBooking')
+                    console.log('No hotels found')
 
                 }
 
@@ -528,7 +543,7 @@ export default function HotelsBookingScreen() {
                                 )
                             })}
                         </ScrollView>
-                        {(hotes?.length == 0 && <View className=" h-full items-center justify-center"><Text className="text-red-200 italic">No hotels available</Text></View>)}
+                        {(hotes?.length == 0 && <View className=" h-full items-center justify-center"><Text className="text-red-500 italic">No hotels available</Text></View>)}
                     </View>
 
                     <View className=" p-4 border-t border-gray-200 bg-white">

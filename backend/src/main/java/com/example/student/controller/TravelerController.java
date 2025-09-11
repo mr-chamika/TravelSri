@@ -314,10 +314,11 @@ System.out.println(list);
     private VehicleRepo vehicleRepo;
 
     @GetMapping("/vehicle-get")
-    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language) {
+    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language,String id) {
 
-        List<Driverdto> list= vehicleRepo.findByCatId(location,language);
-
+        List<Driverdto> list= vehicleRepo.findByCatId(location,language,id);
+System.out.println(id);
+System.out.println(list);
         return ResponseEntity.ok(list);
 
     }

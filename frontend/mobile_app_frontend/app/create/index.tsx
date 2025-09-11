@@ -50,8 +50,14 @@ export default function Dropdown() {
         children: children
 
     }
+    useEffect(() => {
 
-    AsyncStorage.setItem('order', JSON.stringify(order))
+        if (order.dayNumber && order.date && order.children && order.adults) {
+
+            AsyncStorage.setItem('order', JSON.stringify(order));
+
+        }
+    }, [order]);
 
 
     useEffect(() => {

@@ -72,7 +72,7 @@ export default function Guide() {
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null);
     const [book, setBook] = useState<Book[] | null>([]);
-    const [isModalVisible, setModalVisible] = useState(true);
+    const [isModalVisible, setModalVisible] = useState(false);
     const [travelDescription, setTravelDescription] = useState('');
 
     const [location, setLocation] = useState('');
@@ -95,6 +95,14 @@ export default function Guide() {
 
     const [destination, setDestination] = useState('');
 
+
+    useEffect(() => {
+        const initializeModal = async () => {
+            const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
+            setModalVisible(bookingComplete !== 'true');
+        };
+        initializeModal();
+    }, []);
 
     const toggleCardSelection = useCallback((index: string) => {
 
@@ -185,12 +193,14 @@ export default function Guide() {
             }
 
             if (sessionExists && bookingComplete === 'true') {
+                setModalVisible(false)
+                setFine(true)
                 const savedBookings = await AsyncStorage.getItem('gbookings');
                 if (savedBookings) {
                     const bookingData = JSON.parse(savedBookings);
                     setBook(bookingData);
                     if (bookingData.length > 0) {
-
+                        console.log(bookingData)
                         const booking = bookingData[0];
 
                         setDestination(booking.loc);
@@ -273,15 +283,20 @@ export default function Guide() {
                     await AsyncStorage.setItem('guides', JSON.stringify(minimalGuides) || '')
                     setGuides(data)
 
-                }
-
-                else {
+                } else {
 
                     setGuides([])
-                    await AsyncStorage.removeItem('guide')
+                    await AsyncStorage.removeItem('selectedGuideBooking')
                     console.log('No guides found')
 
                 }
+            } else {
+
+                setGuides([])
+                await AsyncStorage.removeItem('selectedGuideBooking')
+                console.log('No guides found')
+
+
             }
         } catch (err) {
             console.log(`Error from guide getting : ${err}`)
@@ -472,7 +487,7 @@ export default function Guide() {
                         <Text className="text-lg font-medium">type:{bookingType}</Text>
                     </View>
 
-                    <View>
+                    <View className='flex-1'>
                         <ScrollView
                             className="w-full h-[81%]"
                             contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
@@ -634,6 +649,11 @@ export default function Guide() {
                             })}
 
                         </ScrollView>
+                        {guides.length == 0 &&
+                            <View className="h-full justify-center items-center">
+                                <Text className="text-red-500 italic">No guides available</Text>
+                            </View>
+                        }
                     </View>
                     <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
                         {
