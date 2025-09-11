@@ -418,7 +418,11 @@ export default function App() {
 
 
                 const routeId = await AsyncStorage.getItem('selectedRouteId')
-                if (routeId) { finalFormObject.routeId = routeId } else { console.log('routeId not found'); }
+                if (routeId) {
+                    finalFormObject.routeId = routeId
+                } else {
+                    m = m + ' Please select a location |'
+                }
 
                 const s = await AsyncStorage.getItem('order')
                 if (s) {

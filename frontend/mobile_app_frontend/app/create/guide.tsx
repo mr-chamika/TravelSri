@@ -199,9 +199,9 @@ export default function Guide() {
                 if (savedBookings) {
                     const bookingData = JSON.parse(savedBookings);
                     setBook(bookingData);
-                    if (bookingData.length > 0) {
+                    if (bookingData) {
                         console.log(bookingData)
-                        const booking = bookingData[0];
+                        const booking = bookingData;
 
                         setDestination(booking.loc);
                         setLan(booking.lan);
