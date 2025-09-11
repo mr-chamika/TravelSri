@@ -495,7 +495,7 @@ export default function Guide() {
 
                                         <View className=" w-full absolute items-end pr-1 z-10">
                                             <TouchableOpacity
-                                                className={`my-1 justify-center items-center w-6 h-6 rounded-full bg-gray-200 ${selectedCardIndex === guide._id ? 'border-2' : ''}`}
+                                                className="my-1 justify-center items-center w-6 h-6 rounded-full bg-gray-200 border-2"
                                                 onPress={() => toggleCardSelection(guide._id)}
                                             >
                                                 {selectedCardIndex === guide._id && (

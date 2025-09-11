@@ -83,6 +83,15 @@ interface Form {
 
 }
 
+interface Postdata {
+
+    dayNumber: string,
+    date: string,
+    adults: string,
+    children: string
+
+}
+
 interface g {
 
     id: string,
@@ -313,6 +322,9 @@ export default function App() {
     const [hotels, setHotels] = useState<H[]>([])
     const [categories, setCategories] = useState<Cat[]>([])
 
+    const [locationP, setLocationP] = useState('');
+    const [order, setOrder] = useState<Postdata | null>(null)
+
 
     const locations = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
     const languages = ['English', 'Korean', 'Russian', 'Japanese', 'Sinhala'];
@@ -374,7 +386,7 @@ export default function App() {
     };
 
     const handleSubmit = async () => {
-        if (Object.keys(selectedDates).length === 0 || !startLocation || !endLocation || !language /* || !selectedTime */) {
+        if (!startLocation || !endLocation || !language /* || !selectedTime */) {
             alert('Please fill in all fields.');
             return;
         }
@@ -505,6 +517,30 @@ export default function App() {
 
     useFocusEffect(
         useCallback(() => {
+            const loadInitialData = async () => {
+                const pack = await AsyncStorage.getItem('order');
+                if (pack) {
+                    const parsedOrder = JSON.parse(pack);
+                    if (JSON.stringify(order) !== JSON.stringify(parsedOrder)) {
+                        setOrder(parsedOrder);
+                    }
+                }
+
+                const locationp = await AsyncStorage.getItem('selectedLocation');
+                if (locationp && locationp !== locationP) {
+                    setLocationP(locationp);
+                }
+
+                // Also run count() on focus
+                count();
+            };
+
+            loadInitialData();
+        }, [])
+    );
+
+    useFocusEffect(
+        useCallback(() => {
             loadBookingData();
             count()
         }, [categories])
@@ -524,7 +560,7 @@ export default function App() {
             }
 
             // Guide Booking Price
-            const guideIndex = await AsyncStorage.getItem('guide');
+            const guideIndex = await AsyncStorage.getItem('selectedGuideBooking');
             if (guideIndex && guides) {
                 setGuideId(guideIndex)
                 const guide = guides.find(guide => guide.id === guideIndex);
@@ -748,12 +784,6 @@ export default function App() {
                         </View>
                         <View className="w-full h-[93%] justify-between pb-3">
                             <View className='h-[73%]'>
-                                <Calendar
-                                    onDayPress={onDayPress}
-                                    markedDates={selectedDates}
-                                    minDate={new Date().toISOString().split('T')[0]}
-                                    theme={{ todayTextColor: '#007BFF', arrowColor: '#007BFF' }}
-                                />
                                 <View className="w-full z-20 pb-32 gap-1 mt-2">
                                     <View className='z-40 flex-row justify-between'>
                                         <View className='w-[50%]'>
@@ -859,9 +889,9 @@ export default function App() {
                                                 )}
                                             </TouchableOpacity>
                                         </View>
-                                        <View className="bg-[#d9d9d98e] w-[150px] h-[140px] items-center py-2 rounded-2xl">
+                                        <View className="bg-[#d9d9d98e] w-[160px] h-[200px] items-center py-2 rounded-2xl">
                                             <Image
-                                                className="w-[90px] h-[60px]"
+                                                className="w-[130px] h-[90px]"
                                                 source={{ uri: `data:image/jpeg;base64,${x.image}` }}
                                             />
                                             <View>
@@ -894,7 +924,7 @@ export default function App() {
                             })}
                         </ScrollView>
                     </View>
-                    <View className=" border-t border-gray-200 bg-white py-4 h-[30%] pl-32 flex-row justify-center">
+                    <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 pl-32 flex-row justify-center">
                         <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
                         <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
                     </View>

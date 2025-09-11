@@ -31,10 +31,12 @@ interface Shop {
     _id: string,
     image: string,
     location: string,
-    phone: string,
+    mobileNumber: string,
     stars: number,
     name: string
 
+    pp: string,
+    businessName: string
 
 }
 
@@ -293,11 +295,11 @@ export default function Equipments() {
 
                                         <Image
                                             className="opacity-65 mt-2 flex justify-center w-[335px] h-[130px] rounded-[15px] shadow-gray-400  "
-                                            source={{ uri: `data:image/jpeg;base64,${shop.image}` }}
+                                            source={{ uri: `data:image/jpeg;base64,${shop.pp}` }}
                                         />
                                         <View>
                                             <Text className="mt-1 text-[24px] text-center">
-                                                {shop.name}
+                                                {shop.businessName}
                                             </Text>
                                         </View>
                                         <View className="w-full flex flex-row justify-between px-3 mt-5">
@@ -311,7 +313,7 @@ export default function Equipments() {
                                             <View className="flex-row justify-center items-center gap-1">
 
                                                 <Image className="w-4 h-4" source={tele} />
-                                                <Text>{shop.phone}</Text>
+                                                <Text>{shop.mobileNumber}</Text>
 
                                             </View>
                                             <View className="flex-row justify-center items-center gap-1">

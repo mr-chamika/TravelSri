@@ -425,7 +425,7 @@ export default function HotelsBookingScreen() {
                                         <View className='h-full rounded-lg justify-between'>
                                             <View className="w-full absolute items-start pr-1 z-10">
                                                 <TouchableOpacity
-                                                    className={`justify-center items-center w-6 h-6 rounded-full bg-gray-200 ${selectedCardIndex === hotel._id ? 'border-2' : ''}`}
+                                                    className="justify-center items-center w-6 h-6 rounded-full bg-gray-200 border-2"
                                                     onPress={() => toggleCardSelection(hotel._id)}
                                                 >
                                                     {selectedCardIndex === hotel._id && (
