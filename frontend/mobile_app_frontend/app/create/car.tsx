@@ -538,6 +538,8 @@ export default function App() {
             loadInitialData();
         }, [])
     );
+    console.log(order)
+    console.log(categories)
 
     useFocusEffect(
         useCallback(() => {
@@ -876,52 +878,76 @@ export default function App() {
                             contentContainerClassName="flex-row flex-wrap justify-center items-start gap-5 py-6"
                             showsVerticalScrollIndicator={false}
                         >
-                            {categories.map((x, i) => {
-                                return (
-                                    <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)} key={x._id}>
-                                        <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
-                                            <TouchableOpacity
-                                                className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
-                                                onPress={() => toggleCardSelection(x._id)}
-                                            >
-                                                {selectedCardId === x._id && (
-                                                    <Image className='w-4 h-4' source={mark} />
-                                                )}
-                                            </TouchableOpacity>
-                                        </View>
-                                        <View className="bg-[#d9d9d98e] w-[160px] h-[200px] items-center py-2 rounded-2xl">
-                                            <Image
-                                                className="w-[130px] h-[90px]"
-                                                source={{ uri: `data:image/jpeg;base64,${x.image}` }}
-                                            />
-                                            <View>
-                                                <View className='flex-row items-center gap-4'>
-                                                    <Image
-                                                        className="w-[11px] h-[11px]"
-                                                        source={p}
-                                                    />
-                                                    <Text className=" text-[13px] italic text-center">
-                                                        {x.members} Members
-                                                    </Text>
-                                                </View>
-                                                <View className='flex-row items-center gap-4 my-1'>
-                                                    <Image
-                                                        className="w-[11px] h-[11px]"
-                                                        source={t}
-                                                    />
-                                                    <Text className=" text-[13px] italic text-center">
-                                                        {x.title}
-                                                    </Text>
-                                                </View>
+                            {categories
+
+                                .filter(x => {
+                                    if (!order) return false;
+                                    const totalPeople = Number(order.adults) + Number(order.children);
+
+                                    // Only show vehicles that fit the group
+                                    if (x.members < totalPeople) return false;
+
+                                    // Hide buses for small groups (e.g., less than 10 people)
+                                    if (x.title.toLowerCase().includes('bus') && totalPeople < 10) return false;
+
+                                    // Hide vans for very small groups (e.g., less than 4 people)
+                                    if (x.title.toLowerCase().includes('van') && totalPeople < 4) return false;
+
+                                    // Hide large vehicles (capacity > 10) for groups smaller than 4
+                                    if (x.members > 10 && totalPeople < 4) return false;
+
+                                    return true;
+                                })
+                                .map((x, i) => {
+                                    //if (order && x.members > Number(order.adults) + Number(order.children)) {
+                                    return (
+                                        <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)} key={x._id}>
+                                            <View className="w-full flex-row absolute justify-end pr-1 pt-1 z-10">
+                                                <TouchableOpacity
+                                                    className="w-6 h-6 rounded-full justify-center items-center bg-gray-200 border-2"
+                                                    onPress={() => toggleCardSelection(x._id)}
+                                                >
+                                                    {selectedCardId === x._id && (
+                                                        <Image className='w-4 h-4' source={mark} />
+                                                    )}
+                                                </TouchableOpacity>
                                             </View>
-                                            <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)}>
-                                                <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
-                                                    <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
+                                            <View className="bg-[#d9d9d98e] w-[160px] h-[200px] items-center py-2 rounded-2xl">
+                                                <Image
+                                                    className="w-[130px] h-[90px]"
+                                                    source={{ uri: `data:image/jpeg;base64,${x.image}` }}
+                                                />
+                                                <View>
+                                                    <View className='flex-row items-center gap-4'>
+                                                        <Image
+                                                            className="w-[11px] h-[11px]"
+                                                            source={p}
+                                                        />
+                                                        <Text className=" text-[13px] italic text-center">
+                                                            {x.members} Members
+                                                        </Text>
+                                                    </View>
+                                                    <View className='flex-row items-center gap-4 my-1'>
+                                                        <Image
+                                                            className="w-[11px] h-[11px]"
+                                                            source={t}
+                                                        />
+                                                        <Text className=" text-[13px] italic text-center">
+                                                            {x.title}
+                                                        </Text>
+                                                    </View>
                                                 </View>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </TouchableOpacity>)
-                            })}
+                                                <TouchableOpacity onPress={() => handleCategoryNavigation(x._id)}>
+                                                    <View className="rounded-md bg-black justify-center w-32 h-5 items-center" >
+                                                        <Text className=" text-white font-semibold text-[12px]">{x.price}.00 LKR/1km</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            </View>
+                                        </TouchableOpacity>
+                                    )
+                                    //}
+                                }
+                                )}
                         </ScrollView>
                     </View>
                     <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 pl-32 flex-row justify-center">

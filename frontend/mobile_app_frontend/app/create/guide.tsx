@@ -193,7 +193,7 @@ export default function Guide() {
 
                         const booking = bookingData[0];
 
-                        setLocation(booking.loc);
+                        setDestination(booking.loc);
                         setLan(booking.lan);
                         // Fetch guides now that we have location and language
                         await getGuides(booking.loc, booking.lan);
