@@ -189,7 +189,7 @@ export default function App() {
 
         //console.log(newBooking)
 
-        const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${newBooking.start}&language=${newBooking.language}`)
+        const res = await fetch(`http://localhost:8080/traveler/vehicle-gets?location=${newBooking.start}&language=${newBooking.language}`)
 
         const data = await res.json();
 

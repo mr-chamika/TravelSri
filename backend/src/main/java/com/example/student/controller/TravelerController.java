@@ -322,6 +322,15 @@ System.out.println(list);
 
     }
 
+    @GetMapping("/vehicle-gets")
+    public ResponseEntity<List<Driverdto>> VehiclesAlls(String location,String language) {
+
+        List<Driverdto> list= vehicleRepo.findByCatIds(location,language);
+
+        return ResponseEntity.ok(list);
+
+    }
+
     @GetMapping("/vehicle-data")
     public ResponseEntity<?> VehicleData(String id) {
 
