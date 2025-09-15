@@ -149,8 +149,8 @@ const TripPlannerScreen: React.FC = () => {
   const router = useRouter();
 
   const [tripSettings, setTripSettings] = useState<TripSettings>({
-    startDate: new Date('2025-06-28'),
-    numberOfDays: 3,
+    startDate: new Date(),
+    numberOfDays: 1,
     adults: 2,
     children: 0,
   });

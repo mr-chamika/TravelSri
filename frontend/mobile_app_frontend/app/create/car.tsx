@@ -578,9 +578,9 @@ export default function App() {
             <>
                 <View className="flex-row justify-between items-center p-4 mb-1.5">
                     <Text className="text-lg font-medium">{displayDates}</Text>
-                    <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
+                    {/* <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
                         <Text className="font-semibold text-blue-600">Change</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </View>
 
 

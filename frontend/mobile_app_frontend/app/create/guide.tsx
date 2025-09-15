@@ -481,11 +481,11 @@ export default function Guide() {
                             <Text className="font-semibold text-blue-600">Change</Text>
                         </TouchableOpacity>
                     </View>
-                    <View className="flex-row justify-between items-center p-4">
+                    {/* <View className="flex-row justify-between items-center p-4">
                         <Text className="text-lg font-medium">Language:{lan}</Text>
                         <Text className="text-lg font-medium">Destination:{destination ? destination : travelDescription}</Text>
                         <Text className="text-lg font-medium">type:{bookingType}</Text>
-                    </View>
+                    </View> */}
 
                     <View className='flex-1'>
                         <ScrollView

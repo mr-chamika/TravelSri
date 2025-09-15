@@ -401,7 +401,7 @@ export default function Index() {
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
-        <TouchableOpacity onPress={sendMessage}>
+        {/* <TouchableOpacity onPress={sendMessage}>
           <Text>test</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
@@ -409,7 +409,7 @@ export default function Index() {
         </TouchableOpacity>
         <TouchableOpacity onPress={sendMessageToShops}>
           <Text>all shops</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
       </View>
       <View className="h-[40%]">
