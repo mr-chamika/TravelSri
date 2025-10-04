@@ -216,7 +216,8 @@ export default function Guide() {
 
                 }
             } else {
-                await AsyncStorage.setItem('gbookingSession', Date.now().toString());
+                await AsyncStorage.removeItem('gbookingSession');
+                await AsyncStorage.setItem('bookingComplete', "false")
             }
 
         } catch (error) {
@@ -251,6 +252,16 @@ export default function Guide() {
                 // Also run count() on focus
                 count();
             };
+
+            const run = async () => {
+                await loadBookingData();
+                await count();
+                const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
+                if (bookingComplete !== 'true') {
+                    setModalVisible(true);
+                }
+            };
+            run();
 
             loadInitialData();
         }, [])
@@ -357,6 +368,18 @@ export default function Guide() {
         }, [selectedCardIndex, cars, hotelx]) // Runs when selection or data changes
     );
 
+    const checkAllAsyncStorageKeys = async () => {
+        try {
+            const keys = await AsyncStorage.getAllKeys();
+            const stores = await AsyncStorage.multiGet(keys);
+            console.log('All AsyncStorage keys and values:');
+            stores.forEach(([key, value]) => {
+                console.log(`${key}: ${value}`);
+            });
+        } catch (error) {
+            console.error('Error reading AsyncStorage:', error);
+        }
+    };
 
     return (
         <View className='bg-[#F2F5FA] h-full'>
@@ -367,7 +390,7 @@ export default function Guide() {
                     transparent={true}
                     visible={isModalVisible}
                     onRequestClose={() => {
-                        if (!lan || !location) return;
+                        //if (!lan || !location) return;
                         setModalVisible(false);
                     }}
                 >
@@ -476,6 +499,7 @@ export default function Guide() {
                 </Modal>
 
                 <>
+
                     <View className="flex-row justify-end items-center p-4">
                         <TouchableOpacity onPress={() => setModalVisible(true)} className="bg-gray-200 py-2 px-4 rounded-lg">
                             <Text className="font-semibold text-blue-600">Change</Text>
@@ -650,9 +674,15 @@ export default function Guide() {
 
                         </ScrollView>
                         {guides.length == 0 &&
-                            <View className="h-full justify-center items-center">
-                                <Text className="text-red-500 italic">No guides available</Text>
-                            </View>
+                            <>
+                                <View className="h-full justify-center items-center">
+                                    <Text className="text-red-500 italic">No guides available</Text>
+                                    <TouchableOpacity onPress={checkAllAsyncStorageKeys} style={{ padding: 10, backgroundColor: 'yellow' }}>
+                                        <Text>Check All Storage Keys</Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                            </>
                         }
                     </View>
                     <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
