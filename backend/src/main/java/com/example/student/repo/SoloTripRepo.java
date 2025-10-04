@@ -19,4 +19,8 @@ public interface SoloTripRepo extends MongoRepository<SoloTrip,String> {
             fields = "{ '_id': 1, 'thumbnail': 1,'destination': 1}"
     )
     List<Solotripdto> findByCreatorId(String id);
+
+    @Query(value = "{ 'createdId': ?0}")
+    List<SoloTrip> findByCreatedId(String id);
+
 }

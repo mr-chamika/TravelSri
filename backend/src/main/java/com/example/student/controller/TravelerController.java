@@ -365,6 +365,24 @@ System.out.println(list);
 
        Optional <Route> r = repo.findById(obj.getRouteId());
 
+        Optional<Hotel> hotel = hotelsRepo.findById(obj.getHotelId());
+
+        Hotel h = hotel.get();
+
+        if(hotel.isPresent()) {
+
+            if (obj.getSingleBeds() != 0) {
+                h.setAvailableSingle(h.getAvailableSingle() - obj.getSingleBeds());
+            }
+
+            if (obj.getDoubleBeds() != 0) {
+                h.setAvailableDouble(h.getAvailableDouble() - obj.getDoubleBeds());
+            }
+
+            hotelsRepo.save(h);
+
+        }
+
        if(obj.getDayNumber() == 1) {// if this is first day plan
 
           Created newCreatedTrip = new Created(obj.getCreatorId(),r.get().getThumbnail(), r.get().getTo());
@@ -406,42 +424,44 @@ System.out.println(list);
            soloTripRepo.save(x);
            return x.getCreatedId();
 
+       }else {
+
+           SoloTrip x = new SoloTrip(
+                   obj.getCreatedId(),
+                   obj.getDayNumber(),
+                   obj.getRouteId(),
+                   obj.getCreatorId(),
+                   obj.getDate(),
+                   obj.getHotelId(),
+                   obj.getAdults(),
+                   obj.getChildren(),
+                   obj.getDoubleBeds(),
+                   obj.getSingleBeds(),
+                   obj.getHprice(),
+                   obj.getGuideId(),
+                   obj.getType(),
+                   obj.getGlocation(),
+                   obj.getGlanguage(),
+                   obj.getGprice(),
+                   obj.getCarId(),
+                   obj.getClanguage(),
+                   obj.getEndLocation(),
+                   obj.getStartLocation(),
+                   obj.getBookedTime(),
+                   obj.getCprice(),
+                   obj.isOneway(),
+                   r.get().getThumbnail(),
+                   r.get().getFrom(),
+                   r.get().getTo(),
+                   "pending",
+                   obj.getDate(),
+                   r.get().getMapRoute()
+           );
+
+           soloTripRepo.save(x);
+           return x.getCreatedId();
+
        }
-
-        SoloTrip x = new SoloTrip(
-                obj.getCretedId(),
-                obj.getDayNumber(),
-                obj.getRouteId(),
-                obj.getCreatorId(),
-                obj.getDate(),
-                obj.getHotelId(),
-                obj.getAdults(),
-                obj.getChildren(),
-                obj.getDoubleBeds(),
-                obj.getSingleBeds(),
-                obj.getHprice(),
-                obj.getGuideId(),
-                obj.getType(),
-                obj.getGlocation(),
-                obj.getGlanguage(),
-                obj.getGprice(),
-                obj.getCarId(),
-                obj.getClanguage(),
-                obj.getEndLocation(),
-                obj.getStartLocation(),
-                obj.getBookedTime(),
-                obj.getCprice(),
-                obj.isOneway(),
-                r.get().getThumbnail(),
-                r.get().getFrom(),
-                r.get().getTo(),
-                "pending",
-                obj.getDate(),
-                r.get().getMapRoute()
-                );
-
-        soloTripRepo.save(x);
-        return x.getCreatedId();
     }
 
     @GetMapping("/trips-view")
@@ -475,55 +495,63 @@ System.out.println(list);
     }
 
     @GetMapping("/trip-one")
-    public ResponseEntity<?> GetOne(@RequestParam String id) {
+    public ResponseEntity<?> GetOne(@RequestParam String id) {// this id is trip plan's id. not day plan's id
+        System.out.println(id+"hello");
 
-        Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
-        Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
-        Optional<User> guide = userRepo.findById(solotrip.get().getGuideId());
-        Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.get().getCarId());
+        List<SoloTrip> list = soloTripRepo.findByCreatedId(id);
 
-        if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
+        List<SolotripViewdto> list1 = new ArrayList<>();
 
-            return ResponseEntity.ok("Data Not Found");
+        for(SoloTrip solotrip : list) {
 
+            Optional<Hotel> hotel = hotelsRepo.findById(solotrip.getHotelId());
+            Optional<User> guide = userRepo.findById(solotrip.getGuideId());
+            Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.getCarId());
+
+            if (hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
+
+                return ResponseEntity.ok("Data Not Found");
+
+            }
+
+            SoloTrip x = solotrip;
+            Hotel h = hotel.get();
+            User g = guide.get();
+            Vehicledto v = vehicle.get();
+
+            Optional<Category> cat = categoryRepo.findById(v.getCatId());
+            Category c = cat.get();
+
+
+            SolotripViewdto s = new SolotripViewdto(
+                    x.get_id(),
+                    x.getCreatorId(),
+                    x.getRouteId(),
+                    x.getDate(),
+                    x.getHotelId(),
+                    h.getName(),
+                    h.getLocation(),
+                    x.getHprice(),
+                    x.getGuideId(),
+                    x.getGlocation(),
+                    x.getGprice(),
+                    g.getUsername(),
+                    x.getCarId(),
+                    x.getCprice(),
+                    v.getFirstName() + " " + v.getLastName(),
+                    c.getTitle(),
+                    x.getStart(),
+                    x.getDestination(),
+                    x.getStatus(),
+                    x.getStartDate(),
+                    x.getMap()
+
+
+            );
+
+            list1.add(s);
         }
-
-        SoloTrip x = solotrip.get();
-        Hotel h = hotel.get();
-        User g = guide.get();
-        Vehicledto v = vehicle.get();
-
-        Optional<Category> cat = categoryRepo.findById(v.getCatId());
-        Category c = cat.get();
-
-
-SolotripViewdto s = new SolotripViewdto(
-        x.get_id(),
-        x.getCreatorId(),
-        x.getRouteId(),
-        x.getDate(),
-        x.getHotelId(),
-        h.getName(),
-        h.getLocation(),
-        x.getHprice(),
-        x.getGuideId(),
-        x.getGlocation(),
-        x.getGprice(),
-        g.getUsername(),
-        x.getCarId(),
-        x.getCprice(),
-        v.getFirstName()+" "+v.getLastName(),
-        c.getTitle(),
-        x.getStart(),
-        x.getDestination(),
-        x.getStatus(),
-        x.getStartDate(),
-        x.getMap()
-
-
-);
-
-        return ResponseEntity.ok(s);
+        return ResponseEntity.ok(list1);
 
     }
 

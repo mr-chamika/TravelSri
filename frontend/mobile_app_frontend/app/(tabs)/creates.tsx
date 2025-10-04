@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { cssInterop } from 'nativewind'
 
@@ -188,6 +188,12 @@ const TripPlannerScreen: React.FC = () => {
 
   const router = useRouter();
 
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTravelersPicker, setShowTravelersPicker] = useState(false);
+  const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
+  const [totalCost, setTotalCost] = useState(0);
+  const [dataSet, setDataSet] = useState<Trip[]>([])
   const [tripSettings, setTripSettings] = useState<TripSettings>({
     startDate: new Date(),
     numberOfDays: 1,
@@ -195,21 +201,14 @@ const TripPlannerScreen: React.FC = () => {
     children: 0,
   });
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTravelersPicker, setShowTravelersPicker] = useState(false);
-  const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
-  const [totalCost, setTotalCost] = useState(0);
-  const [dataSet, setDataSet] = useState<Trip[]>([])
-
   const getData = async () => {
-
+    console.log(id)
     try {
 
       const res = await fetch(`http://localhost:8080/traveler/trip-one?id=${id}`)
       //cont res = await fetch(`https://travelsri-backend.onrender.com/traveler/trip-one?id=${id}`)
 
       if (res) {
-
         let data = await res.json();
 
         if (!Array.isArray(data)) {
@@ -218,16 +217,22 @@ const TripPlannerScreen: React.FC = () => {
 
         setDataSet(data);
 
-        setDayPlans(prev =>
-          prev.map((plan, idx) => {
-            const summary = Array.isArray(data) && data[idx] ? data[idx] : undefined;
-            console.log(dataSet)
-            return {
-              ...plan,
-              hasPlans: !!summary,
-              planSummary: summary,
-            };
-          })
+        if (data.length > 0) {
+          setTripSettings(prev => ({
+            ...prev,
+            numberOfDays: data.length,
+            // Optionally update startDate if you want:
+            // startDate: new Date(data[0].startDate),
+          }));
+        }
+
+        setDayPlans(
+          data.map((summary: Trip, idx: number) => ({
+            dayNumber: idx + 1,
+            date: summary.startDate ? new Date(summary.startDate).toDateString() : "",
+            hasPlans: true,
+            planSummary: summary,
+          }))
         );
 
       }
@@ -241,16 +246,27 @@ const TripPlannerScreen: React.FC = () => {
 
   }
 
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
 
-    if (dayPlans.length > 0) {
+      if (id) {
 
-      getData();
+        getData();
 
-    }
+      } else {
+        setDataSet([]);
+        setDayPlans([]);
+        setTripSettings({
+          startDate: new Date(),
+          numberOfDays: 1,
+          adults: 2,
+          children: 0,
+        });
 
+      }
+    }, [id])
+  );
 
-  }, [id, dayPlans.length])
 
 
   // Generate day plans when trip settings change
@@ -291,6 +307,7 @@ const TripPlannerScreen: React.FC = () => {
     router.push({
       pathname: '/create',
       params: {
+        createdId: id || "",
         dayNumber: dayNumber.toString(),
         date: dayPlans[dayNumber - 1]?.date || '',
         adults: tripSettings.adults.toString(),
@@ -601,24 +618,26 @@ const TripPlannerScreen: React.FC = () => {
 
         {/* Day Plans Section */}
         <View className="bg-white m-4 mt-0 rounded-xl p-4 shadow">
-          <Text className="text-xl font-semibold text-gray-800 mb-1">Day by Day Plans</Text>
-          <Text className="text-sm text-gray-500 mb-4">Plan each day of your trip</Text>
+
+          <View className='mb-2 w-full flex-row items-center justify-between'>
+            <Text className="text-xl font-semibold text-gray-800 mb-1">Day by Day Plans</Text>
+            {dataSet.length > 0 && id &&
+              <TouchableOpacity
+                className='flex-row items-center justify-center py-2 px-4 rounded-md gap-1.5 bg-blue-100 border border-blue-600'
+                onPress={() => router.replace('/(tabs)/creates')}
+              >
+
+                <Text className='text-xl font-semibold text-black'>
+                  + New Plan
+                </Text>
+              </TouchableOpacity>
+            }
+          </View>
+          {/* <Text className="text-sm text-gray-500 mb-4">Plan each day of your trip</Text> */}
 
           {dayPlans.map((dayPlan) => (
             <DayPlanCard key={dayPlan.dayNumber} dayPlan={dayPlan} />
           ))}
-
-          {/* {dataSet.length > 0 &&
-            <TouchableOpacity
-              className='flex-row items-center justify-center py-2.5 rounded-md gap-1.5 bg-blue-100 border border-blue-600'
-              onPress={() => ("")}
-            > */}
-
-          <Text className='text-sm font-semibold text-yellow-800'>
-            Finish
-          </Text>
-          {/* </TouchableOpacity>
-          } */}
         </View>
 
         {/* Cost Summary */}

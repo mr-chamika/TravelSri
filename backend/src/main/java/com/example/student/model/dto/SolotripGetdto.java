@@ -18,7 +18,7 @@ public class SolotripGetdto {
     private String creatorId;
     private String date;
     private int dayNumber;
-    private String cretedId;
+    private String createdId;
 
     //hotel selection
     private String hotelId;

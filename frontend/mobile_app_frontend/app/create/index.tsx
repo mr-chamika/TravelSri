@@ -40,10 +40,11 @@ export default function Dropdown() {
     const [routes, setRoutes] = useState<Route[]>([])
     const [options, setOptions] = useState<string[]>([])
 
-    const { dayNumber, date, adults, children } = useLocalSearchParams();
+    const { createdId, dayNumber, date, adults, children } = useLocalSearchParams();
 
     const order = {
 
+        createdId: createdId,
         dayNumber: dayNumber,
         date: date,
         adults: adults,

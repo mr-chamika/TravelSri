@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 interface Postdata {
 
+    createdId: string,
     dayNumber: number,
     date: string,
     adults: string,
@@ -46,6 +47,8 @@ interface Form {
     creatorId: string;
     date: string;
     dayNumber: number;
+    createdId: string;
+
 
     //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
     hotelId: string;
@@ -194,6 +197,7 @@ export default function App() {
         creatorId: '',
         date: '',
         dayNumber: 0,
+        createdId: '',
 
         //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
         hotelId: '',
@@ -432,7 +436,8 @@ export default function App() {
                     const order: Postdata = JSON.parse(s)
                     if (order) {
 
-                        finalFormObject.date = order.date;
+                        finalFormObject.createdId = order.createdId,
+                            finalFormObject.date = order.date;
                         finalFormObject.adults = Number(order.adults);
                         finalFormObject.children = Number(order.children);
                         finalFormObject.dayNumber = Number(order.dayNumber);
@@ -512,51 +517,55 @@ export default function App() {
 
                     })
                         .then(res => res.text())
-                        .then(data => console.log(data))
+                        .then(data => {
+
+                            console.log('createdID :' + data)
+
+                            AsyncStorage.multiRemove([
+                                'selectedLocation',
+                                'hasMadeInitialSelection',
+                                'hotel',
+                                'guide',
+                                'car',
+                                'hbookings',
+                                'hbookingComplete',
+                                'hbookingSession',
+                                'bookingSession',
+                                'gbookings',
+                                'gbookingComplete',
+                                'gbookingSession',
+                                'cbookings',
+                                'cbookingComplete',
+                                'cbookingSession',
+                                'bookingSession',
+                                'total',
+                                'route',
+                                'selectedHotelBooking',
+                                'selectedRouteId',
+                                'guides',
+                                'hotels',
+                                'driver',
+                                'selectedCar'
+
+
+                            ]);
+
+                            setSelectedDates({});
+                            setLanguage('');
+                            setStartLocation('');
+                            setEndLocation('');
+                            setModalVisible(false);
+                            setSelectedCardId(null);
+                            setTotal('0');
+                            setBookingData(null);
+
+                            //==setSubmitForm(finalFormObject)
+                            alert('Plan created and session reset!');
+                            //router.push('/(tabs)/create');
+                            router.replace({ pathname: '/(tabs)/creates', params: { id: data } });
+
+                        })
                         .catch(err => console.log(err))
-
-                    await AsyncStorage.multiRemove([
-                        'selectedLocation',
-                        'hasMadeInitialSelection',
-                        'hotel',
-                        'guide',
-                        'car',
-                        'hbookings',
-                        'hbookingComplete',
-                        'hbookingSession',
-                        'bookingSession',
-                        'gbookings',
-                        'gbookingComplete',
-                        'gbookingSession',
-                        'cbookings',
-                        'cbookingComplete',
-                        'cbookingSession',
-                        'bookingSession',
-                        'total',
-                        'route',
-                        'selectedHotelBooking',
-                        'selectedRouteId',
-                        'guides',
-                        'hotels',
-                        'driver',
-                        'selectedCar'
-
-
-                    ]);
-
-                    setSelectedDates({});
-                    setLanguage('');
-                    setStartLocation('');
-                    setEndLocation('');
-                    setModalVisible(false);
-                    setSelectedCardId(null);
-                    setTotal('0');
-                    setBookingData(null);
-
-                    //==setSubmitForm(finalFormObject)
-                    alert('Plan created and session reset!');
-                    //router.push('/(tabs)/create');
-                    // router.replace('/(tabs)');
                 } else {
 
                     alert(m)
