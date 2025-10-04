@@ -255,7 +255,6 @@ export default function Guide() {
 
             const run = async () => {
                 await loadBookingData();
-                await count();
                 const bookingComplete = await AsyncStorage.getItem('gbookingComplete');
                 if (bookingComplete !== 'true') {
                     setModalVisible(true);
