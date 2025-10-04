@@ -316,17 +316,20 @@ const TripPlannerScreen: React.FC = () => {
     });
   };
 
-  const handleEditPlan = (dayNumber: number) => {
-    router.push({
-      pathname: './dayPlaning',
-      params: {
-        dayNumber: dayNumber.toString(),
-        date: dayPlans[dayNumber - 1]?.date || '',
-        adults: tripSettings.adults.toString(),
-        children: tripSettings.children.toString(),
-        editMode: 'true',
-      }
-    });
+  const handleEditPlan = (x: number) => {
+
+    alert(x)
+
+    // router.push({
+    //   pathname: './dayPlaning',
+    //   params: {
+    //     dayNumber: dayNumber.toString(),
+    //     date: dayPlans[dayNumber - 1]?.date || '',
+    //     adults: tripSettings.adults.toString(),
+    //     children: tripSettings.children.toString(),
+    //     editMode: 'true',
+    //   }
+    // });
   };
 
   const DatePickerModal: React.FC = () => (
@@ -394,7 +397,8 @@ const TripPlannerScreen: React.FC = () => {
         {dayPlan.hasPlans && (
           <TouchableOpacity
             className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
-            onPress={() => handleEditPlan(dayPlan.dayNumber)}
+            //onPress={() => handleEditPlan(dayPlan.dayNumber)}
+            onPress={() => handleEditPlan(dayPlan.planSummary._id)}
           >
             <Icon name="edit" size={16} color="#2563eb" />
             <Text className="text-xs font-medium text-blue-600">Edit</Text>
