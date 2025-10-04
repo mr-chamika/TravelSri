@@ -664,7 +664,7 @@ export default function App() {
                 </View>
                 <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 pl-32 flex-row justify-center">
                     <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
-                    <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
+                    <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Continue</Text></View></TouchableOpacity>
                 </View>
             </>
         </View>

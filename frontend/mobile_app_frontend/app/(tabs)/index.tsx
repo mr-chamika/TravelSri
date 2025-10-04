@@ -401,15 +401,15 @@ export default function Index() {
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
-        {/* <TouchableOpacity onPress={sendMessage}>
-          <Text>test</Text>
+        <TouchableOpacity onPress={sendMessage}>
+          <Text>for all</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
           <Text>private</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={sendMessageToShops}>
           <Text>all shops</Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
 
       </View>
       <View className="h-[40%]">
@@ -427,7 +427,8 @@ export default function Index() {
             {trips.map((item) => {
 
               return (
-                <TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
+                //<TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
+                <TouchableOpacity onPress={() => router.push({ pathname: `/(tabs)/creates`, params: { id: item._id } })} className="w-[83px]" key={item._id}>
                   <Image
                     className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
                     source={{ uri: `data:image/jpeg;base64,${item.thumbnail}` }}

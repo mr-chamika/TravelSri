@@ -126,28 +126,9 @@ export default function Views() {
 
                     <Text className="text-3xl font-bold text-center">{dataSet?.start} to {dataSet?.destination}</Text>
                     <View className="items-center">
-                        {/* <ScrollView
-                            horizontal
-                            className=" h-50 border-black rounded-2xl w-[81%] border-2"
-                            contentContainerClassName=" py-3 pl-3"
-                            showsHorizontalScrollIndicator={false}
-                            nestedScrollEnabled={true}
 
-                        > 
-                            {route.images.map((x, i) => {
-
-                                return (
-
-                                    <View key={i} className=" w-[310px] h-40">
-*/}
                         {dataSet && <Image className="my-5 w-[300px] h-40 "/* h-full"  source={x} */ source={{ uri: `data:image/jpeg;base64,${dataSet?.map}` }} alt="Map" />}
-                        {/*
-                                    </View>
-                                )
-                            })
 
-                            }
-                         </ScrollView> */}
                         <View className="w-[80%] mt-3 flex-row justify-between">
                             <Text>Date : {dataSet?.startDate}</Text>
                             <Text>{dataSet?.status}</Text>

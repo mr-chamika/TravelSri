@@ -357,7 +357,7 @@ System.out.println(list);
     @Autowired
     private SoloTripRepo soloTripRepo;
 
-    @PostMapping("/create-trip")
+    @PostMapping("/create-trip")//to create a day in the trip
     public String CreateTrip(@RequestBody SolotripGetdto obj){
 
        Optional <Route> r = repo.findById(obj.getRouteId());

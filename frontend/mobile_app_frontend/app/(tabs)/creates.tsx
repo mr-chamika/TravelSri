@@ -9,7 +9,11 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
+import { cssInterop } from 'nativewind'
+
+cssInterop(Image, { className: "style" });
 
 // Simple icon component using emojis
 const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, size, color }) => {
@@ -35,6 +39,42 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
   );
 };
 
+interface Trip {
+
+  _id: string;
+  creatorId: string;
+  //route selection
+  routeId: string;
+
+  //hotel selection
+  hotelId: string;
+  hotel: string;
+  hlocation: string;
+  hprice: number;
+
+  //guide selection
+  guideId: string;
+  glocation: string;
+  gprice: number;
+  guide: string;
+
+
+  //car details
+  carId: string;
+  cprice: number;
+  driver: string;
+  category: string;
+
+  //other
+  start: string;
+  destination: string;
+  //<String> images:string;
+  status: string;//"confirmed","pending","cancel:string"
+  startDate: string;//vehicle booked dat:stringe
+  map: string;
+
+}
+
 interface TripSettings {
   startDate: Date;
   numberOfDays: number;
@@ -46,10 +86,7 @@ interface DayPlan {
   dayNumber: number;
   date: string;
   hasPlans: boolean;
-  planSummary?: {
-    items: string[];
-    totalCost: number;
-  };
+  planSummary?: any;
 }
 
 const TravelersPickerModal: React.FC<{
@@ -146,6 +183,9 @@ const TravelersPickerModal: React.FC<{
 );
 
 const TripPlannerScreen: React.FC = () => {
+
+  const { id } = useLocalSearchParams();
+
   const router = useRouter();
 
   const [tripSettings, setTripSettings] = useState<TripSettings>({
@@ -159,23 +199,83 @@ const TripPlannerScreen: React.FC = () => {
   const [showTravelersPicker, setShowTravelersPicker] = useState(false);
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
   const [totalCost, setTotalCost] = useState(0);
+  const [dataSet, setDataSet] = useState<Trip[]>([])
+
+
+  const getData = async () => {
+
+    try {
+
+      const res = await fetch(`http://localhost:8080/traveler/trip-one?id=${id}`)
+      //cont res = await fetch(`https://travelsri-backend.onrender.com/traveler/trip-one?id=${id}`)
+
+      if (res) {
+
+        let data = await res.json();
+
+        if (!Array.isArray(data)) {
+          data = [data];
+        }
+
+        setDataSet(data);
+
+        setDayPlans(prev =>
+          prev.map((plan, idx) => {
+            const summary = Array.isArray(data) && data[idx] ? data[idx] : undefined;
+            console.log(dataSet)
+            return {
+              ...plan,
+              hasPlans: !!summary,
+              planSummary: summary,
+            };
+          })
+        );
+
+      }
+
+    } catch (err) {
+
+      console.log(`Error from trip data getting : ${err}`)
+
+    }
+
+
+  }
+
+  useEffect(() => {
+
+    if (dayPlans.length > 0) {
+
+      getData();
+
+    }
+
+
+  }, [id, dayPlans.length])
+
 
   // Generate day plans when trip settings change
   useEffect(() => {
-    const plans: DayPlan[] = [];
-    for (let i = 0; i < tripSettings.numberOfDays; i++) {
-      const date = new Date(tripSettings.startDate);
-      date.setDate(date.getDate() + i);
+    setDayPlans(prev => {
 
-      plans.push({
-        dayNumber: i + 1,
-        date: date.toDateString(),
-        hasPlans: false,
-      });
-    }
-    setDayPlans(plans);
+      const plans: DayPlan[] = [];
+      for (let i = 0; i < tripSettings.numberOfDays; i++) {
+        const date = new Date(tripSettings.startDate);
+        date.setDate(date.getDate() + i);
+
+        // Try to keep existing planSummary and hasPlans if present
+        const existing = prev.find(p => p.dayNumber === i + 1);
+
+        plans.push({
+          dayNumber: i + 1,
+          date: date.toDateString(),
+          hasPlans: existing?.hasPlans ?? false,
+          planSummary: existing?.planSummary,
+        });
+      }
+      return plans;
+    });
   }, [tripSettings.startDate, tripSettings.numberOfDays]);
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       day: 'numeric',
@@ -287,32 +387,137 @@ const TripPlannerScreen: React.FC = () => {
 
       {dayPlan.hasPlans && dayPlan.planSummary ? (
         <View className="mb-3">
-          <Text className="text-sm font-semibold text-gray-800 mb-2">Plan Summary:</Text>
-          {dayPlan.planSummary.items.map((item, index) => (
-            <Text key={index} className="text-sm text-gray-600 mb-1">• {item}</Text>
-          ))}
-          <View className="flex-row justify-between items-center mt-2 pt-2 border-t border-gray-200">
-            <Text className="text-sm font-medium text-gray-600">Day Cost:</Text>
-            <Text className="text-base font-semibold text-red-600">
-              LKR {dayPlan.planSummary.totalCost.toLocaleString()}
+          <ScrollView
+            className="w-full h-[78%]"
+            contentContainerClassName="flex-col justify-center items-start gap-3 py-5 px-2"
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="w-full py-5">
+
+              <Text className="text-3xl font-bold text-center">{dayPlan.planSummary.start} to {dayPlan.planSummary.destination}</Text>
+              <View className="items-center">
+
+                {dayPlan.planSummary && <Image className="my-5 w-[300px] h-40 "/* h-full"  source={x} */ source={{ uri: `data:image/jpeg;base64,${dayPlan.planSummary.map}` }} alt="Map" />}
+
+                <View className="w-[80%] mt-3 flex-row justify-between">
+                  <Text>Date : {dayPlan.planSummary.startDate}</Text>
+                  <Text>{dayPlan.planSummary.status}</Text>
+                </View>
+              </View>
+
+
+            </View>
+            <View className=" w-full py-2">
+
+              <Text className="text-xl font-semibold">Accomodation Details</Text>
+
+              <View className="items-center">
+                <View className="flex-row w-[90%] justify-between items-center">
+
+                  <Text>Hotel : {dayPlan.planSummary.hotel}</Text>
+                  <Text>Location : {dayPlan.planSummary.hlocation}</Text>
+                  <TouchableOpacity onPress={() => router.replace(`/views/hotel/solo/${dayPlan.planSummary.hotelId}`)} className="bg-[#FEFA17] px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">View</Text></TouchableOpacity>
+
+                </View>
+              </View>
+
+            </View>
+            <View className=" w-full py-2">
+
+              <Text className="text-xl font-semibold">Guide Details</Text>
+
+              <View className="items-center">
+                <View className="flex-row w-[90%] justify-between items-center">
+
+                  <Text>Guide : {dayPlan.planSummary.guide}</Text>
+                  <Text>Location : {dayPlan.planSummary.glocation}</Text>
+                  <TouchableOpacity onPress={() => router.replace(`/views/guide/solo/${dayPlan.planSummary.guideId}`)} className="bg-[#FEFA17] px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">View</Text></TouchableOpacity>
+
+                </View>
+              </View>
+
+            </View>
+            {/* <View className=" w-full py-2">
+          
+                              <Text className="text-xl font-semibold">Equipment Details</Text>
+          
+                              <View className="items-center">
+                                  <View className="flex-row w-[90%] justify-between items-center">
+          
+                                      <Text>Store : {store.name}</Text>
+                                      <Text>Location : {store.location}</Text>
+                                      <TouchableOpacity onPress={() => router.replace(`/views/shop/${store.shopId}`)} className="bg-[#FEFA17] px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">View</Text></TouchableOpacity>
+          
+                                  </View>
+                              </View>
+          
+                          </View> */}
+            <View className=" w-full py-2">
+
+              <Text className="text-xl font-semibold">Vehicle Details</Text>
+
+              <View className="items-center">
+                <View className="flex-row w-[90%] justify-between items-center">
+
+                  <Text>Driver : {dayPlan.planSummary.driver}</Text>
+                  <Text>Category : {dayPlan.planSummary.category}</Text>
+                  <TouchableOpacity onPress={() => router.replace(`/views/car/profile/${dayPlan.planSummary.carId}`)} className="bg-[#FEFA17] px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">View</Text></TouchableOpacity>
+
+                </View>
+              </View>
+
+            </View>
+            <View className="w-full py-2">
+
+              <Text className="text-xl font-semibold">Bill Details</Text>
+
+              <View className="items-center py-2">
+                <View className="w-[90%] justify-between items-center">
+                  <View className="mb-4 py-2">
+                    <Text className="text-xl">Hotel Fee : Rs. {dayPlan.planSummary.hprice}.00</Text>
+                    <Text className="text-xl">Vehicle Fee : Rs. {dayPlan.planSummary.cprice}.00</Text>
+                    <Text className="text-xl">Guide Fee : Rs. {dayPlan.planSummary.gprice}.00</Text>
+                  </View>
+                  <Text className="text-xl">Total : Rs. {dayPlan.planSummary && (dayPlan.planSummary.hprice + dayPlan.planSummary.cprice + dayPlan.planSummary.gprice) || 0}.00</Text>
+                  <TouchableOpacity className="bg-[#FEFA17] self-end px-4 py-1 rounded-lg"><Text className=" text-black font-extrabold">Pay Now</Text></TouchableOpacity>
+
+                </View>
+              </View>
+
+            </View>
+
+          </ScrollView>
+          {!dayPlan.hasPlans &&
+            <View className='w-full justify-center border-2 items-center p-2 bg-white rounded-lg'>
+              {/*<TouchableOpacity
+              className='flex-row items-center justify-center py-2.5 rounded-md gap-1.5 bg-blue-100 border border-blue-600'
+              onPress={() => ("")}
+            >
+
+            <Text className='text-base font-semibold text-yellow-800'>
+              Complete plan
             </Text>
-          </View>
+
+            </TouchableOpacity>*/}
+            </View>
+          }
         </View>
       ) : (
         <View className="items-center py-4">
           <Text className="text-sm text-gray-400 italic">No plans added yet</Text>
         </View>
       )}
-
-      <TouchableOpacity
-        className={`flex-row items-center justify-center py-2.5 rounded-md gap-1.5 ${dayPlan.hasPlans ? 'bg-blue-100 border border-blue-600' : 'bg-yellow-300'}`}
-        onPress={() => handleAddPlan(dayPlan.dayNumber)}
-      >
-        <Icon name="plus" size={16} color={dayPlan.hasPlans ? '#2563eb' : '#a16207'} />
-        <Text className={`text-sm font-semibold ${dayPlan.hasPlans ? 'text-blue-700' : 'text-yellow-800'}`}>
-          {dayPlan.hasPlans ? 'Modify Plan' : 'Add Plan'}
-        </Text>
-      </TouchableOpacity>
+      {!dayPlan.hasPlans &&
+        <TouchableOpacity
+          className={`flex-row items-center justify-center py-2.5 rounded-md gap-1.5 ${dayPlan.hasPlans ? 'bg-blue-100 border border-blue-600' : 'bg-yellow-300'}`}
+          onPress={() => handleAddPlan(dayPlan.dayNumber)}
+        >
+          <Icon name="plus" size={16} color={dayPlan.hasPlans ? '#2563eb' : '#a16207'} />
+          <Text className={`text-sm font-semibold ${dayPlan.hasPlans ? 'text-blue-700' : 'text-yellow-800'}`}>
+            Add Plan
+          </Text>
+        </TouchableOpacity>
+      }
     </View>
   );
 
@@ -416,6 +621,18 @@ const TripPlannerScreen: React.FC = () => {
           {dayPlans.map((dayPlan) => (
             <DayPlanCard key={dayPlan.dayNumber} dayPlan={dayPlan} />
           ))}
+
+          {/* {dataSet.length > 0 &&
+            <TouchableOpacity
+              className='flex-row items-center justify-center py-2.5 rounded-md gap-1.5 bg-blue-100 border border-blue-600'
+              onPress={() => ("")}
+            > */}
+
+          <Text className='text-sm font-semibold text-yellow-800'>
+            Finish
+          </Text>
+          {/* </TouchableOpacity>
+          } */}
         </View>
 
         {/* Cost Summary */}
