@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 interface Postdata {
 
-    dayNumber: string,
+    dayNumber: number,
     date: string,
     adults: string,
     children: string
@@ -45,6 +45,7 @@ interface Form {
     routeId: string;
     creatorId: string;
     date: string;
+    dayNumber: number;
 
     //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
     hotelId: string;
@@ -78,7 +79,7 @@ interface Form {
 
 interface Postdata {
 
-    dayNumber: string,
+    dayNumber: number,
     date: string,
     adults: string,
     children: string
@@ -192,6 +193,7 @@ export default function App() {
         routeId: '',
         creatorId: '',
         date: '',
+        dayNumber: 0,
 
         //hotel.tsx(select dates, locaton, no of children, no of adults, no of nights, no of single beds, no of double beds)
         hotelId: '',
@@ -433,6 +435,7 @@ export default function App() {
                         finalFormObject.date = order.date;
                         finalFormObject.adults = Number(order.adults);
                         finalFormObject.children = Number(order.children);
+                        finalFormObject.dayNumber = Number(order.dayNumber);
                     }
 
                 }
@@ -553,7 +556,7 @@ export default function App() {
                     //==setSubmitForm(finalFormObject)
                     alert('Plan created and session reset!');
                     //router.push('/(tabs)/create');
-                    router.replace('/(tabs)');
+                    // router.replace('/(tabs)');
                 } else {
 
                     alert(m)
@@ -664,7 +667,7 @@ export default function App() {
                 </View>
                 <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 pl-32 flex-row justify-center">
                     <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
-                    <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Continue</Text></View></TouchableOpacity>
+                    <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
                 </View>
             </>
         </View>

@@ -357,12 +357,60 @@ System.out.println(list);
     @Autowired
     private SoloTripRepo soloTripRepo;
 
+    @Autowired
+    private CreatedRepo createdRepo;
+
     @PostMapping("/create-trip")//to create a day in the trip
     public String CreateTrip(@RequestBody SolotripGetdto obj){
 
        Optional <Route> r = repo.findById(obj.getRouteId());
 
+       if(obj.getDayNumber() == 1) {// if this is first day plan
+
+          Created newCreatedTrip = new Created(obj.getCreatorId(),r.get().getThumbnail(), r.get().getTo());
+
+           createdRepo.save(newCreatedTrip);
+
+           SoloTrip x = new SoloTrip(
+                   newCreatedTrip.get_id(),
+                   obj.getDayNumber(),
+                   obj.getRouteId(),
+                   obj.getCreatorId(),
+                   obj.getDate(),
+                   obj.getHotelId(),
+                   obj.getAdults(),
+                   obj.getChildren(),
+                   obj.getDoubleBeds(),
+                   obj.getSingleBeds(),
+                   obj.getHprice(),
+                   obj.getGuideId(),
+                   obj.getType(),
+                   obj.getGlocation(),
+                   obj.getGlanguage(),
+                   obj.getGprice(),
+                   obj.getCarId(),
+                   obj.getClanguage(),
+                   obj.getEndLocation(),
+                   obj.getStartLocation(),
+                   obj.getBookedTime(),
+                   obj.getCprice(),
+                   obj.isOneway(),
+                   r.get().getThumbnail(),
+                   r.get().getFrom(),
+                   r.get().getTo(),
+                   "pending",
+                   obj.getDate(),
+                   r.get().getMapRoute()
+           );
+
+           soloTripRepo.save(x);
+           return x.getCreatedId();
+
+       }
+
         SoloTrip x = new SoloTrip(
+                obj.getCretedId(),
+                obj.getDayNumber(),
                 obj.getRouteId(),
                 obj.getCreatorId(),
                 obj.getDate(),
@@ -389,17 +437,19 @@ System.out.println(list);
                 r.get().getTo(),
                 "pending",
                 obj.getDate(),
-r.get().getMapRoute()
+                r.get().getMapRoute()
                 );
 
         soloTripRepo.save(x);
-        return "success";
+        return x.getCreatedId();
     }
 
     @GetMapping("/trips-view")
-    public ResponseEntity<List<Solotripdto>> GetShowTrip(@RequestParam String id) {
+    public ResponseEntity<List<Created>> GetShowTrip(@RequestParam String id) {
 
-        List<Solotripdto> list = soloTripRepo.findByCreatorId(id);
+        //List<Solotripdto> list = soloTripRepo.findByCreatorId(id);
+
+        List <Created> list = createdRepo.findByCreatorId(id);
 
         return ResponseEntity.ok(list);
 

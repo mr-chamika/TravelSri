@@ -201,7 +201,6 @@ const TripPlannerScreen: React.FC = () => {
   const [totalCost, setTotalCost] = useState(0);
   const [dataSet, setDataSet] = useState<Trip[]>([])
 
-
   const getData = async () => {
 
     try {
@@ -370,6 +369,7 @@ const TripPlannerScreen: React.FC = () => {
   );
 
   const DayPlanCard: React.FC<{ dayPlan: DayPlan }> = ({ dayPlan }) => (
+
     <View className="bg-gray-50 rounded-lg p-4 mb-3 border border-gray-200">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-base font-semibold text-gray-800">Day {dayPlan.dayNumber}</Text>
@@ -487,20 +487,6 @@ const TripPlannerScreen: React.FC = () => {
             </View>
 
           </ScrollView>
-          {!dayPlan.hasPlans &&
-            <View className='w-full justify-center border-2 items-center p-2 bg-white rounded-lg'>
-              {/*<TouchableOpacity
-              className='flex-row items-center justify-center py-2.5 rounded-md gap-1.5 bg-blue-100 border border-blue-600'
-              onPress={() => ("")}
-            >
-
-            <Text className='text-base font-semibold text-yellow-800'>
-              Complete plan
-            </Text>
-
-            </TouchableOpacity>*/}
-            </View>
-          }
         </View>
       ) : (
         <View className="items-center py-4">

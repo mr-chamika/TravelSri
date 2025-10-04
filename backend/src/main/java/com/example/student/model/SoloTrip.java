@@ -16,7 +16,9 @@ import java.util.List;
 public class SoloTrip {
 
 
-    public SoloTrip(String routeId,String creatorId,String date, String hotelId, int adults, int children, int doubleBeds, int singleBeds,int hprice, String guideId,String type, String glocation, String glanguage, int gprice, String carId,String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,boolean isOneway,String thumbnail,String start,String destination,String status,String startDate,String map) {
+    public SoloTrip(String createdId,int dayNumber,String routeId,String creatorId,String date, String hotelId, int adults, int children, int doubleBeds, int singleBeds,int hprice, String guideId,String type, String glocation, String glanguage, int gprice, String carId,String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,boolean isOneway,String thumbnail,String start,String destination,String status,String startDate,String map) {
+        this.createdId = createdId;
+        this.dayNumber=dayNumber;
         this.routeId = routeId;
         this.creatorId = creatorId;
         this.date = date;
@@ -58,6 +60,8 @@ public class SoloTrip {
     private String _id;
     private String creatorId;
     private String date;
+    private int dayNumber;
+    private String createdId;
     //route selection
     private String routeId;
 
