@@ -628,7 +628,7 @@ const TripPlannerScreen: React.FC = () => {
               >
 
                 <Text className='text-xl font-semibold text-black'>
-                  + New Plan
+                  + New Trip
                 </Text>
               </TouchableOpacity>
             }
