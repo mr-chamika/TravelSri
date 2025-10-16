@@ -49,6 +49,12 @@ const HotelDashboard = () => {
   const [roomTypeData, setRoomTypeData] = useState([]);
   const [stayLengthData, setStayLengthData] = useState([]);
   const [error, setError] = useState(null);
+  
+  // Hotel availability state
+  const [hotelAvailability, setHotelAvailability] = useState(new Set()); // Set of available dates (YYYY-MM-DD format)
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [selectedDateForAvailability, setSelectedDateForAvailability] = useState(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   // Fetch bookings data from the real database
   // Fetch available rooms count from the real database
@@ -59,6 +65,119 @@ const HotelDashboard = () => {
     } catch (err) {
       console.error('Failed to fetch available rooms:', err);
       setAvailableRoomsCount(0); // Default to 0 if fetch fails
+    }
+  };
+
+  // Fetch hotel availability data (simulated - in real app this would come from API)
+  const fetchHotelAvailability = async () => {
+    try {
+      setAvailabilityLoading(true);
+      
+      // Load saved unavailable dates (we now store unavailable dates instead of available ones)
+      const savedUnavailability = localStorage.getItem('hotelUnavailability');
+      let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
+      
+      const today = new Date();
+      const todayString = format(today, 'yyyy-MM-dd');
+      
+      // Clean up any past unavailable dates (no longer needed)
+      const pastDatesToRemove = [];
+      unavailableDates.forEach(dateString => {
+        if (dateString < todayString) {
+          pastDatesToRemove.push(dateString);
+        }
+      });
+      
+      if (pastDatesToRemove.length > 0) {
+        pastDatesToRemove.forEach(dateString => {
+          unavailableDates.delete(dateString);
+        });
+        
+        // Save cleaned unavailable dates
+        const unavailabilityArray = Array.from(unavailableDates);
+        localStorage.setItem('hotelUnavailability', JSON.stringify(unavailabilityArray));
+        console.log('Cleaned past unavailable dates');
+      }
+      
+      // Store unavailable dates (all future dates are available by default)
+      setHotelAvailability(unavailableDates);
+      
+    } catch (err) {
+      console.error('Failed to fetch hotel availability:', err);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  // Save hotel availability (simulated - in real app this would save to backend)
+  const saveHotelAvailability = async (newUnavailability) => {
+    try {
+      // Save unavailable dates
+      const unavailabilityArray = Array.from(newUnavailability);
+      localStorage.setItem('hotelUnavailability', JSON.stringify(unavailabilityArray));
+      setHotelAvailability(newUnavailability);
+      return true;
+    } catch (err) {
+      console.error('Failed to save hotel availability:', err);
+      return false;
+    }
+  };
+
+  // Toggle availability for a specific date
+  const toggleDateAvailability = async (dateString) => {
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
+    
+    // Only allow changes for today and future dates
+    if (dateString < todayString) {
+      return;
+    }
+    
+    const newUnavailability = new Set(hotelAvailability);
+    const unavailableKey = `unavailable_${dateString}`;
+    
+    // Toggle between available and unavailable
+    if (newUnavailability.has(unavailableKey)) {
+      // Currently unavailable, make it available
+      newUnavailability.delete(unavailableKey);
+    } else {
+      // Currently available, make it unavailable
+      newUnavailability.add(unavailableKey);
+    }
+    
+    const success = await saveHotelAvailability(newUnavailability);
+    if (success) {
+      console.log(`Hotel availability updated for ${dateString}`);
+    }
+  };
+
+  // Ensure future dates are always available by default (called periodically)
+  const ensureFutureDatesAvailable = async () => {
+    // With the new logic, all future dates are available by default
+    // We only need to clean up past unavailable dates
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
+    const currentUnavailability = new Set(hotelAvailability);
+    let hasUpdates = false;
+    
+    // Remove any past unavailable dates
+    const pastDatesToRemove = [];
+    currentUnavailability.forEach(dateString => {
+      if (dateString < todayString) {
+        pastDatesToRemove.push(dateString);
+      }
+    });
+    
+    if (pastDatesToRemove.length > 0) {
+      pastDatesToRemove.forEach(dateString => {
+        currentUnavailability.delete(dateString);
+      });
+      hasUpdates = true;
+    }
+    
+    if (hasUpdates) {
+      await saveHotelAvailability(currentUnavailability);
+      console.log('Auto-cleaned past unavailable dates');
     }
   };
   
@@ -78,6 +197,9 @@ const HotelDashboard = () => {
   useEffect(() => {
     // Fetch available rooms when component mounts
     fetchAvailableRooms();
+    
+    // Fetch hotel availability data
+    fetchHotelAvailability();
     
     // Initialize data fetching
     const initializeData = async () => {
@@ -149,7 +271,11 @@ const HotelDashboard = () => {
     initializeData();
     
     // Refresh available rooms count every minute to keep the dashboard updated
-    const intervalId = setInterval(fetchAvailableRooms, 60000);
+    const intervalId = setInterval(() => {
+      fetchAvailableRooms();
+      // Also ensure future dates remain available
+      ensureFutureDatesAvailable();
+    }, 60000);
     
     // Clean up interval on component unmount
     return () => clearInterval(intervalId);
@@ -212,6 +338,69 @@ const HotelDashboard = () => {
     setCalendarDate(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
     );
+
+  // Helper function to check if a date has bookings
+  const hasBookingsOnDate = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    return bookings.some(booking => {
+      const checkIn = format(new Date(booking.checkIn), 'yyyy-MM-dd');
+      const checkOut = format(new Date(booking.checkOut), 'yyyy-MM-dd');
+      return dateString >= checkIn && dateString < checkOut;
+    });
+  };
+
+  // Helper function to check if hotel is available on a date
+  const isHotelAvailable = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const todayString = format(today, 'yyyy-MM-dd');
+    
+    // All future dates (including today) are available by default
+    if (dateString >= todayString) {
+      // Check if it's explicitly marked as unavailable
+      return !hotelAvailability.has(`unavailable_${dateString}`);
+    }
+    
+    // Past dates are unavailable by default
+    return false;
+  };
+
+  // Helper function to get calendar day status
+  const getCalendarDayStatus = (day, isCurrentMonth) => {
+    if (!isCurrentMonth) return 'other-month';
+    
+    const date = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    const dateString = format(date, 'yyyy-MM-dd');
+    const todayString = format(today, 'yyyy-MM-dd');
+    
+    const hasBookings = hasBookingsOnDate(date);
+    const isAvailable = isHotelAvailable(date);
+    const isToday = dateString === todayString;
+    const isPastDate = dateString < todayString;
+    
+    if (isToday) return 'today';
+    if (isPastDate && !hasBookings) return 'past-unavailable'; // Past dates without bookings
+    if (isPastDate && hasBookings) return 'past-booked'; // Past dates with bookings
+    if (!isAvailable) return 'unavailable';
+    if (hasBookings) return 'booked';
+    return 'available';
+  };
+
+  // Handle calendar day click for availability management
+  const handleCalendarDayClick = (day, isCurrentMonth) => {
+    if (!isCurrentMonth) return;
+    
+    const date = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    const dateString = format(date, 'yyyy-MM-dd');
+    const todayString = format(today, 'yyyy-MM-dd');
+    
+    // Prevent clicking on past dates
+    if (dateString < todayString) {
+      return;
+    }
+    
+    setSelectedDateForAvailability(date);
+    setShowAvailabilityModal(true);
+  };
 
   // State for monthly data calculated from real bookings
   const [monthlyData, setMonthlyData] = useState([]);
@@ -524,7 +713,158 @@ const HotelDashboard = () => {
   };
 
   /* ------------------------------------------------------------------ */
-  /* 4. RENDER                                                          */
+  /* 4. AVAILABILITY MODAL COMPONENT                                    */
+  /* ------------------------------------------------------------------ */
+  const AvailabilityModal = () => {
+    if (!showAvailabilityModal || !selectedDateForAvailability) return null;
+
+    const dateString = format(selectedDateForAvailability, 'yyyy-MM-dd');
+    const isAvailable = isHotelAvailable(selectedDateForAvailability);
+    const hasBookings = hasBookingsOnDate(selectedDateForAvailability);
+    const formattedDate = format(selectedDateForAvailability, 'MMMM dd, yyyy');
+
+    const handleToggleAvailability = async () => {
+      await toggleDateAvailability(dateString);
+      setShowAvailabilityModal(false);
+    };
+
+    const handleBulkAvailability = async (days, available) => {
+      const newUnavailability = new Set(hotelAvailability);
+      const today = new Date();
+      const todayString = format(today, 'yyyy-MM-dd');
+      
+      for (let i = 0; i < days; i++) {
+        const date = new Date(selectedDateForAvailability);
+        date.setDate(date.getDate() + i);
+        const dayString = format(date, 'yyyy-MM-dd');
+        
+        // Only modify current and future dates
+        if (dayString >= todayString) {
+          if (available) {
+            // Make available by removing from unavailable set
+            newUnavailability.delete(dayString);
+          } else {
+            // Make unavailable by adding to unavailable set
+            newUnavailability.add(dayString);
+          }
+        }
+      }
+      
+      await saveHotelAvailability(newUnavailability);
+      setShowAvailabilityModal(false);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">Manage Hotel Availability</h3>
+            <button
+              onClick={() => setShowAvailabilityModal(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <span className="material-icons">close</span>
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <div className="text-center mb-4">
+              <h4 className="text-lg font-semibold">{formattedDate}</h4>
+              <div className="flex items-center justify-center mt-2">
+                <div className={`w-4 h-4 rounded-full mr-2 ${
+                  isAvailable ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <span className={`font-medium ${
+                  isAvailable ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {isAvailable ? 'Available' : 'Unavailable'}
+                </span>
+              </div>
+              {hasBookings && (
+                <div className="flex items-center justify-center mt-1">
+                  <span className="material-icons text-yellow-500 text-sm mr-1">event</span>
+                  <span className="text-sm text-yellow-600">Has existing bookings</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={handleToggleAvailability}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                  isAvailable
+                    ? 'bg-red-100 hover:bg-red-200 text-red-700'
+                    : 'bg-green-100 hover:bg-green-200 text-green-700'
+                }`}
+                disabled={hasBookings && isAvailable}
+              >
+                {hasBookings && isAvailable 
+                  ? 'Cannot make unavailable (has bookings)'
+                  : isAvailable 
+                    ? 'Mark as Unavailable' 
+                    : 'Mark as Available'
+                }
+              </button>
+
+              <div className="border-t pt-3">
+                <h5 className="font-medium mb-2">Bulk Actions:</h5>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleBulkAvailability(7, true)}
+                    className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm"
+                  >
+                    Next 7 Days Available
+                  </button>
+                  <button
+                    onClick={() => handleBulkAvailability(7, false)}
+                    className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
+                  >
+                    Next 7 Days Unavailable
+                  </button>
+                  <button
+                    onClick={() => handleBulkAvailability(30, true)}
+                    className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm"
+                  >
+                    Next 30 Days Available
+                  </button>
+                  <button
+                    onClick={() => handleBulkAvailability(30, false)}
+                    className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
+                  >
+                    Next 30 Days Unavailable
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <span>Available</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                <span>Unavailable</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                <span>Has Bookings</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                <span>Today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* 5. RENDER                                                          */
   /* ------------------------------------------------------------------ */
   
   // Format bookings data for recent bookings component - show only 4 in descending order by ID
@@ -573,6 +913,9 @@ const HotelDashboard = () => {
           calendarDate={calendarDate}
           setCalendarDate={setCalendarDate}
           today={today}
+          getCalendarDayStatus={getCalendarDayStatus}
+          handleCalendarDayClick={handleCalendarDayClick}
+          availabilityLoading={availabilityLoading}
         />
       </div>
       
@@ -598,6 +941,9 @@ const HotelDashboard = () => {
       <div>
         <RecentBookings bookings={recentBookings} />
       </div>
+
+      {/* ---- Availability Management Modal ---- */}
+      <AvailabilityModal />
     </div>
   );
 };

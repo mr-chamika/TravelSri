@@ -273,11 +273,29 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div className="border-r pr-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Package Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Group Package Name"
+                    name="packageName"
+                    value={editedQuotation.packageName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
+                )}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hotel Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Hotel Name"
+                    name="hotelName"
+                    value={editedQuotation.hotelName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                )}
               </div>
             </div>
             <div>
@@ -285,20 +303,47 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <span className="material-icons text-sm mr-1 align-text-bottom">person</span> Contact Person
                 </label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                {isEditing ? (
+                  <Input
+                    label="Contact Person"
+                    name="contactPersonName"
+                    value={editedQuotation.contactPersonName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                )}
               </div>
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">email</span> Contact Email
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Email"
+                      name="contactEmail"
+                      value={editedQuotation.contactEmail}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">phone</span> Contact Phone
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Phone"
+                      name="contactPhone"
+                      value={editedQuotation.contactPhone}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -316,25 +361,55 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Accommodation Type</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.accommodationType || 'Not specified'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Accommodation Type"
+                    name="accommodationType"
+                    value={editedQuotation.accommodationType}
+                    onChange={handleChange}
+                    options={roomTypes}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.accommodationType || 'Not specified'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Size</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
-                  {editedQuotation.groupSize || '0'} people
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Group Size"
+                    type="number"
+                    name="groupSize"
+                    value={editedQuotation.groupSize}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
+                    {editedQuotation.groupSize || '0'} people
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rooms</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
-                  {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Number of Rooms"
+                    type="number"
+                    name="roomsRequired"
+                    value={editedQuotation.roomsRequired}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
+                    {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
@@ -349,15 +424,35 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkInDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-in Date"
+                      type="date"
+                      name="checkInDate"
+                      value={editedQuotation.checkInDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkInDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-out Date"
+                      type="date"
+                      name="checkOutDate"
+                      value={editedQuotation.checkOutDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -370,32 +465,64 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Meal Plan</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.mealPlan || 'Breakfast Only'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Meal Plan"
+                    name="mealPlan"
+                    value={editedQuotation.mealPlan}
+                    onChange={handleChange}
+                    options={['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive']}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.mealPlan || 'Breakfast Only'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Additional Services</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.airportTransfer ? 
-                    <span className="text-green-600 flex items-center">
-                      <span className="material-icons text-sm mr-1">check_circle</span> Pool Facilities Included
-                    </span> : 
-                    <span className="text-gray-500 flex items-center">
-                      <span className="material-icons text-sm mr-1">cancel</span> No Pool Facilities
-                    </span>
-                  }
-                </div>
+                {isEditing ? (
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="airportTransfer"
+                      checked={!!editedQuotation.airportTransfer}
+                      onChange={e => setEditedQuotation(prev => ({ ...prev, airportTransfer: e.target.checked }))}
+                      className="rounded text-yellow-500 focus:ring-yellow-400"
+                    />
+                    <span>Include Pool Facilities</span>
+                  </label>
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.airportTransfer ? 
+                      <span className="text-green-600 flex items-center">
+                        <span className="material-icons text-sm mr-1">check_circle</span> Pool Facilities Included
+                      </span> : 
+                      <span className="text-gray-500 flex items-center">
+                        <span className="material-icons text-sm mr-1">cancel</span> No Pool Facilities
+                      </span>
+                    }
+                  </div>
+                )}
               </div>
             </div>
           </div>
           
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Special Accommodation Requirements</label>
-            <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
-              {editedQuotation.specialRequirements || 'None specified'}
-            </div>
+            {isEditing ? (
+              <Textarea
+                label="Special Accommodation Requirements"
+                name="specialRequirements"
+                value={editedQuotation.specialRequirements}
+                onChange={handleChange}
+              />
+            ) : (
+              <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
+                {editedQuotation.specialRequirements || 'None specified'}
+              </div>
+            )}
           </div>
         </section>
 
@@ -2537,13 +2664,21 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
         
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
-          {(quotation.status === 'Pending' || quotation.status === 'Under Review') && (
-            <button
-              onClick={() => onDelete(quotation.id)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
-            >
-              <span className="material-icons text-sm mr-1">delete</span> Delete
-            </button>
+          {quotation.status === 'Pending' && (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm flex items-center border border-gray-300"
+              >
+                <span className="material-icons text-sm mr-1">edit</span> Edit
+              </button>
+              <button
+                onClick={() => onDelete(quotation.id)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
+              >
+                <span className="material-icons text-sm mr-1">delete</span> Delete
+              </button>
+            </>
           )}
           <button
             onClick={onClose}
@@ -2725,8 +2860,8 @@ const StatusBadge = ({ status }) => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {groupPackages.map((tripPackage) => (
-                  <tr 
-                    key={tripPackage.id} 
+                  <tr
+                    key={tripPackage.id || tripPackage.packageCode}
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleViewGroupPackage(tripPackage)}
                   >
@@ -2906,7 +3041,7 @@ const StatusBadge = ({ status }) => {
                 Check-out Date
               </th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Duration
+                Nights
               </th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Group Size
@@ -2933,9 +3068,9 @@ const StatusBadge = ({ status }) => {
                 </td>
               </tr>
             ) : (
-              currentQuotations.map((q, index) => (
-                <tr 
-                  key={q.id} 
+              currentQuotations.map((q) => (
+                <tr
+                  key={q.id || q.quoteNumber}
                   className="hover:bg-gray-50 cursor-pointer"
                   onClick={() => handleViewDetails(q)}
                 >
@@ -2955,8 +3090,8 @@ const StatusBadge = ({ status }) => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center text-sm text-gray-600">
-                      <span className="material-icons text-yellow-500 text-xs mr-1">schedule</span>
-                      {calculateDuration(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} days
+                      <span className="material-icons text-yellow-500 text-xs mr-1">nights_stay</span>
+                      {calculateNights(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} nights
                     </div>
                   </td>
                   <td className="py-3 px-4">
@@ -3017,7 +3152,7 @@ const StatusBadge = ({ status }) => {
             
             {Array.from({ length: Math.ceil(filteredQuotations.length / itemsPerPage) }).map((_, index) => (
               <button
-                key={index}
+                key={`page-${index}`}
                 onClick={() => paginate(index + 1)}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === index + 1
