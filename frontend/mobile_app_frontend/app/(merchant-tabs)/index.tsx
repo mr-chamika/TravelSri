@@ -71,7 +71,7 @@ const Listings: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
   const [shopId, setShopId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start loading initially
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,14 +86,11 @@ const Listings: React.FC = () => {
         return null;
       }
       const decodedToken = jwtDecode<JWTPayload>(token);
-      console.log('🔍 Full decoded token:', decodedToken);
       const foundShopId = decodedToken.id;
       if (foundShopId) {
-        console.log('✅ Shop ID found:', foundShopId);
         return foundShopId;
       } else {
         console.error('❌ No valid shop ID found in token');
-        console.log('Available token fields:', Object.keys(decodedToken));
         return null;
       }
     } catch (error) {
@@ -104,7 +101,6 @@ const Listings: React.FC = () => {
 
   const fetchShopListings = useCallback(async (shopId: string, showLoader = true) => {
     if (!shopId || shopId.trim() === '') {
-      console.error('❌ Cannot fetch listings: Invalid shop ID');
       setError('Invalid shop ID');
       return;
     }
@@ -116,10 +112,6 @@ const Listings: React.FC = () => {
         throw new Error('No authentication token available.');
       }
 
-      console.log('🔍 Shop ID:', shopId);
-      console.log('🔍 Shop ID type:', typeof shopId);
-      console.log('🔍 Full URL:', `${API_BASE_URL}/shopitems/by-shop?shopid=${shopId}`);
-
       const response = await fetch(`${API_BASE_URL}/shopitems/by-shop?shopid=${shopId}`, {
         method: 'GET',
         headers: {
@@ -128,14 +120,25 @@ const Listings: React.FC = () => {
         },
       });
       
-      console.log('🔍 Fetching listings for response:', response);
       if (!response.ok) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
-      const data: ListingItem[] = await response.json();
-      console.log(`✅ Successfully fetched ${data.length} items`);
-      setListings(data);
-      setFilteredListings(data);
+
+      // --- FIX: Check for empty response before parsing JSON ---
+      const responseText = await response.text();
+      if (responseText) {
+        const data: ListingItem[] = JSON.parse(responseText);
+        console.log(`✅ Successfully fetched ${data.length} items`);
+        setListings(data);
+        setFilteredListings(data);
+      } else {
+        // Handle empty response gracefully, which means no items
+        console.log('✅ Received empty response, setting listings to empty array.');
+        setListings([]);
+        setFilteredListings([]);
+      }
+      // --- END OF FIX ---
+
     } catch (error) {
       console.error('❌ Error fetching listings:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -150,16 +153,13 @@ const Listings: React.FC = () => {
     const shopId = await extractShopIdFromToken();
     if (shopId) {
       setShopId(shopId);
-      console.log('🔍 Initializing app with shop ID:', shopId);
       await fetchShopListings(shopId, false);
     } else {
       setError('Authentication required');
       Alert.alert(
         'Authentication Required',
         'Please log in to view your shop listings.',
-        [
-          { text: 'OK', onPress: () => console.log('User acknowledged auth error') }
-        ]
+        [{ text: 'OK' }]
       );
     }
     setIsLoading(false);
@@ -194,9 +194,7 @@ const Listings: React.FC = () => {
   const handleDeleteItem = async () => {
     if (!selectedItem) return;
     
-    // Close the modal immediately
     setModalVisible(false);
-    setSelectedItem(null);
     
     try {
       const token = await AsyncStorage.getItem('token');
@@ -214,6 +212,7 @@ const Listings: React.FC = () => {
         throw new Error(`Failed to delete item: ${response.status}`);
       }
       
+      setSelectedItem(null);
       // Refresh the listings after successful deletion
       if (shopId) {
         fetchShopListings(shopId);
@@ -272,6 +271,7 @@ const Listings: React.FC = () => {
 
       <ScrollView
         style={styles.listingsContainer}
+        contentContainerStyle={{ flexGrow: 1 }} // Ensures content can fill space for centering
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -281,7 +281,11 @@ const Listings: React.FC = () => {
           />
         }
       >
-        {error ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD700" />
+          </View>
+        ) : error ? (
           <View style={styles.errorContainer}>
             <MaterialIcons name="error-outline" size={48} color="#ff4444" />
             <Text style={styles.errorText}>{error}</Text>
@@ -368,6 +372,7 @@ const Listings: React.FC = () => {
   );
 };
 
+// ... Your styles remain the same
 export default Listings;
 
 const styles = StyleSheet.create({
@@ -386,23 +391,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  // --- CHANGES START HERE ---
   listingsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16, // Reduced horizontal space
-    paddingVertical: 12,    // Adjusted vertical space for balance
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   listingsTitle: {
-    fontSize: 22, // Made title slightly larger
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
   },
-  // --- CHANGES END HERE ---
   addButton: {
     padding: 8,
     borderRadius: 20,

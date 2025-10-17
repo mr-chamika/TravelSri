@@ -79,9 +79,7 @@ const FeedbackCard: React.FC<{
   };
 
   const renderAvatar = () => {
-    // Check if dp field exists and has a valid image
     if (review.dp && review.dp.trim() !== '' && !imageError) {
-      // If dp contains base64 data, use it directly
       const imageUri = review.dp.startsWith('data:') 
         ? review.dp 
         : `data:image/jpeg;base64,${review.dp}`;
@@ -97,7 +95,6 @@ const FeedbackCard: React.FC<{
         />
       );
     } else {
-      // Fallback to default avatar icon
       return <Text style={styles.avatarText}>👤</Text>;
     }
   };
@@ -164,12 +161,11 @@ const RatingSummaryHeader: React.FC<{ stats: ReviewStats | null }> = ({ stats })
 };
 
 const Feedback: React.FC = () => {
-  const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
-  const [serviceId, setServiceId] = useState<string>(''); // Keep this - now represents user ID
-  const [isLoading, setIsLoading] = useState(false);
+  const [serviceId, setServiceId] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true); // Start loading
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ReviewStats | null>(null);
@@ -177,7 +173,6 @@ const Feedback: React.FC = () => {
 
   const API_BASE_URL = 'http://localhost:8080';
 
-  // Extract user ID from JWT token (same as your ShopItemController pattern)
   const extractUserIdFromToken = useCallback(async (): Promise<string | null> => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -186,10 +181,8 @@ const Feedback: React.FC = () => {
         return null;
       }
       const decodedToken = jwtDecode<JWTPayload>(token);
-      console.log('🔍 Full decoded token:', decodedToken);
-      const foundUserId = decodedToken.id; // User ID from JWT
+      const foundUserId = decodedToken.id;
       if (foundUserId) {
-        console.log('✅ User ID found:', foundUserId);
         return foundUserId;
       } else {
         console.error('❌ No valid user ID found in token');
@@ -203,7 +196,6 @@ const Feedback: React.FC = () => {
 
   const fetchReviews = useCallback(async (userId: string, showLoader = true) => {
     if (!userId || userId.trim() === '') {
-      console.error('❌ Cannot fetch reviews: Invalid user ID');
       setError('Invalid user ID');
       return;
     }
@@ -211,31 +203,30 @@ const Feedback: React.FC = () => {
     setError(null);
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token available.');
-      }
-
-      console.log('🔍 User ID:', userId);
-      console.log('🔍 Full URL:', `${API_BASE_URL}/reviews/by-service?serviceid=${userId}`);
+      if (!token) throw new Error('No authentication token available.');
 
       const response = await fetch(`${API_BASE_URL}/reviews/by-service?serviceid=${userId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       
-      console.log('🔍 Fetching reviews response:', response);
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      if (!response.ok) throw new Error(`Server error: ${response.status} ${response.statusText}`);
+
+      // --- FIX: Handle empty response ---
+      const responseText = await response.text();
+      if (responseText) {
+        const data: Review[] = JSON.parse(responseText);
+        console.log(`✅ Successfully fetched ${data.length} reviews`);
+        setReviews(data);
+        setFilteredReviews(data);
+      } else {
+        console.log('✅ Received empty response for reviews, setting to empty array.');
+        setReviews([]);
+        setFilteredReviews([]);
       }
-      const data: Review[] = await response.json();
-      console.log(`✅ Successfully fetched ${data.length} reviews`);
-      setReviews(data);
-      setFilteredReviews(data);
+      // --- END OF FIX ---
+
     } catch (error) {
-      console.error('❌ Error fetching reviews:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setError(errorMessage);
     } finally {
@@ -250,16 +241,21 @@ const Feedback: React.FC = () => {
 
       const response = await fetch(`${API_BASE_URL}/reviews/stats?serviceid=${userId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       
+      // --- FIX: Handle empty response ---
       if (response.ok) {
-        const statsData: ReviewStats = await response.json();
-        setStats(statsData);
+        const responseText = await response.text();
+        if (responseText) {
+          const statsData: ReviewStats = JSON.parse(responseText);
+          setStats(statsData);
+        } else {
+          setStats(null); // No stats available
+        }
       }
+      // --- END OF FIX ---
+
     } catch (error) {
       console.error('❌ Error fetching review stats:', error);
     }
@@ -270,20 +266,13 @@ const Feedback: React.FC = () => {
     const userId = await extractUserIdFromToken();
     if (userId) {
       setServiceId(userId);
-      console.log('🔍 Initializing app with user ID:', userId);
       await Promise.all([
         fetchReviews(userId, false),
         fetchReviewStats(userId)
       ]);
     } else {
       setError('Authentication required');
-      Alert.alert(
-        'Authentication Required',
-        'Please log in to view your feedback.',
-        [
-          { text: 'OK', onPress: () => console.log('User acknowledged auth error') }
-        ]
-      );
+      Alert.alert('Authentication Required', 'Please log in to view your feedback.', [{ text: 'OK' }]);
     }
     setIsLoading(false);
   }, [extractUserIdFromToken, fetchReviews, fetchReviewStats]);
@@ -298,26 +287,10 @@ const Feedback: React.FC = () => {
     setRefreshing(false);
   }, [serviceId, fetchReviews, fetchReviewStats]);
 
-  useFocusEffect(
-    useCallback(() => {
-      initializeApp();
-    }, [initializeApp])
-  );
-
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-    applyFilters(text, selectedRating);
-  };
-
-  const handleRatingFilter = (rating: number | null) => {
-    setSelectedRating(rating);
-    applyFilters(searchText, rating);
-  };
+  useFocusEffect(useCallback(() => { initializeApp(); }, [initializeApp]));
 
   const applyFilters = (searchQuery: string, ratingFilter: number | null) => {
     let filtered = reviews;
-
-    // Apply text search
     if (searchQuery.trim()) {
       filtered = filtered.filter((review) =>
         review.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -325,26 +298,16 @@ const Feedback: React.FC = () => {
         review.country?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-    // Apply rating filter
     if (ratingFilter !== null) {
       filtered = filtered.filter((review) => review.stars === ratingFilter);
     }
-
     setFilteredReviews(filtered);
   };
 
-  if (isLoading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFD700" />
-          <Text style={styles.loadingText}>Loading feedback...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    applyFilters(text, selectedRating);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -357,7 +320,6 @@ const Feedback: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Rating Summary */}
       <RatingSummaryHeader stats={stats} />
 
       <View style={styles.searchContainer}>
@@ -379,6 +341,7 @@ const Feedback: React.FC = () => {
 
       <ScrollView
         style={styles.feedbackContainer}
+        contentContainerStyle={{ flexGrow: 1 }} // Add this for centering
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -388,7 +351,11 @@ const Feedback: React.FC = () => {
           />
         }
       >
-        {error ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD700" />
+          </View>
+        ) : error ? (
           <View style={styles.errorContainer}>
             <MaterialIcons name="error-outline" size={48} color="#ff4444" />
             <Text style={styles.errorText}>{error}</Text>
@@ -411,10 +378,10 @@ const Feedback: React.FC = () => {
           <View style={styles.noFeedbackContainer}>
             <MaterialIcons name="rate-review" size={64} color="#ccc" />
             <Text style={styles.noFeedbackTitle}>
-              {searchText || selectedRating ? 'No matching feedback found' : 'No feedback yet'}
+              {searchText || selectedRating !== null ? 'No matching feedback' : 'No feedback yet'}
             </Text>
             <Text style={styles.noFeedbackText}>
-              {searchText || selectedRating
+              {searchText || selectedRating !== null
                 ? 'Try adjusting your search or filter'
                 : 'Your customers haven\'t left any feedback yet.'
               }
@@ -428,6 +395,7 @@ const Feedback: React.FC = () => {
 
 export default Feedback;
 
+// --- Styles remain the same ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -438,11 +406,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
   },
   header: {
     flexDirection: 'row',
@@ -506,34 +469,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000'
   },
-  filterContainer: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#f1f3f4',
-  },
-  activeFilter: {
-    backgroundColor: '#FFD700',
-  },
-  filterText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 4,
-  },
-  activeFilterText: {
-    color: '#000',
-    fontWeight: '600',
-  },
   searchResults: {
     fontSize: 14,
     color: '#666',
@@ -575,7 +510,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    overflow: 'hidden', // Ensures image respects border radius
+    overflow: 'hidden',
   },
   avatarImage: {
     width: '100%',
