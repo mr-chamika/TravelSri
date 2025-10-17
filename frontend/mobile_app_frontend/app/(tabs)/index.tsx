@@ -21,8 +21,9 @@ const srch = require('../../assets/images/search1.png');
 interface Trip {
 
   _id: string,
-  thumbnail: string,
-  destination: string
+  dates: string[],
+  adults: number,
+  children: number
 
 }
 
@@ -311,7 +312,7 @@ export default function Index() {
 
       if (data) {
 
-        //console.log(data)
+        console.log(data)
         setTrips(data)
 
       }
@@ -429,12 +430,12 @@ export default function Index() {
               return (
                 //<TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
                 <TouchableOpacity onPress={() => router.push({ pathname: `/(tabs)/creates`, params: { id: item._id } })} className="w-[83px]" key={item._id}>
-                  <Image
+                  {/* <Image
                     className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
                     source={{ uri: `data:image/jpeg;base64,${item.thumbnail}` }}
-                  />
+                  /> */}
                   <Text className="mt-2 text-[10px] italic text-center">
-                    {item.destination}
+                    {item.dates[0]}
                   </Text>
                 </TouchableOpacity>
               )

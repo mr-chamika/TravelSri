@@ -107,11 +107,6 @@ export default function HotelsBookingScreen() {
     const [guides, setGuides] = useState<g[]>([])
     const [cars, setCars] = useState<Car[]>([])
 
-    const sortedLocations = useMemo(() => {
-        if (!location) return LOCATIONS;
-        return [location, ...LOCATIONS.filter((loc) => loc !== location)];
-    }, [location]);
-
     const { createdId, dayNumber, date, adults, children } = useLocalSearchParams();
 
     const order = {
@@ -123,6 +118,7 @@ export default function HotelsBookingScreen() {
         children: children
 
     }
+
     useEffect(() => {
 
         if (order.dayNumber && order.date && order.children && order.adults) {
@@ -268,15 +264,15 @@ export default function HotelsBookingScreen() {
         useCallback(() => {
             const loadInitialData = async () => {
 
-                console.log(locationP)
-                console.log(order)
+                // console.log(locationP)
+                // console.log(order)
 
                 if (!keyword.trim() || !order) return;
 
                 const getHotels = async () => {
 
                     try {
-                        console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
+                        //console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
                         const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${keyword.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
                         //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
@@ -609,7 +605,7 @@ export default function HotelsBookingScreen() {
                     </View>
 
                     <View className=" p-4 border-t border-gray-200 bg-white">
-                        <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
+                        <Text className="text-center font-bold text-lg">Total Price : {total}.00 LKR</Text>
                     </View>
                 </>
 

@@ -411,173 +411,173 @@ export default function App() {
     }, [selectedCardId, guideId, hotelId, guides, hotels]);
 
 
-    const handleCreatePlan = async () => {
-        try {
-            const keys = await AsyncStorage.getItem("token");
+    // const handleCreatePlan = async () => {
+    //     try {
+    //         const keys = await AsyncStorage.getItem("token");
 
-            if (keys) {
+    //         if (keys) {
 
-                const token: MyToken = jwtDecode(keys)
-                const finalFormObject = { ...submitForm }
+    //             const token: MyToken = jwtDecode(keys)
+    //             const finalFormObject = { ...submitForm }
 
-                const s = await AsyncStorage.getItem('order')
-                if (s) {
+    //             const s = await AsyncStorage.getItem('order')
+    //             if (s) {
 
-                    const order: Postdata = JSON.parse(s)
-                    if (order) {
+    //                 const order: Postdata = JSON.parse(s)
+    //                 if (order) {
 
-                        finalFormObject.createdId = order.createdId,
-                            finalFormObject.date = order.date;
-                        finalFormObject.adults = Number(order.adults);
-                        finalFormObject.children = Number(order.children);
-                        finalFormObject.dayNumber = Number(order.dayNumber);
-                    }
+    //                     finalFormObject.createdId = order.createdId,
+    //                         finalFormObject.date = order.date;
+    //                     finalFormObject.adults = Number(order.adults);
+    //                     finalFormObject.children = Number(order.children);
+    //                     finalFormObject.dayNumber = Number(order.dayNumber);
+    //                 }
 
-                }
-                //setting hotel details
-                const hbookings = await AsyncStorage.getItem('selectedHotelBooking');
-                const hotelData = hbookings ? JSON.parse(hbookings) : '';
-                const obj = hotelData;
+    //             }
+    //             //setting hotel details
+    //             const hbookings = await AsyncStorage.getItem('selectedHotelBooking');
+    //             const hotelData = hbookings ? JSON.parse(hbookings) : '';
+    //             const obj = hotelData;
 
-                if (hotelData && hotelId) {
-                    finalFormObject.creatorId = token.id;
+    //             if (hotelData && hotelId) {
+    //                 finalFormObject.creatorId = token.id;
 
-                    finalFormObject.hotelId = hotelId;
-                    finalFormObject.singleBeds = Number(obj.s);
-                    finalFormObject.doubleBeds = Number(obj.d);
-                    finalFormObject.hprice = hotelPrice
+    //                 finalFormObject.hotelId = hotelId;
+    //                 finalFormObject.singleBeds = Number(obj.s);
+    //                 finalFormObject.doubleBeds = Number(obj.d);
+    //                 finalFormObject.hprice = hotelPrice
 
-                } else {
+    //             } else {
 
-                    console.log('hotel not found');
-                    m = m + ' Please select a hotel |';
+    //                 console.log('hotel not found');
+    //                 m = m + ' Please select a hotel |';
 
-                }
+    //             }
 
-                //setting guide details
-                const gbookings = await AsyncStorage.getItem('gbookings');
-                const guideData: BookG = gbookings ? JSON.parse(gbookings) : '';
-                console.log(guideData)
+    //             //setting guide details
+    //             const gbookings = await AsyncStorage.getItem('gbookings');
+    //             const guideData: BookG = gbookings ? JSON.parse(gbookings) : '';
+    //             console.log(guideData)
 
-                if (guideData && guideId) {
+    //             if (guideData && guideId) {
 
-                    finalFormObject.guideId = guideId;
-                    finalFormObject.glocation = guideData.loc;
-                    finalFormObject.glanguage = guideData.lan;
-                    finalFormObject.gprice = guidePrice;
-                    finalFormObject.type = guideData.type;
+    //                 finalFormObject.guideId = guideId;
+    //                 finalFormObject.glocation = guideData.loc;
+    //                 finalFormObject.glanguage = guideData.lan;
+    //                 finalFormObject.gprice = guidePrice;
+    //                 finalFormObject.type = guideData.type;
 
-                } else {
+    //             } else {
 
-                    console.log('guide not found');
-                    m = m + ' Please select a guide |'
-                }
+    //                 console.log('guide not found');
+    //                 m = m + ' Please select a guide |'
+    //             }
 
-                //setting car details
-                const driver = await AsyncStorage.getItem('cbookings')
-                const ids = await AsyncStorage.getItem('selectedCar')
+    //             //setting car details
+    //             const driver = await AsyncStorage.getItem('cbookings')
+    //             const ids = await AsyncStorage.getItem('selectedCar')
 
-                if (driver && ids) {
+    //             if (driver && ids) {
 
-                    const bookingData = JSON.parse(driver);
-                    if (bookingData && selectedCardId) {
+    //                 const bookingData = JSON.parse(driver);
+    //                 if (bookingData && selectedCardId) {
 
-                        finalFormObject.carId = ids;
-                        finalFormObject.startLocation = bookingData.start;
-                        finalFormObject.endLocation = bookingData.end;
-                        finalFormObject.clanguage = bookingData.language;
-                        finalFormObject.bookedTime = bookingData.time;
-                        finalFormObject.cprice = catPrice;
-                        finalFormObject.isOneway = bookingData.oneWay;
-                    } else {
+    //                     finalFormObject.carId = ids;
+    //                     finalFormObject.startLocation = bookingData.start;
+    //                     finalFormObject.endLocation = bookingData.end;
+    //                     finalFormObject.clanguage = bookingData.language;
+    //                     finalFormObject.bookedTime = bookingData.time;
+    //                     finalFormObject.cprice = catPrice;
+    //                     finalFormObject.isOneway = bookingData.oneWay;
+    //                 } else {
 
-                        console.log('vehicle not found')
-                        m = m + ' Please select a vehicle |'
+    //                     console.log('vehicle not found')
+    //                     m = m + ' Please select a vehicle |'
 
-                    }
-                } else {
+    //                 }
+    //             } else {
 
-                    m = m + ' Please select a vehicle |'
-
-
-                }
-                if (m == '') {
-                    console.log(finalFormObject)
-
-                    await fetch('http://localhost:8080/traveler/create-trip', {
-                        //await fetch('https://travelsri-backend.onrender.com/traveler/create-trip', {
-
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(finalFormObject)
-
-                    })
-                        .then(res => res.text())
-                        .then(data => {
-
-                            console.log('createdID :' + data)
-
-                            AsyncStorage.multiRemove([
-                                'selectedLocation',
-                                'hasMadeInitialSelection',
-                                'hotel',
-                                'guide',
-                                'car',
-                                'hbookings',
-                                'hbookingComplete',
-                                'hbookingSession',
-                                'bookingSession',
-                                'gbookings',
-                                'gbookingComplete',
-                                'gbookingSession',
-                                'cbookings',
-                                'cbookingComplete',
-                                'cbookingSession',
-                                'bookingSession',
-                                'total',
-                                'route',
-                                'selectedHotelBooking',
-                                'guides',
-                                'hotels',
-                                'driver',
-                                'selectedCar'
+    //                 m = m + ' Please select a vehicle |'
 
 
-                            ]);
+    //             }
+    //             if (m == '') {
+    //                 console.log(finalFormObject)
 
-                            setSelectedDates({});
-                            setLanguage('');
-                            setStartLocation('');
-                            setEndLocation('');
-                            setModalVisible(false);
-                            setSelectedCardId(null);
-                            setTotal('0');
-                            setBookingData(null);
+    //                 await fetch('http://localhost:8080/traveler/create-trip', {
+    //                     //await fetch('https://travelsri-backend.onrender.com/traveler/create-trip', {
 
-                            //==setSubmitForm(finalFormObject)
-                            alert('Plan created and session reset!');
-                            //router.push('/(tabs)/create');
-                            router.replace({ pathname: '/(tabs)/creates', params: { id: data } });
+    //                     method: 'POST',
+    //                     headers: { 'Content-Type': 'application/json' },
+    //                     body: JSON.stringify(finalFormObject)
 
-                        })
-                        .catch(err => console.log(err))
-                } else {
+    //                 })
+    //                     .then(res => res.text())
+    //                     .then(data => {
 
-                    alert(m)
-                    m = '';
+    //                         console.log('createdID :' + data)
 
-                }
-            } else {
+    //                         AsyncStorage.multiRemove([
+    //                             'selectedLocation',
+    //                             'hasMadeInitialSelection',
+    //                             'hotel',
+    //                             'guide',
+    //                             'car',
+    //                             'hbookings',
+    //                             'hbookingComplete',
+    //                             'hbookingSession',
+    //                             'bookingSession',
+    //                             'gbookings',
+    //                             'gbookingComplete',
+    //                             'gbookingSession',
+    //                             'cbookings',
+    //                             'cbookingComplete',
+    //                             'cbookingSession',
+    //                             'bookingSession',
+    //                             'total',
+    //                             'route',
+    //                             'selectedHotelBooking',
+    //                             'guides',
+    //                             'hotels',
+    //                             'driver',
+    //                             'selectedCar'
 
-                alert('Not allowed for this action')
-            }
 
-        } catch (e) {
-            alert(`Error creating plan and resetting session: ${e}`);
-            console.error('Error creating plan and resetting session:', e);
-        }
+    //                         ]);
 
-    };
+    //                         setSelectedDates({});
+    //                         setLanguage('');
+    //                         setStartLocation('');
+    //                         setEndLocation('');
+    //                         setModalVisible(false);
+    //                         setSelectedCardId(null);
+    //                         setTotal('0');
+    //                         setBookingData(null);
+
+    //                         //==setSubmitForm(finalFormObject)
+    //                         alert('Plan created and session reset!');
+    //                         //router.push('/(tabs)/create');
+    //                         router.replace({ pathname: '/(tabs)/creates', params: { id: data } });
+
+    //                     })
+    //                     .catch(err => console.log(err))
+    //             } else {
+
+    //                 alert(m)
+    //                 m = '';
+
+    //             }
+    //         } else {
+
+    //             alert('Not allowed for this action')
+    //         }
+
+    //     } catch (e) {
+    //         alert(`Error creating plan and resetting session: ${e}`);
+    //         console.error('Error creating plan and resetting session:', e);
+    //     }
+
+    // };
 
     return (
         <View className='bg-[#F2F5FA] h-full'>
@@ -669,9 +669,9 @@ export default function App() {
                             )}
                     </ScrollView>
                 </View>
-                <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 pl-32 flex-row justify-center">
-                    <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
-                    <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity>
+                <View className="absolute bottom-0 right-0 left-0 border-t border-gray-200 bg-white py-4 flex-row justify-center">
+                    <Text className="self-center font-bold text-lg">Total Price : {total}.00 LKR</Text>
+                    {/* <TouchableOpacity onPress={handleCreatePlan}><View className='ml-6 bg-[#FEFA17] py-1 px-4 rounded-xl'><Text>Create Plan</Text></View></TouchableOpacity> */}
                 </View>
             </>
         </View>

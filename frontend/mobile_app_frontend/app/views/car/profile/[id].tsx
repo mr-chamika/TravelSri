@@ -4,7 +4,6 @@ import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Languages } from "lucide-react-native";
 import { jwtDecode } from "jwt-decode";
 
 interface Book {
@@ -202,7 +201,31 @@ export default function Views() {
 
         if (vehicle) {
             await AsyncStorage.setItem('selectedCar', vehicle?._id);
-            router.push('/create/car')
+
+            //implementing car service create
+
+            const orderx = await AsyncStorage.getItem('order');
+            const bookingx = await AsyncStorage.getItem('cbookings');
+            const tokenString = await AsyncStorage.getItem('token');
+
+            if (!orderx || !bookingx || !tokenString) return;
+
+            const token: MyToken = jwtDecode(tokenString);
+
+            const order = JSON.parse(orderx);
+            const booking = JSON.parse(bookingx);
+
+            await fetch('http://localhost:8080/traveler/create-trip', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ obj: booking, order: order, type: 'vehicle', vehicleId: id, userId: token.id })
+
+            })
+                .then(res => res.text())
+                .then(data => router.push({ pathname: `/(tabs)/creates`, params: { id: data } }))
+                .catch(err => console.log(err))
+
         } else {
 
             alert('Error : vehicle not detected')

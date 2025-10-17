@@ -664,7 +664,7 @@ export default function Guide() {
                     <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
                         {
 
-                            <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
+                            <Text className="text-center font-bold text-lg">Total Price : {total}.00 LKR</Text>
 
                         }
                     </View>
