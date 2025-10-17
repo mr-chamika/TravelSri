@@ -17,7 +17,7 @@ const ArrowSwapIcon = () => (
 
 // --- Language Data ---
 const LANGS = ['English', 'Tamil', 'Hindi', 'Russian', 'Japanese', 'Sinhala'];
-const LANGUAGE_CODES = {
+const LANGUAGE_CODES: { [key: string]: string } = {
   English: 'en',
   Tamil: 'ta',
   Hindi: 'hi',
@@ -28,13 +28,23 @@ const LANGUAGE_CODES = {
 
 // --- Reusable Components ---
 // Replaced React Native's TextInput and View with textarea and div for web compatibility.
+
+// Define prop types for the TextBox component
+interface TextBoxProps {
+  value: string;
+  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  isEditable?: boolean;
+  placeholder?: string;
+  bgColor?: string;
+}
+
 function TextBox({
   value,
   onChange,
   isEditable = true,
   placeholder,
   bgColor = 'bg-white',
-}) {
+}: TextBoxProps) {
   return (
     <div className={`relative w-full h-full border-2 border-gray-200 flex flex-col justify-between rounded-xl shadow-sm ${bgColor} transition-shadow duration-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500`}>
       <textarea
@@ -74,29 +84,34 @@ export default function App() {
       setError('Please enter text to translate.');
       return;
     }
+    
     setError('');
     setIsLoading(true);
     setTargetText('');
 
-    const sourceCode = LANGUAGE_CODES[sourceLang] || 'auto';
-    const targetCode = LANGUAGE_CODES[targetLang] || 'en';
+    const sourceCode = LANGUAGE_CODES[sourceLang];
+    const targetCode = LANGUAGE_CODES[targetLang];
 
     try {
-      const res = await fetch('https://libretranslate.de/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q, source: sourceCode, target: targetCode, format: 'text' }),
-      });
+      // Using a public Google Translate endpoint
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceCode}&tl=${targetCode}&dt=t&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
 
       if (!res.ok) {
-        throw new Error('Translation API failed. Please try again later.');
+        throw new Error('Translation failed. Please try again later.');
       }
 
       const data = await res.json();
-      setTargetText(data.translatedText ?? '');
+      // Parse the response from the public API
+      const translated = data[0]?.[0]?.[0];
+      setTargetText(translated ?? '');
     } catch (err) {
       console.error('Translation error', err);
-      setError(err.message || 'Unable to translate. Check your connection and try again.');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Unable to translate. Check your connection and try again.');
+      }
     } finally {
         setIsLoading(false);
     }
@@ -104,7 +119,7 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 font-sans flex items-center justify-center p-4">
-      <div className="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-6 space-y-4">
+      <div className="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-6 space-y-2">
         <h1 className="font-bold text-3xl text-center text-gray-800">Translator</h1>
         
         {/* Source Language Area */}
@@ -123,13 +138,13 @@ export default function App() {
                     </div>
                 )}
             </div>
-            <div className="w-full h-48">
+            <div className="w-full h-52">
                 <TextBox value={sourceText} onChange={(e) => setSourceText(e.target.value)} isEditable={true} placeholder="Enter text..."/>
             </div>
         </div>
 
         {/* Swap Button */}
-        <div className="flex justify-center items-center py-2 my-3">
+        <div className="flex justify-center items-center py-1 my-1">
              <button onClick={swapLanguages} className="p-2 rounded-full border-2 border-gray-200 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform duration-300 hover:rotate-180">
                 <ArrowSwapIcon />
             </button>
@@ -151,13 +166,13 @@ export default function App() {
                     </div>
                 )}
             </div>
-            <div className="w-full h-48">
+            <div className="w-full h-52">
                 <TextBox value={isLoading ? 'Translating...' : targetText} isEditable={false} placeholder="Translation..." bgColor="bg-gray-100"/>
             </div>
         </div>
 
         {/* Translate Button and Error Message */}
-        <div className="pt-2 flex flex-col items-center">
+        <div className="pt-1 flex flex-col items-center">
             <button onClick={translateText} disabled={isLoading || !sourceText} className="w-full max-w-xs rounded-full justify-center bg-[#FEFA17] text-gray-900 font-extrabold h-12 items-center transition-opacity hover:opacity-90 disabled:bg-gray-300 disabled:cursor-not-allowed">
                 Translate
             </button>
