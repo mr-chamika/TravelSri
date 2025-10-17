@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   SafeAreaView,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import individual components
 import StatsCard from '../../components/ui/starCard';
@@ -118,6 +119,7 @@ const TravelMateGuideHome = () => {
 
   const [selectedDate, setSelectedDate] = useState(8);
   const [show, setShow] = useState(false);
+  const [userName, setUserName] = useState('Guide');
 
   const opacity = useSharedValue(0);
   const [notify, setNotify] = useState(false);
@@ -129,6 +131,45 @@ const TravelMateGuideHome = () => {
   };
 
   const navigation = useNavigation<GuideNavigation>();
+
+  // Fetch and decode JWT token to get username
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        console.log('🔍 JWT Token from AsyncStorage:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
+        
+        if (token) {
+          const decoded = jwtDecode<MyToken>(token);
+          console.log('🔓 Decoded JWT Token:', JSON.stringify(decoded, null, 2));
+          console.log('📋 All token fields:', Object.keys(decoded));
+          
+          // Try different possible username fields
+          const possibleUsername = 
+            decoded.username || 
+            decoded.sub || 
+            decoded.username || 
+            (decoded as any).given_name || 
+            (decoded as any).preferred_username ||
+            'Guide';
+          
+          console.log('✅ Using username:', possibleUsername);
+          console.log('📌 decoded.username:', decoded.username);
+          console.log('📌 decoded.sub:', decoded.sub);
+          console.log('📌 decoded.roles:', decoded.roles);
+          
+          setUserName(possibleUsername);
+        } else {
+          console.warn('⚠️ No token found in AsyncStorage');
+        }
+      } catch (error) {
+        console.error('❌ Error decoding token:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      }
+    };
+    
+    fetchUserName();
+  }, []);
 
   const menuItems = [
     {
@@ -225,7 +266,7 @@ const TravelMateGuideHome = () => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Header
-          userName="Sunil"
+          userName={userName}
           welcomeMessage="Ready to guide travelers today?"
           gradientColors={['rgba(254, 250, 23, 1)', 'rgba(255, 215, 0, 0.9)', 'rgba(255, 196, 0, 0.8)']}
         />

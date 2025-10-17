@@ -211,7 +211,14 @@ public class Hashingpw {
                                 "/api/places/nearby",
                                 "/api/posts/post/{postId}",
                                 "/api/posts/edit/{postId}",
-                                "/api/posts/delete/{postId}"
+                                "/api/posts/delete/{postId}",
+                                "/api/availability/create-unavailability",
+                                "/api/availability/check-provider",
+                                "/api/availability/user-unavailable-guides",
+                                "/api/availability/user-unavailable-vehicles",
+                                "/api/availability/update-user-status",
+                                "/api/availability/delete-user-unavailability",
+                                "/api/availability/user-schedules/{userId}"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

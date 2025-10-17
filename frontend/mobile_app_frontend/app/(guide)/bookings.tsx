@@ -63,18 +63,23 @@ export default function App() {
 
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/traveler/${userToken.id}`);
+            console.log('🔍 Fetching bookings for guide ID:', userToken.id);
+            
+            // Fetch booking requests for this guide (as provider)
+            const response = await fetch(`http://localhost:8080/api/bookings/provider/${userToken.id}`);
             
             if (response.ok) {
                 const data = await response.json();
+                console.log('✅ Booking requests fetched:', data.length, 'bookings');
+                console.log('📋 Booking data:', JSON.stringify(data, null, 2));
                 setBookings(data);
                 filterBookings(data, activeFilter);
             } else {
-                console.error("Failed to fetch bookings:", response.status);
+                console.error("❌ Failed to fetch bookings:", response.status);
                 setBookings([]);
             }
         } catch (error) {
-            console.error("Error fetching bookings:", error);
+            console.error("❌ Error fetching bookings:", error);
             setBookings([]);
         } finally {
             setLoading(false);
@@ -88,9 +93,10 @@ export default function App() {
         
         switch (filter) {
             case 'Pending':
+                // For guides: pending means awaiting their acceptance
                 filtered = bookingsList.filter(booking => 
-                    booking.status === 'PENDING_PAYMENT' || 
-                    booking.status === 'PENDING_PROVIDER_ACCEPTANCE'
+                    booking.status === 'PENDING_PROVIDER_ACCEPTANCE' || 
+                    booking.status === 'PENDING_PAYMENT'
                 );
                 break;
             case 'Confirmed':
@@ -304,11 +310,11 @@ export default function App() {
                 {/* Booking Cards */}
                 {filteredBookings.length === 0 ? (
                     <View className="flex-1 justify-center items-center py-20">
-                        <Text className="text-gray-500 text-lg mb-2">No bookings found</Text>
+                        <Text className="text-gray-500 text-lg mb-2">No booking requests</Text>
                         <Text className="text-gray-400 text-center">
                             {activeFilter === 'All' 
-                                ? "You haven't made any bookings yet"
-                                : `No ${activeFilter.toLowerCase()} bookings`
+                                ? "You don't have any booking requests yet"
+                                : `No ${activeFilter.toLowerCase()} booking requests`
                             }
                         </Text>
                     </View>
