@@ -21,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { jwtDecode } from 'jwt-decode';
 
 // Import your screen components
 import BookingScreen from './bookings';
@@ -35,6 +36,14 @@ interface Stats {
   rating: string;
   totalTours: string;
   earnings: string;
+}
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
 }
 
 export type GuideStackParamList = {

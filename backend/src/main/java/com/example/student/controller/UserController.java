@@ -51,39 +51,39 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody User user) {
 
 
-       Optional<User> exists = repo.findByEmail(user.getEmail());
+        Optional<User> exists = repo.findByEmail(user.getEmail());
 
-       if(exists.isPresent()) {//user exists
+        if(exists.isPresent()) {//user exists
 
-           User t = exists.get();
+            User t = exists.get();
 
-           if (passwordEncoder.matches(user.getPassword(),t.getPassword())) {
+            if (passwordEncoder.matches(user.getPassword(),t.getPassword())) {
 
-               UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-                       t.getUsername(),
-                       t.getPassword(),
-                       Collections.singletonList(new SimpleGrantedAuthority(t.getRole()))
-               );
+                UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                        t.getUsername(),
+                        t.getPassword(),
+                        Collections.singletonList(new SimpleGrantedAuthority(t.getRole()))
+                );
 
-               String token = jwtUtil.generateToken(userDetails,t);
+                String token = jwtUtil.generateToken(userDetails,t);
 
-               Map<String, String> responseBody = new HashMap<>();
-               responseBody.put("token", token);
-               return ResponseEntity.ok(responseBody);
+                Map<String, String> responseBody = new HashMap<>();
+                responseBody.put("token", token);
+                return ResponseEntity.ok(responseBody);
 
-           }else {
+            }else {
 
-               Map<String, String> errorBody = new HashMap<>();
-               errorBody.put("error","wrong password");
-               return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
-           }
+                Map<String, String> errorBody = new HashMap<>();
+                errorBody.put("error","wrong password");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody);
+            }
 
-       }else{//user does not exist
+        }else{//user does not exist
 
-           Map<String, String> errorBody = new HashMap<>();
-           errorBody.put("error","invalid email");
-           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
-       }
+            Map<String, String> errorBody = new HashMap<>();
+            errorBody.put("error","invalid email");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody);
+        }
 
 
 
@@ -96,21 +96,21 @@ public class UserController {
 
     public String signup(@RequestBody User user) {
 
-    Optional<User> exists = repo.findByEmail(user.getEmail());
+        Optional<User> exists = repo.findByEmail(user.getEmail());
 
-    if(!exists.isPresent()) {
+        if(!exists.isPresent()) {
 
-        User x =  userSignup.registerNewUser(user);
+            User x =  userSignup.registerNewUser(user);
 
-        if(x.getEmail().equals(user.getEmail())) {
+            if(x.getEmail().equals(user.getEmail())) {
 
-            return "Success";
+                return "Success";
+
+            }
 
         }
 
-    }
-
-       return "Signup failed";
+        return "Signup failed";
     }
 
     @Autowired
