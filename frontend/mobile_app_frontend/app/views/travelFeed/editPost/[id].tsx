@@ -16,15 +16,28 @@ import {
   Pressable,
   Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string;
+  avatar?: string;
+  name?: string;
+}
 
 interface MediaItem {
   uri: string;
@@ -50,6 +63,27 @@ interface SearchedPlace {
   };
 }
 
+interface Post {
+  id: string;
+  title?: string;
+  content: string;
+  categories: string[];
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  mediaFiles: string[];
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  country?: string;
+  likes: string[];
+  likeCount: number;
+  createdAt: string;
+  updatedAt: string;
+  active: boolean;
+}
+
 const TRAVEL_CATEGORIES = [
   { id: 'adventure', label: '🏔️ Adventure', color: '#EAB308' },
   { id: 'beach', label: '🏖️ Beach', color: '#FACC15' },
@@ -61,16 +95,19 @@ const TRAVEL_CATEGORIES = [
 
 const BACKEND_BASE_URL = 'http://localhost:8080';
 
-export default function CreatePostScreen() {
+export default function EditPostScreen() {
   const navigation = useNavigation();
-  
-  // ✅ SINGLE TEXT INPUT - Like Facebook
+  const route = useRoute();
+  const { id } = route.params as { id: string };
+  const postId = id; // Use 'id' from route params (passed from travel feed)
+
+  // States
   const [postText, setPostText] = useState('');
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [location, setLocation] = useState<LocationData | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isPosting, setIsPosting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   
   // Location search states
@@ -80,46 +117,185 @@ export default function CreatePostScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [showLocationOptions, setShowLocationOptions] = useState(false);
 
-  const currentUser = {
-    id: 'user123',
-    name: 'Sarah Thompson',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b287?w=100&h=100&fit=crop&crop=face'
-  };
+  // Original post data for comparison
+  const [originalPost, setOriginalPost] = useState<Post | null>(null);
 
+  // JWT token state
+  const [userToken, setUserToken] = useState<MyToken | null>(null);
+  const [currentUser, setCurrentUser] = useState({
+    id: '',
+    name: '',
+    avatar: ''
+  });
+
+  // Load JWT token on component mount
   useEffect(() => {
-    requestPermissions();
+    const loadToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        console.log('📋 Token from storage:', token ? 'Found' : 'Not found');
+        
+        if (token) {
+          try {
+            const decoded = jwtDecode<MyToken>(token);
+            console.log('🔐 Full decoded token:', JSON.stringify(decoded, null, 2));
+            
+            setUserToken(decoded);
+            
+            // Update current user with JWT token info
+            // Priority: decoded.username > decoded.name > decoded.sub > fallback "User"
+            const username = decoded.username || decoded.name || decoded.sub || 'User';
+            
+            const newUser = {
+              id: decoded.id || decoded.sub || '',
+              name: username,
+              avatar: decoded.avatar || ''
+            };
+            
+            console.log('👤 Setting currentUser to:', newUser);
+            setCurrentUser(newUser);
+            
+            console.log('✅ JWT token loaded successfully');
+            console.log('   ✓ userId:', newUser.id);
+            console.log('   ✓ username:', newUser.name);
+            console.log('   ✓ avatar:', newUser.avatar || 'Not provided');
+          } catch (decodeError) {
+            console.error('❌ Error decoding token:', decodeError);
+            setCurrentUser({
+              id: '',
+              name: 'User',
+              avatar: ''
+            });
+          }
+        } else {
+          console.warn('⚠️ No JWT token found in AsyncStorage');
+          console.log('   Showing default "User" text');
+          setCurrentUser({
+            id: '',
+            name: 'User',
+            avatar: ''
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error loading JWT token:', error);
+        setCurrentUser({
+          id: '',
+          name: 'User',
+          avatar: ''
+        });
+      }
+    };
+    
+    loadToken();
   }, []);
 
-  const requestPermissions = async (): Promise<void> => {
+  // Load post data on component mount
+  useEffect(() => {
+    loadPostData();
+  }, [postId]);
+
+  const loadPostData = async () => {
+    console.log('📄 Loading post data for ID:', postId);
+    console.log('📄 Current user ID:', currentUser.id);
+    setIsLoading(true);
+    
     try {
-      if (Platform.OS === 'web') {
-        return;
+      const response = await fetch(`${BACKEND_BASE_URL}/api/posts/post/${postId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load post: ${response.status}`);
       }
       
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-      await ImagePicker.requestCameraPermissionsAsync();
-      await Location.requestForegroundPermissionsAsync();
+      const postData: Post = await response.json();
+      console.log('✅ Post data loaded:', postData);
+      console.log('   - Post User ID:', postData.userId);
+      console.log('   - Post Created At:', postData.createdAt);
+      console.log('   - Current Time:', new Date().toISOString());
       
-    } catch (error) {
-      console.log('Permission error:', error);
+      // Set original post data
+      setOriginalPost(postData);
+      
+      // Populate form fields
+      setPostText(postData.content || '');
+      setSelectedCategories(postData.categories || []);
+      
+      // Set location if available
+      if (postData.latitude && postData.longitude) {
+        setLocation({
+          latitude: postData.latitude,
+          longitude: postData.longitude,
+          address: postData.address,
+          city: postData.city,
+          country: postData.country,
+        });
+      }
+      
+      // Convert media files to MediaItem format
+      if (postData.mediaFiles && postData.mediaFiles.length > 0) {
+        const mediaItems: MediaItem[] = postData.mediaFiles.map((uri, index) => ({
+          uri: uri,
+          type: uri.startsWith('data:video/') ? 'video' : 'image',
+          name: `existing_media_${index}`,
+          mimeType: uri.startsWith('data:video/') ? 'video/mp4' : 'image/jpeg'
+        }));
+        setMedia(mediaItems);
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Error loading post data:', error);
+      Alert.alert('Error', 'Failed to load post data. Please try again.', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ✅ FIXED IMAGE COMPRESSION FUNCTION - Proper type handling
+  const canEdit = () => {
+    if (!originalPost) {
+      console.log('❌ canEdit: No original post data');
+      return false;
+    }
+    
+    try {
+      const createdAt = new Date(originalPost.createdAt);
+      const now = new Date();
+      const diffInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+      const diffInHours = diffInMinutes / 60;
+      
+      const isOwner = originalPost.userId === currentUser.id;
+      const canEditTime = diffInHours <= 1;
+      
+      console.log(`🔍 Edit Permission Check:`);
+      console.log(`  - Original Post User ID: ${originalPost.userId}`);
+      console.log(`  - Current User ID: ${currentUser.id}`);
+      console.log(`  - Is Owner: ${isOwner}`);
+      console.log(`  - Created At: ${originalPost.createdAt}`);
+      console.log(`  - Diff in minutes: ${diffInMinutes}`);
+      console.log(`  - Diff in hours: ${diffInHours}`);
+      console.log(`  - Can Edit Time (≤ 1 hour): ${canEditTime}`);
+      console.log(`  - Final result: ${isOwner && canEditTime}`);
+      
+      return isOwner && canEditTime;
+    } catch (error) {
+      console.error('❌ Error in canEdit:', error);
+      return false;
+    }
+  };
+
+  // Image compression for web
   const compressImage = (uri: string, quality: number = 0.8): Promise<string> => {
     return new Promise((resolve) => {
       if (Platform.OS !== 'web') {
-        // For mobile, return original URI
         resolve(uri);
         return;
       }
 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const img = new (window as any).Image(); // ✅ Use window.Image for web
+      const img = new (window as any).Image();
       
       img.onload = () => {
-        // Calculate new dimensions (max 1920x1080)
         let { width, height } = img;
         const maxWidth = 1920;
         const maxHeight = 1080;
@@ -133,22 +309,17 @@ export default function CreatePostScreen() {
         canvas.width = width;
         canvas.height = height;
         
-        // Draw and compress
         ctx?.drawImage(img, 0, 0, width, height);
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };
       
-      img.onerror = () => {
-        // If compression fails, return original
-        resolve(uri);
-      };
-      
+      img.onerror = () => resolve(uri);
       img.src = uri;
     });
   };
 
-  // Search Places API
+  // Search places function (same as create post)
   const searchPlacesViaBackend = useCallback(async (query: string): Promise<void> => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([]);
@@ -162,9 +333,7 @@ export default function CreatePostScreen() {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: { 'Accept': 'application/json' },
       });
       
       if (!response.ok) {
@@ -187,16 +356,14 @@ export default function CreatePostScreen() {
     }
   }, []);
 
-  // Get place details from place_id
+  // Get place details (same as create post)
   const getPlaceDetails = async (placeId: string): Promise<void> => {
     try {
       const url = `${BACKEND_BASE_URL}/api/places/details?placeId=${placeId}`;
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: { 'Accept': 'application/json' },
       });
       
       if (!response.ok) {
@@ -210,7 +377,6 @@ export default function CreatePostScreen() {
         const place = data.result;
         const { lat, lng } = place.geometry.location;
         
-        // Extract city and country from address components
         let city = '';
         let country = '';
         
@@ -262,298 +428,57 @@ export default function CreatePostScreen() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, searchPlacesViaBackend]);
 
-  // Render search item
-  const renderSearchItem = ({ item }: { item: SearchedPlace }) => {
-    return (
-      <TouchableOpacity 
-        style={[styles.searchResultItem, { pointerEvents: 'auto' }]}
-        onPress={() => getPlaceDetails(item.place_id)}
-      >
-        <View style={styles.searchResultContent}>
-          <Ionicons name="location-outline" size={20} color="#EAB308" />
-          <View style={styles.searchResultText}>
-            <Text style={styles.searchResultMain}>
-              {item.structured_formatting?.main_text || item.description}
-            </Text>
-            <Text style={styles.searchResultSecondary}>
-              {item.structured_formatting?.secondary_text || 'No details'}
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  // ✅ FIXED WEB GPS FUNCTION - Uses BigDataCloud API
-  const getCurrentLocationWeb = async (): Promise<void> => {
-    setIsLocationLoading(true);
-
-    try {
-      console.log('🌐 Getting web GPS location...');
-
-      if (!navigator.geolocation) {
-        throw new Error('Geolocation is not supported by this browser');
-      }
-
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 10000
-          }
-        );
-      });
-
-      const { latitude, longitude } = position.coords;
-      console.log(`🌐 Web GPS: ${latitude}, ${longitude}`);
-
-      // ✅ USE FREE REVERSE GEOCODING API
-      let locationData: LocationData;
-      
-      try {
-        const geocodeUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
-        
-        const geocodeResponse = await fetch(geocodeUrl);
-        const geocodeData = await geocodeResponse.json();
-        
-        console.log('🌐 Web geocoding result:', geocodeData);
-        
-        const city = geocodeData.city || 
-                     geocodeData.locality || 
-                     geocodeData.principalSubdivision || 
-                     'Unknown City';
-        
-        const country = geocodeData.countryName || geocodeData.countryCode || '';
-        
-        let address = '';
-        if (geocodeData.locality && geocodeData.locality !== city) {
-          address = `${geocodeData.locality}, ${city}`;
-        } else if (geocodeData.district && geocodeData.district !== city) {
-          address = `${geocodeData.district}, ${city}`;
-        } else {
-          address = city;
-        }
-
-        locationData = {
-          latitude,
-          longitude,
-          address,
-          city,
-          country
-        };
-
-      } catch (geocodeError) {
-        console.log('⚠️ Web geocoding failed, using fallback');
-        locationData = {
-          latitude,
-          longitude,
-          address: 'Current Location',
-          city: 'Location Not Found',
-          country: ''
-        };
-      }
-
-      setLocation(locationData);
-      setShowLocationOptions(false);
-
-      // Success feedback with city name
-      const displayName = locationData.city !== 'Unknown City' && locationData.city !== 'Location Not Found' 
-        ? `${locationData.city}${locationData.country ? `, ${locationData.country}` : ''}`
-        : 'your current location';
-
-      Alert.alert(
-        '📍 Location Found!',
-        `Successfully tagged ${displayName}`,
-        [{ text: 'Great!' }]
-      );
-
-    } catch (error: any) {
-      console.log('❌ Web GPS error:', error);
-      
-      let errorMessage = 'Could not access your location. ';
-      
-      if (error.code === 1) {
-        errorMessage += 'Location access was denied. Please allow location access and try again.';
-      } else if (error.code === 2) {
-        errorMessage += 'Location information is unavailable.';
-      } else if (error.code === 3) {
-        errorMessage += 'Location request timed out.';
-      } else {
-        errorMessage += 'Please ensure location services are enabled.';
-      }
-
-      Alert.alert(
-        'Location Error',
-        errorMessage,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Try Again', onPress: getCurrentLocationWeb }
-        ]
-      );
-    } finally {
-      setIsLocationLoading(false);
-    }
-  };
-
-  // ✅ FIXED MOBILE GPS FUNCTION - Uses alternative geocoding
+  // Get current location (simplified version)
   const getCurrentLocation = async (): Promise<void> => {
-    if (Platform.OS === 'web') {
-      return getCurrentLocationWeb();
-    }
-
     setIsLocationLoading(true);
     
     try {
-      console.log('🛰️ Starting GPS location request...');
-      
-      // Check if location services are enabled
-      const locationServicesEnabled = await Location.hasServicesEnabledAsync();
-      if (!locationServicesEnabled) {
-        Alert.alert(
-          'Location Services Disabled',
-          'Please enable location services in your device settings to use this feature.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() }
-          ]
-        );
-        setIsLocationLoading(false);
-        return;
-      }
-
-      // Request location permissions
-      console.log('📍 Requesting location permissions...');
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location Permission Required',
-          'TravelSri needs location access to tag your current position. Please grant permission in settings.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() }
-          ]
-        );
-        setIsLocationLoading(false);
-        return;
-      }
-
-      console.log('✅ Location permission granted');
-
-      // Get current position with high accuracy
-      console.log('🎯 Getting GPS coordinates...');
-      const locationResult = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-      });
-
-      const { latitude, longitude } = locationResult.coords;
-      console.log(`📍 GPS coordinates: ${latitude}, ${longitude}`);
-      console.log(`🎯 Accuracy: ${locationResult.coords.accuracy}m`);
-
-      // ✅ USE ALTERNATIVE GEOCODING - BigDataCloud API instead of Expo's removed API
-      let locationData: LocationData;
-      
-      try {
-        console.log('🏠 Getting address from coordinates using alternative API...');
-        const geocodeUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
-        
-        const geocodeResponse = await fetch(geocodeUrl);
-        const geocodeData = await geocodeResponse.json();
-        
-        console.log('🏠 Alternative geocoding result:', geocodeData);
-        
-        // Extract location info with fallback hierarchy
-        const city = geocodeData.city || 
-                     geocodeData.locality || 
-                     geocodeData.principalSubdivision || 
-                     geocodeData.countryName ||
-                     'Unknown City';
-        
-        const country = geocodeData.countryName || geocodeData.countryCode || '';
-        
-        // Build readable address
-        let address = '';
-        const addressParts = [];
-        
-        if (geocodeData.locality && geocodeData.locality !== city) {
-          addressParts.push(geocodeData.locality);
-        }
-        
-        if (geocodeData.district && geocodeData.district !== city && geocodeData.district !== geocodeData.locality) {
-          addressParts.push(geocodeData.district);
-        }
-        
-        if (addressParts.length > 0) {
-          address = `${addressParts.join(', ')}, ${city}`;
-        } else {
-          address = city;
+      if (Platform.OS === 'web') {
+        if (!navigator.geolocation) {
+          throw new Error('Geolocation is not supported by this browser');
         }
 
-        locationData = {
-          latitude,
-          longitude,
-          address,
-          city,
-          country
-        };
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 10000
+          });
+        });
 
-        console.log('✅ Final location data:', locationData);
+        const { latitude, longitude } = position.coords;
         
-      } catch (geocodeError) {
-        console.log('⚠️ Alternative geocoding failed, using basic location');
-        locationData = {
+        setLocation({
           latitude,
           longitude,
           address: 'Current Location',
-          city: 'Location Not Found',
+          city: 'Current Location',
           country: ''
-        };
-      }
-
-      // Set the location
-      setLocation(locationData);
-      setShowLocationOptions(false);
-
-      // Success feedback with city name
-      const displayName = locationData.city !== 'Unknown City' && locationData.city !== 'Location Not Found' 
-        ? `${locationData.city}${locationData.country ? `, ${locationData.country}` : ''}`
-        : locationData.address;
-
-      Alert.alert(
-        '📍 Location Found!',
-        `Successfully tagged your location: ${displayName}`,
-        [{ text: 'Great!' }]
-      );
-
-      console.log('✅ Location successfully set');
-      
-    } catch (error: any) {
-      console.log('❌ GPS location error:', error);
-      
-      let errorMessage = 'Could not get your current location. ';
-      
-      if (error.code === 'E_LOCATION_TIMEOUT') {
-        errorMessage += 'The request timed out. Please try again.';
-      } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
-        errorMessage += 'Location services are not available.';
-      } else if (error.code === 'E_LOCATION_SETTINGS_UNSATISFIED') {
-        errorMessage += 'Location accuracy is not sufficient. Please check your GPS settings.';
+        });
+        
+        setShowLocationOptions(false);
+        Alert.alert('📍 Location Found!', 'Successfully tagged your current location');
       } else {
-        errorMessage += 'Please ensure GPS is enabled and try again.';
+        // Mobile location logic (same as create post)
+        const locationResult = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.BestForNavigation,
+        });
+
+        const { latitude, longitude } = locationResult.coords;
+        
+        setLocation({
+          latitude,
+          longitude,
+          address: 'Current Location',
+          city: 'Current Location', 
+          country: ''
+        });
+        
+        setShowLocationOptions(false);
+        Alert.alert('📍 Location Found!', 'Successfully tagged your current location');
       }
-      
-      Alert.alert(
-        'Location Error',
-        errorMessage,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Try Again', onPress: getCurrentLocation },
-          { text: 'Settings', onPress: () => Linking.openSettings() }
-        ]
-      );
+    } catch (error: any) {
+      Alert.alert('Location Error', 'Could not get your current location. Please try again.');
     } finally {
       setIsLocationLoading(false);
     }
@@ -570,7 +495,7 @@ export default function CreatePostScreen() {
     });
   };
 
-  // Media selection functions
+  // Media selection functions (same as create post)
   const selectMedia = (): void => {
     if (Platform.OS === 'web') {
       selectMediaWeb();
@@ -584,7 +509,6 @@ export default function CreatePostScreen() {
     ]);
   };
 
-  // ✅ FIXED WEB MEDIA SELECTION - Proper async handling
   const selectMediaWeb = (): void => {
     if (Platform.OS !== 'web') return;
 
@@ -600,7 +524,6 @@ export default function CreatePostScreen() {
         const mediaItems: MediaItem[] = [];
         const fileArray = Array.from(files);
         
-        // Process files sequentially to avoid overwhelming the browser
         for (let i = 0; i < fileArray.length; i++) {
           const file = fileArray[i];
           
@@ -611,12 +534,9 @@ export default function CreatePostScreen() {
               reader.readAsDataURL(file);
             });
             
-            // Compress large images
             let finalUri = uri;
             if (file.type.startsWith('image/') && file.size > 2 * 1024 * 1024) {
-              console.log(`🗜️ Compressing ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
               finalUri = await compressImage(uri, 0.8);
-              console.log(`✅ Compressed ${file.name}`);
             }
             
             const mediaItem: MediaItem = {
@@ -716,111 +636,119 @@ export default function CreatePostScreen() {
     setMedia((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // ✅ CREATE POST FUNCTION - Auto navigate back after success
-const createPost = () => {
-  const trimmedText = postText.trim();
-
-  // Disallow submission if no text and no images
-  if (!trimmedText && media.length === 0) {
-    setShowConfirmModal(true); // Use modal as a warning (no confirmation buttons needed)
-    return;
-  }
-
-  // Disallow submission if images are not present regardless of text input
-  if (media.length === 0) {
-    setShowConfirmModal(true); // Show warning modal
-    return;
-  }
-
-  // Proceed to submit if there is at least one image
-  submitPost().then(() => navigation.goBack());
-};
-
-
-const submitPost = async () => {
-  setIsPosting(true);
-
-  try {
-    if (media.length > 0) {
-      const totalSizeMB = media.reduce((total, item) => {
-        return total + (item.uri.length * 0.75) / (1024 * 1024);
-      }, 0);
-      if (totalSizeMB > 150) {
-        Alert.alert('Files Too Large', `Your files are ${totalSizeMB.toFixed(1)}MB which exceeds the upload limit.`);
-        setIsPosting(false);
-        return;
-      }
-      if (media.length > 10) {
-        Alert.alert('Too Many Files', 'Please select no more than 10 files.');
-        setIsPosting(false);
-        return;
-      }
+  // UPDATE POST FUNCTION
+  const updatePost = async () => {
+    console.log('🔄 ===== UPDATE POST STARTED =====');
+    console.log('📄 Post ID:', postId);
+    console.log('👤 User ID:', currentUser.id);
+    
+    if (!canEdit()) {
+      Alert.alert('Edit Not Available', 'Posts can only be edited within 1 hour of creation.');
+      return;
     }
 
-    const formData = new FormData();
-    formData.append('title', postText.split('\n')[0] || '');
-    formData.append('content', postText);
-    formData.append('userId', currentUser.id);
-    formData.append('userName', currentUser.name);
-
-    if (currentUser.avatar) formData.append('userAvatar', currentUser.avatar);
-    if (selectedCategories.length > 0) formData.append('tags', JSON.stringify(selectedCategories));
-    if (location) {
-      formData.append('latitude', location.latitude.toString());
-      formData.append('longitude', location.longitude.toString());
-      if (location.address) formData.append('address', location.address);
-      if (location.city) formData.append('city', location.city);
-      if (location.country) formData.append('country', location.country);
+    const trimmedText = postText.trim();
+    if (!trimmedText) {
+      Alert.alert('Validation Error', 'Post content cannot be empty.');
+      return;
     }
 
-    media.forEach((item, idx) => {
-      if (Platform.OS === 'web') {
-        const blob = dataURItoBlob(item.uri);
-        formData.append('files', blob, item.name || `travel_${idx}.${item.type === 'video' ? 'mp4' : 'jpg'}`);
-      } else {
-        const ext = item.type === 'video' ? 'mp4' : 'jpg';
-        const mimeType = item.mimeType || (item.type === 'video' ? 'video/mp4' : 'image/jpeg');
-        formData.append('files', {
-          uri: item.uri,
-          type: mimeType,
-          name: item.name || `travel_${Date.now()}_${idx}.${ext}`
-        } as any);
-      }
-    });
+    setIsUpdating(true);
 
-    const response = await fetch(`${BACKEND_BASE_URL}/api/posts/create`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      if (response.status === 413) {
-        Alert.alert('File Size Exceeded', 'Your files exceed the server upload limit.');
-        setIsPosting(false);
-        return;
+    try {
+      // File size validation
+      if (media.length > 0) {
+        const totalSizeMB = media.reduce((total, item) => {
+          return total + (item.uri.length * 0.75) / (1024 * 1024);
+        }, 0);
+        
+        if (totalSizeMB > 150) {
+          Alert.alert('Files Too Large', `Your files are ${totalSizeMB.toFixed(1)}MB which exceeds the upload limit.`);
+          setIsUpdating(false);
+          return;
+        }
+        
+        if (media.length > 10) {
+          Alert.alert('Too Many Files', 'Please select no more than 10 files.');
+          setIsUpdating(false);
+          return;
+        }
       }
-      const text = await response.text();
-      throw new Error(`Failed to upload: ${response.status} - ${text}`);
+
+      const formData = new FormData();
+      
+      // Add form fields
+      formData.append('content', trimmedText);
+      formData.append('userId', currentUser.id);
+      formData.append('keepExistingMedia', 'false'); // Replace existing media
+      
+      if (selectedCategories.length > 0) {
+        formData.append('tags', JSON.stringify(selectedCategories));
+      }
+      
+      if (location) {
+        formData.append('latitude', location.latitude.toString());
+        formData.append('longitude', location.longitude.toString());
+        if (location.address) formData.append('address', location.address);
+        if (location.city) formData.append('city', location.city);
+        if (location.country) formData.append('country', location.country);
+      }
+
+      // Add media files
+      media.forEach((item, idx) => {
+        if (Platform.OS === 'web') {
+          const blob = dataURItoBlob(item.uri);
+          formData.append('files', blob, item.name || `travel_${idx}.${item.type === 'video' ? 'mp4' : 'jpg'}`);
+        } else {
+          const ext = item.type === 'video' ? 'mp4' : 'jpg';
+          const mimeType = item.mimeType || (item.type === 'video' ? 'video/mp4' : 'image/jpeg');
+          formData.append('files', {
+            uri: item.uri,
+            type: mimeType,
+            name: item.name || `travel_${Date.now()}_${idx}.${ext}`
+          } as any);
+        }
+      });
+
+      console.log('🌐 Calling edit API...');
+      const response = await fetch(`${BACKEND_BASE_URL}/api/posts/edit/${postId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+
+
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        if (response.status === 413) {
+          Alert.alert('File Size Exceeded', 'Your files exceed the server upload limit.');
+          return;
+        }
+        const text = await response.text();
+        throw new Error(`Failed to update: ${response.status} - ${text}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Post updated successfully:', result);
+
+      // Navigate back to travel feed immediately
+      console.log('🚀 Navigating back to travel feed');
+      setTimeout(() => {
+        router.push('/views/travelFeed/[id]');
+      }, 500);
+      
+      // Show success message after navigation is triggered
+      Alert.alert('Success', 'Your travel story has been updated!');
+
+    } catch (err: any) {
+      console.error('❌ Update error:', err);
+      Alert.alert('Error', err.message || 'Failed to update your post.');
+    } finally {
+      setIsUpdating(false);
+      console.log('🔄 ===== UPDATE POST FINISHED =====');
     }
-
-    await response.json();
-
-    // Reset the form on success
-    setPostText('');
-    setMedia([]);
-    setLocation(null);
-    setSelectedCategories([]);
-
-    Alert.alert('Success', 'Your travel story was shared!', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
-  } catch (err: any) {
-    Alert.alert('Error', err.message || 'Failed to share your post.');
-  } finally {
-    setIsPosting(false);
-  }
-};
-
+  };
 
   // Helper function to convert data URI to Blob for web
   const dataURItoBlob = (dataURI: string): Blob => {
@@ -834,6 +762,54 @@ const submitPost = async () => {
     return new Blob([ab], { type: mimeString });
   };
 
+  // Render search item
+  const renderSearchItem = ({ item }: { item: SearchedPlace }) => {
+    return (
+      <TouchableOpacity 
+        style={[styles.searchResultItem, { pointerEvents: 'auto' }]}
+        onPress={() => getPlaceDetails(item.place_id)}
+      >
+        <View style={styles.searchResultContent}>
+          <Ionicons name="location-outline" size={20} color="#EAB308" />
+          <View style={styles.searchResultText}>
+            <Text style={styles.searchResultMain}>
+              {item.structured_formatting?.main_text || item.description}
+            </Text>
+            <Text style={styles.searchResultSecondary}>
+              {item.structured_formatting?.secondary_text || 'No details'}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#EAB308" />
+          <Text style={styles.loadingText}>Loading post data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!canEdit()) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="time-outline" size={64} color="#EAB308" />
+          <Text style={styles.errorTitle}>Edit Time Expired</Text>
+          <Text style={styles.errorMessage}>Posts can only be edited within 1 hour of creation.</Text>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push('/views/travelFeed/[id]')}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.root}>
       {/* Header */}
@@ -845,25 +821,25 @@ const submitPost = async () => {
       >
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => navigation.goBack()}
+            onPress={() => router.push('/views/travelFeed/[id]')}
             style={[styles.headerButton, { pointerEvents: 'auto' }]}
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Share Your Journey</Text>
+          <Text style={styles.headerTitle}>Edit Your Journey</Text>
           <TouchableOpacity
             style={[
               styles.postButton, 
-              (isPosting || !postText.trim()) && styles.postButtonDisabled,
-              { pointerEvents: (isPosting || !postText.trim()) ? 'none' : 'auto' }
+              (isUpdating || !postText.trim()) && styles.postButtonDisabled,
+              { pointerEvents: (isUpdating || !postText.trim()) ? 'none' : 'auto' }
             ]}
-            onPress={createPost}
-            disabled={isPosting || !postText.trim()}
+            onPress={updatePost}
+            disabled={isUpdating || !postText.trim()}
           >
-            {isPosting ? (
+            {isUpdating ? (
               <ActivityIndicator color="#fff" size="small" /> 
             ) : (
-              <Text style={styles.postButtonText}>Share</Text>
+              <Text style={styles.postButtonText}>Update</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -871,11 +847,27 @@ const submitPost = async () => {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* ✅ FACEBOOK-STYLE SINGLE TEXT INPUT */}
+        {/* Edit time indicator */}
+        {originalPost && (
+          <View style={styles.editTimeCard}>
+            <Ionicons name="time-outline" size={16} color="#EAB308" />
+            <Text style={styles.editTimeText}>
+              You can edit this post for {Math.max(0, Math.floor(60 - (new Date().getTime() - new Date(originalPost.createdAt).getTime()) / (1000 * 60)))} more minutes
+            </Text>
+          </View>
+        )}
+        
+        {/* Post Input */}
         <View style={styles.postInputCard}>
           <View style={styles.userHeader}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
-            <Text style={styles.userName}>{currentUser.name}</Text>
+            {currentUser.avatar ? (
+              <Image source={{ uri: currentUser.avatar }} style={styles.userAvatar} />
+            ) : (
+              <View style={[styles.userAvatar, styles.defaultAvatar]}>
+                <Ionicons name="person" size={24} color="#fff" />
+              </View>
+            )}
+            <Text style={styles.userName}>{currentUser.name || 'User'}</Text>
           </View>
           
           <TextInput
@@ -891,29 +883,6 @@ const submitPost = async () => {
           
           <Text style={styles.charCount}>{postText.length}/2000</Text>
         </View>
-
-        <Modal
-  visible={showConfirmModal}
-  transparent={true}
-  animationType="fade"
-  onRequestClose={() => setShowConfirmModal(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Warning</Text>
-      <Text style={styles.modalMessage}>
-        Please add some photos to share your travel story.
-      </Text>
-      <TouchableOpacity
-        style={[styles.modalButton, styles.okButton]}
-        onPress={() => setShowConfirmModal(false)}
-      >
-        <Text style={styles.okButtonText}>OK</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
 
         {/* Travel Category Selection */}
         <View style={styles.section}>
@@ -995,7 +964,7 @@ const submitPost = async () => {
           </View>
         )}
 
-        {/* ✅ ENHANCED LOCATION DISPLAY */}
+        {/* Location Display */}
         {location && (
           <View style={styles.locationCard}>
             <View style={styles.locationHeader}>
@@ -1050,7 +1019,7 @@ const submitPost = async () => {
               end={{ x: 1, y: 1 }}
             >
               <Ionicons name="camera" size={24} color="#fff" />
-              <Text style={styles.actionText}>Add Photos</Text>
+              <Text style={styles.actionText}>Update Photos</Text>
             </LinearGradient>
           </Pressable>
           
@@ -1076,7 +1045,7 @@ const submitPost = async () => {
                 <Ionicons name="location" size={24} color="#fff" />
               )}
               <Text style={styles.actionText}>
-                {isLocationLoading ? 'Finding...' : 'Add Location'}
+                {isLocationLoading ? 'Finding...' : 'Update Location'}
               </Text>
             </LinearGradient>
           </Pressable>
@@ -1085,7 +1054,7 @@ const submitPost = async () => {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* ✅ ENHANCED LOCATION OPTIONS MODAL */}
+      {/* Location Options Modal */}
       <Modal
         visible={showLocationOptions}
         transparent={true}
@@ -1094,10 +1063,9 @@ const submitPost = async () => {
       >
         <View style={[styles.modalOverlay, { pointerEvents: 'auto' }]}>
           <View style={styles.optionsModal}>
-            <Text style={styles.optionsTitle}>📍 Add Location</Text>
-            <Text style={styles.optionsSubtitle}>Choose how to add your travel location</Text>
+            <Text style={styles.optionsTitle}>📍 Update Location</Text>
+            <Text style={styles.optionsSubtitle}>Choose how to update your travel location</Text>
             
-            {/* GPS Current Location Option */}
             <Pressable 
               style={[styles.optionButton, styles.gpsOption, { pointerEvents: isLocationLoading ? 'none' : 'auto' }]}
               onPress={() => {
@@ -1124,7 +1092,6 @@ const submitPost = async () => {
               <Ionicons name="chevron-forward" size={18} color="#CA8A04" />
             </Pressable>
             
-            {/* Search Places Option */}
             <Pressable 
               style={[styles.optionButton, styles.searchOption, { pointerEvents: 'auto' }]}
               onPress={() => {
@@ -1144,7 +1111,6 @@ const submitPost = async () => {
               <Ionicons name="chevron-forward" size={18} color="#CA8A04" />
             </Pressable>
             
-            {/* Cancel Option */}
             <Pressable 
               style={[styles.optionButton, styles.cancelButton, { pointerEvents: 'auto' }]}
               onPress={() => setShowLocationOptions(false)}
@@ -1213,6 +1179,46 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#fffbeb' 
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#92400e',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#CA8A04',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  backButton: {
+    backgroundColor: '#EAB308',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
   gradientHeader: {
     paddingTop: Platform.OS === 'ios' ? 0 : 20,
   },
@@ -1256,8 +1262,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  
-  // ✅ CLEAN FACEBOOK-STYLE POST INPUT
+  editTimeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FDE047',
+  },
+  editTimeText: {
+    fontSize: 14,
+    color: '#92400e',
+    marginLeft: 8,
+    flex: 1,
+  },
   postInputCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -1282,6 +1302,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 12,
   },
+  defaultAvatar: {
+    backgroundColor: '#EAB308',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   userName: {
     fontSize: 16,
     fontWeight: '600',
@@ -1299,7 +1324,6 @@ const styles = StyleSheet.create({
     color: '#CA8A04',
     textAlign: 'right',
   },
-
   section: {
     marginBottom: 20,
   },
@@ -1419,7 +1443,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  // ✅ ENHANCED LOCATION STYLES
   locationIconContainer: {
     width: 32,
     height: 32,
@@ -1436,7 +1459,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   removeLocationBtn: {
-    width: 24,
+    width: 24, 
     height: 24,
     borderRadius: 12,
     backgroundColor: '#F3F4F6',
@@ -1556,7 +1579,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FDE047',
   },
-  // ✅ ENHANCED OPTION STYLES
   gpsOption: {
     backgroundColor: '#FEF3C7',
     borderColor: '#EAB308',
@@ -1674,31 +1696,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#CA8A04',
   },
- 
-  modalContent: {
-    backgroundColor: "white",
-    padding: 20,
-    width: "80%",
-    borderRadius: 10,
-  },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
-  modalMessage: { fontSize: 16, marginBottom: 20 },
-  buttonRow: { flexDirection: "row", justifyContent: "flex-end" },
-  modalButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginLeft: 10,
-    borderRadius: 5,
-  },
- 
-  okButton: {
-  backgroundColor: "#ffd000ff",
-  paddingHorizontal: 12,  // reduce side padding for tighter button width
-  paddingVertical: 10,
-  borderRadius: 5,
-  alignSelf: "flex-start", // shrink button to content width
-  minWidth: 0,            // remove any minimum width constraints
-},
-
-  okButtonText: { color: "black", fontWeight: "bold" },
 });

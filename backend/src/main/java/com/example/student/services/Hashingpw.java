@@ -201,7 +201,7 @@ public class Hashingpw {
                                 "/api/payments/payout/final/{bookingId}",
                                 "/api/payments/validate/{bookingId}",
                                 "/api/bookings/hotel/create",
-                                "/api/posts/getPosts",
+                                "/api/posts/getPosts/{userId}",
                                 "/api/posts/create",
                                 "/api/posts/like/{postId}",
                                 "/api/places/health",

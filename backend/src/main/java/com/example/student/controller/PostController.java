@@ -28,23 +28,83 @@ public class PostController {
     @Value("${app.file.upload-dir:./uploads/posts}")
     private String uploadDir;
 
+    @GetMapping("/getPosts/{userId}")
+    public ResponseEntity<Map<String, Object>> getPosts(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        try {
+            System.out.println("👤 Getting posts for user: " + userId);
+            System.out.println("📋 Page: " + page + ", Size: " + size);
+
+            // Get posts only for the specified userId from path
+            Page<Post> posts = postService.getUserPosts(userId, page, size);
+
+            System.out.println("📊 Found " + posts.getContent().size() + " posts for user: " + userId);
+
+            // Transform posts to include decoded media files as Base64
+            List<Map<String, Object>> transformedPosts = posts.getContent().stream()
+                    .map(this::transformPostWithDecodedMedia)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", transformedPosts);
+            response.put("totalPages", posts.getTotalPages());
+            response.put("totalElements", posts.getTotalElements());
+            response.put("size", posts.getSize());
+            response.put("number", posts.getNumber());
+            response.put("userId", userId); // Include userId in response for clarity
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching posts for user " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error fetching posts for user: " + e.getMessage());
+            errorResponse.put("content", new ArrayList<>());
+            errorResponse.put("totalPages", 0);
+            errorResponse.put("totalElements", 0);
+            errorResponse.put("size", size);
+            errorResponse.put("number", page);
+            errorResponse.put("userId", userId);
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+
     @PostMapping("create")
     public ResponseEntity<?> createPost(
             @RequestParam("title") String title,
             @RequestParam("content") String content,
             @RequestParam(value = "tags", required = false) String tags,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
-            @RequestParam("userId") String userId,
+            @RequestParam(value = "userId", required = false) String paramUserId,
             @RequestParam("userName") String userName,
             @RequestParam(value = "userAvatar", required = false) String userAvatar,
             @RequestParam(value = "latitude", required = false) Double latitude,
             @RequestParam(value = "longitude", required = false) Double longitude,
             @RequestParam(value = "address", required = false) String address,
             @RequestParam(value = "city", required = false) String city,
-            @RequestParam(value = "country", required = false) String country) {
+            @RequestParam(value = "country", required = false) String country,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
 
         try {
-            // File size validations as before (unchanged)
+            // Prioritize header userId over parameter userId
+            String effectiveUserId = headerUserId != null ? headerUserId : paramUserId;
+
+            System.out.println("📝 Creating post - Header UserId: " + headerUserId + ", Param UserId: " + paramUserId);
+            System.out.println("🎯 Effective UserId: " + effectiveUserId);
+
+            // Validate userId is provided
+            if (effectiveUserId == null || effectiveUserId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("User ID is required (either in header X-User-Id or parameter userId)");
+            }
+
+            // File size validations (unchanged from your existing code)
             if (files != null && !files.isEmpty()) {
                 long totalSize = files.stream().mapToLong(MultipartFile::getSize).sum();
                 long maxSize = 200 * 1024 * 1024; // 200MB
@@ -61,7 +121,7 @@ public class PostController {
                 }
             }
 
-            // Convert files to Base64 encoded strings
+            // Convert files to Base64 encoded strings (unchanged from your existing code)
             List<String> base64Files = null;
             if (files != null && !files.isEmpty()) {
                 base64Files = files.stream().map(file -> {
@@ -74,8 +134,8 @@ public class PostController {
                 }).collect(Collectors.toList());
             }
 
-            // Pass base64Files to service instead of MultipartFile list
-            Post post = postService.createPost(title, content, tags, base64Files, userId, userName, userAvatar,
+            // Use effective userId from header or parameter
+            Post post = postService.createPost(title, content, tags, base64Files, effectiveUserId, userName, userAvatar,
                     latitude, longitude, address, city, country);
 
             return ResponseEntity.ok(post);
@@ -86,44 +146,6 @@ public class PostController {
         }
     }
 
-    @GetMapping("/getPosts")
-    public ResponseEntity<Map<String, Object>> getPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        try {
-            Page<Post> posts = postService.getAllPosts(page, size);
-
-            // Transform posts to include decoded media files as Base64
-            List<Map<String, Object>> transformedPosts = posts.getContent().stream()
-                    .map(this::transformPostWithDecodedMedia)
-                    .collect(Collectors.toList());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("content", transformedPosts);
-            response.put("totalPages", posts.getTotalPages());
-            response.put("totalElements", posts.getTotalElements());
-            response.put("size", posts.getSize());
-            response.put("number", posts.getNumber());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error fetching posts: " + e.getMessage());
-            e.printStackTrace();
-
-            // Fix: Return Map instead of String for error case
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Error fetching posts: " + e.getMessage());
-            errorResponse.put("content", new ArrayList<>());
-            errorResponse.put("totalPages", 0);
-            errorResponse.put("totalElements", 0);
-            errorResponse.put("size", size);
-            errorResponse.put("number", page);
-
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
 
     private Map<String, Object> transformPostWithDecodedMedia(Post post) {
         Map<String, Object> postMap = new HashMap<>();

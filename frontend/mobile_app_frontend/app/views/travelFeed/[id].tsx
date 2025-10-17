@@ -13,6 +13,8 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 import BackButton from '../../../components/ui/backButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -51,17 +53,61 @@ interface ApiResponse {
   number: number;
 }
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string;
+}
+
 // API service functions
 const API_BASE_URL = 'http://localhost:8080/api';
 
-const fetchPosts = async (page = 0, size = 10, categoryFilter: string | null = null): Promise<ApiResponse> => {
+// Get JWT token and decode it
+const getDecodedToken = async (): Promise<MyToken | null> => {
   try {
-    let url = `${API_BASE_URL}/posts/getPosts?page=${page}&size=${size}`;
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      console.warn('⚠️ No JWT token found in AsyncStorage');
+      return null;
+    }
+    const decoded = jwtDecode<MyToken>(token);
+    console.log('🔐 JWT Token decoded successfully, userId:', decoded.id);
+    return decoded;
+  } catch (error) {
+    console.error('❌ Error decoding JWT token:', error);
+    return null;
+  }
+};
+
+const fetchPosts = async (page = 0, size = 10, categoryFilter: string | null = null, userToken: MyToken | null = null): Promise<ApiResponse> => {
+  try {
+    // Use userId from JWT to fetch user-specific posts
+    const userId = userToken?.id || 'user123';
+    let url = `${API_BASE_URL}/posts/getPosts/${userId}?page=${page}&size=${size}`;
+    
     if (categoryFilter) {
       url += `&category=${encodeURIComponent(categoryFilter)}`;
     }
+    
     console.log('📡 Fetching posts from:', url);
-    const response = await fetch(url);
+    console.log('🔐 Using userId from JWT:', userId);
+    
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Add userId header from JWT if available
+    if (userToken?.id) {
+      headers['X-User-Id'] = userToken.id;
+      console.log('✅ Added X-User-Id header with value:', userToken.id);
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+    });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
     console.log('📦 Received posts:', data.content.length);
@@ -72,29 +118,28 @@ const fetchPosts = async (page = 0, size = 10, categoryFilter: string | null = n
   }
 };
 
-const toggleLikePost = async (postId: string, userId: string): Promise<{ isLiked: boolean }> => {
-  const response = await fetch(`${API_BASE_URL}/posts/like/${postId}?userId=${userId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  return response.json();
-};
-
 // Enhanced deletePost API function with extensive debugging
-const deletePost = async (postId: string): Promise<boolean> => {
+const deletePost = async (postId: string, userToken: MyToken | null = null): Promise<boolean> => {
   console.log('🌐 ===== API DELETE CALL STARTED =====');
   console.log('📄 Post ID:', postId);
   console.log('🔗 URL:', `${API_BASE_URL}/posts/delete/${postId}`);
   console.log('⏰ Timestamp:', new Date().toISOString());
   
   try {
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    
+    // Add userId from JWT if available
+    if (userToken?.id) {
+      headers['X-User-Id'] = userToken.id;
+      console.log('🔐 Added X-User-Id header with value:', userToken.id);
+    }
+    
     const response = await fetch(`${API_BASE_URL}/posts/delete/${postId}`, {
       method: 'DELETE',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers: headers,
     });
     
     console.log('📡 Response received:');
@@ -312,19 +357,16 @@ const Collage = ({ mediaFiles }: { mediaFiles: string[] }) => {
 const PostItem = ({
   item,
   currentUserId,
-  onLike,
   onCategoryPress,
   onEdit,
   onDelete,
 }: {
   item: Post;
   currentUserId: string;
-  onLike: (postId: string) => void;
   onCategoryPress: (category: string) => void;
   onEdit: (post: Post) => void;
   onDelete: (postId: string) => void;
 }) => {
-  const isLiked = item.likes?.includes(currentUserId) || false;
   const isOwner = item.userId === currentUserId;
 
   console.log(`📝 Rendering PostItem for post ${item.id}:`);
@@ -336,9 +378,21 @@ const PostItem = ({
     try {
       const createdAt = new Date(item.createdAt);
       const now = new Date();
-      const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      const diffInMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
+      const diffInHours = diffInMinutes / 60;
+      
+      console.log(`🔍 Edit Time Check for post ${item.id}:`);
+      console.log(`  - Created At: ${item.createdAt}`);
+      console.log(`  - Parsed Date: ${createdAt.toISOString()}`);
+      console.log(`  - Now: ${now.toISOString()}`);
+      console.log(`  - Diff in minutes: ${diffInMinutes}`);
+      console.log(`  - Diff in hours: ${diffInHours}`);
+      console.log(`  - Is owner: ${isOwner}`);
+      console.log(`  - Can edit: ${isOwner && diffInHours <= 1}`);
+      
       return isOwner && diffInHours <= 1;
-    } catch {
+    } catch (error) {
+      console.error('❌ Error in canEdit:', error);
       return false;
     }
   };
@@ -406,19 +460,20 @@ const PostItem = ({
         )}
       </View>
 
-      {isOwner && canEdit() && (
-        <View style={styles.editIndicator}>
-          <Ionicons name="time-outline" size={12} color="#ffd900ff" />
-          <Text style={styles.editIndicatorText}>
-            Can edit for{' '}
-            {Math.max(
-              0,
-              Math.floor(60 - (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60))
-            )}{' '}
-            more minutes
-          </Text>
-        </View>
-      )}
+      {isOwner && canEdit() && (() => {
+        const remainingMinutes = Math.max(
+          0,
+          Math.floor(60 - (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60))
+        );
+        return (
+          <View style={styles.editIndicator}>
+            <Ionicons name="time-outline" size={12} color="#ffd900ff" />
+            <Text style={styles.editIndicatorText}>
+              Can edit for {remainingMinutes} more minute{remainingMinutes !== 1 ? 's' : ''}
+            </Text>
+          </View>
+        );
+      })()}
 
       {item.title && <Text style={styles.postTitle}>{item.title}</Text>}
 
@@ -442,19 +497,6 @@ const PostItem = ({
       )}
 
       {item.mediaFiles?.length > 0 && <Collage mediaFiles={item.mediaFiles} />}
-
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onLike(item.id)} activeOpacity={0.7}>
-          <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? '#ef4444' : '#6b7280'} />
-          <Text style={[styles.actionText, isLiked && styles.likedText]}>
-            {item.likeCount || 0} {item.likeCount === 1 ? 'like' : 'likes'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.actionButton, { marginLeft: 'auto' }]} activeOpacity={0.7}>
-          <Ionicons name="bookmark-outline" size={22} color="#6b7280" />
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -473,14 +515,40 @@ export default function TravelFeedScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
-  const currentUserId = 'user123';
+  // JWT token state
+  const [userToken, setUserToken] = useState<MyToken | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('user123');
+  
   const navigation = useNavigation() as any;
+
+  // Load JWT token on component mount
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await getDecodedToken();
+        if (token) {
+          setUserToken(token);
+          setCurrentUserId(token.id);
+          console.log('✅ JWT token loaded successfully, userId:', token.id);
+        } else {
+          console.warn('⚠️ Failed to load JWT token');
+          setCurrentUserId('user123'); // Fallback
+        }
+      } catch (error) {
+        console.error('❌ Error loading JWT token:', error);
+        setCurrentUserId('user123'); // Fallback
+      }
+    };
+    
+    loadToken();
+  }, []);
 
   const loadPosts = async (isRefresh = false) => {
     console.log('📊 ===== LOAD POSTS STARTED =====');
     console.log('🔄 Is refresh:', isRefresh);
     console.log('📄 Current page:', page);
     console.log('🏷️ Selected category:', selectedCategory);
+    console.log('🔐 Using userToken:', userToken?.id || 'Not loaded');
 
     if (loading && !isRefresh) return;
     if (!isRefresh && !hasMoreData) return;
@@ -496,7 +564,7 @@ export default function TravelFeedScreen() {
 
     try {
       const currentPage = isRefresh ? 0 : page;
-      const response = await fetchPosts(currentPage, 10, selectedCategory);
+      const response = await fetchPosts(currentPage, 10, selectedCategory, userToken);
 
       console.log('📊 Posts received from API:', response.content.length);
       console.log('📋 Post IDs received:', response.content.map(p => `${p.id} (${p.userName})`));
@@ -547,30 +615,11 @@ export default function TravelFeedScreen() {
     handleCategoryFilter(category);
   };
 
-  const handleLike = async (postId: string) => {
-    try {
-      const response = await toggleLikePost(postId, currentUserId);
-      setPosts(prev =>
-        prev.map(post =>
-          post.id === postId
-            ? {
-                ...post,
-                likes: response.isLiked ? [...(post.likes || []), currentUserId] : (post.likes || []).filter(id => id !== currentUserId),
-                likeCount: response.isLiked ? (post.likeCount || 0) + 1 : Math.max((post.likeCount || 0) - 1, 0),
-              }
-            : post
-        )
-      );
-    } catch {
-      Alert.alert('Error', 'Failed to update like. Please try again.');
-    }
-  };
-
   const handleEdit = (post: Post) => {
     try {
       router.push({
-        pathname: '/views/travelFeed/editPost',
-        params: { postId: post.id }
+        pathname: '/views/travelFeed/editPost/[id]',
+        params: { id: post.id }
       });
     } catch {
       Alert.alert('Navigation Error', 'Unable to navigate to edit screen.');
@@ -605,7 +654,7 @@ export default function TravelFeedScreen() {
       console.log('  - Target post ID:', postToDelete);
       
       console.log('🌐 Calling deletePost API...');
-      const success = await deletePost(postToDelete);
+      const success = await deletePost(postToDelete, userToken);
       console.log('📋 Delete API completed with result:', success);
       
       if (success) {
@@ -679,11 +728,10 @@ export default function TravelFeedScreen() {
 
   const navigateToCreatePost = () => {
     try {
-      if (navigation.isFocused()) {
-        router.push('/views/travelFeed/createPost');
-      } else {
-        Alert.alert('Navigation Error', 'Screen is not focused. Please try again.');
-      }
+      router.push({
+        pathname: '/views/travelFeed/createPost/[id]',
+        params: { id: currentUserId }
+      });
     } catch {
       Alert.alert('Navigation Error', 'Unable to navigate to Create Post screen.');
     }
@@ -772,7 +820,7 @@ export default function TravelFeedScreen() {
           data={posts}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => (
-            <PostItem item={item} currentUserId={currentUserId} onLike={handleLike} onCategoryPress={handleCategoryPress} onEdit={handleEdit} onDelete={handleDelete} />
+            <PostItem item={item} currentUserId={currentUserId} onCategoryPress={handleCategoryPress} onEdit={handleEdit} onDelete={handleDelete} />
           )}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -1054,27 +1102,6 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#fff',
     fontSize: 16,
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginLeft: 6,
-  },
-  likedText: {
-    color: '#ef4444',
-    fontWeight: '500',
   },
   loadingFooter: {
     paddingVertical: 20,
