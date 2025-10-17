@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ const AddItem: React.FC = () => {
   const [description, setDescription] = useState('');
   const [image, setImageUri] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const API_BASE_URL = 'http://localhost:8080';
 
@@ -103,8 +105,12 @@ const AddItem: React.FC = () => {
     formErrors.description = validateField('description', description);
     formErrors.image = validateField('image', image);
 
-    setErrors(formErrors);
-    return Object.keys(formErrors).every((key) => !formErrors[key]);
+    const validErrors = Object.entries(formErrors)
+      .filter(([_, value]) => value)
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+    
+    setErrors(validErrors);
+    return Object.keys(validErrors).length === 0;
   };
 
   const handleSave = async () => {
@@ -113,59 +119,63 @@ const AddItem: React.FC = () => {
       return;
     }
 
-    const token = await AsyncStorage.getItem('token');
-    if (!token) {
-      Alert.alert('Error', 'Authentication token not found. Please log in again.');
-      return;
-    }
-
-    let decodedToken: any;
+    setIsSubmitting(true);
     try {
-      decodedToken = jwtDecode(token); // Correct usage of jwtDecode
-    } catch (err) {
-      console.error('Error decoding token:', err);
-      Alert.alert('Error', 'Invalid authentication token. Please log in again.');
-      return;
-    }
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
 
-    const shopId = decodedToken.id;
-    if (!shopId) {
-      Alert.alert('Error', 'Shop ID not found in token.');
-      return;
-    }
+      let decodedToken: any;
+      try {
+        decodedToken = jwtDecode(token);
+      } catch (err) {
+        throw new Error('Invalid authentication token. Please log in again.');
+      }
 
-    const shopItem = {
-      name: name.trim(),
-      price: Number(price),
-      count: Number(count),
-      description: description.trim(),
-      image: image,
-      shopId: shopId,
-    };
+      const shopId = decodedToken.id;
+      if (!shopId) {
+        throw new Error('Shop ID not found in token.');
+      }
 
-    try {
+      const shopItem = {
+        name: name.trim(),
+        price: Number(price),
+        count: Number(count),
+        description: description.trim(),
+        image: image,
+        shopId: shopId,
+      };
+
       const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(shopItem),
       });
-
-      if (!response.ok) {
+      
+      // --- FIX STARTS HERE ---
+      if (response.ok) {
+        setIsSubmitting(false); // Stop loading indicator
+        Alert.alert('Success', 'Item added successfully!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.back();
+            },
+          },
+        ]);
+      } else {
+        // Only process the body for error messages
         const errorText = await response.text();
         throw new Error(errorText || 'Failed to add item');
       }
+      // --- FIX ENDS HERE ---
 
-      Alert.alert('Success', 'Item added successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.back(); // Navigate back to the previous screen
-          },
-        },
-      ]);
     } catch (err: any) {
+      setIsSubmitting(false); // Ensure loading stops on error
       console.log('Catch error:', err);
       Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
     }
@@ -177,9 +187,7 @@ const AddItem: React.FC = () => {
 
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => {
-            router.back(); // Navigate back to the previous screen
-          }}
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <AntDesign name="arrowleft" size={24} color="#000" />
@@ -195,7 +203,7 @@ const AddItem: React.FC = () => {
               <Image source={{ uri: `data:image/jpeg;base64,${image}` }} style={styles.itemImage} />
             ) : (
               <View style={styles.imagePlaceholder}>
-                <AntDesign name="plus" size={32} color="#fff" />
+                <AntDesign name="plus" size={32} color="#888" />
               </View>
             )}
           </TouchableOpacity>
@@ -208,7 +216,7 @@ const AddItem: React.FC = () => {
             style={styles.textInput}
             value={name}
             onChangeText={(text) => handleChange('name', text)}
-            placeholder="Item Name"
+            placeholder="e.g., Hand-woven Basket"
             placeholderTextColor="#999"
           />
           {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
@@ -220,7 +228,7 @@ const AddItem: React.FC = () => {
             style={styles.textInput}
             value={price}
             onChangeText={(text) => handleChange('price', text)}
-            placeholder="Price"
+            placeholder="e.g., 25.99"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
@@ -233,7 +241,7 @@ const AddItem: React.FC = () => {
             style={styles.textInput}
             value={count}
             onChangeText={(text) => handleChange('count', text)}
-            placeholder="Quantity"
+            placeholder="e.g., 10"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
@@ -246,7 +254,7 @@ const AddItem: React.FC = () => {
             style={[styles.textInput, styles.descriptionInput]}
             value={description}
             onChangeText={(text) => handleChange('description', text)}
-            placeholder="This is Description"
+            placeholder="Describe your item..."
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
@@ -255,8 +263,12 @@ const AddItem: React.FC = () => {
           {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
         </View>
 
-        <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
-          <Text style={styles.publishButtonText}>Publish</Text>
+        <TouchableOpacity style={styles.publishButton} onPress={handleSave} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.publishButtonText}>Publish</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -273,31 +285,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start', // Keep the back button aligned to the left
+    justifyContent: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    position: 'relative', // Ensure relative positioning for the title
+    position: 'relative',
   },
   backButton: {
+    position: 'absolute',
+    left: 16,
     padding: 8,
+    zIndex: 1, // Ensure back button is tappable
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    position: 'absolute', // Center the title absolutely
-    left: 0,
-    right: 0,
-    textAlign: 'center', // Align text to the center
-  },
-  titleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
-  pageTitle: {
-    fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -314,15 +315,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   imageContainer: {
-    width: '90%',
-    aspectRatio: 4 / 3,
-    borderRadius: 4, // Reduced border radius
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 8,
     overflow: 'hidden',
-    borderWidth: 0.5, // Reduced border width
+    borderWidth: 1,
     borderColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center', // Center the image container horizontally
+    alignSelf: 'center',
   },
   itemImage: {
     width: '100%',
@@ -344,25 +345,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 16,
     color: '#333',
+    backgroundColor: '#fafafa',
   },
   descriptionInput: {
     minHeight: 96,
-    textAlignVertical: 'top',
+    paddingTop: 12,
   },
   publishButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#FFD700',
     borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 30,
+    height: 50, // Give button a fixed height
+    justifyContent: 'center',
   },
   publishButtonText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 18,
     fontWeight: 'bold',
   },
   errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 5,
+    color: '#d9534f',
+    fontSize: 13,
+    marginTop: 6,
   },
 });
+
