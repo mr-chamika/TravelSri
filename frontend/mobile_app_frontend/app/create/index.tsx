@@ -88,14 +88,13 @@ export default function HotelsBookingScreen() {
     const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
     const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null); // Stores the array index (0-based) of the selected hotel
     const [book, setBook] = useState<Book[] | null>(null);
-    const [order, setOrder] = useState<Postdata | null>(null)
     const [adultsNo, setAdults] = useState('');
     const [childrenNo, setChildren] = useState('');
     const [nights, setNights] = useState('');
     const [s, setS] = useState('');
     const [d, setD] = useState('');
     const [location, setLocation] = useState('');
-    const [locationP, setLocationP] = useState('');
+    const [locationP, setLocationP] = useState('colombo');
     const [total, setTotal] = useState('');
     const [hotes, setHotels] = useState<x[] | null>(null)
     const [input, setInput] = useState({
@@ -111,9 +110,25 @@ export default function HotelsBookingScreen() {
         return [location, ...LOCATIONS.filter((loc) => loc !== location)];
     }, [location]);
 
-    const displayDates = useMemo(() => {
-        return Object.keys(selectedDates).sort().map(date => new Date(date).toDateString()).join(', ');
-    }, [selectedDates]);
+    const { createdId, dayNumber, date, adults, children } = useLocalSearchParams();
+
+    const order = {
+
+        createdId: createdId,
+        dayNumber: dayNumber,
+        date: date,
+        adults: adults,
+        children: children
+
+    }
+    useEffect(() => {
+
+        if (order.dayNumber && order.date && order.children && order.adults) {
+
+            AsyncStorage.setItem('order', JSON.stringify(order));
+
+        }
+    }, [order]);
 
     const toggleCardSelection = useCallback((index: string) => {
 
@@ -161,15 +176,6 @@ export default function HotelsBookingScreen() {
 
                 console.log(JSON.parse(hotel))
 
-
-            }
-            const pack = await AsyncStorage.getItem('order')
-            if (pack) {
-
-                const parsedOrder = JSON.parse(pack);
-                if (JSON.stringify(order) !== JSON.stringify(parsedOrder)) {
-                    setOrder(parsedOrder);
-                }
 
             }
 
@@ -259,18 +265,62 @@ export default function HotelsBookingScreen() {
     useFocusEffect(
         useCallback(() => {
             const loadInitialData = async () => {
-                const pack = await AsyncStorage.getItem('order');
-                if (pack) {
-                    const parsedOrder = JSON.parse(pack);
-                    if (JSON.stringify(order) !== JSON.stringify(parsedOrder)) {
-                        setOrder(parsedOrder);
-                    }
-                }
 
-                const locationp = await AsyncStorage.getItem('selectedLocation');
-                if (locationp && locationp !== locationP) {
-                    setLocationP(locationp);
+                console.log(locationP)
+                console.log(order)
+
+                if (!locationP || !order) return;
+
+                const getHotels = async () => {
+
+                    if (!locationP || !order) return;
+
+
+                    try {
+                        console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
+                        const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+                        //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
+
+                        if (res.ok) {
+
+                            const data = await res.json()
+
+                            if (data.length > 0) {
+
+                                setHotels(data)
+
+                                const minimalHotles = data.map((hotel: x) => ({
+                                    id: hotel._id,
+                                    singlePrice: hotel.singlePrice,
+                                    doublePrice: hotel.doublePrice,
+                                }));
+                                await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+                                // FIX: Update selection mark after hotels are loaded
+                            } else {
+
+                                setHotels([])
+                                await AsyncStorage.removeItem('selectedHotelBooking')
+                                console.log('No hotels found')
+
+                            }
+
+                        } else {
+
+                            setHotels([])
+                            await AsyncStorage.removeItem('selectedHotelBooking')
+                            console.log('No hotels found')
+
+                        }
+
+                    } catch (err) {
+
+                        console.log(`Error from hotel getting : ${err}`)
+
+                    }
+
                 }
+                //
+                getHotels();
 
                 // Also run count() on focus
                 count();
@@ -280,60 +330,60 @@ export default function HotelsBookingScreen() {
         }, [])
     );
 
-    useEffect(() => {
-        if (!locationP || !order) return;
+    // useEffect(() => {
+    //     if (!locationP || !order) return;
 
-        const getHotels = async () => {
+    //     const getHotels = async () => {
 
-            if (!locationP || !order) return;
+    //         if (!locationP || !order) return;
 
 
-            try {
-                console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
-                const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
-                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
+    //         try {
+    //             console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
+    //             const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+    //             //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
-                if (res.ok) {
+    //             if (res.ok) {
 
-                    const data = await res.json()
+    //                 const data = await res.json()
 
-                    if (data.length > 0) {
+    //                 if (data.length > 0) {
 
-                        setHotels(data)
+    //                     setHotels(data)
 
-                        const minimalHotles = data.map((hotel: x) => ({
-                            id: hotel._id,
-                            singlePrice: hotel.singlePrice,
-                            doublePrice: hotel.doublePrice,
-                        }));
-                        await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
-                        // FIX: Update selection mark after hotels are loaded
-                    } else {
+    //                     const minimalHotles = data.map((hotel: x) => ({
+    //                         id: hotel._id,
+    //                         singlePrice: hotel.singlePrice,
+    //                         doublePrice: hotel.doublePrice,
+    //                     }));
+    //                     await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+    //                     // FIX: Update selection mark after hotels are loaded
+    //                 } else {
 
-                        setHotels([])
-                        await AsyncStorage.removeItem('selectedHotelBooking')
-                        console.log('No hotels found')
+    //                     setHotels([])
+    //                     await AsyncStorage.removeItem('selectedHotelBooking')
+    //                     console.log('No hotels found')
 
-                    }
+    //                 }
 
-                } else {
+    //             } else {
 
-                    setHotels([])
-                    await AsyncStorage.removeItem('selectedHotelBooking')
-                    console.log('No hotels found')
+    //                 setHotels([])
+    //                 await AsyncStorage.removeItem('selectedHotelBooking')
+    //                 console.log('No hotels found')
 
-                }
+    //             }
 
-            } catch (err) {
+    //         } catch (err) {
 
-                console.log(`Error from hotel getting : ${err}`)
+    //             console.log(`Error from hotel getting : ${err}`)
 
-            }
+    //         }
 
-        }
-        //
-        getHotels();
-    }, [locationP, order])
+    //     }
+    //     //
+    //     getHotels();
+    // }, [locationP, order])
 
     useEffect(() => {
         if (hotes) {
