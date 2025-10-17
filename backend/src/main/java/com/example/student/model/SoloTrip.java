@@ -16,10 +16,9 @@ import java.util.List;
 public class SoloTrip {
 
 
-    public SoloTrip(String createdId,int dayNumber,String routeId,String creatorId,String date, String hotelId, int adults, int children, int doubleBeds, int singleBeds,int hprice, String guideId,String type, String glocation, String glanguage, int gprice, String carId,String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,boolean isOneway,String thumbnail,String start,String destination,String status,String startDate,String map) {
+    public SoloTrip(String createdId,int dayNumber,String creatorId,String date, String hotelId, int adults, int children, int doubleBeds, int singleBeds,int hprice, String guideId,String type, String glocation, String glanguage, int gprice, String carId,String clanguage, String endLocation, String startLocation, String bookedTime, int cprice,boolean isOneway,String status,String startDate) {
         this.createdId = createdId;
         this.dayNumber=dayNumber;
-        this.routeId = routeId;
         this.creatorId = creatorId;
         this.date = date;
 
@@ -47,12 +46,8 @@ public class SoloTrip {
         this.cprice = cprice;
         this.isOneway=isOneway;
 
-        this.thumbnail = thumbnail;
-        this.start = start;
-        this.destination = destination;
         this.status = status;
         this.startDate = startDate;
-        this.map = map;
 
     }
 
@@ -62,8 +57,6 @@ public class SoloTrip {
     private String date;
     private int dayNumber;
     private String createdId;
-    //route selection
-    private String routeId;
 
     //hotel selection
     private String hotelId;
@@ -91,13 +84,8 @@ public class SoloTrip {
     private boolean isOneway;
 
     //other
-    private String thumbnail;
-    private String start;
-    private String destination;
-    //private List<String> images;
     private String status;//"confirmed","pending","cancel"
     private String startDate;//vehicle booked date
-    private String map;
 
 
 }

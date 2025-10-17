@@ -363,7 +363,7 @@ System.out.println(list);
     @PostMapping("/create-trip")//to create a day in the trip
     public String CreateTrip(@RequestBody SolotripGetdto obj){
 
-       Optional <Route> r = repo.findById(obj.getRouteId());
+       //Optional <Route> r = repo.findById(obj.getRouteId());
 
         Optional<Hotel> hotel = hotelsRepo.findById(obj.getHotelId());
 
@@ -385,14 +385,15 @@ System.out.println(list);
 
        if(obj.getDayNumber() == 1) {// if this is first day plan
 
-          Created newCreatedTrip = new Created(obj.getCreatorId(),r.get().getThumbnail(), r.get().getTo());
+          Created newCreatedTrip = new Created(obj.getCreatorId());
+          //Created newCreatedTrip = new Created(obj.getCreatorId(),r.get().getThumbnail(), r.get().getTo());
 
            createdRepo.save(newCreatedTrip);
 
            SoloTrip x = new SoloTrip(
                    newCreatedTrip.get_id(),
                    obj.getDayNumber(),
-                   obj.getRouteId(),
+                   //obj.getRouteId(),
                    obj.getCreatorId(),
                    obj.getDate(),
                    obj.getHotelId(),
@@ -413,12 +414,8 @@ System.out.println(list);
                    obj.getBookedTime(),
                    obj.getCprice(),
                    obj.isOneway(),
-                   r.get().getThumbnail(),
-                   r.get().getFrom(),
-                   r.get().getTo(),
                    "pending",
-                   obj.getDate(),
-                   r.get().getMapRoute()
+                   obj.getDate()
            );
 
            soloTripRepo.save(x);
@@ -429,7 +426,7 @@ System.out.println(list);
            SoloTrip x = new SoloTrip(
                    obj.getCreatedId(),
                    obj.getDayNumber(),
-                   obj.getRouteId(),
+                   //obj.getRouteId(),
                    obj.getCreatorId(),
                    obj.getDate(),
                    obj.getHotelId(),
@@ -450,12 +447,8 @@ System.out.println(list);
                    obj.getBookedTime(),
                    obj.getCprice(),
                    obj.isOneway(),
-                   r.get().getThumbnail(),
-                   r.get().getFrom(),
-                   r.get().getTo(),
                    "pending",
-                   obj.getDate(),
-                   r.get().getMapRoute()
+                   obj.getDate()
            );
 
            soloTripRepo.save(x);
@@ -526,7 +519,6 @@ System.out.println(list);
             SolotripViewdto s = new SolotripViewdto(
                     x.get_id(),
                     x.getCreatorId(),
-                    x.getRouteId(),
                     x.getDate(),
                     x.getHotelId(),
                     h.getName(),
@@ -540,11 +532,8 @@ System.out.println(list);
                     x.getCprice(),
                     v.getFirstName() + " " + v.getLastName(),
                     c.getTitle(),
-                    x.getStart(),
-                    x.getDestination(),
                     x.getStatus(),
-                    x.getStartDate(),
-                    x.getMap()
+                    x.getStartDate()
 
 
             );

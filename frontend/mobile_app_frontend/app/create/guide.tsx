@@ -367,19 +367,6 @@ export default function Guide() {
         }, [selectedCardIndex, cars, hotelx]) // Runs when selection or data changes
     );
 
-    const checkAllAsyncStorageKeys = async () => {
-        try {
-            const keys = await AsyncStorage.getAllKeys();
-            const stores = await AsyncStorage.multiGet(keys);
-            console.log('All AsyncStorage keys and values:');
-            stores.forEach(([key, value]) => {
-                console.log(`${key}: ${value}`);
-            });
-        } catch (error) {
-            console.error('Error reading AsyncStorage:', error);
-        }
-    };
-
     return (
         <View className='bg-[#F2F5FA] h-full'>
             <View className='bg-[#F2F5FA] h-full'>
@@ -672,17 +659,7 @@ export default function Guide() {
                             })}
 
                         </ScrollView>
-                        {guides.length == 0 &&
-                            <>
-                                <View className="h-full justify-center items-center">
-                                    <Text className="text-red-500 italic">No guides available</Text>
-                                    <TouchableOpacity onPress={checkAllAsyncStorageKeys} style={{ padding: 10, backgroundColor: 'yellow' }}>
-                                        <Text>Check All Storage Keys</Text>
-                                    </TouchableOpacity>
-                                </View>
 
-                            </>
-                        }
                     </View>
                     <View className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
                         {

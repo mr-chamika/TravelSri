@@ -1,272 +1,558 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Modal, FlatList } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+
 cssInterop(Image, { className: "style" });
 
-
-const router = useRouter();
-//const OPTIONS = ["Colombo", "Kandy", "Galle", "Matara", "Nuwara Eliya", "Anuradhapura", "Polonnaruwa", "Jaffna", "Trincomalee"];
-const but = require('../../assets/images/tabbar/create/location/drop.png');
 const mark = require('../../assets/images/tabbar/create/location/mark.png');
-const pic = require('../../assets/images/tabbar/towert.png');
+const pic = require('../../assets/images/tabbar/create/location/h.png');
+const star = require('../../assets/images/tabbar/create/hotel/stars.png');
+const pin = require('../../assets/images/pin.png')
 
-/* const routes = [
-    { id: '1', from: 'Matara', to: 'Colombo', duration: 1, thumbnail: pic },
-    { id: '2', from: 'Uthuwankanda', to: 'Kurunegala', duration: 1, thumbnail: pic },
-    { id: '3', from: 'Colombo', to: 'Hanthana', duration: 1, thumbnail: pic },
-    { id: '4', from: 'Galle', to: 'Jaffna', duration: 3, thumbnail: pic }
-    ];
-    */
 
-interface Route {
+const LOCATIONS = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
 
-    _id: string,
-    from: string,
-    to: string,
-    duration: number,
-    thumbnail: string
+interface Book {
+    dates: string[];
+    loc: string;
+    ad: string;
+    ch: string;
+    ni: string;
+    s: string;
+    d: string
+}
+
+interface Postdata {
+
+    dayNumber: string,
+    date: string,
+    adults: string,
+    children: string
 
 }
 
-export default function Dropdown() {
-    const [selected, setSelected] = useState<string | null>(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null);
-    const [hasMadeInitialSelection, setHasMadeInitialSelection] = useState(false);
-    const [routes, setRoutes] = useState<Route[]>([])
-    const [options, setOptions] = useState<string[]>([])
+interface Hotel {
+    id: string;
+    image: any;
+    title: string;
+    stars: number;
+    price: number
+    beds: { type: string; price: number }[]
+}
 
-    const { createdId, dayNumber, date, adults, children } = useLocalSearchParams();
+interface x {
 
-    const order = {
+    _id: string;
+    name: string;
+    location: string;
+    distance: string;
+    ratings: number,
+    reviewCount: number
+    thumbnail: string;
+    originalPrice: number;
+    currentPrice: number;
+    taxes: string;
+    priceDescription: string;
+    specialOffer?: string;
+    freeFeatures: string[];
+    singlePrice: number;
+    doublePrice: number;
+    availableDouble: number;
+    availableSingle: number;
 
-        createdId: createdId,
-        dayNumber: dayNumber,
-        date: date,
-        adults: adults,
-        children: children
+}
 
-    }
-    useEffect(() => {
+interface g {
 
-        if (order.dayNumber && order.date && order.children && order.adults) {
+    id: string,
+    price: number
 
-            AsyncStorage.setItem('order', JSON.stringify(order));
+}
 
-        }
-    }, [order]);
+interface Car {
+
+    id: string;
+    price: number;
+
+}
 
 
-    useEffect(() => {
-        if (routes.length > 0) {
-            const uniqueLocations = [...new Set(routes.map(route => route.to))];
-            setOptions([...uniqueLocations]);
-        }
-    }, [routes]);
+export default function HotelsBookingScreen() {
 
-    const sortedOptions = useMemo(() => {
-        if (!selected) return options;
-        const otherOptions = options.filter((opt) => opt !== selected && opt !== "Select Location...");
-        return [selected, ...otherOptions];
-    }, [selected, options]);
+    const router = useRouter();
 
-    const handleSelect = useCallback(async (option: string) => {
-        if (option === "Select Location") {
-            setSelected(null);
-            setModalVisible(false);
-            return;
-        }
-        setSelected(option);
-        setHasMadeInitialSelection(true);
-        setModalVisible(false);
+    const [selectedDates, setSelectedDates] = useState<{ [key: string]: { selected: boolean; selectedColor: string } }>({});
+    const [selectedCardIndex, setSelectedCardIndex] = useState<string | null>(null); // Stores the array index (0-based) of the selected hotel
+    const [book, setBook] = useState<Book[] | null>(null);
+    const [order, setOrder] = useState<Postdata | null>(null)
+    const [adultsNo, setAdults] = useState('');
+    const [childrenNo, setChildren] = useState('');
+    const [nights, setNights] = useState('');
+    const [s, setS] = useState('');
+    const [d, setD] = useState('');
+    const [location, setLocation] = useState('');
+    const [locationP, setLocationP] = useState('');
+    const [total, setTotal] = useState('');
+    const [hotes, setHotels] = useState<x[] | null>(null)
+    const [input, setInput] = useState({
+        id: '',
+        s: '',
+        d: ''
+    })
+    const [guides, setGuides] = useState<g[]>([])
+    const [cars, setCars] = useState<Car[]>([])
+
+    const sortedLocations = useMemo(() => {
+        if (!location) return LOCATIONS;
+        return [location, ...LOCATIONS.filter((loc) => loc !== location)];
+    }, [location]);
+
+    const displayDates = useMemo(() => {
+        return Object.keys(selectedDates).sort().map(date => new Date(date).toDateString()).join(', ');
+    }, [selectedDates]);
+
+    const toggleCardSelection = useCallback((index: string) => {
+
+        setSelectedCardIndex(prev => {
+            const newIndex = prev === index ? null : index; // Toggle logic for 0-based index
+
+            // Async function to update AsyncStorage based on the resolved newIndex
+            const updateStorage = async (selectedIndex: string | null) => {
+                try {
+                    if (hotes) {
+                        const selectedHotel = selectedIndex !== null ? hotes.find(hotel => hotel._id == selectedIndex) : null;
+
+                        if (selectedHotel) {
+
+                            const hotelData = {
+                                id: selectedHotel._id, // Store the actual hotel ID (e.g., '1', '2')
+                                s: s || '1',
+                                d: d || '1'
+                            };
+                            await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(hotelData));
+                        } else {
+                            await AsyncStorage.removeItem('selectedHotelBooking'); // Remove if no hotel is selected
+                        }
+                    }
+                    count()
+                } catch (error) {
+                    console.error('Error saving selectedHotelBooking to AsyncStorage:', error);
+                }
+            };
+            updateStorage(newIndex); // Call with the resolved newIndex
+            return newIndex;
+        });
+    }, [s, d, hotes, selectedCardIndex]); // Dependencies for useCallback to prevent stale closures of s, d, hotels
+
+    const loadBookingData = async () => {
         try {
-            await AsyncStorage.setItem('selectedLocation', option);
-            await AsyncStorage.setItem('hasMadeInitialSelection', 'true');
-        } catch (error) {
-            console.error('Error saving selection to AsyncStorage:', error);
-        }
-    }, []);
+            const sessionExists = await AsyncStorage.getItem('hbookingSession');
+            const bookingCompleteStatus = await AsyncStorage.getItem('hbookingComplete');
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use the consistent key
+            const guideData = await AsyncStorage.getItem('guides')
+            const locationp = await AsyncStorage.getItem('selectedLocation')
+            const hotel = await AsyncStorage.getItem('selectedHotelBooking')
 
-    const toggleCardSelection = useCallback(async (index: string) => {
-        const newIndex = selectedCardIndex === index ? null : index;
-        setSelectedCardIndex(newIndex);
-        try {
+            if (hotel) {
 
-            const routeIdToSave = newIndex !== null ? newIndex : '';
-            console.log(routeIdToSave)
-            await AsyncStorage.setItem('selectedRouteId', routeIdToSave);
+                console.log(JSON.parse(hotel))
+
+
+            }
+            const pack = await AsyncStorage.getItem('order')
+            if (pack) {
+
+                const parsedOrder = JSON.parse(pack);
+                if (JSON.stringify(order) !== JSON.stringify(parsedOrder)) {
+                    setOrder(parsedOrder);
+                }
+
+            }
+
+            if (locationp && locationp !== locationP) {
+                setLocationP(locationp);
+            }
+            if (guideData) {
+
+                setGuides(guideData ? JSON.parse(guideData) : [])
+
+            }
+
+            const carData = await AsyncStorage.getItem('cars')
+            setCars(carData ? JSON.parse(carData) : []);
+
+            // Reset states before loading new data
+            setSelectedDates({});
+            setBook(null);
+            setLocation('');
+            setAdults('');
+            setChildren('');
+            setNights('');
+            setS('');
+            setD('');
+
+            let hotelWasFound = false;
+            if (savedHotelBooking) {
+                const hotelData = JSON.parse(savedHotelBooking);
+                // Find the array index of the hotel based on its 'id'
+                if (hotes) {
+                    const hotelIndex = hotes.find(h => h._id === hotelData.id);
+                    if (hotelIndex) {
+                        setSelectedCardIndex(hotelIndex._id); // Set the array index (0-based)
+                        setS(hotelData.s || ''); // Load s from stored data
+                        setD(hotelData.d || ''); // Load d from stored data
+                        hotelWasFound = true;
+                    }
+                }
+            }
+
+            if (!hotelWasFound) {
+                setSelectedCardIndex(null);
+            }
+
+            if (sessionExists && bookingCompleteStatus === 'true') {
+
+                const savedBookings = await AsyncStorage.getItem('hbookings');
+
+                if (savedBookings) {
+                    const bookingData: Book[] = JSON.parse(savedBookings);
+                    setBook(bookingData);
+                    if (bookingData.length > 0) {
+                        const booking = bookingData[0];
+                        const dates = booking.dates.reduce((acc: any, date: string) => {
+                            acc[date] = { selected: true, selectedColor: '#007BFF' };
+                            return acc;
+                        }, {});
+                        setSelectedDates(dates);
+                        setLocation(booking.loc);
+                        setAdults(booking.ad);
+                        setChildren(booking.ch);
+                        setNights(booking.ni);
+                        setS(booking.s || '')
+                        setD(booking.d || '')
+                        // s and d for the booking modal inputs will be loaded from 'selectedHotelBooking' if a hotel is selected,
+                        // otherwise they default to empty strings.
+                    }
+                }
+            } else {
+                await AsyncStorage.setItem('hbookingSession', Date.now().toString());
+
+            }
         } catch (error) {
-            console.error('Error saving selectedCardIndex to AsyncStorage:', error);
+            console.error('Error loading data from AsyncStorage:', error);
+            setSelectedDates({});
+            setSelectedCardIndex(null);
+            setBook([]);
+            setLocation('');
+            setAdults('');
+            setChildren('');
+            setNights('');
+            setS('');
+            setD('');
         }
-    }, [selectedCardIndex]);
+    };
 
     useFocusEffect(
         useCallback(() => {
-            const loadStateFromStorage = async () => {
-                try {
-                    const [savedLocation, initialSelection, savedRouteId] = await Promise.all([
-                        AsyncStorage.getItem('selectedLocation'),
-                        AsyncStorage.getItem('hasMadeInitialSelection'),
-                        AsyncStorage.getItem('selectedRouteId')
-                    ]);
-
-                    if (savedLocation && initialSelection === 'true') {
-                        setSelected(savedLocation);
-                        setHasMadeInitialSelection(true);
-                        setModalVisible(false);
-                    } else {
-                        setModalVisible(true);
+            const loadInitialData = async () => {
+                const pack = await AsyncStorage.getItem('order');
+                if (pack) {
+                    const parsedOrder = JSON.parse(pack);
+                    if (JSON.stringify(order) !== JSON.stringify(parsedOrder)) {
+                        setOrder(parsedOrder);
                     }
-
-                    if (savedRouteId && routes.length > 0) {
-                        const x = routes.find(route => route._id === savedRouteId);
-                        if (x != null) {
-
-                            setSelectedCardIndex(x?._id !== null ? x?._id : null);
-
-                        }
-                    } else {
-                        setSelectedCardIndex(null);
-                    }
-                } catch (error) {
-
-                    setSelected(null);
-                    setHasMadeInitialSelection(false);
-                    setModalVisible(true);
-                    setSelectedCardIndex(null);
                 }
+
+                const locationp = await AsyncStorage.getItem('selectedLocation');
+                if (locationp && locationp !== locationP) {
+                    setLocationP(locationp);
+                }
+
+                // Also run count() on focus
+                count();
             };
 
-            loadStateFromStorage();
-        }, [routes])
+            loadInitialData();
+        }, [])
     );
 
     useEffect(() => {
-        const getRoutes = async () => {
+        if (!locationP || !order) return;
+
+        const getHotels = async () => {
+
+            if (!locationP || !order) return;
+
 
             try {
+                console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
+                const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
-                const res = await fetch('http://localhost:8080/traveler/routes-allshow')
-                //const res = await fetch('https://travelsri-backend.onrender.com/traveler/routes-allshow')
+                if (res.ok) {
 
-                if (res) {
+                    const data = await res.json()
 
-                    const data: Route[] = await res.json()
-                    setRoutes(data)
+                    if (data.length > 0) {
+
+                        setHotels(data)
+
+                        const minimalHotles = data.map((hotel: x) => ({
+                            id: hotel._id,
+                            singlePrice: hotel.singlePrice,
+                            doublePrice: hotel.doublePrice,
+                        }));
+                        await AsyncStorage.setItem('hotels', JSON.stringify(minimalHotles))
+                        // FIX: Update selection mark after hotels are loaded
+                    } else {
+
+                        setHotels([])
+                        await AsyncStorage.removeItem('selectedHotelBooking')
+                        console.log('No hotels found')
+
+                    }
+
+                } else {
+
+                    setHotels([])
+                    await AsyncStorage.removeItem('selectedHotelBooking')
+                    console.log('No hotels found')
 
                 }
 
             } catch (err) {
 
-                console.log(`Error from routes getting : ${err}`)
+                console.log(`Error from hotel getting : ${err}`)
 
             }
 
         }
-        getRoutes()
-    }, [])
+        //
+        getHotels();
+    }, [locationP, order])
 
+    useEffect(() => {
+        if (hotes) {
+            loadBookingData();
+        }
+    }, [hotes]);
+    const count = async () => {
+
+        try {
+            let total = 0;
+
+            // Car Booking Price
+            const carIndex = await AsyncStorage.getItem('car');
+            if (carIndex) {
+                const category = cars.find(cat => cat.id === carIndex);
+                if (category) {
+                    total += category.price;
+                }
+            }
+
+            // Guide Booking Price
+            const guideIndex = await AsyncStorage.getItem('selectedGuideBooking');
+
+            if (guideIndex && guides) {
+                const guide = guides.find(guide => guide.id === guideIndex);
+                if (guide) {
+                    total += guide.price;
+                }
+            }
+
+            // Hotel Booking Price
+            const savedHotelBooking = await AsyncStorage.getItem('selectedHotelBooking'); // Use consistent key
+            if (savedHotelBooking && hotes) {
+                const hotelBookingData = JSON.parse(savedHotelBooking);
+                const selectedHotel = hotes.find(hotel => hotel._id === hotelBookingData.id); // Find hotel by its ID
+
+                if (selectedHotel) { // Null check for selectedHotel
+                    //console.log(selectedHotel)
+                    const numSingle = Number(hotelBookingData.s || 0); // Use s from stored data
+                    const numDouble = Number(hotelBookingData.d || 0); // Use d from stored data
+
+                    if (selectedHotel.availableDouble >= numDouble && selectedHotel.availableSingle >= numSingle) {
+                        const singleBedPrice = selectedHotel.singlePrice || 0;
+                        const doubleBedPrice = selectedHotel.doublePrice || 0;
+                        total += (singleBedPrice * numSingle) + (doubleBedPrice * numDouble);
+
+                    } else {
+
+                        await AsyncStorage.removeItem('selectedHotelBooking')
+
+                    }
+                }
+            }
+
+            setTotal(total.toString());
+        } catch (error) {
+            console.error('Error calculating total price from AsyncStorage:', error);
+            setTotal('0');
+        }
+    };//
+
+    const formatPrice = (price: number) => {
+        return `LKR ${price.toLocaleString()}`;
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            count()
+        }, [selectedCardIndex, s, d, guides, cars, hotes]) // Dependencies for recalculation, ensuring it reacts to s/d changes
+    );
     return (
-        <View className="bg-[#F2F5FA] relative gap-y-0 h-full">
-            <View className="h-full">
+        <View className='bg-[#F2F5FA] flex-1'>
+            <View className='bg-[#F2F5FA] h-full'>
 
-                {selected && (
-                    <View className="w-full px-4 mt-6">
-                        <TouchableOpacity
-                            className="bg-[#d9d9d952] px-4 py-3 rounded-lg flex-row justify-between items-center"
-                            onPress={() => setModalVisible(true)}
+                <>
+
+                    {/* Hotel Cards */}
+                    <View className="flex-1">
+                        <ScrollView
+                            className="w-full h-[81%]"
+                            contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 py-5"
+                            showsVerticalScrollIndicator={false}
                         >
-                            <Text className="font-semibold text-lg text-black">{selected}</Text>
-                            <Image className="w-5 h-5" source={but} />
-                        </TouchableOpacity>
-                    </View>
-                )}
+                            {hotes && hotes.length > 0 && hotes.map((hotel) => {
 
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => {
-                        if (hasMadeInitialSelection) setModalVisible(false);
-                    }}
-                >
-                    <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                        <View className="w-full max-w-md bg-white rounded-2xl p-5 shadow-lg max-h-[70%]">
-                            <TouchableOpacity onPress={() => {
-                                if (hasMadeInitialSelection) {
-                                    setModalVisible(false);
-                                } else {
-                                    router.back();
-                                    setModalVisible(false);
-                                }
-                            }}>
-                                <Text>{hasMadeInitialSelection ? "Cancel" : "Back"}</Text>
-                            </TouchableOpacity>
-                            <Text className="text-xl font-bold mb-4 text-center">Select a Location</Text>
-                            <FlatList
-                                data={sortedOptions}
-                                keyExtractor={(item, index) => `${item}`}
-                                renderItem={({ item, index }) => (
+                                const getReviewLabel = (score: number): string => {
+                                    if (score >= 9) return 'Excellent';
+                                    if (score >= 8) return 'Very Good';
+                                    if (score >= 7) return 'Good';
+                                    if (score >= 5) return 'Average';
+                                    return 'Poor';
+                                };
+                                const rating = hotel.reviewCount > 0
+                                    ? parseFloat(((hotel.ratings / hotel.reviewCount) * 2).toFixed(1))
+                                    : 0;
+
+                                return (
                                     <TouchableOpacity
-                                        onPress={() => handleSelect(`${item}`)}
-                                        className="px-4 py-3 border-b border-gray-200"
+                                        key={hotel._id}
+                                        className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-hidden shadow-md w-[95%]"
+                                        onPress={() => router.push(`/views/hotel/group/${hotel._id}`)}
+                                        activeOpacity={0.7}
                                     >
-                                        <Text className="text-gray-700 text-center text-lg">{item}</Text>
+                                        <View className='h-full rounded-lg justify-between'>
+                                            <View className="w-full absolute items-start pr-1 z-10">
+                                                <TouchableOpacity
+                                                    className="justify-center items-center w-6 h-6 rounded-full bg-gray-200 border-2"
+                                                    onPress={() => toggleCardSelection(hotel._id)}
+                                                >
+                                                    {selectedCardIndex === hotel._id && (
+                                                        <Image className='w-4 h-4' source={mark} />
+                                                    )}
+                                                </TouchableOpacity>
+
+                                            </View>
+                                            <View className=" h-40">
+                                                <Image
+
+                                                    source={{ uri: `data:image/jpeg;base64,${hotel.thumbnail}` }}
+                                                    className="w-full h-full"
+                                                    contentFit="cover"
+                                                />
+
+                                                {hotel.specialOffer && (
+                                                    <View className="absolute bottom-3 left-3 bg-emerald-500 px-2 py-1 rounded-sm">
+                                                        <Text className="text-white text-xs font-semibold">{hotel.specialOffer}</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+
+                                            <View className="p-4">
+
+                                                <View className="mb-2">
+                                                    <View className="mb-1">
+                                                        <View className="flex-row justify-between">
+                                                            <Text className="text-base font-semibold text-gray-800 mb-1">{hotel.name}</Text>
+                                                        </View>
+                                                        <View className="flex-row justify-between">
+                                                            <View className="justify-evenly">
+                                                                <View>
+                                                                    <View>
+                                                                        <View className="flex-row items-center gap-2">
+
+                                                                            <View className="flex-row justify-center mt-1">
+                                                                                {[...Array(Math.floor((rating) / 2))].map((_, i) => (
+                                                                                    <Image key={i} className="w-3 h-3 mx-0.5" source={star} />
+                                                                                ))}
+                                                                            </View>
+
+                                                                        </View>
+                                                                    </View>
+                                                                </View>
+
+                                                                <View className="flex-row items-center mb-2 gap-2">
+                                                                    <View className={`rounded-sm px-2 py-1 ${rating >= 9 ? 'bg-green-500' :
+                                                                        rating >= 8 ? 'bg-emerald-400' :
+                                                                            rating >= 7 ? 'bg-yellow-400' :
+                                                                                rating >= 5 ? 'bg-orange-400' :
+                                                                                    'bg-red-500'
+                                                                        }`}>
+                                                                        <Text className="text-white text-xs font-semibold">{rating}</Text>
+                                                                    </View>
+                                                                    <View className="flex-1">
+                                                                        <Text
+                                                                            className={`text-xs font-semibold`}
+                                                                        >
+                                                                            {getReviewLabel(rating)}
+                                                                        </Text>
+                                                                        <Text className="text-xs text-gray-600">{hotel.reviewCount} reviews</Text>
+                                                                    </View>
+                                                                </View>
+
+                                                                <View className="flex-row items-center mb-2 gap-1">
+                                                                    <Image source={pin} className="w-4 h-4" />
+                                                                    <Text className="text-xs text-gray-600">{hotel.distance} from {hotel.location}</Text>
+                                                                </View>
+
+                                                            </View>
+                                                            <View className=" border-gray-200">
+                                                                <View className="items-end">
+                                                                    <Text className="text-xs font-semibold text-gray-600 mb-1">{hotel.priceDescription}</Text>
+                                                                    {hotel.originalPrice !== hotel.currentPrice && (
+                                                                        <Text className="text-xs text-gray-400 line-through mb-0.5">
+                                                                            {formatPrice(hotel.originalPrice)}
+                                                                        </Text>
+                                                                    )}
+                                                                    <Text className="text-lg font-bold text-red-600 mb-0.5">
+                                                                        {formatPrice(hotel.currentPrice)}
+                                                                    </Text>
+                                                                    <Text className="text-[10px] text-gray-600 mb-2">{hotel.taxes}</Text>
+
+                                                                    <View className="gap-1">
+                                                                        {hotel.freeFeatures.map((feature, index) => (
+                                                                            <View key={index} className="flex-row items-center gap-1">
+                                                                                <Text className="text-[10px] text-emerald-500 font-medium">{feature}</Text>
+                                                                            </View>
+                                                                        ))}
+                                                                    </View>
+                                                                </View>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                </View>
+
+                                            </View>
+                                        </View>
                                     </TouchableOpacity>
-                                )}
-                            />
-                        </View>
+                                )
+                            })}
+                        </ScrollView>
+                        {(hotes?.length == 0 && <View className=" h-full items-center justify-center"><Text className="text-red-500 italic">No hotels available</Text></View>)}
                     </View>
-                </Modal>
 
-                {/* Only show main content if a location is selected */}
-                {selected && (
-                    <ScrollView
-                        className="w-full h-[80%]"
-                        contentContainerClassName="flex-row flex-wrap justify-center items-start gap-3 pt-5 pb-5"
-                        showsVerticalScrollIndicator={false}
-                    >
-                        <View className="items-center gap-5">
-                            {routes.map((route, index) => (
-                                (/* route.from === selected ||  */route.to === selected) &&
+                    <View className=" p-4 border-t border-gray-200 bg-white">
+                        <Text className="text-center font-bold text-lg">{total}.00 LKR</Text>
+                    </View>
+                </>
 
-                                <TouchableOpacity
-
-                                    key={route._id}
-                                    onPress={() => router.push(`/views/route/${route._id}`)}
-                                    className="bg-gray-200 w-[350px] h-[165px] items-center rounded-[20px] ml-3"
-                                >
-
-                                    <View className="w-full flex-row absolute justify-between px-4 pt-3 z-10">
-                                        <Text className="bg-gray-100 rounded-md px-2">Route #{index + 1}</Text>
-                                        <TouchableOpacity
-
-                                            onPress={() => toggleCardSelection(route._id)}
-                                            className="bg-gray-100 w-5 h-5 rounded-full justify-center items-center"
-                                        >
-                                            {selectedCardIndex === route._id && (
-                                                <Image className="w-4 h-4" source={mark} />
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
-                                    <Image
-                                        className="opacity-65 mt-2 flex justify-center w-[335px] h-[100px] rounded-[15px] shadow-gray-400 shadow-lg"
-                                        source={{ uri: `data:image/jpeg;base64,${route.thumbnail}` }}
-                                    />
-                                    <View>
-                                        <Text className="mt-1 text-[20px] text-center">{route.from} to {route.to}</Text>
-                                        <Text className="mt-1 text-[15px] text-center">{route.duration} day</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </ScrollView>
-                )}
             </View>
         </View>
     );
-} 
+}

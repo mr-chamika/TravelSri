@@ -13,18 +13,14 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Created {
 
 
-    public Created(String creatorId,String thumbnail, String destination) {
+    public Created(String creatorId) {
 
         this.creatorId = creatorId;
-        this.thumbnail = thumbnail;
-        this.destination = destination;
 
     }
 
     @Id
     private String _id;
-    private String thumbnail;
-    private String destination;
     private String creatorId;
 
 

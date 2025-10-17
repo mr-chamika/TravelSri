@@ -43,7 +43,6 @@ interface BookG {
 interface Form {
 
     //index.tsx (select a route)
-    routeId: string;
     creatorId: string;
     date: string;
     dayNumber: number;
@@ -193,7 +192,6 @@ export default function App() {
     const [guideId, setGuideId] = useState<string | null>(null)
     const [submitForm, setSubmitForm] = useState<Form>({
 
-        routeId: '',
         creatorId: '',
         date: '',
         dayNumber: 0,
@@ -422,14 +420,6 @@ export default function App() {
                 const token: MyToken = jwtDecode(keys)
                 const finalFormObject = { ...submitForm }
 
-
-                const routeId = await AsyncStorage.getItem('selectedRouteId')
-                if (routeId) {
-                    finalFormObject.routeId = routeId
-                } else {
-                    m = m + ' Please select a location |'
-                }
-
                 const s = await AsyncStorage.getItem('order')
                 if (s) {
 
@@ -486,6 +476,7 @@ export default function App() {
                 //setting car details
                 const driver = await AsyncStorage.getItem('cbookings')
                 const ids = await AsyncStorage.getItem('selectedCar')
+
                 if (driver && ids) {
 
                     const bookingData = JSON.parse(driver);
@@ -504,6 +495,11 @@ export default function App() {
                         m = m + ' Please select a vehicle |'
 
                     }
+                } else {
+
+                    m = m + ' Please select a vehicle |'
+
+
                 }
                 if (m == '') {
                     console.log(finalFormObject)
@@ -541,7 +537,6 @@ export default function App() {
                                 'total',
                                 'route',
                                 'selectedHotelBooking',
-                                'selectedRouteId',
                                 'guides',
                                 'hotels',
                                 'driver',

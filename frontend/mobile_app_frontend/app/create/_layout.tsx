@@ -42,16 +42,6 @@ export default function CreateLayout() {
                 options={{
                     tabBarIcon: ({ focused }) => (
                         <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
-                            <Image className="w-7 h-7" source={pin} />
-                        </View>
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="hotels"
-                options={{
-                    tabBarIcon: ({ focused }) => (
-                        <View className={`p-8 ${focused ? "bg-[#FEFA17]" : "bg-transparent"}`}>
                             <Image className="w-7 h-7" source={bed} />
                         </View>
                     ),
