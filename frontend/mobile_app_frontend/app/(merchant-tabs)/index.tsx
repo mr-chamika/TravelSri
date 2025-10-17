@@ -401,15 +401,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20, // Reduce horizontal padding
+    paddingVertical: 10, // Reduce vertical padding
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   listingsTitle: {
-    fontSize: 24,
+    fontSize: 20, // Adjust font size to fit in one line
     fontWeight: 'bold',
-    color: '#000'
+    color: '#000',
+    flexShrink: 1, // Prevent the title from taking up too much space
   },
   addButton: {
     padding: 8,

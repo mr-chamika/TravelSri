@@ -13,118 +13,61 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router'; // Import useRouter
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 
-// Corrected type definition to match the backend
-type ListingItem = {
-  id: string; // Corrected to match the backend model
-  name: string;
-  price: number;
-  imageUrl: string;
-  availableNumber: number;
-  isNew?: boolean;
-  description?: string;
-};
-
-// Removed the props interface as navigation will be handled internally
 const AddItem: React.FC = () => {
-  const router = useRouter(); // Use the router hook
+  const router = useRouter();
 
   const [name, setItemName] = useState('');
   const [price, setPrice] = useState('');
   const [count, setQuantity] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImageUri] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const API_BASE_URL = 'http://localhost:8080';
-  const getAuthToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token') || '';
+
+  const validateField = (field: string, value: string) => {
+    let error = '';
+    if (!value.trim()) {
+      error = 'This field is required.';
+    } else if (field === 'name' && value.trim().length < 3) {
+      error = 'Item name must be at least 3 characters long.';
+    } else if (field === 'price' && (isNaN(Number(value)) || Number(value) <= 0)) {
+      error = 'Please enter a valid positive price.';
+    } else if (field === 'count' && (isNaN(Number(value)) || Number(value) <= 0)) {
+      error = 'Please enter a valid positive quantity.';
+    } else if (field === 'description' && value.trim().length < 10) {
+      error = 'Description must be at least 10 characters long.';
+    } else if (field === 'image' && !value) {
+      error = 'Please add an image for the item.';
     }
-    return '';
+    return error;
   };
 
-  const handleSave = async () => {
-
-    console.log('Publish button clicked');
-    if (!name.trim()) {
-      Alert.alert('Error', 'Item name is required');
-      return;
-    }
-    if (!price.trim() || isNaN(Number(price))) {
-      Alert.alert('Error', 'Please enter a valid price');
-      return;
-    }
-    if (!count.trim() || isNaN(Number(count)) || Number(count) < 0) {
-      Alert.alert('Error', 'Please enter a valid count');
-      return;
-    }
-    if (!image) {
-      Alert.alert('Error', 'Please add an image for the item');
-      return;
+  const handleChange = (field: string, value: string) => {
+    let processedValue = value;
+    if (field === 'price' || field === 'count') {
+      processedValue = value.replace(/[^0-9.]/g, ''); // Allow only numbers and decimal points
     }
 
-    // 🆕 Retrieve and decode the token to get the shopId
-    const token = await AsyncStorage.getItem("token");
-    if (!token) {
-        Alert.alert('Error', 'Authentication token not found. Please log in again.');
-        return;
-    }
+    if (field === 'name') setItemName(processedValue);
+    if (field === 'price') setPrice(processedValue);
+    if (field === 'count') setQuantity(processedValue);
+    if (field === 'description') setDescription(processedValue);
 
-    let decodedToken: any;
-    try {
-        decodedToken = jwtDecode(token);
-    } catch (err) {
-        console.error('Error decoding token:', err);
-        Alert.alert('Error', 'Invalid authentication token. Please log in again.');
-        return;
-    }
-
-    const shopId = decodedToken.id;
-    if (!shopId) {
-        Alert.alert('Error', 'Shop ID not found in token.');
-        return;
-    }
-
-    const shopItem = {
-      name: name.trim(),
-      price: Number(price),
-      count: Number(count),
-      description: description.trim() || 'This is Description',
-      image: image,
-      shopId: shopId, 
-    };
-    console.log('Sending to backend:', shopItem);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(shopItem),
-      });
-      console.log('Response status:', response.status);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Backend error:', errorText);
-        throw new Error(errorText || 'Failed to add item');
+    const error = validateField(field, processedValue);
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      if (error) {
+        newErrors[field] = error;
+      } else {
+        delete newErrors[field];
       }
-
-      Alert.alert('Success', 'Item added to database!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.back(); // Use router.back() to navigate back
-          },
-        },
-      ]);
-    } catch (err: any) {
-      console.log('Catch error:', err);
-      Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
-    }
+      return newErrors;
+    });
   };
 
   const handleImageChange = async () => {
@@ -139,11 +82,92 @@ const AddItem: React.FC = () => {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
-      base64: true
+      base64: true,
     });
 
     if (!result.canceled && result.assets[0].base64) {
       setImageUri(result.assets[0].base64);
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors['image'];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const formErrors: { [key: string]: string } = {};
+    formErrors.name = validateField('name', name);
+    formErrors.price = validateField('price', price);
+    formErrors.count = validateField('count', count);
+    formErrors.description = validateField('description', description);
+    formErrors.image = validateField('image', image);
+
+    setErrors(formErrors);
+    return Object.keys(formErrors).every((key) => !formErrors[key]);
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fix the errors before submitting.');
+      return;
+    }
+
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      Alert.alert('Error', 'Authentication token not found. Please log in again.');
+      return;
+    }
+
+    let decodedToken: any;
+    try {
+      decodedToken = jwtDecode(token); // Correct usage of jwtDecode
+    } catch (err) {
+      console.error('Error decoding token:', err);
+      Alert.alert('Error', 'Invalid authentication token. Please log in again.');
+      return;
+    }
+
+    const shopId = decodedToken.id;
+    if (!shopId) {
+      Alert.alert('Error', 'Shop ID not found in token.');
+      return;
+    }
+
+    const shopItem = {
+      name: name.trim(),
+      price: Number(price),
+      count: Number(count),
+      description: description.trim(),
+      image: image,
+      shopId: shopId,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shopItem),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to add item');
+      }
+
+      Alert.alert('Success', 'Item added successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.back(); // Navigate back to the previous screen
+          },
+        },
+      ]);
+    } catch (err: any) {
+      console.log('Catch error:', err);
+      Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -152,16 +176,15 @@ const AddItem: React.FC = () => {
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => {
+            router.back(); // Navigate back to the previous screen
+          }}
+          style={styles.backButton}
+        >
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
-        <TouchableOpacity>
-          <Feather name="bell" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.titleContainer}>
-        <Text style={styles.pageTitle}>Add Item</Text>
+        <Text style={styles.headerTitle}>Add Item</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -176,6 +199,7 @@ const AddItem: React.FC = () => {
               </View>
             )}
           </TouchableOpacity>
+          {errors.image ? <Text style={styles.errorText}>{errors.image}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -183,10 +207,11 @@ const AddItem: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={name}
-            onChangeText={setItemName}
+            onChangeText={(text) => handleChange('name', text)}
             placeholder="Item Name"
             placeholderTextColor="#999"
           />
+          {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -194,11 +219,12 @@ const AddItem: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(text) => handleChange('price', text)}
             placeholder="Price"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
+          {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -206,11 +232,12 @@ const AddItem: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={count}
-            onChangeText={setQuantity}
+            onChangeText={(text) => handleChange('count', text)}
             placeholder="Quantity"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
+          {errors.count ? <Text style={styles.errorText}>{errors.count}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -218,13 +245,14 @@ const AddItem: React.FC = () => {
           <TextInput
             style={[styles.textInput, styles.descriptionInput]}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(text) => handleChange('description', text)}
             placeholder="This is Description"
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
+          {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
         </View>
 
         <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
@@ -240,70 +268,61 @@ export default AddItem;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#fff',
+    justifyContent: 'flex-start', // Keep the back button aligned to the left
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    position: 'relative', // Ensure relative positioning for the title
   },
   backButton: {
-    padding: 5,
+    padding: 8,
   },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoIcon: {
-    width: 32,
-    height: 32,
-    backgroundColor: '#FFD700',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  logoText: {
-    fontSize: 16,
-  },
-  logoTitle: {
-    fontSize: 18,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#333',
+    position: 'absolute', // Center the title absolutely
+    left: 0,
+    right: 0,
+    textAlign: 'center', // Align text to the center
   },
   titleContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
   },
   pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#333',
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 20,
+    padding: 16,
   },
   section: {
-    marginTop: 20,
+    marginBottom: 24,
   },
   sectionLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#333',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   imageContainer: {
-    height: 150,
-    backgroundColor: '#f1f3f4',
-    borderRadius: 12,
+    width: '90%',
+    aspectRatio: 4 / 3,
+    borderRadius: 4, // Reduced border radius
     overflow: 'hidden',
-    alignItems: 'center',
+    borderWidth: 0.5, // Reduced border width
+    borderColor: '#ddd',
     justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center', // Center the image container horizontally
   },
   itemImage: {
     width: '100%',
@@ -311,49 +330,39 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   imagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
     width: '100%',
     height: '100%',
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   textInput: {
-    backgroundColor: '#fff',
+    height: 48,
     borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 12,
     fontSize: 16,
     color: '#333',
-    borderWidth: 1,
-    borderColor: '#e1e5e9',
   },
   descriptionInput: {
-    height: 100,
-    paddingTop: 12,
+    minHeight: 96,
+    textAlignVertical: 'top',
   },
   publishButton: {
-    backgroundColor: '#FFD700',
-    borderRadius: 25,
-    paddingVertical: 15,
+    backgroundColor: '#007bff',
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
-    marginTop: 30,
-    marginBottom: 20,
   },
   publishButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  bottomNav: {
-    flexDirection: 'row',
-    backgroundColor: '#FFD700',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  navItem: {
-    padding: 5,
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 5,
   },
 });
