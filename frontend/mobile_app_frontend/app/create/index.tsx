@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, TextInput } from "react-native";
 import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { cssInterop } from 'nativewind';
 import { Image } from 'expo-image';
@@ -11,7 +11,8 @@ cssInterop(Image, { className: "style" });
 const mark = require('../../assets/images/tabbar/create/location/mark.png');
 const pic = require('../../assets/images/tabbar/create/location/h.png');
 const star = require('../../assets/images/tabbar/create/hotel/stars.png');
-const pin = require('../../assets/images/pin.png')
+const pin = require('../../assets/images/pin.png');
+const search = require('../../assets/images/search1.png')
 
 
 const LOCATIONS = ['Colombo', 'Kandy', 'Galle', 'Nuwara Eliya', 'Jaffna'];
@@ -97,6 +98,7 @@ export default function HotelsBookingScreen() {
     const [locationP, setLocationP] = useState('colombo');
     const [total, setTotal] = useState('');
     const [hotes, setHotels] = useState<x[] | null>(null)
+    const [keyword, setKeyword] = useState('colombo');
     const [input, setInput] = useState({
         id: '',
         s: '',
@@ -269,16 +271,13 @@ export default function HotelsBookingScreen() {
                 console.log(locationP)
                 console.log(order)
 
-                if (!locationP || !order) return;
+                if (!keyword.trim() || !order) return;
 
                 const getHotels = async () => {
 
-                    if (!locationP || !order) return;
-
-
                     try {
                         console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
-                        const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+                        const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${keyword.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
                         //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
                         if (res.ok) {
@@ -327,7 +326,7 @@ export default function HotelsBookingScreen() {
             };
 
             loadInitialData();
-        }, [])
+        }, [keyword])
     );
 
     // useEffect(() => {
@@ -457,7 +456,16 @@ export default function HotelsBookingScreen() {
     return (
         <View className='bg-[#F2F5FA] flex-1'>
             <View className='bg-[#F2F5FA] h-full'>
+                <View className="w-[80%] items-center mx-10 flex-row justify-center bg-[#d9d9d976] rounded-2xl my-8">
 
+                    <TouchableOpacity>
+
+                        <Image className="w-7 h-7" source={search}></Image>
+
+                    </TouchableOpacity>
+                    <TextInput className=" h-[40px] w-[230px] pl-5 text-black" placeholder="Search...." placeholderTextColor="#8E8E8E" value={keyword} onChangeText={setKeyword} />
+
+                </View>
                 <>
 
                     {/* Hotel Cards */}
@@ -481,6 +489,9 @@ export default function HotelsBookingScreen() {
                                     : 0;
 
                                 return (
+
+
+
                                     <TouchableOpacity
                                         key={hotel._id}
                                         className="bg-white border mx-4 my-2 border-gray-100 rounded-lg overflow-hidden shadow-md w-[95%]"

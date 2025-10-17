@@ -169,11 +169,15 @@ export default function Views() {
                 const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
                 //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
-                if (res2) {
+                if (res2.ok) {
 
                     const data2 = await res2.json()
-                    //console.log(data2)
+                    console.log(data2)
                     setReviews(data2)
+
+                } else {
+
+                    setReviews([])
 
                 }
 
