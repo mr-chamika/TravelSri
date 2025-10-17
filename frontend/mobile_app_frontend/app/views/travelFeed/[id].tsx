@@ -11,43 +11,33 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  Modal,
 } from 'react-native';
 import BackButton from '../../../components/ui/backButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-// Updated interface to match your Post model
+// Post interface and API response interface
 interface Post {
   id: string;
-  title: string;
+  title?: string;
   content: string;
   categories: string[];
-  
-  // User info
   userId: string;
   userName: string;
   userAvatar?: string;
-  
-  // Media files
   mediaFiles: string[];
-  
-  // Location
   latitude?: number;
   longitude?: number;
   address?: string;
   city?: string;
   country?: string;
-  
-  // Engagement
   likes: string[];
   likeCount: number;
-  
-  // Timestamps
   createdAt: string;
   updatedAt: string;
   active: boolean;
@@ -64,23 +54,17 @@ interface ApiResponse {
 // API service functions
 const API_BASE_URL = 'http://localhost:8080/api';
 
-// Updated fetchPosts to support category filtering
 const fetchPosts = async (page = 0, size = 10, categoryFilter: string | null = null): Promise<ApiResponse> => {
   try {
     let url = `${API_BASE_URL}/posts/getPosts?page=${page}&size=${size}`;
     if (categoryFilter) {
       url += `&category=${encodeURIComponent(categoryFilter)}`;
     }
-    
-    console.log(`📡 Fetching posts: page=${page}, size=${size}, category=${categoryFilter || 'all'}`);
+    console.log('📡 Fetching posts from:', url);
     const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    console.log(`✅ Fetched ${data.content?.length || 0} posts`);
+    console.log('📦 Received posts:', data.content.length);
     return data;
   } catch (error) {
     console.error('❌ Error fetching posts:', error);
@@ -89,75 +73,103 @@ const fetchPosts = async (page = 0, size = 10, categoryFilter: string | null = n
 };
 
 const toggleLikePost = async (postId: string, userId: string): Promise<{ isLiked: boolean }> => {
+  const response = await fetch(`${API_BASE_URL}/posts/like/${postId}?userId=${userId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  return response.json();
+};
+
+// Enhanced deletePost API function with extensive debugging
+const deletePost = async (postId: string): Promise<boolean> => {
+  console.log('🌐 ===== API DELETE CALL STARTED =====');
+  console.log('📄 Post ID:', postId);
+  console.log('🔗 URL:', `${API_BASE_URL}/posts/delete/${postId}`);
+  console.log('⏰ Timestamp:', new Date().toISOString());
+  
   try {
-    console.log(`👍 Toggling like for post ${postId} by user ${userId}`);
-    const response = await fetch(`${API_BASE_URL}/posts/like/${postId}?userId=${userId}`, {
-      method: 'POST',
-      headers: {
+    const response = await fetch(`${API_BASE_URL}/posts/delete/${postId}`, {
+      method: 'DELETE',
+      headers: { 
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
     });
     
+    console.log('📡 Response received:');
+    console.log('  - Status:', response.status);
+    console.log('  - Status Text:', response.statusText);
+    console.log('  - OK:', response.ok);
+    console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ HTTP Error Response Body:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
     
     const result = await response.json();
-    console.log(`✅ Like toggled: ${result.isLiked ? 'liked' : 'unliked'}`);
-    return result;
-  } catch (error) {
-    console.error('❌ Error toggling like:', error);
+    console.log('📦 Response JSON parsed successfully:');
+    console.log('  - Full response:', JSON.stringify(result, null, 2));
+    console.log('  - Success field:', result.success);
+    console.log('  - Message field:', result.message);
+    
+    return result.success;
+  } catch (error: unknown) {
+    console.error('❌ API Delete Error Details:');
+    console.error('  - Error type:', typeof error);
+    if (error instanceof Error) {
+      console.error('  - Error name:', error.name);
+      console.error('  - Error message:', error.message);
+    } else {
+      try {
+        console.error('  - Error details:', JSON.stringify(error));
+      } catch {
+        console.error('  - Error details:', String(error));
+      }
+    }
+    console.error('  - Full error:', error);
     throw error;
+  } finally {
+    console.log('🌐 ===== API DELETE CALL FINISHED =====');
   }
 };
 
-// Category Badge Component (Now clickable in posts)
-const CategoryBadge = ({ 
-  category, 
-  onPress 
-}: { 
-  category: string; 
-  onPress?: (category: string) => void;
-}) => {
-  const getCategoryEmoji = (cat: string) => {
-    const categoryEmojis: { [key: string]: string } = {
-      adventure: '🏔️',
-      beach: '🏖️',
-      culture: '🏛️',
-      food: '🍜',
-      nature: '🌲',
-      city: '🏙️',
-    };
-    return categoryEmojis[cat.toLowerCase()] || '✈️';
+// CategoryBadge component
+const CategoryBadge = ({ category, onPress }: { category: string; onPress?: (category: string) => void }) => {
+  const categoryEmojis: { [key: string]: string } = {
+    adventure: '🏔️',
+    beach: '🏖️',
+    culture: '🏛️',
+    food: '🍜',
+    nature: '🌲',
+    city: '🏙️',
   };
-
-  const getCategoryColor = (cat: string) => {
-    const categoryColors: { [key: string]: string } = {
-      adventure: '#EAB308',
-      beach: '#FACC15',
-      culture: '#FDE047',
-      food: '#FEF08A',
-      nature: '#FCD34D',
-      city: '#FBBF24',
-    };
-    return categoryColors[cat.toLowerCase()] || '#E5E7EB';
+  const categoryColors: { [key: string]: string } = {
+    adventure: '#EAB308',
+    beach: '#06B6D4',
+    culture: '#8B5CF6',
+    food: '#F59E0B',
+    nature: '#10B981',
+    city: '#6B7280',
   };
 
   const Component = onPress ? TouchableOpacity : View;
 
   return (
-    <Component 
-      style={[styles.categoryBadge, { backgroundColor: getCategoryColor(category) }]}
+    <Component
+      style={[styles.categoryBadge, { backgroundColor: categoryColors[category.toLowerCase()] || '#E5E7EB' }]}
       onPress={onPress ? () => onPress(category) : undefined}
       activeOpacity={0.7}
     >
-      <Text style={styles.categoryEmoji}>{getCategoryEmoji(category)}</Text>
+      <Text style={styles.categoryEmoji}>{categoryEmojis[category.toLowerCase()] || '✈️'}</Text>
       <Text style={styles.categoryText}>{category}</Text>
     </Component>
   );
 };
 
-// Categories Filter Bar Component
+// CategoriesFilterBar component
 const CategoriesFilterBar = ({
   allPosts,
   selectedCategory,
@@ -167,65 +179,29 @@ const CategoriesFilterBar = ({
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
 }) => {
-  // Extract unique categories from all posts
   const categoriesSet = new Set<string>();
-  allPosts.forEach(post => {
-    post.categories?.forEach(cat => categoriesSet.add(cat));
-  });
+  allPosts.forEach(post => post.categories?.forEach(cat => categoriesSet.add(cat)));
   const uniqueCategories = Array.from(categoriesSet).sort();
-
-  const getCategoryEmoji = (cat: string) => {
-    const categoryEmojis: { [key: string]: string } = {
-      adventure: '🏔️',
-      beach: '🏖️',
-      culture: '🏛️',
-      food: '🍜',
-      nature: '🌲',
-      city: '🏙️',
-    };
-    return categoryEmojis[cat.toLowerCase()] || '✈️';
-  };
 
   return (
     <View style={styles.categoriesFilterContainer}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesScroll}
-      >
-        {/* All Categories Button */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
         <TouchableOpacity
-          style={[
-            styles.filterCategoryBadge,
-            !selectedCategory && styles.filterCategoryBadgeSelected
-          ]}
+          style={[styles.filterCategoryBadge, !selectedCategory && styles.filterCategoryBadgeSelected]}
           onPress={() => onSelectCategory(null)}
           activeOpacity={0.7}
         >
-          <Text style={[
-            styles.filterCategoryText,
-            !selectedCategory && styles.filterCategoryTextSelected
-          ]}>
-            🌍 All
-          </Text>
+          <Text style={[styles.filterCategoryText, !selectedCategory && styles.filterCategoryTextSelected]}>🌍 All</Text>
         </TouchableOpacity>
-
-        {/* Individual Category Buttons */}
         {uniqueCategories.map(category => (
           <TouchableOpacity
             key={category}
-            style={[
-              styles.filterCategoryBadge,
-              selectedCategory === category && styles.filterCategoryBadgeSelected
-            ]}
+            style={[styles.filterCategoryBadge, selectedCategory === category && styles.filterCategoryBadgeSelected]}
             onPress={() => onSelectCategory(selectedCategory === category ? null : category)}
             activeOpacity={0.7}
           >
-            <Text style={[
-              styles.filterCategoryText,
-              selectedCategory === category && styles.filterCategoryTextSelected
-            ]}>
-              {getCategoryEmoji(category)} {category}
+            <Text style={[styles.filterCategoryText, selectedCategory === category && styles.filterCategoryTextSelected]}>
+              {category}
             </Text>
           </TouchableOpacity>
         ))}
@@ -234,90 +210,228 @@ const CategoriesFilterBar = ({
   );
 };
 
-// Post Item Component (Updated with clickable categories)
+// Collage component for images
+const Collage = ({ mediaFiles }: { mediaFiles: string[] }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const maxShow = 3;
+  const extraCount = mediaFiles.length - maxShow;
+
+  const openModal = (index: number) => {
+    setSelectedIndex(index);
+    setModalVisible(true);
+  };
+
+  if (mediaFiles.length === 1) {
+    return (
+      <>
+        <TouchableOpacity activeOpacity={0.8} onPress={() => openModal(0)} style={{ marginBottom: 12 }}>
+          <Image 
+            source={{ uri: mediaFiles[0] }} 
+            style={styles.singleImage} 
+            resizeMode="cover"
+            onError={(error) => console.log('❌ Single image load error:', error)}
+            onLoad={() => console.log('✅ Single image loaded successfully')}
+          />
+        </TouchableOpacity>
+
+        <Modal visible={modalVisible} transparent onRequestClose={() => setModalVisible(false)}>
+          <View style={styles.modalBackground}>
+            <FlatList
+              horizontal
+              pagingEnabled
+              data={mediaFiles}
+              initialScrollIndex={selectedIndex}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.modalImageWrapper}>
+                  <Image source={{ uri: item }} style={styles.modalImage} resizeMode="contain" />
+                </View>
+              )}
+            />
+            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <View style={styles.collageContainer}>
+        {mediaFiles.slice(0, maxShow).map((uri, index) => (
+          <TouchableOpacity
+            key={index}
+            activeOpacity={0.8}
+            onPress={() => openModal(index)}
+            style={[styles.imageWrapper, index === 2 && extraCount > 0 ? styles.lastImageWrapper : null]}
+          >
+            <Image 
+              source={{ uri }} 
+              style={styles.collageImage} 
+              resizeMode="cover"
+              onError={(error) => console.log(`❌ Collage image ${index} load error:`, error)}
+              onLoad={() => console.log(`✅ Collage image ${index} loaded successfully`)}
+            />
+            {index === 2 && extraCount > 0 && (
+              <View style={styles.overlay}>
+                <Text style={styles.overlayText}>+{extraCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Modal visible={modalVisible} transparent onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalBackground}>
+          <FlatList
+            horizontal
+            pagingEnabled
+            data={mediaFiles}
+            initialScrollIndex={selectedIndex}
+            keyExtractor={(_, i) => i.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.modalImageWrapper}>
+                <Image source={{ uri: item }} style={styles.modalImage} resizeMode="contain" />
+              </View>
+            )}
+          />
+          <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
+            <Text style={styles.modalCloseText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+// PostItem component with enhanced debugging
 const PostItem = ({
   item,
   currentUserId,
   onLike,
   onCategoryPress,
+  onEdit,
+  onDelete,
 }: {
   item: Post;
   currentUserId: string;
   onLike: (postId: string) => void;
   onCategoryPress: (category: string) => void;
+  onEdit: (post: Post) => void;
+  onDelete: (postId: string) => void;
 }) => {
   const isLiked = item.likes?.includes(currentUserId) || false;
+  const isOwner = item.userId === currentUserId;
+
+  console.log(`📝 Rendering PostItem for post ${item.id}:`);
+  console.log(`  - Owner: ${item.userId}`);
+  console.log(`  - Current User: ${currentUserId}`);
+  console.log(`  - Is Owner: ${isOwner}`);
+
+  const canEdit = () => {
+    try {
+      const createdAt = new Date(item.createdAt);
+      const now = new Date();
+      const diffInHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      return isOwner && diffInHours <= 1;
+    } catch {
+      return false;
+    }
+  };
 
   const formatTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
       const now = new Date();
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      
       if (diffInMinutes < 1) return 'Just now';
       if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-      
       const diffInHours = Math.floor(diffInMinutes / 60);
       if (diffInHours < 24) return `${diffInHours}h ago`;
-      
       const diffInDays = Math.floor(diffInHours / 24);
       if (diffInDays < 7) return `${diffInDays}d ago`;
-      
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
       });
-    } catch (error) {
+    } catch {
       return 'Recently';
     }
   };
 
-  const getMediaUrl = (filename: string) => {
-    return `${API_BASE_URL.replace('/api', '')}/uploads/posts/${filename}`;
-  };
-
-  const isVideoFile = (filename: string) => {
-    const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
-    return videoExtensions.some(ext => filename.toLowerCase().includes(ext));
+  const handleEdit = () => {
+    if (canEdit()) {
+      onEdit(item);
+    } else {
+      Alert.alert('Edit Not Available', 'Posts can only be edited within 1 hour of creation.', [{ text: 'OK' }]);
+    }
   };
 
   return (
     <View style={styles.postContainer}>
-      {/* Post Header */}
       <View style={styles.postHeader}>
-        <Image
-          source={{
-            uri: item.userAvatar || 'https://via.placeholder.com/50x50/cccccc/ffffff?text=U',
-          }}
-          style={styles.profileImage}
-        />
+        <Image source={{ uri: item.userAvatar || 'https://via.placeholder.com/50x50/cccccc/ffffff?text=U' }} style={styles.profileImage} />
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{item.userName}</Text>
           <Text style={styles.timestamp}>{formatTime(item.createdAt)}</Text>
         </View>
+        {isOwner && (
+          <View style={styles.postActions}>
+            {canEdit() && (
+              <TouchableOpacity style={styles.actionIcon} onPress={handleEdit} activeOpacity={0.7}>
+                <Ionicons name="create-outline" size={20} color="#000000ff" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity 
+              style={styles.actionIcon} 
+              onPress={() => {
+                console.log('🖱️ ===== DELETE BUTTON PRESSED =====');
+                console.log('📄 Post ID:', item.id);
+                console.log('👤 Current user ID:', currentUserId);
+                console.log('👤 Post owner ID:', item.userId);
+                console.log('🔒 Is owner:', isOwner);
+                console.log('🎯 Calling onDelete function...');
+                onDelete(item.id);
+              }} 
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
-      {/* Post Title */}
+      {isOwner && canEdit() && (
+        <View style={styles.editIndicator}>
+          <Ionicons name="time-outline" size={12} color="#ffd900ff" />
+          <Text style={styles.editIndicatorText}>
+            Can edit for{' '}
+            {Math.max(
+              0,
+              Math.floor(60 - (new Date().getTime() - new Date(item.createdAt).getTime()) / (1000 * 60))
+            )}{' '}
+            more minutes
+          </Text>
+        </View>
+      )}
+
       {item.title && <Text style={styles.postTitle}>{item.title}</Text>}
-      
-      {/* Post Content */}
+
       <Text style={styles.postContent}>{item.content}</Text>
 
-      {/* Categories (Now clickable) */}
       {item.categories && item.categories.length > 0 && (
         <View style={styles.categoriesContainer}>
           {item.categories.map((category, index) => (
-            <CategoryBadge 
-              key={index} 
-              category={category} 
-              onPress={onCategoryPress}
-            />
+            <CategoryBadge key={index} category={category} onPress={onCategoryPress} />
           ))}
         </View>
       )}
 
-      {/* Location */}
       {(item.address || item.city || item.country) && (
         <TouchableOpacity style={styles.locationContainer}>
           <Ionicons name="location" size={16} color="#0369a1" />
@@ -327,65 +441,16 @@ const PostItem = ({
         </TouchableOpacity>
       )}
 
-      {/* Media Files */}
-      {item.mediaFiles && item.mediaFiles.length > 0 && (
-        <View style={styles.mediaContainer}>
-          <FlatList
-            horizontal
-            data={item.mediaFiles}
-            keyExtractor={(filename, index) => `${item.id}_media_${index}`}
-            renderItem={({ item: filename }) => {
-              const mediaUrl = getMediaUrl(filename);
-              
-              if (isVideoFile(filename)) {
-                return (
-                  <View style={styles.mediaWrapper}>
-                    <Video
-                      source={{ uri: mediaUrl }}
-                      style={styles.postMedia}
-                      useNativeControls
-                      resizeMode={ResizeMode.COVER}
-                      shouldPlay={false}
-                    />
-                    <View style={styles.videoOverlay}>
-                      <Ionicons name="play-circle" size={32} color="#fff" />
-                    </View>
-                  </View>
-                );
-              } else {
-                return (
-                  <Image
-                    source={{ uri: mediaUrl }}
-                    style={styles.postMedia}
-                    onError={(error) => console.log('Failed to load image:', mediaUrl, error)}
-                  />
-                );
-              }
-            }}
-            showsHorizontalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
-          />
-        </View>
-      )}
+      {item.mediaFiles?.length > 0 && <Collage mediaFiles={item.mediaFiles} />}
 
-      {/* Action Container - Only Like Button */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => onLike(item.id)}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name={isLiked ? "heart" : "heart-outline"} 
-            size={24} 
-            color={isLiked ? "#ef4444" : "#6b7280"} 
-          />
+        <TouchableOpacity style={styles.actionButton} onPress={() => onLike(item.id)} activeOpacity={0.7}>
+          <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? '#ef4444' : '#6b7280'} />
           <Text style={[styles.actionText, isLiked && styles.likedText]}>
             {item.likeCount || 0} {item.likeCount === 1 ? 'like' : 'likes'}
           </Text>
         </TouchableOpacity>
 
-        {/* Bookmark option */}
         <TouchableOpacity style={[styles.actionButton, { marginLeft: 'auto' }]} activeOpacity={0.7}>
           <Ionicons name="bookmark-outline" size={22} color="#6b7280" />
         </TouchableOpacity>
@@ -394,25 +459,31 @@ const PostItem = ({
   );
 };
 
-// Main Screen Component (Updated with category filtering)
 export default function TravelFeedScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [allPosts, setAllPosts] = useState<Post[]>([]); // Store all posts for category extraction
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMoreData, setHasMoreData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   const currentUserId = 'user123';
   const navigation = useNavigation() as any;
 
   const loadPosts = async (isRefresh = false) => {
+    console.log('📊 ===== LOAD POSTS STARTED =====');
+    console.log('🔄 Is refresh:', isRefresh);
+    console.log('📄 Current page:', page);
+    console.log('🏷️ Selected category:', selectedCategory);
+
     if (loading && !isRefresh) return;
     if (!isRefresh && !hasMoreData) return;
-
-    console.log(`📊 Loading posts: refresh=${isRefresh}, page=${isRefresh ? 0 : page}, category=${selectedCategory || 'all'}`);
 
     if (isRefresh) {
       setRefreshing(true);
@@ -427,18 +498,20 @@ export default function TravelFeedScreen() {
       const currentPage = isRefresh ? 0 : page;
       const response = await fetchPosts(currentPage, 10, selectedCategory);
 
+      console.log('📊 Posts received from API:', response.content.length);
+      console.log('📋 Post IDs received:', response.content.map(p => `${p.id} (${p.userName})`));
+
       if (isRefresh) {
         setPosts(response.content);
-        // Store all posts separately for category filtering (only on first load)
-        if (!selectedCategory) {
-          setAllPosts(response.content);
-        }
+        if (!selectedCategory) setAllPosts(response.content);
+        console.log('🔄 Posts state refreshed');
       } else {
-        setPosts(prev => [...prev, ...response.content]);
-        // Update allPosts with new posts (only if no category filter)
-        if (!selectedCategory) {
-          setAllPosts(prev => [...prev, ...response.content]);
-        }
+        setPosts(prev => {
+          const newPosts = [...prev, ...response.content];
+          console.log('➕ Posts appended, new total:', newPosts.length);
+          return newPosts;
+        });
+        if (!selectedCategory) setAllPosts(prev => [...prev, ...response.content]);
       }
 
       const isLastPage = currentPage >= response.totalPages - 1;
@@ -446,26 +519,23 @@ export default function TravelFeedScreen() {
       setHasMoreData(!isLastPage && !hasLessData);
       setPage(currentPage + 1);
       setError(null);
-
-      console.log(`✅ Posts loaded: ${response.content.length}, hasMore: ${!isLastPage && !hasLessData}`);
-
     } catch (error: any) {
       console.error('❌ Error loading posts:', error);
       setHasMoreData(false);
       const errorMessage = error.message || 'Failed to load posts';
       setError(errorMessage);
-      
       if (isRefresh || page === 0) {
         Alert.alert('Connection Error', `${errorMessage}\n\nPlease check your internet connection and server status.`);
       }
     } finally {
       setLoading(false);
       setRefreshing(false);
+      console.log('📊 ===== LOAD POSTS FINISHED =====');
     }
   };
 
   const handleCategoryFilter = (category: string | null) => {
-    console.log(`🏷️ Category filter selected: ${category || 'all'}`);
+    console.log('🏷️ Category filter changed to:', category);
     setSelectedCategory(category);
     setPage(0);
     setHasMoreData(true);
@@ -474,35 +544,130 @@ export default function TravelFeedScreen() {
   };
 
   const handleCategoryPress = (category: string) => {
-    console.log(`🏷️ Category badge clicked: ${category}`);
     handleCategoryFilter(category);
   };
 
   const handleLike = async (postId: string) => {
-    console.log(`🎯 Like button pressed for post: ${postId}`);
-    
     try {
       const response = await toggleLikePost(postId, currentUserId);
-
       setPosts(prev =>
         prev.map(post =>
           post.id === postId
             ? {
                 ...post,
-                likes: response.isLiked
-                  ? [...(post.likes || []), currentUserId]
-                  : (post.likes || []).filter(id => id !== currentUserId),
-                likeCount: response.isLiked
-                  ? (post.likeCount || 0) + 1
-                  : Math.max((post.likeCount || 0) - 1, 0),
+                likes: response.isLiked ? [...(post.likes || []), currentUserId] : (post.likes || []).filter(id => id !== currentUserId),
+                likeCount: response.isLiked ? (post.likeCount || 0) + 1 : Math.max((post.likeCount || 0) - 1, 0),
               }
             : post
         )
       );
-    } catch (error) {
-      console.error('❌ Error toggling like:', error);
+    } catch {
       Alert.alert('Error', 'Failed to update like. Please try again.');
     }
+  };
+
+  const handleEdit = (post: Post) => {
+    try {
+      router.push({
+        pathname: '/views/travelFeed/editPost',
+        params: { postId: post.id }
+      });
+    } catch {
+      Alert.alert('Navigation Error', 'Unable to navigate to edit screen.');
+    }
+  };
+
+  // Updated handleDelete with custom modal
+  const handleDelete = (postId: string) => {
+    console.log('🗑️ ===== HANDLE DELETE STARTED =====');
+    console.log('📄 Post ID to delete:', postId);
+    console.log('📊 Current posts count:', posts.length);
+    console.log('📊 Current allPosts count:', allPosts.length);
+    console.log('📋 Current post IDs:', posts.map(p => p.id));
+    
+    console.log('🚨 Setting up custom confirmation dialog...');
+    setPostToDelete(postId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
+    
+    console.log('✅ ===== USER CONFIRMED DELETE =====');
+    console.log('🔄 Starting delete API call...');
+    
+    setShowDeleteModal(false);
+    
+    try {
+      console.log('📊 State before API call:');
+      console.log('  - Posts count:', posts.length);
+      console.log('  - AllPosts count:', allPosts.length);
+      console.log('  - Target post ID:', postToDelete);
+      
+      console.log('🌐 Calling deletePost API...');
+      const success = await deletePost(postToDelete);
+      console.log('📋 Delete API completed with result:', success);
+      
+      if (success) {
+        console.log('✅ Delete successful, updating UI state...');
+        
+        const postsBeforeFilter = posts.length;
+        const allPostsBeforeFilter = allPosts.length;
+        
+        console.log('🔍 Filtering posts array...');
+        const newPosts = posts.filter(post => {
+          const keep = post.id !== postToDelete;
+          if (!keep) {
+            console.log('🗑️ Removing post from posts array:', post.id);
+          }
+          return keep;
+        });
+        
+        console.log('🔍 Filtering allPosts array...');
+        const newAllPosts = allPosts.filter(post => {
+          const keep = post.id !== postToDelete;
+          if (!keep) {
+            console.log('🗑️ Removing post from allPosts array:', post.id);
+          }
+          return keep;
+        });
+        
+        console.log('📊 Arrays filtered successfully:');
+        console.log('  - Posts: before =', postsBeforeFilter, ', after =', newPosts.length);
+        console.log('  - AllPosts: before =', allPostsBeforeFilter, ', after =', newAllPosts.length);
+        console.log('  - Remaining post IDs:', newPosts.map(p => p.id));
+        
+        console.log('🔄 Updating state with setPosts...');
+        setPosts(newPosts);
+        
+        console.log('🔄 Updating state with setAllPosts...');
+        setAllPosts(newAllPosts);
+        
+        console.log('🎉 UI state updated successfully');
+        Alert.alert('Success', 'Post deleted successfully.');
+      } else {
+        console.log('❌ Delete API returned false');
+        Alert.alert('Error', 'Failed to delete post. Server returned false.');
+      }
+    } catch (error: any) {
+      console.error('❌ Delete operation failed:');
+      console.error('  - Error type:', typeof error);
+      console.error('  - Error name:', error?.name);
+      console.error('  - Error message:', error?.message);
+      console.error('  - Full error:', error);
+      
+      Alert.alert('Error', `Failed to delete post: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setPostToDelete(null);
+      console.log('🗑️ ===== HANDLE DELETE FINISHED =====');
+    }
+  };
+
+  const cancelDelete = () => {
+    console.log('🚫 User cancelled delete operation');
+    setShowDeleteModal(false);
+    setPostToDelete(null);
+    console.log('🗑️ ===== HANDLE DELETE CANCELLED =====');
   };
 
   const handleLoadMore = () => {
@@ -513,16 +678,13 @@ export default function TravelFeedScreen() {
   };
 
   const navigateToCreatePost = () => {
-    console.log('➕ Create Post button pressed');
-    
     try {
       if (navigation.isFocused()) {
         router.push('/views/travelFeed/createPost');
       } else {
         Alert.alert('Navigation Error', 'Screen is not focused. Please try again.');
       }
-    } catch (error) {
-      console.error('❌ Navigation error:', error);
+    } catch {
       Alert.alert('Navigation Error', 'Unable to navigate to Create Post screen.');
     }
   };
@@ -550,29 +712,23 @@ export default function TravelFeedScreen() {
         </View>
       );
     }
-
     if (loading) {
       return (
         <View style={styles.loadingFooter}>
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ActivityIndicator size="small" color="#ffd900ff" />
           <Text style={styles.loadingText}>Loading more posts...</Text>
         </View>
       );
     }
-
     if (!hasMoreData && posts.length > 0) {
       return (
         <View style={styles.endContainer}>
           <Text style={styles.endText}>
-            🎉 {selectedCategory 
-              ? `You've seen all ${selectedCategory} stories!` 
-              : `You've seen all travel stories!`
-            }
+            🎉 {selectedCategory ? `You've seen all ${selectedCategory} stories!` : `You've seen all travel stories!`}
           </Text>
         </View>
       );
     }
-
     return null;
   };
 
@@ -580,16 +736,10 @@ export default function TravelFeedScreen() {
     <View style={styles.emptyContainer}>
       <Ionicons name="airplane-outline" size={64} color="#9ca3af" />
       <Text style={styles.emptyTitle}>
-        {selectedCategory 
-          ? `No ${selectedCategory} stories yet` 
-          : 'No travel stories yet'
-        }
+        {selectedCategory ? `No ${selectedCategory} stories yet` : 'No travel stories yet'}
       </Text>
       <Text style={styles.emptySubtitle}>
-        {selectedCategory 
-          ? `Be the first to share your ${selectedCategory} experience!`
-          : 'Be the first to share your amazing journey!'
-        }
+        {selectedCategory ? `Be the first to share your ${selectedCategory} experience!` : 'Be the first to share your amazing journey!'}
       </Text>
       <TouchableOpacity style={styles.createFirstButton} onPress={navigateToCreatePost}>
         <Text style={styles.createFirstButtonText}>Share Your Story</Text>
@@ -610,39 +760,23 @@ export default function TravelFeedScreen() {
             <TouchableOpacity onPress={() => Alert.alert('Search', 'Search functionality')}>
               <Ionicons name="search-outline" size={24} color="#000" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => Alert.alert('Notifications', 'Notifications')}>
-              <Ionicons name="notifications-outline" size={24} color="#000" />
+            <TouchableOpacity onPress={() => loadPosts(true)}>
+              <Ionicons name="refresh-outline" size={24} color="#000" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Categories Filter Bar */}
-        <CategoriesFilterBar
-          allPosts={allPosts}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleCategoryFilter}
-        />
+        <CategoriesFilterBar allPosts={allPosts} selectedCategory={selectedCategory} onSelectCategory={handleCategoryFilter} />
 
         <FlatList
           data={posts}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => (
-            <PostItem
-              item={item}
-              currentUserId={currentUserId}
-              onLike={handleLike}
-              onCategoryPress={handleCategoryPress}
-            />
+            <PostItem item={item} currentUserId={currentUserId} onLike={handleLike} onCategoryPress={handleCategoryPress} onEdit={handleEdit} onDelete={handleDelete} />
           )}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => loadPosts(true)}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
-              title="Pull to refresh"
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={() => loadPosts(true)} colors={['#ffd900ff']} tintColor="#ffd900ff" title="Pull to refresh" />
           }
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
@@ -650,14 +784,40 @@ export default function TravelFeedScreen() {
           ListEmptyComponent={!loading && !refreshing && posts.length === 0 ? renderEmpty : null}
           ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
         />
+
+        {/* Custom Delete Confirmation Modal */}
+        <Modal
+          visible={showDeleteModal}
+          transparent
+          animationType="fade"
+          onRequestClose={cancelDelete}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.deleteModalContainer}>
+              <Text style={styles.deleteModalTitle}>Delete Post</Text>
+              <Text style={styles.deleteModalMessage}>
+                Are you sure you want to delete this post? This action cannot be undone.
+              </Text>
+              <View style={styles.deleteModalButtons}>
+                <TouchableOpacity
+                  style={[styles.deleteModalButton, styles.cancelButton]}
+                  onPress={cancelDelete}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.deleteModalButton, styles.deleteButton]}
+                  onPress={confirmDelete}
+                >
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
 
-      {/* Enhanced Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={navigateToCreatePost}
-        activeOpacity={0.85}
-      >
+      <TouchableOpacity style={styles.fab} onPress={navigateToCreatePost} activeOpacity={0.85}>
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
     </SafeAreaView>
@@ -688,7 +848,6 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 40,
   },
-  // Categories Filter Bar Styles
   categoriesFilterContainer: {
     marginBottom: 16,
   },
@@ -705,8 +864,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   filterCategoryBadgeSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#0056b3',
+    backgroundColor: '#ffd900ff',
+    borderColor: '#ffd900ff',
   },
   filterCategoryText: {
     fontSize: 14,
@@ -714,7 +873,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   filterCategoryTextSelected: {
-    color: '#ffffff',
+    color: '#000000ff',
   },
   postContainer: {
     backgroundColor: '#ffffff',
@@ -754,6 +913,28 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
+  postActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionIcon: {
+    padding: 8,
+    marginLeft: 4,
+  },
+  editIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  editIndicatorText: {
+    fontSize: 12,
+    color: '#a78e00ff',
+    marginLeft: 4,
+  },
   postTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -788,7 +969,7 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#92400e',
+    color: '#ffffff',
   },
   locationContainer: {
     flexDirection: 'row',
@@ -804,27 +985,75 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 6,
   },
-  mediaContainer: {
+  singleImage: {
+    width: width - 32,
+    height: 250,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f5f5f5',
+  },
+  collageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
     marginBottom: 12,
   },
-  mediaWrapper: {
+  lastImageWrapper: {
     position: 'relative',
   },
-  postMedia: {
-    width: width - 80,
-    height: 200,
+  collageImage: {
+    width: '100%',
+    height: '100%',
     borderRadius: 8,
+    backgroundColor: '#f5f5f5',
   },
-  videoOverlay: {
+  imageWrapper: {
+    width: (width - 64) / 3,
+    height: 100,
+    marginRight: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5',
+  },
+  overlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 8,
+  },
+  overlayText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImageWrapper: {
+    width,
+    height: '80%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    padding: 10,
+    backgroundColor: '#00000080',
+    borderRadius: 20,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 16,
   },
   actionContainer: {
     flexDirection: 'row',
@@ -876,7 +1105,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   createFirstButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#ffd900ff',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
@@ -898,7 +1127,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#ffd900ff',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -921,7 +1150,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 30,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#ffd900ff',
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -933,5 +1162,72 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
     zIndex: 99,
+  },
+  
+  // Custom Delete Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    width: width - 64,
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: 16,
+    color: '#6b7280',
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

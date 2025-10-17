@@ -203,7 +203,15 @@ public class Hashingpw {
                                 "/api/bookings/hotel/create",
                                 "/api/posts/getPosts",
                                 "/api/posts/create",
-                                "/api/posts/like/{postId}"
+                                "/api/posts/like/{postId}",
+                                "/api/places/health",
+                                "/api/places/test",
+                                "/api/places/autocomplete",
+                                "/api/places/details",
+                                "/api/places/nearby",
+                                "/api/posts/post/{postId}",
+                                "/api/posts/edit/{postId}",
+                                "/api/posts/delete/{postId}"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

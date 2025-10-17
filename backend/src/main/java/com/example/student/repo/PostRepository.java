@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PostRepository extends MongoRepository<Post, String> {
     Page<Post> findByActiveTrue(Pageable pageable);
+
+    // Add this method that your PostService is trying to use
+    Page<Post> findByUserIdAndActiveTrue(String userId, Pageable pageable);
 }

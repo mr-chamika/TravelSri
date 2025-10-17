@@ -12,7 +12,6 @@ public class Post {
     @Id
     @Field("_id")
     private String id;
-    private String title;
     private String content;
     private List<String> categories;
 
@@ -21,8 +20,8 @@ public class Post {
     private String userName;
     private String userAvatar;
 
-    // Media files (simplified)
-    private List<String> mediaFiles; // Just store file names/paths
+    // Media files - store Base64 encoded strings
+    private List<String> mediaFiles; // Store Base64 encoded media files
 
     // Location (embedded)
     private Double latitude;
@@ -46,9 +45,6 @@ public class Post {
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
 
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
@@ -100,4 +96,9 @@ public class Post {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    // Fix: Map Base64 data to mediaFiles field
+    public void setMediaBase64(List<String> mediaBase64List) {
+        this.mediaFiles = mediaBase64List;
+    }
 }
