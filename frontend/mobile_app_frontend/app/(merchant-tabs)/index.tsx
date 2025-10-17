@@ -238,17 +238,6 @@ const Listings: React.FC = () => {
     router.push('/(merchant-tabs)/AddItem');
   };
 
-  if (isLoading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFD700" />
-          <Text style={styles.loadingText}>Loading your listings...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -397,22 +386,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  // --- CHANGES START HERE ---
   listingsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20, // Reduce horizontal padding
-    paddingVertical: 10, // Reduce vertical padding
+    paddingHorizontal: 16, // Reduced horizontal space
+    paddingVertical: 12,    // Adjusted vertical space for balance
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   listingsTitle: {
-    fontSize: 20, // Adjust font size to fit in one line
+    fontSize: 22, // Made title slightly larger
     fontWeight: 'bold',
     color: '#000',
-    flexShrink: 1, // Prevent the title from taking up too much space
   },
+  // --- CHANGES END HERE ---
   addButton: {
     padding: 8,
     borderRadius: 20,
