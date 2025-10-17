@@ -23,8 +23,6 @@ public class Hotel{
     private Integer reviewCount;//reviewer can both post a review and give star rating when review
     Integer originalPrice;
     Integer currentPrice;
-    //ratings = (stars/reviewCount)*(10/5) 5 is no of stars we offer
-
     private Integer singlePrice;
     private Integer doublePrice;
     private String name;

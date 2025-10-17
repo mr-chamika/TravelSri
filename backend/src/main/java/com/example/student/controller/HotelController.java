@@ -32,6 +32,7 @@ public class HotelController {
     
     @Autowired
     private HotelService hotelService;
+
     
     @Autowired
     private HotelEmailService hotelEmailService;

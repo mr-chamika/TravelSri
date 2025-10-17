@@ -15,6 +15,7 @@ import {
 // Import services
 import bookingService from '../../../services/bookingService';
 import roomService from '../../../services/roomService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 
 // Import components
 import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
@@ -56,6 +57,17 @@ const HotelDashboard = () => {
   const [selectedDateForAvailability, setSelectedDateForAvailability] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
+  // Get current user helper function
+  const getCurrentUserId = () => {
+    const user = HotelAuthService.getCurrentUser();
+    return user ? user.username : 'default'; // Use username as unique identifier
+  };
+
+  // Generate user-specific storage key for availability
+  const getUserAvailabilityKey = () => {
+    return `hotelUnavailability_${getCurrentUserId()}`;
+  };
+
   // Fetch bookings data from the real database
   // Fetch available rooms count from the real database
   const fetchAvailableRooms = async () => {
@@ -68,13 +80,14 @@ const HotelDashboard = () => {
     }
   };
 
-  // Fetch hotel availability data (simulated - in real app this would come from API)
+  // Fetch hotel availability data (user-specific - in real app this would come from API)
   const fetchHotelAvailability = async () => {
     try {
       setAvailabilityLoading(true);
       
-      // Load saved unavailable dates (we now store unavailable dates instead of available ones)
-      const savedUnavailability = localStorage.getItem('hotelUnavailability');
+      // Load saved unavailable dates for current user
+      const userKey = getUserAvailabilityKey();
+      const savedUnavailability = localStorage.getItem(userKey);
       let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
       
       const today = new Date();
@@ -93,9 +106,9 @@ const HotelDashboard = () => {
           unavailableDates.delete(dateString);
         });
         
-        // Save cleaned unavailable dates
+        // Save cleaned unavailable dates for current user
         const unavailabilityArray = Array.from(unavailableDates);
-        localStorage.setItem('hotelUnavailability', JSON.stringify(unavailabilityArray));
+        localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
         console.log('Cleaned past unavailable dates');
       }
       
@@ -109,12 +122,13 @@ const HotelDashboard = () => {
     }
   };
 
-  // Save hotel availability (simulated - in real app this would save to backend)
+  // Save hotel availability (user-specific - in real app this would save to backend)
   const saveHotelAvailability = async (newUnavailability) => {
     try {
-      // Save unavailable dates
+      // Save unavailable dates for current user
+      const userKey = getUserAvailabilityKey();
       const unavailabilityArray = Array.from(newUnavailability);
-      localStorage.setItem('hotelUnavailability', JSON.stringify(unavailabilityArray));
+      localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
       setHotelAvailability(newUnavailability);
       return true;
     } catch (err) {

@@ -222,7 +222,7 @@ const RoomManagement = () => {
       {/* Loading state */}
       {loading && (
         <div className="flex justify-center items-center h-64">
-          <div className="w-10 h-10 border-4 border-gray-200 border-l-yellow-500 rounded-full animate-spin">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4">
             <span className="sr-only">Loading...</span>
           </div>
         </div>

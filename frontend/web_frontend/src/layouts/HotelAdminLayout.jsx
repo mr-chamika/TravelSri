@@ -160,9 +160,9 @@ const HotelAdminLayout = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-6 bg-white rounded-lg shadow-md">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
-          <h2 className="text-xl font-semibold mb-2">Loading Hotel Dashboard</h2>
-          <p className="text-gray-500">Please wait while we load your profile...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div> 
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-gray-500">Please wait while we load the page...</p>
         </div>
       </div>
     );

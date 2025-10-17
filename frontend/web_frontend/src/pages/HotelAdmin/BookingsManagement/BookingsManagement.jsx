@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import bookingService from '../../../services/bookingService';
 import roomService from '../../../services/roomService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 
 /* ------------------------------------------------------------------ */
 /*  BookingsManagement Component                                      */
@@ -167,6 +168,17 @@ const BookingsManagement = () => {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const today = new Date();
 
+  // Get current user helper function
+  const getCurrentUserId = () => {
+    const user = HotelAuthService.getCurrentUser();
+    return user ? user.username : 'default'; // Use username as unique identifier
+  };
+
+  // Generate user-specific storage key for availability
+  const getUserAvailabilityKey = () => {
+    return `hotelUnavailability_${getCurrentUserId()}`;
+  };
+
   /* -------------------------------------------------------------- */
   /* 2. CONSTANTS & HELPERS                                          */
   /* -------------------------------------------------------------- */
@@ -265,8 +277,9 @@ const BookingsManagement = () => {
     try {
       setAvailabilityLoading(true);
       
-      // Load saved unavailable dates
-      const savedUnavailability = localStorage.getItem('hotelUnavailability');
+      // Load saved unavailable dates for current user
+      const userKey = getUserAvailabilityKey();
+      const savedUnavailability = localStorage.getItem(userKey);
       let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
       
       const todayString = format(today, 'yyyy-MM-dd');
@@ -284,9 +297,9 @@ const BookingsManagement = () => {
           unavailableDates.delete(dateString);
         });
         
-        // Save cleaned unavailable dates
+        // Save cleaned unavailable dates for current user
         const unavailabilityArray = Array.from(unavailableDates);
-        localStorage.setItem('hotelUnavailability', JSON.stringify(unavailabilityArray));
+        localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
       }
       
       // Convert to Set for fast lookup

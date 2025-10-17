@@ -107,7 +107,7 @@ const Calendar = ({
       {getCalendarDayStatus && (
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
           <div className="text-xs font-medium text-gray-700 mb-2">Hotel Availability</div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-3 text-xs">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
               <span>Available</span>
@@ -118,15 +118,7 @@ const Calendar = ({
             </div>
             <div className="flex items-center">
               <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-              <span>Has Bookings</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-              <span>Today</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
-              <span>Past Dates</span>
+              <span>Bookings</span>
             </div>
           </div>
           <div className="text-xs text-gray-500 mt-2">
