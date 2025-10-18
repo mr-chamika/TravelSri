@@ -531,7 +531,12 @@ export default function Views() {
 
             })
                 .then(res => res.text())
-                .then(data => router.push({ pathname: `/(tabs)/creates`, params: { id: data } }))
+                .then(data => {
+
+                    AsyncStorage.removeItem('selectedHotelBooking')
+                    router.push({ pathname: `/(tabs)/creates`, params: { id: data } })
+
+                })
                 .catch(err => console.log(err))
 
 

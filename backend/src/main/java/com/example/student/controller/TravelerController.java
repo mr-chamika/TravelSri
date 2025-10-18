@@ -521,7 +521,7 @@ System.out.println(list);
                 SoloTrip x = new SoloTrip(
 
                         (String) body.get("serviceId"),
-                        (String) obj.get("date"),
+                        (String) order.get("date"),
                         newCreatedTrip.get_id(),
                         Integer.parseInt(order.get("dayNumber").toString()),
                         (String) body.get("type"),
@@ -533,6 +533,16 @@ System.out.println(list);
                 //storing hotel booking data
                 x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
                 x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+
+                Hotel hotel = hotelsRepo.findById(obj.get("id").toString()).get();
+
+                if (hotel.getAvailableSingle() != 0) {
+                    hotel.setAvailableSingle(hotel.getAvailableSingle() - Integer.parseInt(obj.get("s").toString()));
+                }if (hotel.getAvailableDouble() != 0) {
+                    hotel.setAvailableDouble(hotel.getAvailableDouble() - Integer.parseInt(obj.get("d").toString()));
+                }
+
+                hotelsRepo.save(hotel);
 
                 soloTripRepo.save(x);
                 return x.getCreatedId();
