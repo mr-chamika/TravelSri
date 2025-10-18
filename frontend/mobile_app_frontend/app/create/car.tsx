@@ -603,19 +603,8 @@ export default function App() {
                                 if (!order) return false;
                                 const totalPeople = Number(order.adults) + Number(order.children);
 
-                                // Only show vehicles that fit the group
-                                if (x.members < totalPeople) return false;
+                                return x.members >= totalPeople;
 
-                                // Hide buses for small groups (e.g., less than 10 people)
-                                if (x.title.toLowerCase().includes('bus') && totalPeople < 10) return false;
-
-                                // Hide vans for very small groups (e.g., less than 4 people)
-                                if (x.title.toLowerCase().includes('van') && totalPeople < 4) return false;
-
-                                // Hide large vehicles (capacity > 10) for groups smaller than 4
-                                if (x.members > 10 && totalPeople < 4) return false;
-
-                                return true;
                             })
                             .map((x, i) => {
                                 //if (order && x.members > Number(order.adults) + Number(order.children)) {
