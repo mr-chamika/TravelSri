@@ -79,7 +79,7 @@ export default function ShopDetailScreen() {
     const getReviews = async () => {
 
         try {
-
+        
             const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
@@ -398,7 +398,7 @@ export default function ShopDetailScreen() {
 
             })
                 .then(res => res.json())
-                .then(data => { if (data) { getReviews(); } setReview(""); setSelectedStars([]) })
+                .then(data => { if (data) { getReviews(); } setReview(""); setSelectedStars([]);console.log('clicked') })
                 .catch(err => console.log('Error from review create in store : ', err))
 
         } else {
