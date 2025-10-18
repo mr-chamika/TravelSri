@@ -1,9 +1,11 @@
 package com.example.student.services;
 
+import com.example.student.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
@@ -21,6 +23,9 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class Hashingpw {
 
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -29,9 +34,14 @@ public class Hashingpw {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(withDefaults()) // Apply the global CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Make the security context stateless
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
                                 "/user/login",
+                                "/web/login",
                                 "/ws/**",
                                 "/ws",
                                 "/system/**",
@@ -119,8 +129,9 @@ public class Hashingpw {
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
+                                "/api/admin-hotel-bookings",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}",
+                                "/api/admin-hotel-bookings/test-auth",
                                 "/auth/**",
                                 "/shopitems/all",
                                 "/shopitems/view",
@@ -166,6 +177,8 @@ public class Hashingpw {
                                 "/reviews//stats",
                                 "/reviews/service-search",
                                 "/reviews/by-rating",
+                                "/api/test/public",
+                                "/hotel-rooms/**",
                                 "/api/guide/search",
                                 "/api/payments/payhere/simple-health",
                                 "/api/payments/payhere/create-checkout",

@@ -7,6 +7,7 @@ const CreateTrip03 = () => {
     const [endingLocation, setEndingLocation] = useState("");
     const [error, setError] = useState("");
     const [startingDescription, setStartingDescription] = useState("");
+    const [intermediatePlaces, setIntermediatePlaces] = useState("");
     const [directionsResponse, setDirectionsResponse] = useState(null);
     const [mapCenter, setMapCenter] = useState({ lat: 7.8731, lng: 80.7718 }); // Sri Lanka center
     const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
@@ -137,6 +138,7 @@ const CreateTrip03 = () => {
             startLocation: startingLocation.trim(),
             endLocation: endingLocation.trim(),
             descriptionAboutStartLocation: startingDescription.trim(),
+            intermediatePlaces: intermediatePlaces.trim(),
             path: directionsResponse ? getRouteDescription() : `Route from ${startingLocation} to ${endingLocation}`
         };
 
@@ -247,6 +249,29 @@ const CreateTrip03 = () => {
                                 {startingDescription.length}/500 characters
                             </div>
                         </div>
+
+                        {/* intermediate destinations */}
+                        <div className="mb-6">
+                            <label className="block text-gray-700 font-medium mb-3 text-lg">
+                                Description about intermediate destinations *
+                            </label>
+                            <textarea
+                                value={intermediatePlaces}
+                                onChange={(e) => {
+                                    setIntermediatePlaces(e.target.value);
+                                    setError("");
+                                }}
+                                placeholder="Provide detailed pickup location information (e.g., specific address, landmarks, special instructions)..."
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700 resize-vertical"
+                                rows="4"
+                                maxLength="500"
+                                required
+                            />
+                            <div className="mt-2 text-sm text-gray-500">
+                                {intermediatePlaces.length}/500 characters
+                            </div>
+                        </div>
+
 
                         {/* Google Maps Route Display */}
                         <div className="mb-8">
