@@ -169,7 +169,7 @@ const QuotationDetailsModal = ({ isOpen, onClose, quotation }) => {
                     </div>
 
                     {/* Room Details */}
-                    <div className="border-t pt-6">
+                    {/* <div className="border-t pt-6">
                         <h3 className="text-lg font-semibold text-gray-800 mb-4">Room Requirements</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-blue-50 p-3 rounded-lg">
@@ -189,7 +189,7 @@ const QuotationDetailsModal = ({ isOpen, onClose, quotation }) => {
                                 <div className="text-xl font-bold text-yellow-800">{quotation.suites || 0}</div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Meal Plan & Requirements */}
                     <div className="border-t pt-6">

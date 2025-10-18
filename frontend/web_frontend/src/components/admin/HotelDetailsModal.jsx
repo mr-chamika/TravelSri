@@ -262,7 +262,7 @@ const HotelDetailsModal = ({ isOpen, onClose, hotel, loading }) => {
                     )}
 
                     {/* Facilities */}
-                    {hotel.facilities && hotel.facilities.length > 0 && (
+                    {/* {hotel.facilities && hotel.facilities.length > 0 && (
                         <div className="border-t pt-6">
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Facilities</h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -273,7 +273,7 @@ const HotelDetailsModal = ({ isOpen, onClose, hotel, loading }) => {
                                 ))}
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Free Features */}
                     {hotel.freeFeatures && hotel.freeFeatures.length > 0 && (
