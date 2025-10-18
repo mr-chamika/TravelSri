@@ -208,13 +208,13 @@ const AllHotelQuotation = () => {
                                                     PDF
                                                 </button>
                                             )}
-                                            <button 
+                                            {/* <button 
                                                 onClick={() => handleSelectQuotation(hotel)}
                                                 className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                                 title="Select this quotation"
                                             >
                                                 Select
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </div>
                                 ))
