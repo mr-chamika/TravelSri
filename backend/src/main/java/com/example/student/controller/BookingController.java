@@ -3,6 +3,7 @@ package com.example.student.controller;
 import com.example.student.model.Booking;
 import com.example.student.model.dto.BookingRequest;
 import com.example.student.model.dto.Bookingdto;
+import com.example.student.repo.TravelerBookingRepo;
 import com.example.student.services.IBookingService;
 import com.example.student.services.IPaymentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,9 @@ public class BookingController {
 
     @Autowired
     private IBookingService bookingService;
+
+    @Autowired
+    private TravelerBookingRepo newrepo;
 
     @Autowired
     private IPaymentService paymentService;
@@ -96,7 +100,9 @@ public class BookingController {
                 return new ResponseEntity<>("Provider ID cannot be null or empty", HttpStatus.BAD_REQUEST);
             }
 
-            List<Bookingdto> bookings = bookingService.getBookingsByProvider(providerId); // Now returns Bookingdto
+            //List<Bookingdto> bookings = bookingService.getBookingsByProvider(providerId); // Now returns Bookingdto
+            List<Bookingdto> bookings = newrepo.findByServiceId(providerId); // Now returns Bookingdto
+            System.out.println(bookings);
             return new ResponseEntity<>(bookings, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>("Invalid provider ID: " + e.getMessage(), HttpStatus.BAD_REQUEST);

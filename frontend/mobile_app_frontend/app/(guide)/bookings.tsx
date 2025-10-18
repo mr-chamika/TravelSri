@@ -204,10 +204,10 @@ export default function App() {
         };
 
         // Extract location from service description
-        const getLocationFromDescription = (description: string) => {
-            const match = description.match(/Route: (.+?) to (.+?)(\||\s|$)/);
-            return match ? `${match[1]} to ${match[2]}` : 'Location not specified';
-        };
+        // const getLocationFromDescription = (description: string) => {
+        //     const match = description.match(/Route: (.+?) to (.+?)(\||\s|$)/);
+        //     return match ? `${match[1]} to ${match[2]}` : 'Location not specified';
+        // };
 
         // Get service type icon
         const getServiceIcon = (providerType: string) => {
@@ -246,7 +246,7 @@ export default function App() {
                     <View className="flex-row items-center mb-2">
                         <Text className="text-gray-500 text-sm">📍</Text>
                         <Text className="text-sm text-gray-600 ml-2">
-                            {getLocationFromDescription(booking.serviceDescription)}
+                            {/* {getLocationFromDescription(booking.serviceDescription)} */}
                         </Text>
                     </View>
                     {booking.languagePreference && (

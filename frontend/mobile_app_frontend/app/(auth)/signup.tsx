@@ -55,10 +55,18 @@ interface FormData {
     businessRegPic1: ImagePickerAsset | null;
     businessRegPic2: ImagePickerAsset | null;
 
+    // Language Selection
+    languages: string[];
+
+    // Step 3 - Bank Details (for guide and vehicle providers only)
+    bankName: string;
+    accountHolderName: string;
+    accountNumber: string;
+
     // Step 4 & Others
     identitypic1: ImagePickerAsset | null;
     identitypic2: ImagePickerAsset | null;
-    locpic: string; // Location name from API search
+    location: string; // Location name from API search
     agreeTerms: boolean;
     confirmCondition: boolean;
     status: string;
@@ -105,10 +113,18 @@ export default function SignupForm() {
         businessRegPic1: null,
         businessRegPic2: null,
 
+        // Step 3 - Bank Details (for guide and vehicle providers only)
+        bankName: '',
+        accountHolderName: '',
+        accountNumber: '',
+
+        // Language Selection
+        languages: [],
+
         // Step 4 & Others
         identitypic1: null,
         identitypic2: null,
-        locpic: '',
+        location: '',
         agreeTerms: false,
         confirmCondition: false,
         status: '',
@@ -140,6 +156,25 @@ export default function SignupForm() {
     const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
     const [countrySuggestions, setCountrySuggestions] = useState<any[]>([]);
     const [isCountrySelected, setIsCountrySelected] = useState(false);
+
+    // Available languages for selection
+    const availableLanguages = [
+        'English',
+        'Sinhala',
+        'Tamil',
+        'French',
+        'German',
+        'Spanish',
+        'Italian',
+        'Japanese',
+        'Chinese',
+        'Hindi',
+        'Dutch',
+        'Portuguese',
+        'Russian',
+        'Korean',
+        'Arabic'
+    ];
 
     // Fallback countries list in case API fails
     const FALLBACK_COUNTRIES = [
@@ -444,7 +479,7 @@ export default function SignupForm() {
     };
 
     // Handle location selection
-    const handleLocationSelect = (place: any, fieldName: 'address' | 'locpic' = 'locpic') => {
+    const handleLocationSelect = (place: any, fieldName: 'address' | 'location' = 'location') => {
         const locationName = place.description || place.main_text || '';
         console.log('Location selected:', locationName, 'for field:', fieldName);
         handleChange(fieldName as keyof FormData, locationName);
@@ -763,10 +798,35 @@ export default function SignupForm() {
         }
         
         // Validate location for business users (guide, merchant, vehicle owner)
-        else if (field === 'locpic' && typeof value === 'string' && currentFormData.role !== 'user' && currentFormData.role !== 'vehicle') {
+        else if (field === 'location' && typeof value === 'string' && currentFormData.role !== 'user' && currentFormData.role !== 'vehicle') {
             // For guides, merchants, vehicle owners - location must be in Sri Lanka
             if (value && !value.toLowerCase().includes('sri lanka')) {
                 error = 'Location must be within Sri Lanka.';
+            }
+        }
+
+        // Bank Details Validation (for guide and vehicle providers only)
+        if (field === 'bankName' && typeof value === 'string') {
+            if (!value || !value.trim()) {
+                error = 'Please select a bank.';
+            }
+        }
+
+        else if (field === 'accountHolderName' && typeof value === 'string') {
+            if (!value || !value.trim()) {
+                error = 'Account holder name is required.';
+            } else if (value.trim().length < 3) {
+                error = 'Account holder name must be at least 3 characters.';
+            } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+                error = 'Account holder name can only contain letters and spaces.';
+            }
+        }
+
+        else if (field === 'accountNumber' && typeof value === 'string') {
+            if (!value || !value.trim()) {
+                error = 'Account number is required.';
+            } else if (!/^\d{10,16}$/.test(value.replace(/\s/g, ''))) {
+                error = 'Account number must be 10-16 digits.';
             }
         }
         
@@ -815,6 +875,8 @@ export default function SignupForm() {
             }
         } else if ((field === 'registrationNumber') && typeof value === 'string') {
             processedValue = value.toUpperCase();
+        } else if ((field === 'accountNumber') && typeof value === 'string') {
+            processedValue = value.replace(/\D/g, ''); // Only allow digits for account number
         }
         const newState = { ...formData, [field]: processedValue };
         //setFormData(prev => ({ ...prev, [field]: value }));
@@ -859,6 +921,11 @@ export default function SignupForm() {
 
         if (!formData.pp) {
             step1Errors.pp = 'Owner photo is required.';
+        }
+
+        // Validate languages - at least one language required
+        if (formData.languages.length === 0) {
+            step1Errors.languages = 'Please select at least one language.';
         }
 
         // Add email availability check to validation
@@ -915,6 +982,12 @@ export default function SignupForm() {
         const fieldsToValidate: (keyof typeof formData)[] = [
             'startTime', 'endTime', 'businessRegPic1', 'businessRegPic2'
         ];
+        
+        // Add bank details validation ONLY for guides and vehicle providers
+        if (formData.role === 'guide' || formData.role === 'vehicle') {
+            fieldsToValidate.push('bankName', 'accountHolderName', 'accountNumber');
+        }
+        
         fieldsToValidate.forEach(field => {
 
             const value = formData[field as keyof FormData];
@@ -947,11 +1020,14 @@ export default function SignupForm() {
             step3Errors.daysPerWeek = 'Please select at least one available day.';
         }
 
-        if (!formData.businessRegPic1) {
-            step3Errors.businessRegPic1 = 'This photo is required.';
-        }
-        if (!formData.businessRegPic2) {
-            step3Errors.businessRegPic2 = 'This photo is required.';
+        // Business registration photos required only for merchant and vehicle providers
+        if (formData.role === 'merchant' || formData.role === 'vehicle') {
+            if (!formData.businessRegPic1) {
+                step3Errors.businessRegPic1 = 'This photo is required.';
+            }
+            if (!formData.businessRegPic2) {
+                step3Errors.businessRegPic2 = 'This photo is required.';
+            }
         }
 
         setErrors(step3Errors);
@@ -961,7 +1037,7 @@ export default function SignupForm() {
     const validateStep4 = () => {
         const step4Errors: { [key: string]: string } = {};
         const fieldsToValidate: (keyof typeof formData)[] = [
-            'identitypic1', 'locpic', 'agreeTerms'
+            'identitypic1', 'location', 'agreeTerms'
         ];
         if (formData.role == 'merchant') {
             fieldsToValidate.push('confirmCondition');
@@ -980,8 +1056,8 @@ export default function SignupForm() {
         if (!formData.identitypic1) {
             step4Errors.identitypic1 = 'NIC photo is required.';
         }
-        if (!formData.locpic) {
-            step4Errors.locpic = 'Location is required.';
+        if (!formData.location) {
+            step4Errors.location = 'Location is required.';
         }
 
         setErrors(step4Errors);
@@ -1181,6 +1257,7 @@ export default function SignupForm() {
                     startTime,
                     verified,
                     identified,
+                    location,
                     ...payload
                 } = dataToSend;
 
@@ -1253,8 +1330,6 @@ export default function SignupForm() {
         }
     };
 
-    // Inside your SignupForm component, before the return statement...
-
     const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     const handleDayToggle = (day: string) => {
@@ -1278,6 +1353,32 @@ export default function SignupForm() {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors.daysPerWeek;
+                return newErrors;
+            });
+        }
+    };
+
+    const handleLanguageToggle = (language: string) => {
+        const currentLanguages = formData.languages;
+        let newLanguages: string[];
+
+        // If the language is already selected, remove it. Otherwise, add it.
+        if (currentLanguages.includes(language)) {
+            newLanguages = currentLanguages.filter(lang => lang !== language);
+        } else {
+            newLanguages = [...currentLanguages, language];
+        }
+
+        setFormData(prevState => ({
+            ...prevState,
+            languages: newLanguages,
+        }));
+
+        // Clear any previous errors for this field when the user interacts with it
+        if (errors.languages) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.languages;
                 return newErrors;
             });
         }
@@ -1317,7 +1418,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">First Name</Text>
                             <TextInput 
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                placeholder="E.g., John"
+                                placeholder="First name"
                                 placeholderTextColor="#999"
                                 value={formData.firstName} 
                                 onChangeText={v => handleChange('firstName', v)} 
@@ -1328,7 +1429,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">Last Name</Text>
                             <TextInput 
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                placeholder="E.g., Doe"
+                                placeholder="Last name"
                                 placeholderTextColor="#999"
                                 value={formData.lastName} 
                                 onChangeText={v => handleChange('lastName', v)} 
@@ -1612,7 +1713,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">WhatsApp Number</Text>
                             <TextInput 
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                placeholder="E.g., 0786715765"
+                                placeholder="WhatsApp number"
                                 placeholderTextColor="#999"
                                 value={formData.whatsappNumber} 
                                 onChangeText={v => handleChange('whatsappNumber', v)} 
@@ -1624,7 +1725,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">Email</Text>
                             <TextInput
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base"
-                                placeholder="E.g., your.email@example.com"
+                                placeholder="Email address"
                                 placeholderTextColor="#999"
                                 value={formData.email}
                                 onChangeText={v => handleChange('email', v)}
@@ -1647,7 +1748,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">Username</Text>
                             <TextInput 
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                placeholder="E.g., john_traveler"
+                                placeholder="Username"
                                 placeholderTextColor="#999"
                                 value={formData.username} 
                                 onChangeText={text => handleChange('username', text.replace(/\s/g, ''))} 
@@ -1702,7 +1803,7 @@ export default function SignupForm() {
                                 )}
                                 <TextInput 
                                     className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                    placeholder="E.g., 123 Main St, City, Country"
+                                    placeholder="Address"
                                     placeholderTextColor="#999"
                                     value={formData.address} 
                                     onChangeText={(text) => {
@@ -1717,7 +1818,7 @@ export default function SignupForm() {
                             <Text className="mb-2 font-bold text-base text-gray-800">NIC / Passport Number</Text>
                             <TextInput 
                                 className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                placeholder="E.g., 123456789V or 12-digit format"
+                                placeholder="NIC or Passport number"
                                 placeholderTextColor="#999"
                                 value={formData.nicPassport} 
                                 onChangeText={text => handleChange('nicPassport', sanitizeNicInput(text))} 
@@ -1801,6 +1902,27 @@ export default function SignupForm() {
                             )}
                             <Text className={`text-red-500 text-sm mt-1 ${errors.role ? 'opacity-100' : 'opacity-0'}`}>{errors.role || ' '}</Text>
                         </View>
+
+                        {/* Language Selection - For all users */}
+                        <View className="mb-8">
+                            <Text className="mb-3 font-bold text-base text-gray-800">🌐 Languages You Speak</Text>
+                            <Text className="text-sm text-gray-600 mb-3">Select at least one language</Text>
+                            <View className="flex-row flex-wrap justify-start gap-2">
+                                {availableLanguages.map(language => {
+                                    const isSelected = formData.languages.includes(language);
+                                    return (
+                                        <TouchableOpacity
+                                            key={language}
+                                            onPress={() => handleLanguageToggle(language)}
+                                            className={`py-2 px-4 rounded-full border-2 ${isSelected ? 'bg-yellow-500 border-yellow-600' : 'bg-gray-100 border-gray-300'}`}
+                                        >
+                                            <Text className={`${isSelected ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>{language}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                            <Text className={`text-red-500 text-sm mt-2 ${errors.languages ? 'opacity-100' : 'opacity-0'}`}>{errors.languages || ' '}</Text>
+                        </View>
                     </View>
                 )}
 
@@ -1828,7 +1950,12 @@ export default function SignupForm() {
                                 )}
                             </TouchableOpacity>
                             <View>
-                                {formData.role === 'guide' && <Text className="font-normal text-gray-500 text-center">(optional)</Text>}
+                                {formData.role === 'guide' && (
+                                    <View className="flex-row items-center justify-center mt-2 gap-1">
+                                        <Ionicons name="information-circle" size={16} color="#9CA3AF" />
+                                        <Text className="font-normal text-gray-500 text-center text-sm">Not compulsory if you don't have</Text>
+                                    </View>
+                                )}
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">Business Photo</Text>
@@ -1836,7 +1963,12 @@ export default function SignupForm() {
                         <View className="mb-4">
                             <View className="flex-row justify-between items-center">
                                 <Text className="mb-1 font-semibold text-base">Business Name</Text>
-                                {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                                {formData.role === 'guide' && (
+                                    <View className="flex-row items-center gap-1">
+                                        <Ionicons name="information-circle" size={14} color="#9CA3AF" />
+                                        <Text className="font-normal text-gray-500 text-xs">Not compulsory</Text>
+                                    </View>
+                                )}
                             </View>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessName} onChangeText={v => handleChange('businessName', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessName ? 'opacity-100' : 'opacity-0'}`}>{errors.businessName || ' '}</Text>
@@ -1867,7 +1999,12 @@ export default function SignupForm() {
                         <View className="mb-8">
                             <View className="flex-row justify-between items-center">
                                 <Text className="mb-1 font-semibold text-base">Business Address</Text>
-                                {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                                {formData.role === 'guide' && (
+                                    <View className="flex-row items-center gap-1">
+                                        <Ionicons name="information-circle" size={14} color="#9CA3AF" />
+                                        <Text className="font-normal text-gray-500 text-xs">Not compulsory</Text>
+                                    </View>
+                                )}
                             </View>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessAddress} onChangeText={v => handleChange('businessAddress', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessAddress ? 'opacity-100' : 'opacity-0'}`}>{errors.businessAddress || ' '}</Text>
@@ -2059,54 +2196,136 @@ export default function SignupForm() {
                                 </View>
                             </Modal>
                         </View>
-                        <View className="items-center w-full my-8">
-                            <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 1)</Text>
-                            {/* <TextInput placeholder="URL for registration certificate" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic} onChangeText={v => handleChange('businessRegPic', v)} /> */}
-                            <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('businessRegPic1') }}
-                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic1 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
-                            >
-                                {formData.businessRegPic1 ? (
-                                    <Image
-                                        source={{ uri: formData.businessRegPic1.uri }}
-                                        className="w-full h-full rounded-lg border-2 border-gray-100"
-                                        resizeMode="cover"
+                        
+                        {/* Business Registration Certificates - Only for Merchant and Vehicle Providers */}
+                        {(formData.role === 'merchant' || formData.role === 'vehicle') && (
+                            <>
+                                <View className="items-center w-full my-8">
+                                    <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 1)</Text>
+                                    {/* <TextInput placeholder="URL for registration certificate" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic} onChangeText={v => handleChange('businessRegPic', v)} /> */}
+                                    <TouchableOpacity
+                                        onPress={() => { handleChoosePhoto('businessRegPic1') }}
+                                        className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic1 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                    >
+                                        {formData.businessRegPic1 ? (
+                                            <Image
+                                                source={{ uri: formData.businessRegPic1.uri }}
+                                                className="w-full h-full rounded-lg border-2 border-gray-100"
+                                                resizeMode="cover"
 
-                                    />
-                                ) : (
-                                    <Image
-                                        source={plusIcon}
-                                        className="w-16 h-16 opacity-50"
-                                        resizeMode="contain"
-                                    />
-                                )}
-                            </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic1 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic1 || ' '}</Text>
-                        </View>
-                        <View className="items-center w-full my-8">
-                            <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 2)</Text>
-                            {/* <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic2} onChangeText={v => handleChange('businessRegPic2', v)} /> */}
-                            <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('businessRegPic2') }}
-                                className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
-                            >
-                                {formData.businessRegPic2 ? (
-                                    <Image
-                                        source={{ uri: formData.businessRegPic2.uri }}
-                                        className="w-full h-full rounded-lg border-2 border-gray-100"
-                                        resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <Image
+                                                source={plusIcon}
+                                                className="w-16 h-16 opacity-50"
+                                                resizeMode="contain"
+                                            />
+                                        )}
+                                    </TouchableOpacity>
+                                    <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic1 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic1 || ' '}</Text>
+                                </View>
+                                <View className="items-center w-full my-8">
+                                    <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 2)</Text>
+                                    {/* <TextInput placeholder="URL for cancellation policy" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessRegPic2} onChangeText={v => handleChange('businessRegPic2', v)} /> */}
+                                    <TouchableOpacity
+                                        onPress={() => { handleChoosePhoto('businessRegPic2') }}
+                                        className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.businessRegPic2 == null ? 'border-2 border-dashed border-gray-300' : ''}`}
+                                    >
+                                        {formData.businessRegPic2 ? (
+                                            <Image
+                                                source={{ uri: formData.businessRegPic2.uri }}
+                                                className="w-full h-full rounded-lg border-2 border-gray-100"
+                                                resizeMode="cover"
 
+                                            />
+                                        ) : (
+                                            <Image
+                                                source={plusIcon}
+                                                className="w-16 h-16 opacity-50"
+                                                resizeMode="contain"
+                                            />
+                                        )}
+                                    </TouchableOpacity>
+                                    <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic2 || ' '}</Text>
+                                </View>
+                            </>
+                        )}
+
+                        {/* Bank Details Section - Only for Guide and Vehicle Providers */}
+                        {(formData.role === 'guide' || formData.role === 'vehicle') && (
+                            <View className="mt-10 mb-8">
+                                <Text className="mb-4 font-bold text-lg text-gray-800">💳 Bank Details</Text>
+
+                                {/* Bank Name Dropdown */}
+                                <View className="mb-5">
+                                    <Text className="mb-2 font-bold text-base text-gray-800">Bank Name</Text>
+                                    <View 
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            overflow: 'hidden',
+                                            height: 56,
+                                            justifyContent: 'center',
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Picker 
+                                            selectedValue={formData.bankName} 
+                                            onValueChange={v => handleChange('bankName', v as string)}
+                                            style={{ color: '#1a1a1a', fontSize: 16, fontWeight: '500' }}
+                                        >
+                                            <Picker.Item label="Select a bank..." value="" color="#999" />
+                                            <Picker.Item label="Sampath Bank PLC" value="Sampath Bank PLC" color="#1a1a1a" />
+                                            <Picker.Item label="Commercial Bank of Ceylon PLC" value="Commercial Bank of Ceylon PLC" color="#1a1a1a" />
+                                            <Picker.Item label="Bank of Ceylon" value="Bank of Ceylon" color="#1a1a1a" />
+                                            <Picker.Item label="DFCC Bank PLC" value="DFCC Bank PLC" color="#1a1a1a" />
+                                            <Picker.Item label="Nations Trust Bank PLC" value="Nations Trust Bank PLC" color="#1a1a1a" />
+                                            <Picker.Item label="Seylan Bank PLC" value="Seylan Bank PLC" color="#1a1a1a" />
+                                            <Picker.Item label="People's Bank" value="People's Bank" color="#1a1a1a" />
+                                            <Picker.Item label="Pan Asia Banking Corporation PLC" value="Pan Asia Banking Corporation PLC" color="#1a1a1a" />
+                                            <Picker.Item label="Union Bank of Colombo PLC" value="Union Bank of Colombo PLC" color="#1a1a1a" />
+                                            <Picker.Item label="ICICI Bank Sri Lanka" value="ICICI Bank Sri Lanka" color="#1a1a1a" />
+                                            <Picker.Item label="Standard Chartered Bank Sri Lanka" value="Standard Chartered Bank Sri Lanka" color="#1a1a1a" />
+                                            <Picker.Item label="Citi Bank Sri Lanka" value="Citi Bank Sri Lanka" color="#1a1a1a" />
+                                        </Picker>
+                                    </View>
+                                    <Text className={`text-red-500 text-sm mt-1 ${errors.bankName ? 'opacity-100' : 'opacity-0'}`}>{errors.bankName || ' '}</Text>
+                                </View>
+
+                                {/* Account Holder Name */}
+                                <View className="mb-5">
+                                    <Text className="mb-2 font-bold text-base text-gray-800">Account Holder Name</Text>
+                                    <TextInput 
+                                        className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                        placeholder="Account holder name"
+                                        placeholderTextColor="#999"
+                                        value={formData.accountHolderName} 
+                                        onChangeText={v => handleChange('accountHolderName', v)} 
                                     />
-                                ) : (
-                                    <Image
-                                        source={plusIcon}
-                                        className="w-16 h-16 opacity-50"
-                                        resizeMode="contain"
+                                    <Text className={`text-red-500 text-sm mt-1 ${errors.accountHolderName ? 'opacity-100' : 'opacity-0'}`}>{errors.accountHolderName || ' '}</Text>
+                                </View>
+
+                                {/* Account Number */}
+                                <View className="mb-6">
+                                    <Text className="mb-2 font-bold text-base text-gray-800">Account Number</Text>
+                                    <TextInput 
+                                        className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                        placeholder="Account number"
+                                        placeholderTextColor="#999"
+                                        value={formData.accountNumber} 
+                                        onChangeText={v => handleChange('accountNumber', v.replace(/\D/g, ''))} 
+                                        keyboardType="number-pad" 
                                     />
-                                )}
-                            </TouchableOpacity>
-                            <Text className={`text-red-500 text-sm mt-1 w-full ${errors.businessRegPic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.businessRegPic2 || ' '}</Text>
-                        </View>
+                                    <Text className={`text-red-500 text-sm mt-1 ${errors.accountNumber ? 'opacity-100' : 'opacity-0'}`}>{errors.accountNumber || ' '}</Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 )}
 
@@ -2162,7 +2381,7 @@ export default function SignupForm() {
                         </View>
                         <View className="my-8">
                             <View className="flex-row justify-between items-center mb-2">
-                                <Text className="font-bold text-base text-gray-800">Select Location On Map</Text>
+                                <Text className="font-bold text-base text-gray-800">Enter Location you expert</Text>
                                 {formData.role !== 'user' && formData.role !== 'vehicle' && (
                                     <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Sri Lanka Only</Text>
                                 )}
@@ -2214,14 +2433,14 @@ export default function SignupForm() {
                                     className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
                                     placeholder="Search location..."
                                     placeholderTextColor="#999"
-                                    value={formData.locpic} 
+                                    value={formData.location} 
                                     onChangeText={(text) => {
-                                        handleChange('locpic', text);
+                                        handleChange('location', text);
                                         searchLocations(text);
                                     }}
                                 />
                             </View>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.locpic ? 'opacity-100' : 'opacity-0'}`}>{errors.locpic || ' '}</Text>
+                            <Text className={`text-red-500 text-sm mt-1 ${errors.location ? 'opacity-100' : 'opacity-0'}`}>{errors.location || ' '}</Text>
                         </View>
                         <View className="my-10">
                             <View className='flex-row items-center mb-5'>
