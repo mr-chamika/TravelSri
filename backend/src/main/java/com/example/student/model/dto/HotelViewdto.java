@@ -16,7 +16,8 @@ public class HotelViewdto {
     private int stars;
     private int ratings;//stars users give
     private int reviewCount;//reviewer can both post a review and give star rating when review
-    private int price;
+    //private int price;
+    private int currentPrice;
     private String name;
     private String location;
     private String description;
@@ -27,14 +28,14 @@ public class HotelViewdto {
     private int availableDouble;//free double bed room slots
     private String mobileNumber;
 
-    public HotelViewdto(String _id, List<String> images, int stars, int ratings,int reviewCount,int price, String name,String location,String description,List<String> policies,List<String> roomTypes,List<String> facilities,int availableSingle,int availableDouble,String mobileNumber ) {
+    public HotelViewdto(String _id, List<String> images, int stars, int ratings,int reviewCount,int currentPrice, String name,String location,String description,List<String> policies,List<String> roomTypes,List<String> facilities,int availableSingle,int availableDouble,String mobileNumber ) {
 
         this._id = _id;
         this.images = images;
         this.stars = stars;
         this.ratings = ratings;
         this.reviewCount = reviewCount;
-        this.price= price;
+        this.currentPrice= currentPrice;
         this.name = name;
         this.location = location;
         this.description = description;

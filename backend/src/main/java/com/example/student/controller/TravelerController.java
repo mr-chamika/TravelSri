@@ -58,7 +58,7 @@ public class TravelerController {
     public ResponseEntity<List<THoteldto>> HotelsAll(@RequestParam String location,@RequestParam int guests ) {
 
         List<THoteldto> list = repo2.findAllHoteldtos(location,guests);
-
+System.out.println(list);
         return ResponseEntity.ok(list);
 
     }
@@ -151,6 +151,19 @@ public class TravelerController {
 
         return ResponseEntity.ok(list);
     }
+
+    @GetMapping("/guides-alls")
+    public ResponseEntity<?> GuidesAlls(String language) {
+        List<Guidedto> list = userRepo.findAllGuidedtoss(language);
+
+
+        if (list.isEmpty()) {
+            return ResponseEntity.badRequest().body("No guides found");
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
 
     @GetMapping("/guide-all")
     public ResponseEntity<List<Guidedto>> GuideAll() {
@@ -303,9 +316,18 @@ public class TravelerController {
     private VehicleRepo vehicleRepo;
 
     @GetMapping("/vehicle-get")
-    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language) {
+    public ResponseEntity<List<Driverdto>> VehiclesAll(String location,String language,String id) {
 
-        List<Driverdto> list= vehicleRepo.findByCatId(location,language);
+        List<Driverdto> list= vehicleRepo.findByCatId(location,language,id);
+
+        return ResponseEntity.ok(list);
+
+    }
+
+    @GetMapping("/vehicle-gets")
+    public ResponseEntity<List<Driverdto>> VehiclesAlls(String location,String language) {
+
+        List<Driverdto> list= vehicleRepo.findByCatIds(location,language);
 
         return ResponseEntity.ok(list);
 
@@ -337,51 +359,229 @@ public class TravelerController {
     @Autowired
     private SoloTripRepo soloTripRepo;
 
-    @PostMapping("/create-trip")
-    public String CreateTrip(@RequestBody SolotripGetdto obj){
+    @Autowired
+    private CreatedRepo createdRepo;
 
-       Optional <Route> r = repo.findById(obj.getRouteId());
+    @PostMapping("/create-trip")//to add a service for day in the trip(hotel,guide,vehicle)
+    public String createService(@RequestBody Map<String,Object> body){
 
-        SoloTrip x = new SoloTrip(
-                obj.getRouteId(),
-                obj.getCreatorId(),
-                obj.getHotelId(),
-                obj.getAdults(),
-                obj.getChildren(),
-                obj.getNights(),
-                obj.getDoubleBeds(),
-                obj.getSingleBeds(),
-                obj.getHdatesBooked(),
-                obj.getHlocation(),
-                obj.getHprice(),
-                obj.getGuideId(),
-                obj.getGdatesBooked(),
-                obj.getGlocation(),
-                obj.getGlanguage(),
-                obj.getGprice(),
-                obj.getCarId(),
-                obj.getCdatesBooked(),
-                obj.getClanguage(),
-                obj.getEndLocation(),
-                obj.getStartLocation(),
-                obj.getBookedTime(),
-                obj.getCprice(),
-                r.get().getThumbnail(),
-                r.get().getFrom(),
-                r.get().getTo(),
-                "pending",
-                obj.getCdatesBooked().get(0),
-r.get().getMapRoute()
+        if(body.get("type").equals( "vehicle")) {
+
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//date: order?.date,start: startLocation, end: endLocation, language: language, time: time, oneWay: isOneway,
+
+
+            if (order.get("createdId") == "") {// if this is first day plan
+
+                Created newCreatedTrip = new Created(
+
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
+
                 );
 
-        soloTripRepo.save(x);
-        return "success";
+                newCreatedTrip.getDates().add((String) order.get("date"));
+
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) obj.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+//storing vehicle booking data
+                x.getBookingData().put("date",obj.get("date"));
+                x.getBookingData().put("endLocation",obj.get("end"));
+                x.getBookingData().put("startLocation",obj.get("start"));
+                x.getBookingData().put("language",obj.get("language"));
+                x.getBookingData().put("time",obj.get("time"));
+                x.getBookingData().put("isOneWay",obj.get("oneWay"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing vehicle booking data
+                x.getBookingData().put("date",obj.get("date"));
+                x.getBookingData().put("endLocation",obj.get("end"));
+                x.getBookingData().put("startLocation",obj.get("start"));
+                x.getBookingData().put("language",obj.get("language"));
+                x.getBookingData().put("time",obj.get("time"));
+                x.getBookingData().put("isOneWay",obj.get("oneWay"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            }
+        }
+
+        if(body.get("type").equals("guide")) {
+
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//loc: destination ? destination : travelDescription, lan: lan, type: bookingType
+
+            if (order.get("createdId") == "") {// if this is first day plan
+
+
+                Created newCreatedTrip = new Created(
+
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
+
+                );
+
+                newCreatedTrip.getDates().add((String) order.get("date"));
+
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) obj.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing guide booking data
+                x.getBookingData().put("location",obj.get("loc"));
+                x.getBookingData().put("language",obj.get("lan"));
+                x.getBookingData().put("type",obj.get("type"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing guide booking data
+                x.getBookingData().put("location",obj.get("loc"));
+                x.getBookingData().put("language",obj.get("lan"));
+                x.getBookingData().put("type",obj.get("type"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            }
+        }
+
+        if(body.get("type").equals("hotel")) {
+
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//id: hotelv._id,s: singleRoomsCount.toString(),d: doubleRoomsCount.toString(),
+
+            if (order.get("createdId") == "") {// if this is first day plan
+
+
+                Created newCreatedTrip = new Created(
+
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
+
+                );
+
+                newCreatedTrip.getDates().add((String) order.get("date"));
+
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing hotel booking data
+                x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
+                x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+
+                Hotel hotel = hotelsRepo.findById(obj.get("id").toString()).get();
+
+                if (hotel.getAvailableSingle() != 0) {
+                    hotel.setAvailableSingle(hotel.getAvailableSingle() - Integer.parseInt(obj.get("s").toString()));
+                }if (hotel.getAvailableDouble() != 0) {
+                    hotel.setAvailableDouble(hotel.getAvailableDouble() - Integer.parseInt(obj.get("d").toString()));
+                }
+
+                hotelsRepo.save(hotel);
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing hotel booking data
+                x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
+                x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            }
+        }
+
+        return "invalid service type";
     }
 
     @GetMapping("/trips-view")
-    public ResponseEntity<List<Solotripdto>> GetShowTrip(@RequestParam String id) {
+    public ResponseEntity<List<Created>> GetShowTrip(@RequestParam String id) {
 
-        List<Solotripdto> list = soloTripRepo.findByCreatorId(id);
+        //List<Solotripdto> list = soloTripRepo.findByCreatorId(id);
+
+        List <Created> list = createdRepo.findByCreatorId(id);
 
         return ResponseEntity.ok(list);
 
@@ -407,54 +607,11 @@ r.get().getMapRoute()
     }
 
     @GetMapping("/trip-one")
-    public ResponseEntity<?> GetOne(@RequestParam String id) {
+    public ResponseEntity<?> GetOne(@RequestParam String id) {// this id is trip plan's id. not day plan's id
 
-        Optional<SoloTrip> solotrip = soloTripRepo.findById(id);
-        Optional<Hotel> hotel = hotelsRepo.findById(solotrip.get().getHotelId());
-        Optional<User> guide = userRepo.findById(solotrip.get().getGuideId());
-        Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.get().getCarId());
-
-        if(hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
-
-            return ResponseEntity.ok("Data Not Found");
-
-        }
-
-        SoloTrip x = solotrip.get();
-        Hotel h = hotel.get();
-        User g = guide.get();
-        Vehicledto v = vehicle.get();
-
-        Optional<Category> cat = categoryRepo.findById(v.getCatId());
-        Category c = cat.get();
-
-
-SolotripViewdto s = new SolotripViewdto(
-        x.get_id(),
-        x.getCreatorId(),
-        x.getRouteId(),
-        x.getHotelId(),
-        h.getName(),
-        x.getHlocation(),
-        x.getHprice(),
-        x.getGuideId(),
-        x.getGlocation(),
-        x.getGprice(),
-        g.getUsername(),
-        x.getCarId(),
-        x.getCprice(),
-        v.getFirstName()+" "+v.getLastName(),
-        c.getTitle(),
-        x.getStart(),
-        x.getDestination(),
-        x.getStatus(),
-        x.getStartDate(),
-        x.getMap()
-
-
-);
-
-        return ResponseEntity.ok(s);
+        List<SoloTrip> list = soloTripRepo.findByCreatedId(id);
+System.out.println(list.getClass().isArray());
+        return ResponseEntity.ok(list);
 
     }
 
@@ -472,6 +629,27 @@ SolotripViewdto s = new SolotripViewdto(
 
         }
 
+        if(obj.getType().equals("hotel")){
+
+    Optional<Hotel> hotel = hotelsRepo.findById(obj.getServiceId());
+
+    Hotel h = hotel.get();
+
+    if(hotel.isPresent()) {
+
+        if (obj.getSingleRooms() != 0) {
+            h.setAvailableSingle(h.getAvailableSingle() - obj.getSingleRooms());
+        }
+
+        if (obj.getDoubleRooms() != 0) {
+            h.setAvailableDouble(h.getAvailableDouble() - obj.getDoubleRooms());
+        }
+
+        hotelsRepo.save(h);
+
+    }
+
+        }
         return "Success";
     }
 
