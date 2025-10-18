@@ -35,6 +35,7 @@ public class Hashingpw {
                         .requestMatchers(
                                 "/user/signup",
                                 "/user/login",
+                                "/web/login",
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",

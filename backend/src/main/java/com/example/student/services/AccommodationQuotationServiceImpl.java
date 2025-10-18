@@ -44,4 +44,18 @@ public class AccommodationQuotationServiceImpl implements AccommodationQuotation
             repo.delete(quotation);
         }
     }
+
+
+    //create by Tharusha Samarawickrama for my pending trip perposes only.plz do not change the code between that comment lines
+
+    @Override
+    public  List<AccommodationQuotation> getQuotationsByPendingTripId(String pendingTripId){
+        return repo.safeFindByPendingTripId(pendingTripId);
+    }
+
+//    @Override
+//    public List<TVehicleQuotation> getQuotationsByPendingTripId(String pendingTripId) {
+//        return quotationRepo.safeFindByPendingTripId(pendingTripId);
+//    }
+    //create by Tharusha Samarawickrama for my pending trip perposes only.plz do not change the code between that comment lines
 }
