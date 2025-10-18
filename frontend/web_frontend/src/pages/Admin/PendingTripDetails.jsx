@@ -237,7 +237,7 @@ const PendingTripDetails = () => {
                                                     </span>
                                                     {item.count > 0 && !loadingQuotations && (
                                                         <span className="text-xs text-gray-600">
-                                                            Price range: {formatPriceLKR(Math.min(...item.data.map(q => q.price)))} - {formatPriceLKR(Math.max(...item.data.map(q => q.price)))}
+                                                            Price range: {formatPriceLKR(Math.min(...item.data.map(q => q.totalPricePerPerson)))} - {formatPriceLKR(Math.max(...item.data.map(q => q.totalPricePerPerson)))}
                                                         </span>
                                                     )}
                                                 </div>
