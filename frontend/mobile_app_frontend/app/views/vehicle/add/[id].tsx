@@ -1,3 +1,4 @@
+// Send images array as array of base64 strings
 import React, { useState } from 'react';
 import {
   View,
@@ -16,79 +17,89 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
-import * as FileSystem from 'expo-file-system'
+import * as FileSystem from 'expo-file-system';
 import { ImagePickerAsset } from 'expo-image-picker';
-
 
 // Combined FormData Interface for all steps
 interface FormData {
-  // Driver Registration (Section 1)
+  // Vehicle.java fields
   firstName: string;
   lastName: string;
   nicNumber: string;
   driverDateOfBirth: string;
-  age: string;
   location: string;
   gender: string;
-  driverMobileNumber: string;
-  emergencyContact: string;
-  driverPhoto: ImagePickerAsset | null;
-
-  // Vehicle Details (Section 2)
-  vehicleOwner: string;
-  vehicleType: string;
-  vehicleModel: string;
-  ac: string;
-  fuelType: string;
-  vehicleYearOfManufacture: string;
-  vehicleSeatingCapacity: string;
-  numberPlate: string;
-  vehicleImage: ImagePickerAsset | null;
-  vehicleLicenseCopy: ImagePickerAsset | null;
-  insuranceDocument: ImagePickerAsset | null;
-  rating: string;
-
-  // License & Experience (Section 3)
+  phone: string;
+  additionalComments: string;
   drivingLicenseNumber: string;
   licenseExpiryDate: string;
-  licenseYearsOfExperience: string;
-  languagesSpoken: string;
-  additionalComments: string;
+  experience: number;
+  languages: string[];
+  image: ImagePickerAsset | null;
+  insuranceDocument: ImagePickerAsset | null;
+  insuranceDocument2: ImagePickerAsset | null;
   licensePhoto: ImagePickerAsset | null;
+  licensePhoto2: ImagePickerAsset | null;
+  vehicleNumber: string;
+  vehicleModel: string;
+  ac: boolean;
+  fuelType: string;
+  seats: number;
+  catId: string;
+  vehicleYearOfManufacture: string;
+  gearType: boolean;
+  perKm: boolean;
+  perKmPrice: number;
+  dailyRate: boolean;
+  dailyRatePrice: number;
+  driverNicpic1: ImagePickerAsset | null;
+  driverNicpic2: ImagePickerAsset | null;
+  vehicleLicenseCopy: ImagePickerAsset | null;
+  images: ImagePickerAsset[];
+  doors: number;
+  mileage: string;
+  whatsIncluded: string[];
 }
 
 // Combined FormErrors Interface for all fields
 interface FormErrors {
+  // Personal information
   firstName?: string;
   lastName?: string;
   nicNumber?: string;
   driverDateOfBirth?: string;
-  age?: string;
   location?: string;
   gender?: string;
-  driverMobileNumber?: string;
-  emergencyContact?: string;
-  driverPhoto?: string;
-
-  vehicleOwner?: string;
-  vehicleType?: string;
+  phone?: string;
+  additionalComments?: string;
+  drivingLicenseNumber?: string;
+  licenseExpiryDate?: string;
+  experience?: string; 
+  languages?: string; 
+  image?: string;
+  insuranceDocument?: string;
+  insuranceDocument2?: string;
+  licensePhoto?: string;
+  licensePhoto2?: string;
+  driverNicpic1?: string;
+  driverNicpic2?: string;
+  vehicleLicenseCopy?: string;
+  images?: string;
+  vehicleNumber?: string;
   vehicleModel?: string;
   ac?: string;
   fuelType?: string;
+  seats?: string; 
+  catId?: string;
   vehicleYearOfManufacture?: string;
-  vehicleSeatingCapacity?: string;
-  numberPlate?: string;
-  vehicleImage?: string;
-  vehicleLicenseCopy?: string;
-  insuranceDocument?: string;
-  rating?: string;
-
-  drivingLicenseNumber?: string;
-  licenseExpiryDate?: string;
-  licenseYearsOfExperience?: string;
-  languagesSpoken?: string;
-  additionalComments?: string;
-  licensePhoto?: string;
+  gearType?: string;
+  perKm?: string;
+  perKmPrice?: string;
+  dailyRate?: string;
+  dailyRatePrice?: string;
+  doors?: string;
+  mileage?: string;
+  whatsIncluded?: string;
 }
 
 // Options for gender dropdown (Section 1)
@@ -98,8 +109,6 @@ const genderOptions = [
   { label: 'Female', value: 'female' },
   { label: 'Other', value: 'other' },
 ];
-
-
 
 // Options for vehicle type dropdown (Section 2)
 const vehicleTypes = [
@@ -114,22 +123,50 @@ const vehicleTypes = [
 
 // Options for seating capacity dropdown (Section 2 & 3)
 const seatingCapacityOptions = [
-  { label: 'Select Seating Capacity', value: '' },
-  { label: '2 Seats', value: '2' },
-  { label: '4 Seats', value: '4' },
-  { label: '5 Seats', value: '5' },
-  { label: '8 Seats', value: '8' },
-  { label: '12 Seats', value: '12' },
-  { label: '35+ Seats', value: '35+' },
-];
-// Options for ac dropdown
-const acOptions = [
-  { label: 'Select AC Type', value: '' },
-  { label: 'AC', value: 'ac' },
-  { label: 'Non-AC', value: 'nonac' },
+  { label: 'Select Seating Capacity', value: 0 },
+  { label: '2 Seats', value: 2 },
+  { label: '4 Seats', value: 4 },
+  { label: '5 Seats', value: 5 },
+  { label: '8 Seats', value: 8 },
+  { label: '12 Seats', value: 12 },
+  { label: '35+ Seats', value: 35 },
 ];
 
-// Options for year dropdown (Section 3, used for vehicle year of manufacture)
+// Options for doors dropdown
+const doorsOptions = [
+  { label: 'Select Number of Doors', value: 0 },
+  { label: '2 Doors', value: 2 },
+  { label: '3 Doors', value: 3 },
+  { label: '4 Doors', value: 4 },
+  { label: '5 Doors', value: 5 },
+];
+
+// Options for fuel type dropdown
+const fuelTypeOptions = [
+  { label: 'Select Fuel Type', value: '' },
+  { label: 'Petrol', value: 'petrol' },
+  { label: 'Diesel', value: 'diesel' },
+  { label: 'Hybrid', value: 'hybrid' },
+  { label: 'Electric', value: 'electric' },
+];
+
+// Options for gear type
+const gearTypeOptions = [
+  { label: 'Select Gear Type', value: '' },
+  { label: 'Manual', value: false },
+  { label: 'Automatic', value: true },
+];
+
+// Options for categories
+const categoryOptions = [
+  { label: 'Select Category', value: '' },
+  { label: 'Economy', value: 'economy' },
+  { label: 'Standard', value: 'standard' },
+  { label: 'Premium', value: 'premium' },
+  { label: 'Luxury', value: 'luxury' },
+];
+
+// Year options
 const yearOptions = [
   { label: 'Select Year', value: '' },
   ...Array.from({ length: 30 }, (_, i) => {
@@ -138,9 +175,26 @@ const yearOptions = [
   }),
 ];
 
+// What's included options
+const whatsIncludedOptions = [
+  'Air Conditioning',
+  'GPS Navigation',
+  'Bluetooth',
+  'USB Charging',
+  'WiFi Hotspot',
+  'Child Safety Seats',
+  'First Aid Kit',
+  'Spare Tire',
+  'Tool Kit',
+  'Fire Extinguisher'
+];
+
 export default function MultiStepForm() {
   // State for current step in the form
   const [step, setStep] = useState(1);
+
+  // Language input state - moved to top level to avoid conditional hook usage
+  const [languageInput, setLanguageInput] = useState('');
 
   // State to hold all form data
   const [formData, setFormData] = useState<FormData>({
@@ -148,30 +202,38 @@ export default function MultiStepForm() {
     lastName: '',
     nicNumber: '',
     driverDateOfBirth: '',
-    gender: '',
-    age: '',
     location: '',
-    driverMobileNumber: '',
-    emergencyContact: '',
-    driverPhoto: null,
-    vehicleOwner: '',
-    vehicleType: '',
-    vehicleModel: '',
-    ac: '',
-    fuelType: '',
-    vehicleYearOfManufacture: '',
-    vehicleSeatingCapacity: '',
-    numberPlate: '',
-    vehicleImage: null,
-    vehicleLicenseCopy: null,
-    insuranceDocument: null,
-    rating: '',
+    gender: '',
+    phone: '',
+    additionalComments: '',
     drivingLicenseNumber: '',
     licenseExpiryDate: '',
-    licenseYearsOfExperience: '',
-    languagesSpoken: '',
-    additionalComments: '',
+    experience: 0,
+    languages: [],
+    image: null,
+    insuranceDocument: null,
+    insuranceDocument2: null,
     licensePhoto: null,
+    licensePhoto2: null,
+    vehicleNumber: '',
+    vehicleModel: '',
+    ac: false,
+    fuelType: '',
+    seats: 0,
+    catId: '',
+    vehicleYearOfManufacture: '',
+    gearType: false,
+    perKm: false,
+    perKmPrice: 0,
+    dailyRate: false,
+    dailyRatePrice: 0,
+    driverNicpic1: null,
+    driverNicpic2: null,
+    vehicleLicenseCopy: null,
+    images: [],
+    doors: 0,
+    mileage: '',
+    whatsIncluded: [],
   });
 
   // State to hold form validation errors
@@ -179,97 +241,14 @@ export default function MultiStepForm() {
 
   // States to control visibility of dropdown pickers
   const [showGenderPicker, setShowGenderPicker] = useState(false);
-  const [showAcPicker, setShowAcPicker] = useState(false);
-  const [showVehicleTypePicker, setShowVehicleTypePicker] = useState(false);
+  const [showFuelTypePicker, setShowFuelTypePicker] = useState(false);
   const [showSeatingCapacityPicker, setShowSeatingCapacityPicker] = useState(false);
+  const [showDoorsPicker, setShowDoorsPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showGearTypePicker, setShowGearTypePicker] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  /**
-  //  * Requests camera and media library permissions
-  //  */
-  // const requestPermissions = async () => {
-  //   const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-  //   const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-  //   if (cameraStatus !== 'granted' || mediaLibraryStatus !== 'granted') {
-  //     Alert.alert(
-  //       'Permissions Required',
-  //       'Please grant camera and photo library permissions to upload images.',
-  //       [{ text: 'OK' }]
-  //     );
-  //     return false;
-  //   }
-  //   return true;
-  // };
-
-  // /**
-  //  * Handles image selection from camera or gallery
-  //  */
-  // const handleImageUpload = async (type: 'vehicleImage' | 'vehicleLicenseCopy' | 'insuranceDocument' | 'licensePhoto' | 'driverPhoto') => {
-  //   const hasPermissions = await requestPermissions();
-  //   if (!hasPermissions) return;
-
-  //   Alert.alert(
-  //     'Select Image',
-  //     'Choose an option',
-  //     [
-  //       {
-  //         text: 'Camera',
-  //         onPress: () => openCamera(type),
-  //       },
-  //       {
-  //         text: 'Gallery',
-  //         onPress: () => openGallery(type),
-  //       },
-  //       { text: 'Cancel', style: 'cancel' },
-  //     ]
-  //   );
-  // };
-
-  // /**
-  //  * Opens device camera to take a photo
-  //  */
-  // const openCamera = async (type: keyof FormData) => {
-  //   try {
-  //     const result = await ImagePicker.launchCameraAsync({
-  //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-  //       allowsEditing: true,
-  //       aspect: [4, 3],
-  //       quality: 0.8,
-  //     });
-
-  //     if (!result.canceled && result.assets[0]) {
-  //       handleInputChange(type, result.assets[0].uri);
-  //     }
-  //   } catch (error) {
-  //     Alert.alert('Error', 'Failed to take photo. Please try again.');
-  //   }
-  // };
-
-  // /**
-  //  * Opens device gallery to select a photo
-  //  */
-  // const openGallery = async (type: keyof FormData) => {
-  //   try {
-  //     const result = await ImagePicker.launchImageLibraryAsync({
-  //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-  //       allowsEditing: true,
-  //       aspect: [4, 3],
-  //       quality: 0.8,
-  //     });
-
-  //     if (!result.canceled && result.assets[0]) {
-  //       handleInputChange(type, result.assets[0].uri);
-  //     }
-  //   } catch (error) {
-  //     Alert.alert('Error', 'Failed to select image. Please try again.');
-  //   }
-  // };
-
-  /**
-   * Validates the form data based on the current step.
-   */
-
+  // Enhanced image upload handler to support driver photo and multiple vehicle images
   const handleImageUpload = async (field: keyof FormData) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -279,21 +258,27 @@ export default function MultiStepForm() {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         quality: 1,
         base64: true,
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const base64Data = result.assets[0];
-
-        if (base64Data) {
-          setFormData(prevState => ({
-            ...prevState,
-            [field]: base64Data, // ✅ Store only the base64 string
-          }));
-
+        const asset = result.assets[0];
+        if (asset) {
+          // If uploading vehicle images array
+          if (field === 'images') {
+            setFormData(prevState => ({
+              ...prevState,
+              images: [...prevState.images, asset],
+            }));
+          } else {
+            setFormData(prevState => ({
+              ...prevState,
+              [field]: asset,
+            }));
+          }
           if (errors[field]) {
             setErrors(prevErrors => {
               const newErrors = { ...prevErrors };
@@ -311,8 +296,6 @@ export default function MultiStepForm() {
     }
   };
 
-
-
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     let isValid = true;
@@ -322,8 +305,6 @@ export default function MultiStepForm() {
       const nameRegex = /^[A-Za-z]+$/;
       const oldNICRegex = /^\d{9}[VXvx]$/;      // e.g., 931234567V or 931234567x
       const newNICRegex = /^\d{12}$/;           // e.g., 200012345678
-      const cleanedNumber = formData.driverMobileNumber.replace(/\D/g, ''); // remove non-digits
-      const cleaneddNumber = formData.emergencyContact.replace(/\D/g, '');
 
       // First Name Validation
       if (!formData.firstName.trim()) {
@@ -342,6 +323,8 @@ export default function MultiStepForm() {
         newErrors.lastName = 'Last name must contain only letters';
         isValid = false;
       }
+
+      // NIC Number Validation
       if (!formData.nicNumber.trim()) {
         newErrors.nicNumber = 'NIC number is required';
         isValid = false;
@@ -349,9 +332,11 @@ export default function MultiStepForm() {
         !oldNICRegex.test(formData.nicNumber.trim()) &&
         !newNICRegex.test(formData.nicNumber.trim())
       ) {
-        newErrors.nicNumber = 'Enter a valid  NIC number';
+        newErrors.nicNumber = 'Enter a valid NIC number';
         isValid = false;
       }
+
+      // Date of Birth Validation
       if (!formData.driverDateOfBirth.trim()) {
         newErrors.driverDateOfBirth = 'Date of birth is required';
         isValid = false;
@@ -406,7 +391,6 @@ export default function MultiStepForm() {
             const hasHadBirthdayThisYear = new Date(currentYear, month - 1, day) <= currentDate;
             const actualAge = hasHadBirthdayThisYear ? age : age - 1;
 
-
             if (actualAge < 16) {
               newErrors.driverDateOfBirth = 'Driver must be at least 16 years old';
               isValid = false;
@@ -414,72 +398,57 @@ export default function MultiStepForm() {
           }
         }
       }
+
       if (!formData.gender) {
         newErrors.gender = 'Gender is required';
-        isValid = false;
-      }
-      if (!formData.age) {
-        newErrors.age = 'Age is required';
         isValid = false;
       }
       if (!formData.location) {
         newErrors.location = 'Location is required';
         isValid = false;
       }
-      if (!formData.driverMobileNumber.trim()) {
-        newErrors.driverMobileNumber = 'Mobile number is required';
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Mobile number is required';
         isValid = false;
       } else if (
         !(
           // 07xxxxxxxx
-          /^07\d{8}$/.test(cleanedNumber) ||
+          /^07\d{8}$/.test(formData.phone.replace(/\D/g, '')) ||
           // 947xxxxxxxx (country code without +)
-          /^947\d{8}$/.test(cleanedNumber) ||
+          /^947\d{8}$/.test(formData.phone.replace(/\D/g, '')) ||
           // +947xxxxxxxx (country code with +) - optional if you want to allow +
-          formData.driverMobileNumber.startsWith('+') && /^947\d{8}$/.test(cleanedNumber)
+          formData.phone.startsWith('+') && /^947\d{8}$/.test(formData.phone.replace(/\D/g, ''))
         )
       ) {
-        newErrors.driverMobileNumber = 'Please enter a valid Sri Lankan mobile number';
+        newErrors.phone = 'Please enter a valid Sri Lankan mobile number';
         isValid = false;
       }
-      if (formData.emergencyContact.trim()) {
-        // Only validate if something is entered
-        if (
-          !(
-            /^07\d{8}$/.test(cleaneddNumber) ||
-            /^947\d{8}$/.test(cleaneddNumber) ||
-            (formData.emergencyContact.startsWith('+') && /^947\d{8}$/.test(cleaneddNumber))
-          )
-        ) {
-          newErrors.emergencyContact = 'Please enter a valid Sri Lankan mobile number';
-          isValid = false;
-        }
+      if (!formData.image) {
+        newErrors.image = 'Driver photo is required';
+        isValid = false;
       }
-      if (!formData.driverPhoto) {
-        newErrors.driverPhoto = 'Driver photo is required';
+      if (!formData.driverNicpic1) {
+        newErrors.driverNicpic1 = 'Driver NIC front photo is required';
+        isValid = false;
+      }
+      if (!formData.driverNicpic2) {
+        newErrors.driverNicpic2 = 'Driver NIC back photo is required';
         isValid = false;
       }
     }
+    
     // Validation for Section 2 (Vehicle Details)
     if (step === 2) {
-      if (!formData.vehicleOwner.trim()) {
-        newErrors.vehicleOwner = 'Vehicle owner is required';
-        isValid = false;
-      }
-      if (!formData.vehicleType) {
-        newErrors.vehicleType = 'Vehicle type is required';
+      if (!formData.vehicleNumber.trim()) {
+        newErrors.vehicleNumber = 'Vehicle number is required';
         isValid = false;
       }
       if (!formData.vehicleModel.trim()) {
         newErrors.vehicleModel = 'Vehicle model is required';
         isValid = false;
       }
-      if (!formData.ac.trim()) {
-        newErrors.ac = 'AC or nonAc is required';
-        isValid = false;
-      }
       if (!formData.fuelType.trim()) {
-        newErrors.ac = 'Fuel Type is required';
+        newErrors.fuelType = 'Fuel Type is required';
         isValid = false;
       }
       if (!formData.vehicleYearOfManufacture.trim()) {
@@ -493,16 +462,20 @@ export default function MultiStepForm() {
           isValid = false;
         }
       }
-      if (!formData.vehicleSeatingCapacity) {
-        newErrors.vehicleSeatingCapacity = 'Seating capacity is required';
+      if (!formData.seats || formData.seats === 0) {
+        newErrors.seats = 'Seating capacity is required';
         isValid = false;
       }
-      if (!formData.numberPlate.trim()) {
-        newErrors.numberPlate = 'Number plate is required';
+      if (!formData.doors || formData.doors === 0) {
+        newErrors.doors = 'Number of doors is required';
         isValid = false;
       }
-      if (!formData.vehicleImage) {
-        newErrors.vehicleImage = 'Vehicle image is required';
+      if (!formData.catId.trim()) {
+        newErrors.catId = 'Vehicle category is required';
+        isValid = false;
+      }
+      if (!formData.mileage.trim()) {
+        newErrors.mileage = 'Vehicle mileage is required';
         isValid = false;
       }
       if (!formData.vehicleLicenseCopy) {
@@ -511,6 +484,10 @@ export default function MultiStepForm() {
       }
       if (!formData.insuranceDocument) {
         newErrors.insuranceDocument = 'Insurance document is required';
+        isValid = false;
+      }
+      if (formData.images.length === 0) {
+        newErrors.images = 'At least one vehicle image is required';
         isValid = false;
       }
     }
@@ -542,18 +519,28 @@ export default function MultiStepForm() {
         newErrors.licensePhoto = 'License photo is required';
         isValid = false;
       }
-      if (!formData.licenseYearsOfExperience.trim()) {
-        newErrors.licenseYearsOfExperience = 'Years of experience is required';
+      if (!formData.experience || formData.experience === 0) {
+        newErrors.experience = 'Years of experience is required';
         isValid = false;
-      } else {
-        const experience = parseInt(formData.licenseYearsOfExperience);
-        if (isNaN(experience) || experience < 0 || experience > 50) {
-          newErrors.licenseYearsOfExperience = 'Please enter a valid number of years (0-50)';
-          isValid = false;
-        }
+      } else if (formData.experience < 0 || formData.experience > 50) {
+        newErrors.experience = 'Please enter a valid number of years (0-50)';
+        isValid = false;
       }
-      if (!formData.languagesSpoken.trim()) {
-        newErrors.languagesSpoken = 'Languages spoken is required';
+      if (formData.languages.length === 0) {
+        newErrors.languages = 'At least one language is required';
+        isValid = false;
+      }
+      // Pricing validation
+      if (!formData.perKm && !formData.dailyRate) {
+        newErrors.perKm = 'At least one pricing option must be selected';
+        isValid = false;
+      }
+      if (formData.perKm && (!formData.perKmPrice || formData.perKmPrice <= 0)) {
+        newErrors.perKmPrice = 'Per km price is required and must be greater than 0';
+        isValid = false;
+      }
+      if (formData.dailyRate && (!formData.dailyRatePrice || formData.dailyRatePrice <= 0)) {
+        newErrors.dailyRatePrice = 'Daily rate price is required and must be greater than 0';
         isValid = false;
       }
     }
@@ -565,7 +552,7 @@ export default function MultiStepForm() {
   /**
    * Handles input changes for any form field.
    */
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -613,6 +600,7 @@ export default function MultiStepForm() {
         return;
       }
 
+      // Fix: Always increment step if not on last step
       if (step < 3) {
         setStep(prevStep => prevStep + 1);
         setErrors({});
@@ -638,37 +626,91 @@ export default function MultiStepForm() {
    * Simulates the final form submission.
    */
   const submitForm = async () => {
-    console.log(formData);
+    console.log('Form Data before submission:', formData);
 
     try {
+      // Build payload matching backend Vehicle.java with correct field mapping
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        nicNumber: formData.nicNumber,
+        driverDateOfBirth: formData.driverDateOfBirth,
+        location: formData.location,
+        gender: formData.gender,
+        phone: formData.phone,
+        additionalComments: formData.additionalComments,
+        drivingLicenseNumber: formData.drivingLicenseNumber,
+        licenseExpiryDate: formData.licenseExpiryDate,
+        experience: formData.experience,
+        languages: formData.languages,
+        
+        // Send image (driver photo) as base64 string
+        image: formData.image?.base64 || '',
+        insuranceDocument: formData.insuranceDocument?.base64 || '',
+        insuranceDocument2: formData.insuranceDocument2?.base64 || '',
+        licensePhoto: formData.licensePhoto?.base64 || '',
+        licensePhoto2: formData.licensePhoto2?.base64 || '',
+        
+        vehicleNumber: formData.vehicleNumber,
+        vehicleModel: formData.vehicleModel,
+        ac: formData.ac,
+        fuelType: formData.fuelType,
+        seats: formData.seats,
+        catId: formData.catId,
+        vehicleYearOfManufacture: formData.vehicleYearOfManufacture,
+        gearType: formData.gearType,
+        perKm: formData.perKm,
+        perKmPrice: formData.perKmPrice,
+        dailyRate: formData.dailyRate,
+        dailyRatePrice: formData.dailyRatePrice,
+        driverNicpic1: formData.driverNicpic1?.base64 || '',
+        driverNicpic2: formData.driverNicpic2?.base64 || '',
+        vehicleLicenseCopy: formData.vehicleLicenseCopy?.base64 || '',
+        doors: formData.doors,
+        mileage: formData.mileage,
+        whatsIncluded: formData.whatsIncluded,
+        
+        // Send images array as array of base64 strings
+        images: formData.images.map(img => img?.base64 || '').filter(str => str !== ''),
+      };
 
-      const x = {
-        ...formData,
-        vehicleImage: formData.vehicleImage?.base64,
-        driverPhoto: formData.driverPhoto?.base64,
-        vehicleLicenseCopy: formData.vehicleLicenseCopy?.base64,
-        insuranceDocument: formData.insuranceDocument?.base64,
-        licensePhoto: formData.licensePhoto?.base64,
-      }
-
+      console.log('Payload being sent:', payload);
 
       const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
         method: "POST",
-        headers: { 'Content-Type': "application/json" },
-        body: JSON.stringify(x),
+        headers: { 
+          'Content-Type': "application/json",
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        Alert.alert('Error', `Server error: ${response.status}. ${errorText}`);
+        return;
+      }
+
       const data = await response.text();
-      console.log(data);
-      router.push('/(vehicle)/myVehicles')
+      console.log('Success response:', data);
+      
       Alert.alert(
         'Registration Complete!',
         'Your driver registration has been submitted successfully.',
-        [{ text: 'OK' }]
+        [{ 
+          text: 'OK',
+          onPress: () => {
+            router.push('/(vehicle)/myVehicles');
+          }
+        }]
       );
     } catch (err) {
       console.log('Error from submit form:', err);
-      Alert.alert('Error', 'Failed to submit registration. Please try again.');
+      Alert.alert('Error', `Failed to submit registration: ${err}. Please try again.`);
     }
   };
 
@@ -720,7 +762,7 @@ export default function MultiStepForm() {
   const renderDropdown = (
     field: keyof FormData,
     placeholder: string,
-    options: { label: string; value: string }[],
+    options: { label: string; value: any }[],
     showPicker: boolean,
     setShowPicker: (show: boolean) => void
   ) => (
@@ -743,7 +785,7 @@ export default function MultiStepForm() {
         </Text>
       </TouchableOpacity>
       {showPicker && (
-        <View className="border border-gray-300 rounded-lg bg-white mt-1 shadow-md max-h-52">
+        <View className="border border-gray-300 rounded-lg bg-white mt-1 shadow-md">
           <ScrollView nestedScrollEnabled>
             {options.slice(1).map((option) => (
               <TouchableOpacity
@@ -772,7 +814,7 @@ export default function MultiStepForm() {
    * Renders an image upload area.
    */
   const renderImageUpload = (
-    type: 'vehicleImage' | 'vehicleLicenseCopy' | 'insuranceDocument' | 'licensePhoto' | 'driverPhoto',
+    type: 'image' | 'insuranceDocument' | 'insuranceDocument2' | 'licensePhoto' | 'licensePhoto2' | 'vehicleLicenseCopy' | 'driverNicpic1' | 'driverNicpic2',
     title: string,
     subtitle: string
   ) => (
@@ -781,13 +823,12 @@ export default function MultiStepForm() {
         {title} <Text className="text-red-500">*</Text>
       </Text>
       <TouchableOpacity
-        className={`border-2 border-gray-200 border-dashed rounded-lg py-8 px-4 items-center justify-center bg-gray-50 min-h-[120px] ${errors[type] ? 'border-red-500' : ''
-          }`}
+        className={`border-2 border-gray-200 border-dashed rounded-lg py-8 px-4 items-center justify-center bg-gray-50 min-h-[120px] ${errors[type] ? 'border-red-500' : ''}`}
         onPress={() => handleImageUpload(type)}
       >
         {formData[type] ? (
           <Image
-            source={{ uri: formData[type].uri }}
+            source={{ uri: (formData[type] as ImagePickerAsset).uri }}
             className="w-full h-[100px] rounded-sm"
             style={{ resizeMode: 'cover' }}
           />
@@ -800,6 +841,172 @@ export default function MultiStepForm() {
       </TouchableOpacity>
       {errors[type] && (
         <Text className="text-red-500 text-xs mt-1">{errors[type]}</Text>
+      )}
+    </View>
+  );
+
+  /**
+   * Renders checkbox for what's included items
+   */
+  const renderWhatsIncludedCheckboxes = () => (
+    <View className="mb-5">
+      <Text className="text-sm font-medium text-gray-700 mb-2">
+        What's Included
+      </Text>
+      <View className="flex-row flex-wrap">
+        {whatsIncludedOptions.map((item) => (
+          <TouchableOpacity
+            key={item}
+            className={`flex-row items-center mr-4 mb-2 px-3 py-2 rounded-lg border ${
+              formData.whatsIncluded.includes(item) 
+                ? 'bg-blue-100 border-blue-500' 
+                : 'bg-gray-100 border-gray-300'
+            }`}
+            onPress={() => {
+              const updatedIncluded = formData.whatsIncluded.includes(item)
+                ? formData.whatsIncluded.filter(i => i !== item)
+                : [...formData.whatsIncluded, item];
+              handleInputChange('whatsIncluded', updatedIncluded);
+            }}
+          >
+            <Text className={`text-sm ${
+              formData.whatsIncluded.includes(item) ? 'text-blue-700' : 'text-gray-700'
+            }`}>
+              {item}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  /**
+   * Renders language selection
+   */
+  const renderLanguageInput = () => {
+    return (
+      <View className="mb-5">
+        <Text className="text-sm font-medium text-gray-700 mb-2">
+          Languages Spoken <Text className="text-red-500">*</Text>
+        </Text>
+        <View className="flex-row mb-2">
+          <TextInput
+            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white mr-2"
+            placeholder="Enter a language"
+            placeholderTextColor="#9CA3AF"
+            value={languageInput}
+            onChangeText={setLanguageInput}
+          />
+          <TouchableOpacity
+            className="bg-blue-600 px-4 py-3 rounded-lg justify-center"
+            onPress={() => {
+              if (languageInput.trim() && !formData.languages.includes(languageInput.trim())) {
+                handleInputChange('languages', [...formData.languages, languageInput.trim()]);
+                setLanguageInput('');
+              }
+            }}
+          >
+            <Text className="text-white font-medium">Add</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Display selected languages */}
+        <View className="flex-row flex-wrap">
+          {formData.languages.map((language, index) => (
+            <View key={index} className="bg-blue-100 px-3 py-1 rounded-full mr-2 mb-2 flex-row items-center">
+              <Text className="text-blue-700 text-sm">{language}</Text>
+              <TouchableOpacity
+                className="ml-2"
+                onPress={() => {
+                  handleInputChange('languages', formData.languages.filter((_, i) => i !== index));
+                }}
+              >
+                <Text className="text-blue-700 text-lg">×</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+        
+        {errors.languages && (
+          <Text className="text-red-500 text-xs mt-1">{errors.languages}</Text>
+        )}
+      </View>
+    );
+  };
+
+  /**
+   * Renders pricing options
+   */
+  const renderPricingOptions = () => (
+    <View className="mb-5">
+      <Text className="text-sm font-medium text-gray-700 mb-3">
+        Pricing Options <Text className="text-red-500">*</Text>
+      </Text>
+      
+      {/* Per KM Option */}
+      <View className="mb-4">
+        <TouchableOpacity
+          className="flex-row items-center mb-2"
+          onPress={() => handleInputChange('perKm', !formData.perKm)}
+        >
+          <View className={`w-5 h-5 border-2 rounded mr-3 ${
+            formData.perKm ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+          }`}>
+            {formData.perKm && <Text className="text-white text-xs text-center">✓</Text>}
+          </View>
+          <Text className="text-base text-gray-900">Per Kilometer Pricing</Text>
+        </TouchableOpacity>
+        
+        {formData.perKm && (
+          <TextInput
+            className={`border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white ml-8 ${
+              errors.perKmPrice ? 'border-red-500' : ''
+            }`}
+            placeholder="Price per KM (LKR)"
+            placeholderTextColor="#9CA3AF"
+            value={formData.perKmPrice ? formData.perKmPrice.toString() : ''}
+            onChangeText={(text) => handleInputChange('perKmPrice', parseFloat(text) || 0)}
+            keyboardType="numeric"
+          />
+        )}
+      </View>
+
+      {/* Daily Rate Option */}
+      <View className="mb-4">
+        <TouchableOpacity
+          className="flex-row items-center mb-2"
+          onPress={() => handleInputChange('dailyRate', !formData.dailyRate)}
+        >
+          <View className={`w-5 h-5 border-2 rounded mr-3 ${
+            formData.dailyRate ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+          }`}>
+            {formData.dailyRate && <Text className="text-white text-xs text-center">✓</Text>}
+          </View>
+          <Text className="text-base text-gray-900">Daily Rate Pricing</Text>
+        </TouchableOpacity>
+        
+        {formData.dailyRate && (
+          <TextInput
+            className={`border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white ml-8 ${
+              errors.dailyRatePrice ? 'border-red-500' : ''
+            }`}
+            placeholder="Daily Rate (LKR)"
+            placeholderTextColor="#9CA3AF"
+            value={formData.dailyRatePrice ? formData.dailyRatePrice.toString() : ''}
+            onChangeText={(text) => handleInputChange('dailyRatePrice', parseFloat(text) || 0)}
+            keyboardType="numeric"
+          />
+        )}
+      </View>
+
+      {errors.perKm && (
+        <Text className="text-red-500 text-xs mt-1">{errors.perKm}</Text>
+      )}
+      {errors.perKmPrice && (
+        <Text className="text-red-500 text-xs mt-1">{errors.perKmPrice}</Text>
+      )}
+      {errors.dailyRatePrice && (
+        <Text className="text-red-500 text-xs mt-1">{errors.dailyRatePrice}</Text>
       )}
     </View>
   );
@@ -825,7 +1032,6 @@ export default function MultiStepForm() {
                   <TouchableOpacity
                     className="absolute left-6 top-5 z-10"
                     onPress={() => {
-                      console.log('Back button pressed');
                       if (router.canGoBack()) {
                         router.back();
                       } else {
@@ -835,16 +1041,13 @@ export default function MultiStepForm() {
                   >
                     <Ionicons name="arrow-back" size={24} color="#000" />
                   </TouchableOpacity>
-
                   <Text className="text-sm font-medium text-gray-500 text-center">
                     Section 1 of 3
                   </Text>
                 </View>
-
                 <View className="items-center py-8">
                   <Text className="text-lg font-semibold text-gray-900">Driver Details</Text>
                 </View>
-
                 <View className="px-6 pb-5">
                   <View className="flex-row justify-between mb-0">
                     <View className="w-[48%]">
@@ -854,61 +1057,20 @@ export default function MultiStepForm() {
                       {renderInput('lastName', 'Last Name', true)}
                     </View>
                   </View>
-
                   {renderInput('nicNumber', 'NIC Number', true)}
                   {renderInput('driverDateOfBirth', 'Date of Birth (DD/MM/YYYY)', true)}
-
-                  {renderInput('age', 'Age', true)}
                   {renderInput('location', 'Location', true)}
-
-                  <View className="mb-5">
-                    <Text className="text-sm font-medium text-gray-700 mb-2">
-                      Gender <Text className="text-red-500">*</Text>
-                    </Text>
-                    <TouchableOpacity
-                      className={`border border-gray-300 rounded-lg px-4 py-3 bg-white justify-center ${errors.gender ? 'border-red-500' : ''
-                        }`}
-                      onPress={() => setShowGenderPicker(!showGenderPicker)}
-                    >
-                      <Text
-                        className={`text-base ${!formData.gender ? 'text-gray-400' : 'text-gray-900'
-                          }`}
-                      >
-                        {formData.gender
-                          ? genderOptions.find((option) => option.value === formData.gender)?.label
-                          : 'Select Gender'}
-                      </Text>
-                    </TouchableOpacity>
-                    {showGenderPicker && (
-                      <View className="border border-gray-300 rounded-lg bg-white mt-1 shadow-md">
-                        {genderOptions.slice(1).map((option) => (
-                          <TouchableOpacity
-                            key={option.value}
-                            className="px-4 py-3 border-b border-gray-100 last:border-b-0"
-                            onPress={() => {
-                              handleInputChange('gender', option.value);
-                              setShowGenderPicker(false);
-                            }}
-                          >
-                            <Text className="text-base text-gray-900">{option.label}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                    {errors.gender && (
-                      <Text className="text-red-500 text-xs mt-1">{errors.gender}</Text>
-                    )}
-                  </View>
-
-                  {renderInput('driverMobileNumber', 'Mobile Number', true, 'phone-pad')}
-                  {renderInput('emergencyContact', 'Emergency Contact Number', false, 'phone-pad')}
-
-                  {renderImageUpload('driverPhoto', "Driver's Photo", 'Tap to upload driver photo')}
+                  {renderDropdown('gender', 'Gender', genderOptions, showGenderPicker, setShowGenderPicker)}
+                  {renderInput('phone', 'Mobile Number', true, 'phone-pad')}
+                  {renderImageUpload('image', "Driver's Photo", 'Tap to upload driver photo')}
+                  {renderImageUpload('driverNicpic1', "Driver NIC Front", 'Tap to upload front side of NIC')}
+                  {renderImageUpload('driverNicpic2', "Driver NIC Back", 'Tap to upload back side of NIC')}
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
         );
+
       case 2:
         return (
           <SafeAreaView className="flex-1 bg-white">
@@ -926,54 +1088,90 @@ export default function MultiStepForm() {
                     Section 2 of 3
                   </Text>
                 </View>
-
                 <View className="items-center py-8">
                   <Text className="text-lg font-semibold text-gray-900">Vehicle Details</Text>
                 </View>
-
                 <View className="px-6 pb-5">
-                  {renderInput('vehicleOwner', 'Vehicle Owner', true)}
-
-                  {renderDropdown(
-                    'vehicleType',
-                    'Vehicle Type',
-                    vehicleTypes,
-                    showVehicleTypePicker,
-                    setShowVehicleTypePicker
-                  )}
-
+                  {renderInput('vehicleNumber', 'Vehicle Number', true)}
                   {renderInput('vehicleModel', 'Vehicle Model', true)}
-
-                  {renderDropdown(
-                    'ac',
-                    'AC Type',
-                    acOptions,
-                    showAcPicker,            // ✅ correct variable defined at the top
-                    setShowAcPicker          // ✅ correct setter
-                  )}
-
-                  {renderInput('fuelType', 'Fuel Type', true)}
-
+                  {renderDropdown('fuelType', 'Fuel Type', fuelTypeOptions, showFuelTypePicker, setShowFuelTypePicker)}
                   {renderInput('vehicleYearOfManufacture', 'Year of Manufacture', true, 'numeric')}
+                  {renderDropdown('seats', 'Seating Capacity', seatingCapacityOptions, showSeatingCapacityPicker, setShowSeatingCapacityPicker)}
+                  {renderDropdown('doors', 'Number of Doors', doorsOptions, showDoorsPicker, setShowDoorsPicker)}
+                  {renderDropdown('catId', 'Vehicle Category', categoryOptions, showCategoryPicker, setShowCategoryPicker)}
+                  {renderDropdown('gearType', 'Gear Type', gearTypeOptions, showGearTypePicker, setShowGearTypePicker)}
+                  {renderInput('mileage', 'Vehicle Mileage (km/L)', true)}
+                  
+                  {/* AC Checkbox */}
+                  <View className="mb-5">
+                    <TouchableOpacity
+                      className="flex-row items-center"
+                      onPress={() => handleInputChange('ac', !formData.ac)}
+                    >
+                      <View className={`w-5 h-5 border-2 rounded mr-3 ${
+                        formData.ac ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                      }`}>
+                        {formData.ac && <Text className="text-white text-xs text-center">✓</Text>}
+                      </View>
+                      <Text className="text-base text-gray-900">Air Conditioning Available</Text>
+                    </TouchableOpacity>
+                  </View>
 
-                  {renderDropdown(
-                    'vehicleSeatingCapacity',
-                    'Seating Capacity',
-                    seatingCapacityOptions,
-                    showSeatingCapacityPicker,
-                    setShowSeatingCapacityPicker
-                  )}
+                  {renderWhatsIncludedCheckboxes()}
 
-                  {renderInput('numberPlate', 'Number Plate', true)}
+                  {/* Multiple vehicle images upload */}
+                  <View className="mb-6">
+                    <Text className="text-sm font-medium text-gray-700 mb-2">
+                      Vehicle Images <Text className="text-red-500">*</Text>
+                    </Text>
+                    <TouchableOpacity 
+                      className={`border-2 border-gray-200 border-dashed rounded-lg py-8 px-4 items-center justify-center bg-gray-50 min-h-[120px] ${errors.images ? 'border-red-500' : ''}`} 
+                      onPress={() => handleImageUpload('images')}
+                    >
+                      <Upload size={32} color="#9CA3AF" />
+                      <Text className="text-gray-500 text-sm mt-2 text-center">
+                        Tap to upload vehicle images (multiple allowed)
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    {/* Show thumbnails of uploaded images */}
+                    {formData.images && formData.images.length > 0 && (
+                      <ScrollView horizontal className="mt-2">
+                        {formData.images.map((img, idx) => (
+                          <View key={idx} className="relative mr-2">
+                            <Image 
+                              source={{ uri: img.uri }} 
+                              className="w-[80px] h-[60px] rounded" 
+                              style={{ resizeMode: 'cover' }} 
+                            />
+                            <TouchableOpacity
+                              className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center"
+                              onPress={() => {
+                                const updatedImages = formData.images.filter((_, index) => index !== idx);
+                                handleInputChange('images', updatedImages);
+                              }}
+                            >
+                              <Text className="text-white text-xs">×</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    )}
+                    
+                    {errors.images && (
+                      <Text className="text-red-500 text-xs mt-1">{errors.images}</Text>
+                    )}
+                  </View>
 
-                  {renderImageUpload('vehicleImage', 'Vehicle Image', 'Tap to upload vehicle photo')}
                   {renderImageUpload('vehicleLicenseCopy', 'Vehicle License Copy', 'Tap to upload license document')}
                   {renderImageUpload('insuranceDocument', 'Insurance Document', 'Tap to upload insurance document')}
+                  {renderImageUpload('insuranceDocument2', 'Insurance Document 2 (Optional)', 'Tap to upload second insurance document')}
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
         );
+
       case 3:
         return (
           <SafeAreaView className="flex-1 bg-white">
@@ -991,27 +1189,44 @@ export default function MultiStepForm() {
                     Section 3 of 3
                   </Text>
                 </View>
-
                 <View className="items-center py-8">
                   <Text className="text-lg font-semibold text-gray-900">License & Experience</Text>
                 </View>
-
                 <View className="px-6 pb-5">
                   {renderInput('drivingLicenseNumber', 'Driving License Number', true)}
                   {renderInput('licenseExpiryDate', 'License Expiry Date (DD/MM/YYYY)', true)}
-
-
-
                   {renderImageUpload('licensePhoto', 'License Photo', 'Upload the driving license photo')}
+                  {renderImageUpload('licensePhoto2', 'License Photo 2 (Optional)', 'Upload second license photo if needed')}
+                  
+                  {/* Experience as number input */}
+                  <View className="mb-5">
+                    <Text className="text-sm font-medium text-gray-700 mb-2">
+                      Years of Experience <Text className="text-red-500">*</Text>
+                    </Text>
+                    <TextInput
+                      className={`border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
+                        errors.experience ? 'border-red-500' : ''
+                      }`}
+                      placeholder="Enter years of driving experience"
+                      placeholderTextColor="#9CA3AF"
+                      value={formData.experience ? formData.experience.toString() : ''}
+                      onChangeText={(text) => handleInputChange('experience', parseInt(text) || 0)}
+                      keyboardType="numeric"
+                    />
+                    {errors.experience && (
+                      <Text className="text-red-500 text-xs mt-1">{errors.experience}</Text>
+                    )}
+                  </View>
 
-                  {renderInput('licenseYearsOfExperience', 'Years of Experience', true, 'numeric')}
-                  {renderInput('languagesSpoken', 'Languages Spoken', true)}
+                  {renderLanguageInput()}
+                  {renderPricingOptions()}
                   {renderInput('additionalComments', 'Additional Comments or Special Notes', false, 'default', true)}
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
           </SafeAreaView>
         );
+
       default:
         return null;
     }
@@ -1020,37 +1235,32 @@ export default function MultiStepForm() {
   return (
     <View className="flex-1 bg-white">
       {renderStep()}
-
-      <View className="flex-row px-6 pb-8 pt-4 gap-3 justify-between items-center">
-        {step > 1 && (
-          <TouchableOpacity
-            className="w-[50%] bg-gray-100 rounded-lg py-4 items-center shadow-md"
-            onPress={handlePrevious}
-            activeOpacity={0.8}
-          >
-            <Text className="text-base font-semibold text-gray-700">Previous</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          className={`rounded-lg py-4 items-center shadow-md ${step === 1 ? 'w-full' : 'flex-1'} ${isValidating ? 'opacity-70' : ''
-            }`}
-          style={{
-            backgroundColor: step < 3 ? '#FEFA17' : '#22C55E',
-          }}
-          onPress={handleNext}
-          activeOpacity={0.8}
-          disabled={isValidating}
-        >
-          {isValidating ? (
-            <Text className="text-base font-semibold text-gray-900">
-              Validating...
-            </Text>
-          ) : (
-            <Text className="text-base font-semibold text-gray-900">
-              {step < 3 ? 'Next' : 'Submit'}
-            </Text>
+      
+      {/* Navigation Buttons */}
+      <View className="px-6 py-4 bg-white border-t border-gray-200">
+        <View className="flex-row justify-between">
+          {step > 1 && (
+            <TouchableOpacity
+              className="flex-1 mr-2 py-3 px-4 bg-gray-200 rounded-lg"
+              onPress={handlePrevious}
+            >
+              <Text className="text-center text-gray-700 font-medium">Previous</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          
+          <TouchableOpacity
+  className={`flex-1 ${step > 1 ? 'ml-2' : ''} py-3 px-4 rounded-lg`}
+  style={{
+    backgroundColor: '#FEFA17'
+  }}
+  onPress={handleNext}
+
+>
+  <Text className="text-center text-black font-medium">
+    {step === 3 ? 'Submit' : 'Next'}
+  </Text>
+</TouchableOpacity>
+        </View>
       </View>
     </View>
   );

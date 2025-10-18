@@ -114,7 +114,7 @@ export default function _Layout() {
                             }}
                         />
                         <Tabs.Screen
-                            name="create"
+                            name="creates"
                             options={{
                                 tabBarIcon: ({ focused }) => (
                                     <View
