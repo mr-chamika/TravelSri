@@ -514,8 +514,26 @@ export default function Views() {
             await AsyncStorage.setItem('selectedHotelBooking', JSON.stringify(bookingDetails));
             console.log('Booking details saved:', bookingDetails);
 
+            const orderx = await AsyncStorage.getItem('order');
+            const tokenString = await AsyncStorage.getItem('token');
+
+            if (!tokenString || !orderx) return;
+
+            const token: MyToken = jwtDecode(tokenString);
+
             // 4. Navigate back to the previous screen
-            router.back();
+            //router.back();
+            await fetch('http://localhost:8080/traveler/create-trip', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ obj: bookingDetails, order: order, type: 'hotel', serviceId: id, userId: token.id })
+
+            })
+                .then(res => res.text())
+                .then(data => router.push({ pathname: `/(tabs)/creates`, params: { id: data } }))
+                .catch(err => console.log(err))
+
 
         } catch (error) {
             console.error("Failed to save booking details to AsyncStorage:", error);

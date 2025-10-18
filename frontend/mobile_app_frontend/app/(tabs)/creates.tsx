@@ -208,7 +208,8 @@ const TripPlannerScreen: React.FC = () => {
       if (res) {
         let data = await res.json();
         setDataSet(data);
-
+        console.log('hereeeeeeeeee')
+        console.log(data)
         // Group trips by day number
         const groupedByDay: Record<number, Trip[]> = {};
         data.forEach((trip: Trip) => {
@@ -414,20 +415,28 @@ const TripPlannerScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             {dayPlan.planSummary.map((trip, index) => (
-              <View key={trip._id} className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+              <TouchableOpacity key={trip._id} className="mb-4 p-3 bg-white rounded-lg border border-gray-200"
+                onPress={() => {
+                  const route = trip.type === 'vehicle'
+                    ? `/views/car/profile/${trip.serviceId}`
+                    : `/views/${trip.type}/group/${trip.serviceId}`;
+
+                  router.push(route as any);
+                }}
+              >
                 <View className="flex-row items-center justify-between mb-2">
                   <Text className="text-lg font-semibold text-gray-800">Plan {index + 1}</Text>
                   <View className="flex-row items-center gap-2">
                     <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                       {trip.status}
                     </Text>
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                       className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
                       onPress={() => handleEditPlan(trip._id)}
                     >
                       <Icon name="edit" size={16} color="#2563eb" />
                       <Text className="text-xs font-medium text-blue-600">Edit</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                 </View>
 
@@ -443,8 +452,11 @@ const TripPlannerScreen: React.FC = () => {
                     <Text className="text-xs text-gray-500">Location: {trip.hlocation}</Text>
                   </View>
                 )} */}
+                  <TouchableOpacity className='bg-green-400 items-center pb-2 pt-1 rounded-lg'>
+                    <View><Text>Book Now</Text></View>
+                  </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         </View>

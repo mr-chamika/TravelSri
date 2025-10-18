@@ -149,10 +149,28 @@ export default function Views() {
         try {
 
             await AsyncStorage.setItem('selectedGuideBooking', id.toString());
-            console.log('Booking details saved:', id);
+            const orderx = await AsyncStorage.getItem('order');
+            const bookingx = await AsyncStorage.getItem('gbookings');
+            const tokenString = await AsyncStorage.getItem('token');
 
-            // 4. Navigate back to the previous screen
-            router.back();
+            if (!orderx || !bookingx || !tokenString) return;
+
+            const token: MyToken = jwtDecode(tokenString);
+
+            const order = JSON.parse(orderx);
+            const booking = JSON.parse(bookingx);
+
+            await fetch('http://localhost:8080/traveler/create-trip', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ obj: booking, order: order, type: 'guide', serviceId: id, userId: token.id })
+
+            })
+                .then(res => res.text())
+                .then(data => router.push({ pathname: `/(tabs)/creates`, params: { id: data } }))
+                .catch(err => console.log(err))
+
 
         } catch (err) {
 

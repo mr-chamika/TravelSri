@@ -14,7 +14,7 @@ public interface CreatedRepo extends MongoRepository<Created,String> {
 
     @Query(
             value = "{ 'creatorId': ?0}",
-            fields = "{ '_id': 1, 'thumbnail': 1,'destination': 1}"
+            fields = "{ '_id': 1, 'dates': 1,'adults': 1,'children': 1,'creatorId':1}"
     )
     List<Created> findByCreatorId(String id);
 

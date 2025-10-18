@@ -219,7 +219,7 @@ export default function Views() {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ obj: booking, order: order, type: 'vehicle', vehicleId: id, userId: token.id })
+                body: JSON.stringify({ obj: booking, order: order, type: 'vehicle', serviceId: id, userId: token.id })
 
             })
                 .then(res => res.text())

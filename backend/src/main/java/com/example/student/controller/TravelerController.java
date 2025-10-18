@@ -360,101 +360,208 @@ System.out.println(list);
     @Autowired
     private CreatedRepo createdRepo;
 
-    @PostMapping("/create-trip")//to create a day in the trip
-    public String CreateTrip(@RequestBody SolotripGetdto obj){
+    @PostMapping("/create-trip")//to add a service for day in the trip(hotel,guide,vehicle)
+    public String createService(@RequestBody Map<String,Object> body){
 
-       //Optional <Route> r = repo.findById(obj.getRouteId());
+        if(body.get("type").equals( "vehicle")) {
 
-        Optional<Hotel> hotel = hotelsRepo.findById(obj.getHotelId());
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//date: order?.date,start: startLocation, end: endLocation, language: language, time: time, oneWay: isOneway,
 
-        Hotel h = hotel.get();
 
-        if(hotel.isPresent()) {
+            if (order.get("createdId") == "") {// if this is first day plan
 
-            if (obj.getSingleBeds() != 0) {
-                h.setAvailableSingle(h.getAvailableSingle() - obj.getSingleBeds());
+                Created newCreatedTrip = new Created(
+
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
+
+                );
+
+                newCreatedTrip.getDates().add((String) order.get("date"));
+
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) obj.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+//storing vehicle booking data
+                x.getBookingData().put("date",obj.get("date"));
+                x.getBookingData().put("endLocation",obj.get("end"));
+                x.getBookingData().put("startLocation",obj.get("start"));
+                x.getBookingData().put("language",obj.get("language"));
+                x.getBookingData().put("time",obj.get("time"));
+                x.getBookingData().put("isOneWay",obj.get("oneWay"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing vehicle booking data
+                x.getBookingData().put("date",obj.get("date"));
+                x.getBookingData().put("endLocation",obj.get("end"));
+                x.getBookingData().put("startLocation",obj.get("start"));
+                x.getBookingData().put("language",obj.get("language"));
+                x.getBookingData().put("time",obj.get("time"));
+                x.getBookingData().put("isOneWay",obj.get("oneWay"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
             }
-
-            if (obj.getDoubleBeds() != 0) {
-                h.setAvailableDouble(h.getAvailableDouble() - obj.getDoubleBeds());
-            }
-
-            hotelsRepo.save(h);
-
         }
 
-       if(obj.getDayNumber() == 1) {// if this is first day plan
+        if(body.get("type").equals("guide")) {
 
-          Created newCreatedTrip = new Created(obj.getCreatorId());
-          //Created newCreatedTrip = new Created(obj.getCreatorId(),r.get().getThumbnail(), r.get().getTo());
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//loc: destination ? destination : travelDescription, lan: lan, type: bookingType
 
-           createdRepo.save(newCreatedTrip);
+            if (order.get("createdId") == "") {// if this is first day plan
 
-           SoloTrip x = new SoloTrip(
-                   newCreatedTrip.get_id(),
-                   obj.getDayNumber(),
-                   //obj.getRouteId(),
-                   obj.getCreatorId(),
-                   obj.getDate(),
-                   obj.getHotelId(),
-                   obj.getAdults(),
-                   obj.getChildren(),
-                   obj.getDoubleBeds(),
-                   obj.getSingleBeds(),
-                   obj.getHprice(),
-                   obj.getGuideId(),
-                   obj.getType(),
-                   obj.getGlocation(),
-                   obj.getGlanguage(),
-                   obj.getGprice(),
-                   obj.getCarId(),
-                   obj.getClanguage(),
-                   obj.getEndLocation(),
-                   obj.getStartLocation(),
-                   obj.getBookedTime(),
-                   obj.getCprice(),
-                   obj.isOneway(),
-                   "pending",
-                   obj.getDate()
-           );
 
-           soloTripRepo.save(x);
-           return x.getCreatedId();
+                Created newCreatedTrip = new Created(
 
-       }else {
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
 
-           SoloTrip x = new SoloTrip(
-                   obj.getCreatedId(),
-                   obj.getDayNumber(),
-                   //obj.getRouteId(),
-                   obj.getCreatorId(),
-                   obj.getDate(),
-                   obj.getHotelId(),
-                   obj.getAdults(),
-                   obj.getChildren(),
-                   obj.getDoubleBeds(),
-                   obj.getSingleBeds(),
-                   obj.getHprice(),
-                   obj.getGuideId(),
-                   obj.getType(),
-                   obj.getGlocation(),
-                   obj.getGlanguage(),
-                   obj.getGprice(),
-                   obj.getCarId(),
-                   obj.getClanguage(),
-                   obj.getEndLocation(),
-                   obj.getStartLocation(),
-                   obj.getBookedTime(),
-                   obj.getCprice(),
-                   obj.isOneway(),
-                   "pending",
-                   obj.getDate()
-           );
+                );
 
-           soloTripRepo.save(x);
-           return x.getCreatedId();
+                newCreatedTrip.getDates().add((String) order.get("date"));
 
-       }
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) obj.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing guide booking data
+                x.getBookingData().put("location",obj.get("loc"));
+                x.getBookingData().put("language",obj.get("lan"));
+                x.getBookingData().put("type",obj.get("type"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing guide booking data
+                x.getBookingData().put("location",obj.get("loc"));
+                x.getBookingData().put("language",obj.get("lan"));
+                x.getBookingData().put("type",obj.get("type"));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            }
+        }
+
+        if(body.get("type").equals("hotel")) {
+
+            Map<String, Object> order = (Map<String, Object>) body.get("order");//createdId,dayNumber,date,adults,children
+            Map<String, Object> obj = (Map<String, Object>) body.get("obj");//id: hotelv._id,s: singleRoomsCount.toString(),d: doubleRoomsCount.toString(),
+
+            if (order.get("createdId") == "") {// if this is first day plan
+
+
+                Created newCreatedTrip = new Created(
+
+                        (String) body.get("userId"),
+                        Integer.parseInt(order.get("adults").toString()),
+                        Integer.parseInt(order.get("children").toString())
+
+                );
+
+                newCreatedTrip.getDates().add((String) order.get("date"));
+
+                createdRepo.save(newCreatedTrip);
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) obj.get("date"),
+                        newCreatedTrip.get_id(),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing hotel booking data
+                x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
+                x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            } else {
+
+                SoloTrip x = new SoloTrip(
+
+                        (String) body.get("serviceId"),
+                        (String) order.get("date"),
+                        (String) order.get("createdId"),
+                        Integer.parseInt(order.get("dayNumber").toString()),
+                        (String) body.get("type"),
+                        "pending"
+
+
+                );
+
+                //storing hotel booking data
+                x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
+                x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+
+                soloTripRepo.save(x);
+                return x.getCreatedId();
+
+            }
+        }
+
+        return "invalid service type";
     }
 
     @GetMapping("/trips-view")
@@ -489,58 +596,10 @@ System.out.println(list);
 
     @GetMapping("/trip-one")
     public ResponseEntity<?> GetOne(@RequestParam String id) {// this id is trip plan's id. not day plan's id
-        System.out.println(id+"hello");
 
         List<SoloTrip> list = soloTripRepo.findByCreatedId(id);
-
-        List<SolotripViewdto> list1 = new ArrayList<>();
-
-        for(SoloTrip solotrip : list) {
-
-            Optional<Hotel> hotel = hotelsRepo.findById(solotrip.getHotelId());
-            Optional<User> guide = userRepo.findById(solotrip.getGuideId());
-            Optional<Vehicledto> vehicle = vehicleRepo.findVehicleById(solotrip.getCarId());
-
-            if (hotel.isEmpty() || vehicle.isEmpty() || guide.isEmpty()) {
-
-                return ResponseEntity.ok("Data Not Found");
-
-            }
-
-            SoloTrip x = solotrip;
-            Hotel h = hotel.get();
-            User g = guide.get();
-            Vehicledto v = vehicle.get();
-
-            Optional<Category> cat = categoryRepo.findById(v.getCatId());
-            Category c = cat.get();
-
-
-            SolotripViewdto s = new SolotripViewdto(
-                    x.get_id(),
-                    x.getCreatorId(),
-                    x.getDate(),
-                    x.getHotelId(),
-                    h.getName(),
-                    h.getLocation(),
-                    x.getHprice(),
-                    x.getGuideId(),
-                    x.getGlocation(),
-                    x.getGprice(),
-                    g.getUsername(),
-                    x.getCarId(),
-                    x.getCprice(),
-                    v.getFirstName() + " " + v.getLastName(),
-                    c.getTitle(),
-                    x.getStatus(),
-                    x.getStartDate()
-
-
-            );
-
-            list1.add(s);
-        }
-        return ResponseEntity.ok(list1);
+System.out.println(list.getClass().isArray());
+        return ResponseEntity.ok(list);
 
     }
 
