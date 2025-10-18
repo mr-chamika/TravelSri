@@ -1,6 +1,7 @@
 import { useLocalSearchParams, router } from 'expo-router'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar } from 'react-native'
+import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 
 export default function Bookings() {
     const { id } = useLocalSearchParams()
@@ -9,18 +10,18 @@ export default function Bookings() {
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFEB3B" />
             
-            {/* Header */}
-            <View style={styles.header}>
+            {/* Header with Gradient */}
+            <LinearGradient
+                colors={['#EAB308', '#FDE047']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.header}
+            >
                 <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
-                {/* </TouchableOpacity>
-                <Text style={styles.headerTitle}>TravelSri</Text>
-                <View style={styles.headerRight}>
-                    <TouchableOpacity style={styles.notificationButton}>
-                        <Ionicons name="notifications-outline" size={24} color="#000" />
-                        </View> */}
-                        </TouchableOpacity>
-            </View>
+                    <Ionicons name="chevron-back" size={28} color="#000" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Booking Details</Text>
+            </LinearGradient>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Trip Header */}
@@ -164,19 +165,20 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        // backgroundColor: '#FFEB3B',
-        // paddingTop: 50,
     },
     backButton: {
         padding: 8,
+        position: 'absolute',
+        left: 16,
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#000',
+        textAlign: 'center',
     },
     headerRight: {
         flexDirection: 'row',

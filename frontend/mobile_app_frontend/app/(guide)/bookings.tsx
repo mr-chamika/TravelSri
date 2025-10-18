@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MyToken {
     sub: string;
@@ -268,8 +269,17 @@ export default function App() {
                     className="py-3 rounded-lg bg-white border border-gray-300"
                     onPress={() => {
                         // Navigate to booking details
-                        if (booking.providerType === 'vehicle') {
-                            router.push(`/views/bookings/soloTrips/${booking._id}`);
+                        console.log('🔗 Navigating to booking details');
+                        console.log('  - Booking ID:', booking._id);
+                        console.log('  - Provider Type:', booking.providerType);
+                        
+                        if (booking.providerType === 'guide') {
+                            const route = `/views/bookings/soloTrips/guide/${booking._id}`;
+                            console.log('  - Route path:', route);
+                            router.push({
+                                pathname: '/views/bookings/soloTrips/guide/[id]',
+                                params: { id: booking._id }
+                            });
                         } else {
                             router.push(`/views/bookings/groupTrips/${booking._id}`);
                         }
@@ -298,6 +308,20 @@ export default function App() {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
         >
+            {/* Header with Back Button */}
+            <View className="bg-gradient-to-b from-[#EAB308] to-[#FDE047] px-4 pt-3 pb-4 flex-row items-center justify-between shadow-sm">
+                <TouchableOpacity 
+                    onPress={() => router.back()}
+                    className="py-2 px-2"
+                >
+                    <Ionicons name="chevron-back" size={28} color="#000" />
+                </TouchableOpacity>
+                <Text className="text-xl font-bold text-gray-800 flex-1 ml-2">
+                    Booking Requests
+                </Text>
+                <View className="w-10" />
+            </View>
+
             <View className="px-4 pt-4 pb-24">
                 {/* Filter Tabs */}
                 <View className="flex-row space-x-3 mb-6">
