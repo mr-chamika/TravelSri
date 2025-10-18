@@ -29,7 +29,7 @@ export interface HotelView {
     stars: number;
     ratings: number;
     reviewCount: number;
-    price: number;
+    currentPrice: number;
     name: string;
     location: string;
     description: string;
@@ -87,6 +87,9 @@ export interface Booking {
     price: number;
     status: string;
     mobileNumber: string;
+
+    singleRooms: number;
+    doubleRooms: number
 }
 
 const pic = require('../../../../assets/images/tabbar/towert.png');
@@ -101,7 +104,7 @@ export default function Views() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
-    const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, price: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", price: 0, description: '', reviewers: [], faci: [], rooms: [] });
+    const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, currentPrice: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", currentPrice: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
     const [totalPrice, setTotalPrice] = useState(0);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -327,7 +330,7 @@ export default function Views() {
 
     useEffect(() => {
         calculateTotalPrice();
-    }, [selectedRoomCounts, hotelv?.price]); // Recalculate when room counts or base item price changes
+    }, [selectedRoomCounts, hotelv?.currentPrice]); // Recalculate when room counts or base item price changes
 
     /* const getItem = (Id: string | string[]) => {
         const foundItem = groupCollection.find(collection => collection.id === Id);
@@ -337,14 +340,16 @@ export default function Views() {
             const initialRoomCounts: { [key: number]: number } = {};
             foundItem.rooms.forEach((_, index) => {
                 initialRoomCounts[index] = 0; // Start with 0 selected rooms for each type
-            });
-            setSelectedRoomCounts(initialRoomCounts);
-        }
-    }; */
+                });
+                setSelectedRoomCounts(initialRoomCounts);
+                }
+                }; */
 
     const handleRoomCountChange = (index: number, change: number) => {
         // Calculate total guests once
-        const totalGuests = (bookingData?.adults || 0) + (bookingData?.children || 0);
+
+        const totalGuests = (bookingData?.adults || 0) + (bookingData && (bookingData?.children <= bookingData?.adults ? 0 : (bookingData?.children - bookingData.adults) % 2 == 0 ? (bookingData?.children - bookingData.adults) / 2 : ((bookingData?.children - bookingData.adults) + 1) / 2) || 0);
+
 
         setSelectedRoomCounts(prevCounts => {
             const room = roomTypes[index];
@@ -387,7 +392,7 @@ export default function Views() {
 
             // Set a warning if the new capacity is less than the total guests
             if (newTotalCapacity < totalGuests) {
-                setCapacityWarning(`You need to select rooms for at least ${totalGuests} guests.`);
+                setCapacityWarning(`At least you must select ${totalGuests} capacity`);
             } else {
                 setCapacityWarning(''); // Clear the warning if capacity is sufficient
             }
@@ -417,7 +422,7 @@ export default function Views() {
 
 
     const calculateTotalPrice = () => {
-        let total = hotelv?.price || 0; // Start with the base hotel price
+        let total = hotelv?.currentPrice || 0; // Start with the base hotel price
         roomTypes.forEach((room, index) => {
             const count = selectedRoomCounts[index] || 0;
             total += count * room.pricePerRoom;
@@ -442,13 +447,13 @@ export default function Views() {
                 totalCapacity += count * room.capacity;
             }
         });
-
-        if (bookingData && totalCapacity < bookingData?.adults + bookingData?.children) {
-
-            alert('Select enough accomodation')
-            return;
-
-        }
+        /* 
+                if (bookingData && totalCapacity < bookingData?.adults + bookingData?.children) {
+        
+                    alert('Select enough accomodation')
+                    return;
+        
+                } */
 
 
 
@@ -494,6 +499,9 @@ export default function Views() {
             book.status = 'active';
             book.mobileNumber = hotelv?.mobileNumber;
 
+            book.singleRooms = selectedRoomCounts[0] ? selectedRoomCounts[0] : 0
+            book.doubleRooms = selectedRoomCounts[1] ? selectedRoomCounts[1] : 0
+
             await fetch(`http://localhost:8080/traveler/create-booking`, {
 
                 method: 'POST',
@@ -504,7 +512,6 @@ export default function Views() {
                 .then(res => res.text())
                 .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
                 .catch(err => console.log("Error from booking create " + err))
-
         }
 
     }

@@ -5,6 +5,8 @@ import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from 'jwt-decode';
+import { Client } from "@stomp/stompjs";
+
 
 
 cssInterop(Image, { className: "style" });
@@ -19,8 +21,9 @@ const srch = require('../../assets/images/search1.png');
 interface Trip {
 
   _id: string,
-  thumbnail: string,
-  destination: string
+  dates: string[],
+  adults: number,
+  children: number
 
 }
 
@@ -66,45 +69,251 @@ export default function Index() {
   const [search, setSearch] = useState('');
   const [username, setUsername] = useState('')
   const [trips, setTrips] = useState<Trip[]>([])
+  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [stompShopClient, setStompShopClient] = useState<Client | null>(null);
+  const [privateStompClient, setPrivateStompClient] = useState<Client | null>(null);
+  const [mtoken, setMtoken] = useState('')
+  const [role, setRole] = useState('')
 
-  const handler = () => {
+  //
+  //broadcast notifications
+  useEffect(() => {
 
-    console.log(search)
+    const client = new Client({
 
-    fetch('http://192.168.215.38:3000/api/users', {
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
 
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: search })
+        console.log('Connected to public STOMP server');
+
+        client.subscribe('/topic/messages', (message) => {
+          const handle = async () => {
+
+            const x = JSON.parse(message.body)
+            if (x.to != mtoken) {
+            }
+          }
+          handle();
+        })
+      }
 
     })
-      .then((res) => res.json())
-      .then(data => { console.log(data) })
-      .catch(err => console.log(err))
 
+    client.activate();
+    setStompClient(client)
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to public STOMP server');
+
+        client.subscribe('/topicShops/messages', (message) => {
+          const handle = async () => {
+
+            if (role == "merchant") {
+            }
+          }
+          handle();
+        })
+      }
+
+    })
+
+    client.activate();
+    setStompShopClient(client)
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+
+
+  const sendMessage = () => {
+
+    var text = "publicsss notification"
+
+    if (stompClient && stompClient.connected && mtoken) {
+
+      stompClient.publish({
+
+        destination: '/app/toAll',
+        body: JSON.stringify({ 'text': text, 'to': mtoken })
+
+      })
+
+    } else {
+
+      console.log("STOMP client is not connected. Message not sent.")
+
+    }
   }
 
+  //to all merchants
 
-  const getTrips = async () => {
-    try {
+  const sendMessageToShops = () => {
+
+    var text = "publicsss notification to shops"
+
+    if (stompShopClient && stompShopClient.connected && mtoken) {
+
+      stompShopClient.publish({
+
+        destination: '/app/toAllShops',
+        body: JSON.stringify({ 'text': text, 'to': mtoken })
+
+      })
+
+    } else {
+
+      console.log("STOMP client is not connected. Message not sent.")
+
+    }
+  }
+
+  // Add a function to handle the private connection and subscription
+
+
+  // Use useEffect to manage the connection lifecycle
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('Connected to private STOMP server');
+        setPrivateStompClient(client);
+
+        client.subscribe(`/user/queue/notifications`, (message) => {
+
+        });
+      },
+      onStompError: (frame) => {
+
+        console.error('Additional details: ' + frame.body)
+
+      }
+
+    })
+
+    const connectAndSubscribePrivate = async () => {
       const keys = await AsyncStorage.getItem("token");
       if (keys) {
 
-        const x: MyToken = jwtDecode(keys)
+        client.connectHeaders = {
+          Authorization: `Bearer ${keys}`,
+        };
 
-        const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
-        //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
+        client.activate();
+        setPrivateStompClient(client)
 
-        const data = await res.json()
+        console.log("Client is attempting to connect with these headers:", client.connectHeaders);
 
-        if (data) {
+      }
 
-          //console.log(data)
-          setTrips(data)
+    };
+    connectAndSubscribePrivate();
+
+    // Cleanup function
+    return () => {
+      // This part is fine and will handle cleanup when the component unmounts
+      if (client) {
+
+        client.deactivate();
+        console.log("Private STOMP client disconnected.");
+
+      }
+
+    };
+  }, []);
+
+  const sendPrivateMessage = (userId: string) => {
+
+    var text = "private notification"
+
+    if (privateStompClient && privateStompClient.connected) {
+      privateStompClient.publish({
+
+        destination: "/app/private",
+        body: JSON.stringify({ 'text': text, 'to': userId })//'to' is receivers id
+
+      })
+
+    } else {
+      console.log("STOMP client is not connected. Private Message not sent.");
+    }
+  }
+
+  //
+
+  useFocusEffect(
+    useCallback(() => {
+
+      const getAll = async () => {
+
+        const keys = await AsyncStorage.getItem("token");
+
+
+        if (keys) {
+
+          const x = jwtDecode(keys)
+          const y: MyToken = jwtDecode(keys)
+          if (x && x.exp && x.sub) {
+            if (x.exp * 1000 < Date.now()) {
+
+              loggingout()
+              return;
+            }
+            setUsername(x.sub)
+            getTrips(keys)
+
+
+
+
+          }
+
+        } else {
+
+          loggingout();
 
         }
+
+      }
+      getAll();
+
+    }, []) // The empty dependency array here is for useCallback, not the effect itself
+  );
+
+
+  const getTrips = async (keys: string) => {
+    try {
+
+      const x: MyToken = jwtDecode(keys)
+      setMtoken(x.id)
+      setRole(x.roles.toString())
+      const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
+      //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
+
+      const data = await res.json()
+
+      if (data) {
+
+        console.log(data)
+        setTrips(data)
 
       }
 
@@ -126,33 +335,6 @@ export default function Index() {
     });
 
   }
-
-  useFocusEffect(
-    useCallback(() => {
-
-      const getAll = async () => {
-
-        const keys = await AsyncStorage.getItem("token");
-        if (keys) {
-
-          const x = jwtDecode(keys)
-          if (x && x.exp && x.sub) {
-            if (x.exp * 1000 < Date.now()) {
-
-              loggingout()
-
-            } else {
-              setUsername(x.sub)
-            }
-          }
-
-        }
-
-      }
-      getAll()
-      getTrips()
-    }, [])
-  );
 
 
   /* useFocusEffect(
@@ -220,6 +402,16 @@ export default function Index() {
 
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
+        <TouchableOpacity onPress={sendMessage}>
+          <Text>for all</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
+          <Text>private</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={sendMessageToShops}>
+          <Text>all shops</Text>
+        </TouchableOpacity>
+
       </View>
       <View className="h-[40%]">
 
@@ -236,13 +428,15 @@ export default function Index() {
             {trips.map((item) => {
 
               return (
-                <TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
+                //<TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
+                <TouchableOpacity onPress={() => router.push({ pathname: `/(tabs)/creates`, params: { id: item._id } })} className="w-[83px]" key={item._id}>
                   <Image
                     className="w-[83px] h-[190px] rounded-[23px] shadow-gray-400 shadow-lg"
-                    source={{ uri: `data:image/jpeg;base64,${item.thumbnail}` }}
+                    source={t}
+                  //source={{ uri: `data:image/jpeg;base64,${item.thumbnail}` }}
                   />
                   <Text className="mt-2 text-[10px] italic text-center">
-                    {item.destination}
+                    {item.dates[0]}
                   </Text>
                 </TouchableOpacity>
               )

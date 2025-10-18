@@ -21,11 +21,15 @@ public class THoteldto {
     private String thumbnail;
     private int originalPrice;
     private int currentPrice;
+    private int singlePrice;
+    private int doublePrice;
     private String taxes;
     private String priceDescription;
     private String specialOffer;//if available
     private List<String> freeFeatures;
     private String mobileNumber;
+    private int availableDouble;
+    private int availableSingle;
 
     public THoteldto(
             String _id,
@@ -41,7 +45,11 @@ public class THoteldto {
             String priceDescription,
             String specialOffer,//if available
             List<String> freeFeatures,
-            String mobileNumber
+            String mobileNumber,
+            int singlePrice,
+            int doublePrice,
+            int availableSingle,
+            int availableDouble
 
     ) {
 
@@ -59,6 +67,10 @@ public class THoteldto {
         this.specialOffer = specialOffer;
         this.freeFeatures = freeFeatures;
         this.mobileNumber = mobileNumber;
+        this.singlePrice = singlePrice;
+        this.doublePrice = doublePrice;
+        this.availableSingle = availableSingle;
+        this.availableDouble = availableDouble;
 
     }
 

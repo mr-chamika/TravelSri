@@ -16,11 +16,11 @@ import java.util.List;
 public class SolotripViewdto {
 
 
-    public SolotripViewdto(String _id,String creatorId,String routeId, String hotelId,String hotel, String hlocation, int hprice, String guideId, String glocation, int gprice,String guide, String carId, int cprice,String driver,String category,String start,String destination,String status,String startDate,String map) {
+    public SolotripViewdto(String _id,String creatorId,String date, String hotelId,String hotel, String hlocation, int hprice, String guideId, String glocation, int gprice,String guide, String carId, int cprice,String driver,String category,String status,String startDate) {
 
         this._id = _id;
         this.creatorId = creatorId;
-        this.routeId = routeId;
+        this.date=date;
 
         // Hotel fields
         this.hotelId = hotelId;
@@ -40,17 +40,15 @@ public class SolotripViewdto {
         this.driver = driver;
         this.category = category;
 
-        this.start = start;
-        this.destination = destination;
         this.status = status;
         this.startDate = startDate;
-        this.map = map;
 
     }
 
     @Id
     private String _id;
     private String creatorId;
+    private String date;
     //route selection
     private String routeId;
 
@@ -74,12 +72,8 @@ public class SolotripViewdto {
     private String category;
 
     //other
-    private String start;
-    private String destination;
-    //private List<String> images;
     private String status;//"confirmed","pending","cancel"
     private String startDate;//vehicle booked date
-    private String map;
 
 
 }
