@@ -111,11 +111,9 @@ const LoginPage = () => {
       
       // Parse the JSON response
       const data = await response.json();
-      console.log(data.token)
       if (response.ok && data.token) {
-
+        
         const decoded = jwtDecode(data.token);
-
         if(decoded.type == 'hotel'){
         // Success! Show success message and navigate to dashboard
         showFlash('success', 'Login successful! Welcome back!');
@@ -178,11 +176,11 @@ const LoginPage = () => {
               window.location.href = '/dashboard';
           }
         }, 1500);
-      }else{
+        }else{
 
-        navigate('/admin');
+          navigate('/admin');
 
-      }
+        }
       } else {
         // Failed login - show error message from server or generic error
         const errorMessage = data.error || 'Invalid username or password. Please try again.';

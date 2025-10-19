@@ -22,8 +22,8 @@ const PendingTripDetails = () => {
     // API base URLs
     const API_BASE_URLS = {
         hotel: "http://localhost:8080/api/quotations",
-        vehicle: "http://localhost:8080/api/quotation",
-        guide: "http://localhost:8080/api/guide-quotation"
+        vehicle: "http://localhost:8080/api/vehicle",
+        guide: "http://localhost:8080/api/guide"
     };
 
     useEffect(() => {
@@ -45,21 +45,25 @@ const PendingTripDetails = () => {
             setLoadingQuotations(true);
             setError("");
 
-            const [hotelResponse, vehicleResponse, guideResponse] = await Promise.all([
-                axios.get(`${API_BASE_URLS.hotel}/trip/${pendingTripId}`)
-                //axios.get(`${API_BASE_URLS.vehicle}/trip/${pendingTripId}`),
-                // axios.get(`${API_BASE_URLS.guide}/trip/${pendingTripId}`)
+            const [hotelResponse,vehicleResponse, guideResponse] = await Promise.all([
+            //const [hotelResponse, guideResponse] = await Promise.all([
+                axios.get(`${API_BASE_URLS.hotel}/trip/${pendingTripId}`),
+                axios.get(`${API_BASE_URLS.vehicle}/trip/${pendingTripId}`),
+                axios.get(`${API_BASE_URLS.guide}/trip/${pendingTripId}`)
             ]);
+            
+                        console.log("Hotel Quotations:", hotelResponse.data);
+                        console.log("Guide Quotations:", guideResponse.data);
 
             setHotelQuotations(hotelResponse.data || []);
+            setGuideQuotations(guideResponse.data || []);
+            setVehicleQuotations(vehicleResponse.data || []);
 
-            console.log("Hotel Quotations:", hotelResponse.data);
-            //setVehicleQuotations(vehicleResponse.data || []);
-            //setGuideQuotations(guideResponse.data || []);
+            
 
         } catch (error) {
-            console.error("Error fetching quotations:", error);
-            setError("Failed to fetch quotations. Please try again.");
+            //console.error("Error fetching quotations:", error);
+            //setError("Failed to fetch quotations. Please try again.");
         } finally {
             setLoadingQuotations(false);
         }
@@ -90,6 +94,16 @@ const PendingTripDetails = () => {
         } catch (error) {
             return dateString;
         }
+    };
+
+     const getGuidePriceRange = () => {
+        if (guideQuotations.length === 0) return null;
+        const prices = guideQuotations.map(q => q.quotedAmount).filter(p => p != null);
+        if (prices.length === 0) return null;
+        return {
+            min: Math.min(...prices),
+            max: Math.max(...prices)
+        };
     };
 
     const quotationsList = [

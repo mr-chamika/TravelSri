@@ -6,6 +6,10 @@ import com.example.student.model.VehicleQuotation;
 import com.example.student.repo.PendingTripRepo;
 import com.example.student.repo.UserRepo;
 import com.example.student.repo.VehicleQuotationRepo;
+import com.example.student.model.Vehicle;
+import com.example.student.repo.PendingTripRepo;
+import com.example.student.repo.VehicleQuotationRepo;
+import com.example.student.repo.VehicleRepo;
 import com.example.student.repo.VehicleOwnerQuotationRepo;
 import com.example.student.model.VehicleOwnerQuotation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/VehicleOwnerQuotation")
+@RequestMapping("/api/vehicle")
 public class VehicleQuotationController {
 
     @Autowired

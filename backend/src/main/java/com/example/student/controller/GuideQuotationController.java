@@ -17,8 +17,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8081")
-@RequestMapping("/guide")
+@CrossOrigin
+@RequestMapping("/api/guide")
 public class GuideQuotationController {
 
     @Autowired
@@ -285,58 +285,75 @@ public class GuideQuotationController {
         }
     }
 
-    /**
-     * NEW ENDPOINT: Get all guide quotations for a specific pending trip
-     * @param pendingTripId The ID of the pending trip
-     * @return List of guide quotations for the specified trip
-     */
-    @GetMapping("/quotations/pendingTrip/{pendingTripId}")
-    public ResponseEntity<?> getQuotationsByPendingTripId(@PathVariable String pendingTripId) {
-        System.out.println("Fetching guide quotations for pending trip ID: " + pendingTripId);
+//    /**
+//     * NEW ENDPOINT: Get all guide quotations for a specific pending trip
+//     * @param pendingTripId The ID of the pending trip
+//     * @return List of guide quotations for the specified trip
+//     */
+//    @GetMapping("/quotations/pendingTrip/{pendingTripId}")
+//    public ResponseEntity<?> getQuotationsByPendingTripId(@PathVariable String pendingTripId) {
+//        System.out.println("Fetching guide quotations for pending trip ID: " + pendingTripId);
+//
+//        try {
+//            // Validate input
+//            if (pendingTripId == null || pendingTripId.trim().isEmpty()) {
+//                System.out.println("Invalid pending trip ID provided");
+//                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+//                        .body("Pending trip ID cannot be null or empty");
+//            }
+//
+//            // Check if the pending trip exists
+//            Optional<PendingTrip> tripOptional = guideTourRepo.findById(pendingTripId);
+//            if (tripOptional.isEmpty()) {
+//                System.out.println("Pending trip not found with ID: " + pendingTripId);
+//                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+//                        .body("Pending trip not found with id: " + pendingTripId);
+//            }
+//
+//            // Fetch quotations for the pending trip
+//            List<GuideQuotation> quotations = quotationRepo.findByPendingTripId(pendingTripId);
+//
+//            if (quotations.isEmpty()) {
+//                System.out.println("No quotations found for pending trip ID: " + pendingTripId);
+//                return ResponseEntity.ok(Collections.emptyList());
+//            }
+//
+//            // Optionally, you can enhance the response with additional trip details
+//            PendingTrip trip = tripOptional.get();
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("pendingTripId", pendingTripId);
+//            response.put("tripTitle", trip.getTitle());
+//            response.put("tripDetails", trip);
+//            response.put("quotationsCount", quotations.size());
+//            response.put("quotations", quotations);
+//
+//            System.out.println("Found " + quotations.size() + " quotations for pending trip ID: " + pendingTripId);
+//            return ResponseEntity.ok(response);
+//
+//        } catch (Exception e) {
+//            System.err.println("Error fetching quotations for pending trip: " + e.getMessage());
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Error fetching quotations: " + e.getMessage());
+//        }
+//    }
+    
+    @GetMapping("/trip/{pendingTripId}")
+public ResponseEntity<List<GuideQuotation>> getQuotationsByPendingTripId(@PathVariable("pendingTripId") String pendingTripId) {
+
 
         try {
-            // Validate input
-            if (pendingTripId == null || pendingTripId.trim().isEmpty()) {
-                System.out.println("Invalid pending trip ID provided");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Pending trip ID cannot be null or empty");
-            }
+            System.out.println("heeeeee"+pendingTripId);
 
-            // Check if the pending trip exists
-            Optional<PendingTrip> tripOptional = guideTourRepo.findById(pendingTripId);
-            if (tripOptional.isEmpty()) {
-                System.out.println("Pending trip not found with ID: " + pendingTripId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Pending trip not found with id: " + pendingTripId);
-            }
-
-            // Fetch quotations for the pending trip
-            List<GuideQuotation> quotations = quotationRepo.findByPendingTripId(pendingTripId);
-
-            if (quotations.isEmpty()) {
-                System.out.println("No quotations found for pending trip ID: " + pendingTripId);
-                return ResponseEntity.ok(Collections.emptyList());
-            }
-
-            // Optionally, you can enhance the response with additional trip details
-            PendingTrip trip = tripOptional.get();
-            Map<String, Object> response = new HashMap<>();
-            response.put("pendingTripId", pendingTripId);
-            response.put("tripTitle", trip.getTitle());
-            response.put("tripDetails", trip);
-            response.put("quotationsCount", quotations.size());
-            response.put("quotations", quotations);
-
-            System.out.println("Found " + quotations.size() + " quotations for pending trip ID: " + pendingTripId);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("Error fetching quotations for pending trip: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error fetching quotations: " + e.getMessage());
-        }
+        List<GuideQuotation> quotations = quotationRepo.findByPendingTripId(pendingTripId);
+        System.out.println(quotations);
+        return new ResponseEntity<>(quotations, HttpStatus.OK);
+    } catch (IllegalArgumentException e) {
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    } catch (Exception e) {
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
 
     /**
      * NEW ENDPOINT: Get guide quotations by pending trip ID with detailed information
@@ -347,7 +364,7 @@ public class GuideQuotationController {
     @GetMapping("/quotations/pendingTrip/{pendingTripId}/detailed")
     public ResponseEntity<?> getDetailedQuotationsByPendingTripId(@PathVariable String pendingTripId) {
         System.out.println("Fetching detailed guide quotations for pending trip ID: " + pendingTripId);
-
+        
         try {
             // Validate input
             if (pendingTripId == null || pendingTripId.trim().isEmpty()) {
@@ -364,7 +381,7 @@ public class GuideQuotationController {
 
             // Fetch quotations for the pending trip
             List<GuideQuotation> quotations = quotationRepo.findByPendingTripId(pendingTripId);
-
+            
             if (quotations.isEmpty()) {
                 System.out.println("No quotations found for pending trip ID: " + pendingTripId);
                 return ResponseEntity.ok(Collections.emptyMap());
@@ -373,7 +390,7 @@ public class GuideQuotationController {
             // Create detailed response with statistics
             PendingTrip trip = tripOptional.get();
             List<Map<String, Object>> detailedQuotations = new ArrayList<>();
-
+            
             for (GuideQuotation quotation : quotations) {
                 Map<String, Object> quotationDetails = new HashMap<>();
                 quotationDetails.put("quotationId", quotation.get_id());
@@ -384,7 +401,7 @@ public class GuideQuotationController {
                 quotationDetails.put("status", quotation.getStatus());
                 quotationDetails.put("createdAt", quotation.getCreatedAt());
                 quotationDetails.put("updatedAt", quotation.getUpdatedAt());
-
+                
                 detailedQuotations.add(quotationDetails);
             }
 
@@ -394,7 +411,7 @@ public class GuideQuotationController {
             statistics.put("pendingQuotations", quotations.stream().filter(q -> "pending".equals(q.getStatus())).count());
             statistics.put("acceptedQuotations", quotations.stream().filter(q -> "accepted".equals(q.getStatus())).count());
             statistics.put("rejectedQuotations", quotations.stream().filter(q -> "rejected".equals(q.getStatus())).count());
-
+            
             // Price statistics
             OptionalDouble minAmount = quotations.stream()
                     .filter(q -> q.getQuotedAmount() != null)
@@ -408,7 +425,7 @@ public class GuideQuotationController {
                     .filter(q -> q.getQuotedAmount() != null)
                     .mapToDouble(GuideQuotation::getQuotedAmount)
                     .average();
-
+            
             statistics.put("minQuotedAmount", minAmount.isPresent() ? minAmount.getAsDouble() : 0.0);
             statistics.put("maxQuotedAmount", maxAmount.isPresent() ? maxAmount.getAsDouble() : 0.0);
             statistics.put("averageQuotedAmount", avgAmount.isPresent() ? avgAmount.getAsDouble() : 0.0);
@@ -450,7 +467,7 @@ public class GuideQuotationController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Pending trip ID cannot be null or empty");
             }
-
+            
             if (status == null || status.trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Status cannot be null or empty");
@@ -465,7 +482,7 @@ public class GuideQuotationController {
 
             // Fetch all quotations for the trip
             List<GuideQuotation> allQuotations = quotationRepo.findByPendingTripId(pendingTripId);
-
+            
             // Filter by status
             List<GuideQuotation> filteredQuotations = allQuotations.stream()
                     .filter(q -> status.equalsIgnoreCase(q.getStatus()))
@@ -485,26 +502,25 @@ public class GuideQuotationController {
     /**
      * NEW ENDPOINT: Update quotation status (accept/reject)
      * @param quotationId The ID of the quotation
-     * @param statusUpdate new status (accepted, rejected, pending, expired)
      * @return Updated quotation
      */
     @PutMapping("/quotations/{quotationId}/status")
     public ResponseEntity<?> updateQuotationStatus(
-            @PathVariable String quotationId,
+            @PathVariable String quotationId, 
             @RequestBody Map<String, String> statusUpdate) {
-
+        
         System.out.println("Updating quotation status for ID: " + quotationId);
-
+        
         try {
             String newStatus = statusUpdate.get("status");
             String reason = statusUpdate.get("reason"); // Optional reason for rejection
-
+            
             // Validate input
             if (quotationId == null || quotationId.trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Quotation ID cannot be null or empty");
             }
-
+            
             if (newStatus == null || newStatus.trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Status cannot be null or empty");
@@ -520,7 +536,7 @@ public class GuideQuotationController {
             GuideQuotation quotation = quotationOptional.get();
             quotation.setStatus(newStatus);
             quotation.setUpdatedAt(new Date());
-
+            
             // Add reason to notes if rejecting
             if ("rejected".equalsIgnoreCase(newStatus) && reason != null && !reason.trim().isEmpty()) {
                 String currentNotes = quotation.getQuotationNotes() != null ? quotation.getQuotationNotes() : "";
@@ -529,7 +545,7 @@ public class GuideQuotationController {
 
             GuideQuotation updatedQuotation = quotationRepo.save(quotation);
             System.out.println("Successfully updated quotation status to: " + newStatus);
-
+            
             return ResponseEntity.ok(updatedQuotation);
 
         } catch (Exception e) {

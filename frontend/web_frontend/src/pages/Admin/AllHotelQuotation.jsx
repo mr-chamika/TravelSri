@@ -12,7 +12,11 @@ const AllHotelQuotation = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedQuotation, setSelectedQuotation] = useState(null);
 
+    // Creating upcoming trip state
+    const [creatingUpcomingTrip, setCreatingUpcomingTrip] = useState(false);
+
     const API_BASE_URL = "http://localhost:8080/api/quotations";
+    const UPCOMING_TRIP_API_URL = "http://localhost:8080/api/upcomingTrip";
 
     useEffect(() => {
         loadQuotations();
@@ -92,6 +96,113 @@ const AllHotelQuotation = () => {
         localStorage.setItem('selectedHotelQuotation', JSON.stringify(quotation));
         const price = quotation.totalPricePerPerson || quotation.finalAmount || quotation.totalAmount;
         alert(`Selected: ${quotation.hotelId} - ${formatPriceLKR(quotation.price)}`);
+    };
+
+    const createUpcomingTripFromData = (selectedQuotation) => {
+        if (!tripData || !selectedQuotation) {
+            throw new Error("Missing trip data or selected quotation");
+        }
+
+        const upcomingTrip = {
+            // Trip basic information from PendingTrip
+            originalPendingTripId: tripData.ptId,
+            title: tripData.title,
+            startLocation: tripData.startLocation,
+            endLocation: tripData.endLocation,
+            numberOfSeats: tripData.numberOfSeats,
+            date: tripData.date,
+            numberOfDates: tripData.numberOfDates,
+            descriptionAboutStartLocation: tripData.descriptionAboutStartLocation,
+            intermediatePlaces: tripData.intermediatePlaces,
+            pickupTime: tripData.pickupTime,
+            path: tripData.path,
+
+            // Selected service providers
+            selectedHotelId: selectedQuotation.hotelId,
+            selectedQuotationId: selectedQuotation.quotationId,
+            quoteNumber: selectedQuotation.quoteNumber,
+
+            // Accommodation details from quotation
+            groupSize: selectedQuotation.groupSize,
+            checkInDate: selectedQuotation.checkInDate,
+            checkOutDate: selectedQuotation.checkOutDate,
+            standardRooms: selectedQuotation.standardRooms,
+            deluxRooms: selectedQuotation.deluxRooms,
+            familyRooms: selectedQuotation.familyRooms,
+            suites: selectedQuotation.suites,
+            mealPlan: selectedQuotation.mealPlan,
+            specialRequirements: selectedQuotation.specialRequirements,
+
+             // Pricing information
+            accommodationPricePerPerson: selectedQuotation.accommodationPricePerPerson,
+            mealPricePerPerson: selectedQuotation.mealPricePerPerson,
+            hotelTotalAmount: selectedQuotation.totalAmount,
+            hotelDiscountOffered: selectedQuotation.discountOffered,
+            hotelFinalAmount: selectedQuotation.finalAmount,
+
+            // Hotel information
+            hotelUsername: selectedQuotation.hotelUsername,
+
+            // Status information
+            tripStatus: "Confirmed",
+            bookingStatus: "Booked",
+            paymentStatus: "Pending",
+
+            // Admin information
+            createdBy: "admin", // You can get this from auth context
+            adminNotes: `Trip created from pending trip ${tripData.ptId} with hotel quotation ${selectedQuotation.quotationId}`
+        };
+
+        return upcomingTrip;
+    };
+
+    const handleContinue = async () => {
+        // Check if a quotation is selected
+        const selectedQuotationData = localStorage.getItem('selectedHotelQuotation');
+        if (!selectedQuotationData) {
+            alert('Please select a hotel quotation before continuing.');
+            return;
+        }
+
+        const selectedQuotation = JSON.parse(selectedQuotationData);
+        
+        try {
+            setCreatingUpcomingTrip(true);
+            console.log("=== CREATING UPCOMING TRIP ===");
+            
+            // Create upcoming trip object
+            const upcomingTripData = createUpcomingTripFromData(selectedQuotation);
+            console.log("Upcoming trip data:", upcomingTripData);
+
+            // Send to backend
+            const response = await axios.post(`${UPCOMING_TRIP_API_URL}/create`, upcomingTripData, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log("Created upcoming trip:", response.data);
+
+            // Store the upcoming trip data
+            localStorage.setItem('currentUpcomingTrip', JSON.stringify(response.data));
+            localStorage.setItem('upcomingTripCreated', 'true');
+
+            // Navigate to next step
+            window.location.href = "/pendingtripdetails";
+            
+        } catch (error) {
+            console.error("Error creating upcoming trip:", error);
+            
+            if (error.response?.status === 400) {
+                alert('Invalid data provided for creating upcoming trip.');
+            } else if (error.response?.status === 500) {
+                alert('Server error occurred while creating upcoming trip.');
+            } else {
+                alert('Unable to create upcoming trip. Please try again later.');
+            }
+        } finally {
+            setCreatingUpcomingTrip(false);
+        }
     };
 
     const handleDownloadPDF = async (quotationId) => {
@@ -222,11 +333,20 @@ const AllHotelQuotation = () => {
                         </div>
 
                         <div className="flex justify-center">
-                            <a href="/pendingtripdetails" className="w-full sm:w-auto">
-                                <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full sm:w-auto">
-                                    Continue
-                                </button>
-                            </a>
+                            <button 
+                                onClick={handleContinue}
+                                disabled={creatingUpcomingTrip}
+                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {creatingUpcomingTrip ? (
+                                    <div className="flex items-center">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                                        Creating Trip...
+                                    </div>
+                                ) : (
+                                    'Continue'
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>

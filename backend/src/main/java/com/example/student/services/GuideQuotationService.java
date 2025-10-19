@@ -107,6 +107,9 @@ public class GuideQuotationService implements IGuideQuotationService {
 
     @Override
     public List<GuideQuotation> getQuotationsByPendingTripId(String pendingTripId) {
+
+        System.out.println("getQuotationsByPendingTripIdcccccc: " + pendingTripId);
+
         if (pendingTripId == null || pendingTripId.trim().isEmpty()) {
             throw new IllegalArgumentException("Pending trip ID cannot be null or empty");
         }
