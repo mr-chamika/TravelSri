@@ -3,6 +3,7 @@ import { Image } from 'expo-image'
 import { useState, useEffect } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { jwtDecode } from 'jwt-decode'
+import { useRouter } from 'expo-router'
 import BackButton from '../../components/ui/backButton';
 
 import Animated, {
@@ -30,9 +31,11 @@ interface MyToken {
 }
 
 export default function Profile() {
+    const router = useRouter();
     const [notify, setNotify] = useState(false);
     const [settings, setSettings] = useState([{ dark: true }, { dark: true }, { dark: true }])
     const [show, setShow] = useState(false);
+    const [userToken, setUserToken] = useState<MyToken | null>(null);
     const [userInfo, setUserInfo] = useState({
         username: 'User',
         email: 'user@example.com',
@@ -58,6 +61,8 @@ export default function Profile() {
                         // Try multiple fields for username with detailed logging
                         const username = decoded.username || decoded.name || decoded.sub || 'User';
                         const email = decoded.email || 'user@example.com';
+                        
+                        setUserToken(decoded);
                         
                         console.log('👤 Extracted username:', username);
                         console.log('   - decoded.username:', decoded.username);
@@ -160,31 +165,15 @@ export default function Profile() {
                         <Image style={styles.profileImage} source={profile} />
                         <Text style={styles.profileName}>{userInfo.username}</Text>
                     </View>
+                    <TouchableOpacity 
+                        style={styles.editProfileButton}
+                        onPress={() => router.push(`/views/editGuideProfile/${userToken?.id || '1'}` as any)}
+                    >
+                        <Image style={styles.editProfileIcon} source={edit} />
+                        <Text style={styles.editProfileText}>Edit Profile</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.contentContainer}>
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Personal Details</Text>
-                            <TouchableOpacity onPress={() => alert('editing....')}>
-                                <Image style={styles.editIcon} source={edit} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.sectionContent}>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Email</Text>
-                                <Text style={styles.detailValue}>{userInfo.email}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Phone</Text>
-                                <Text style={styles.detailValue}>{userInfo.phone}</Text>
-                            </View>
-                            <View style={styles.detailRow}>
-                                <Text style={styles.detailLabel}>Username</Text>
-                                <Text style={styles.detailValue}>{userInfo.username}</Text>
-                            </View>
-                        </View>
-                    </View>
-
                     {/* --- Settings Section (With Inline Animations) --- */}
                     <View style={styles.section}>
                         <View style={styles.sectionHeader}>
@@ -275,6 +264,26 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: 'bold',
         fontSize: 18,
+    },
+    editProfileButton: {
+        marginTop: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#FEFA17',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+        gap: 8,
+    },
+    editProfileIcon: {
+        width: 18,
+        height: 18,
+    },
+    editProfileText: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        color: '#333333',
     },
     contentContainer: {
         height: '100%',
