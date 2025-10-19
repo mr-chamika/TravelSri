@@ -181,7 +181,7 @@ export default function Views() {
                 book.paymentStatus = false;
                 book.facilities = item?.specializations;
                 book.price = item?.dailyRate;
-                book.status = 'active';
+                book.status = 'pending';
                 book.mobileNumber = item?.mobileNumber;
 
                 await fetch(`http://localhost:8080/traveler/create-booking`, {

@@ -142,6 +142,7 @@ const BookingsScreen: React.FC = () => {
         } catch (err) {
 
           console.log("Error from bookings getting : " + err)
+          setBookings([])
 
         }
 
@@ -525,7 +526,7 @@ const BookingsScreen: React.FC = () => {
         )}
       </View>
 
-      {booking.facilities && (
+      {booking.facilities && booking.facilities.length > 0 && (
         <View style={styles.inclusionsSection}>
           <Text style={styles.inclusionsTitle}>Includes:</Text>
           <View style={styles.inclusionsList}>
@@ -546,13 +547,13 @@ const BookingsScreen: React.FC = () => {
 
       <View style={styles.priceSection}>
         {/* Apply style to align icon and text horizontally */}
-        <View style={styles.detailItem}>
+        {booking.status != 'cancelled' && <View style={styles.detailItem}>
           <Icon name="phone" size={18} color="#4b5563" />
           <Text style={styles.detailText}>{booking.mobileNumber}</Text>
-        </View>
+        </View>}
 
         {/* This part remains the same */}
-        <View style={styles.priceInfo}>
+        <View style={booking.status == 'cancelled' ? styles.priceInfox : styles.priceInfo}>
           <Text style={styles.priceAmount}>
             LKR {booking.price.toLocaleString()}
           </Text>
@@ -562,7 +563,7 @@ const BookingsScreen: React.FC = () => {
       <View style={styles.actionButtons}>
 
 
-        {booking.paymentStatus != true && (
+        {booking.paymentStatus != true || booking.status != 'cancelled' && (
           <TouchableOpacity
             style={styles.modifyButton}
             onPress={() => handleModifyBooking(booking)}
@@ -572,19 +573,18 @@ const BookingsScreen: React.FC = () => {
           </TouchableOpacity>
         )}
 
-        {booking.paymentStatus != true && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => handleCancelBooking(booking)}
-          >
-            <Icon name="cancel" size={16} color={colors.red} />
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
+        {booking.status != 'cancelled' && <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => handleCancelBooking(booking)}
+        >
+          <Icon name="cancel" size={16} color={colors.red} />
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>}
 
-        <TouchableOpacity style={styles.viewButton}>
+
+        {booking.status != 'cancelled' && <TouchableOpacity style={styles.viewButton}>
           <Text style={styles.viewButtonText}>View Details</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
     </TouchableOpacity>
   );
@@ -954,6 +954,10 @@ const styles = StyleSheet.create({
   },
   priceInfo: {
     alignItems: 'flex-end',
+  },
+  priceInfox: {
+    alignItems: 'flex-end',
+    width: '100%'
   },
   priceAmount: {
     fontSize: 18,

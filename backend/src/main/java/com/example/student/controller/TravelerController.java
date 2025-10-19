@@ -456,7 +456,7 @@ System.out.println(list);
                 SoloTrip x = new SoloTrip(
 
                         (String) body.get("serviceId"),
-                        (String) obj.get("date"),
+                        (String) order.get("date"),
                         newCreatedTrip.get_id(),
                         Integer.parseInt(order.get("dayNumber").toString()),
                         (String) body.get("type"),
@@ -618,6 +618,56 @@ System.out.println(list.getClass().isArray());
 
     @PostMapping("/create-booking")
     public String CreateBooking(@RequestBody TravelerBooking obj) {
+System.out.println(obj.toString());
+        if(obj.getType().equals("guides")) {
+
+            User guide = userRepo.findById(obj.getServiceId()).get();
+
+            obj.setType("guide");
+
+            if(obj.getThumbnail().isEmpty()) {
+
+                obj.setThumbnail(guide.getPp());
+
+            }
+            if(obj.getTitle().equals("")) {
+
+                obj.setTitle(guide.getFirstName() + " " + guide.getLastName());
+
+            }
+
+            if(obj.getSubtitle().length==0 && guide.getTourStyles()!=null && guide.getTourStyles().length>=2) {
+
+                obj.setSubtitle(new String[]{guide.getTourStyles()[0],guide.getTourStyles()[1]});
+
+            }
+
+            if(obj.getRatings() ==0 && guide.getStars()!=0 && guide.getReviewCount()!=0){
+
+                obj.setRatings(Math.round(((float)guide.getStars()/guide.getReviewCount())*2*10)/10f);
+
+            }
+
+
+            if((obj.getFacilities() == null || obj.getFacilities().length == 0) && guide.getSpecializations()!=null && guide.getSpecializations().length>=2) {
+
+                obj.setFacilities(guide.getSpecializations());
+
+            }
+
+            if(obj.getPrice()==0 && guide.getDailyRate()!=null){
+
+                obj.setPrice(guide.getDailyRate());
+
+            }
+
+            if(obj.getMobileNumber().equals("")){
+
+                obj.setMobileNumber(guide.getMobileNumber());
+
+            }
+
+        }
 
         TravelerBooking x = travelerBookingRepo.save(obj);
 

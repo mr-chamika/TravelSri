@@ -12,6 +12,8 @@ import {
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { cssInterop } from 'nativewind'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 
 cssInterop(Image, { className: "style" });
 
@@ -38,6 +40,14 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
     </Text>
   );
 };
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
 
 interface Trip {
 
@@ -72,6 +82,7 @@ interface Trip {
   status: string;//"confirmed","pending","cancel:string"
   date: string;//vehicle booked dat:stringe
   //map: string;
+  bookingData: any;
 
 }
 
@@ -270,7 +281,48 @@ const TripPlannerScreen: React.FC = () => {
     }, [id])
   );
 
+  const bookNow = async (type: string, serviceId: string, bookingData: any, date: string) => {
 
+    const keys = await AsyncStorage.getItem("token");
+
+    if (keys) {
+
+      const token: MyToken = jwtDecode(keys)
+
+      const book = {
+
+        userId: token.id,
+        serviceId: serviceId,
+        type: type + 's',
+        thumbnail: '',
+        title: '',
+        subtitle: [],
+        location: bookingData.location,
+        bookingDates: [date],
+        ratings: 0,
+        paymentStatus: true,
+        facilities: [],
+        price: 0,
+        status: 'active',
+        mobileNumber: ''
+      }
+
+      console.log(book)
+
+      await fetch(`http://localhost:8080/traveler/create-booking`, {
+
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(book)
+
+      })
+        .then(res => res.text())
+        .then(data => { console.log(data); /*router.replace('/(tabs)/bookings')*/ })
+        .catch(err => console.log("Error from booking create " + err))
+
+    }
+
+  }
 
   // Generate day plans when trip settings change
   useEffect(() => {
@@ -452,7 +504,7 @@ const TripPlannerScreen: React.FC = () => {
                     <Text className="text-xs text-gray-500">Location: {trip.hlocation}</Text>
                   </View>
                 )} */}
-                  <TouchableOpacity className='bg-green-400 items-center pb-2 pt-1 rounded-lg'>
+                  <TouchableOpacity className='bg-green-400 items-center pb-2 pt-1 rounded-lg' onPress={() => bookNow(trip.type, trip.serviceId, trip.bookingData, trip.date)}>
                     <View><Text>Book Now</Text></View>
                   </TouchableOpacity>
                 </View>
