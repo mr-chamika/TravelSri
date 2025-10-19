@@ -8,6 +8,7 @@ import {
   StatusBar,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -32,6 +33,10 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
     'check': '✓',
     'chevron-right': '›',
     'chevron-down': '⌄',
+    'hotel': '🏨',
+    'guide': '🧭',
+    'vehicle': '🚗',
+    'delete': '🗑️'
   };
 
   return (
@@ -56,32 +61,9 @@ interface Trip {
   serviceId: string;
   type: string;
   dayNumber: string;
-  //hotel selection
-  // hotelId: string;
-  // hotel: string;
-  // hlocation: string;
-  // hprice: number;
-
-  //guide selection
-  // guideId: string;
-  // glocation: string;
-  // gprice: number;
-  // guide: string;
-
-
-  //car details
-  // carId: string;
-  // cprice: number;
-  // driver: string;
-  // category: string;
-
-  //other
-  // start: string;
-  // destination: string;
-  //<String> images:string;
   status: string;//"confirmed","pending","cancel:string"
   date: string;//vehicle booked dat:stringe
-  //map: string;
+
   bookingData: any;
 
 }
@@ -199,7 +181,8 @@ const TripPlannerScreen: React.FC = () => {
 
   const router = useRouter();
 
-
+  const [selectedId, setSelectedId] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTravelersPicker, setShowTravelersPicker] = useState(false);
   const [dayPlans, setDayPlans] = useState<DayPlan[]>([]);
@@ -219,8 +202,6 @@ const TripPlannerScreen: React.FC = () => {
       if (res) {
         let data = await res.json();
         setDataSet(data);
-        console.log('hereeeeeeeeee')
-        console.log(data)
         // Group trips by day number
         const groupedByDay: Record<number, Trip[]> = {};
         data.forEach((trip: Trip) => {
@@ -278,7 +259,7 @@ const TripPlannerScreen: React.FC = () => {
         });
 
       }
-    }, [id])
+    }, [id, isModalVisible])
   );
 
   const bookNow = async (id: string, type: string, serviceId: string, bookingData: any, date: string) => {
@@ -394,6 +375,51 @@ const TripPlannerScreen: React.FC = () => {
       });
     }
   };
+  const handleDeletePlan = async (tripId: string) => {
+
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Alert.alert(
+        "Confirm Delete",
+        "Are you sure you want to remove booking?",
+        [
+          { text: "No", style: "cancel" },
+          {
+            text: "Yes",
+            onPress: async () => {
+
+              const res = await fetch(`http://localhost:8080/traveler/trip?id=${tripId}`, {
+
+                method: 'DELETE'
+
+              });
+
+              if (res.ok) {
+
+                const data = await res.text();
+                console.log(data);
+
+              } else {
+
+                console.log('Delete failed');
+
+
+              }
+
+            },
+            style: "destructive"
+          }
+        ]
+      );
+    } else {
+
+      setIsModalVisible(true);
+      setSelectedId(tripId);
+
+    }
+
+  };
+
+
   const DatePickerModal: React.FC = () => (
     <Modal
       visible={showDatePicker}
@@ -481,18 +507,28 @@ const TripPlannerScreen: React.FC = () => {
                 }}
               >
                 <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-lg font-semibold text-gray-800">Plan {index + 1}</Text>
+                  <View className='flex-row items-center gap-2'>
+                    <Icon name={trip.type} size={16} color='yellow' />
+                    <Text className="text-lg font-semibold text-gray-800">{trip.type}</Text>
+                  </View>
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {trip.status}
-                    </Text>
-                    {/* <TouchableOpacity
+                    <TouchableOpacity
                       className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
                       onPress={() => handleEditPlan(trip._id)}
                     >
                       <Icon name="edit" size={16} color="#2563eb" />
-                      <Text className="text-xs font-medium text-blue-600">Edit</Text>
-                    </TouchableOpacity> */}
+                      {/* <Text className="mt-0.5 text-xs font-medium text-blue-600">Edit</Text> */}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
+                      onPress={() => handleDeletePlan(trip._id)}
+                    >
+                      <Icon name="delete" size={16} color="#2563eb" />
+                      {/* <Text className="mt-0.5 text-xs font-medium text-blue-600">Delete</Text> */}
+                    </TouchableOpacity>
+                    <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                      {trip.status}
+                    </Text>
                   </View>
                 </View>
 
@@ -523,7 +559,7 @@ const TripPlannerScreen: React.FC = () => {
       )}
 
       <TouchableOpacity
-        className="flex-row items-center justify-center py-2.5 rounded-md gap-1.5 bg-yellow-300"
+        className="flex-row items-center justify-center py-2.5 mt-5 rounded-md gap-1.5 bg-yellow-300"
         onPress={() => handleAddPlan(dayPlan.dayNumber)}
       >
         <Icon name="plus" size={16} color="#a16207" />
@@ -550,10 +586,12 @@ const TripPlannerScreen: React.FC = () => {
         <View className="bg-white m-4 rounded-xl p-4 shadow">
           <Text className="text-xl font-semibold text-gray-800 mb-1">Plan Your Trip</Text>
 
-          {/* Start Date */}
+          {/* Start Date/ */}
           <TouchableOpacity
             className="flex-row items-center justify-between py-4 border-b border-gray-100"
             onPress={() => setShowDatePicker(true)}
+            disabled={typeof id === "string" && id.trim() !== ""}
+
           >
             <View className="flex-row items-center flex-1">
               <View className="w-10 h-10 rounded-full bg-yellow-50 items-center justify-center mr-3">
@@ -561,10 +599,10 @@ const TripPlannerScreen: React.FC = () => {
               </View>
               <View className="flex-1">
                 <Text className="text-sm text-gray-500 mb-0.5">Start Date</Text>
-                <Text className="text-base font-semibold text-gray-800">{formatDate(tripSettings.startDate)}</Text>
+                <Text className="text-base font-semibold text-gray-800">{formatDate((typeof id === "string" && id.trim() !== "") ? new Date(dataSet[0]?.date) : tripSettings.startDate)}</Text>
               </View>
             </View>
-            <Icon name="chevron-right" size={20} color="#9ca3af" />
+            {!(typeof id === "string" && id.trim() !== "") && <Icon name="chevron-right" size={20} color="#9ca3af" />}
           </TouchableOpacity>
 
           {/* Duration */}
@@ -609,6 +647,8 @@ const TripPlannerScreen: React.FC = () => {
           <TouchableOpacity
             className="flex-row items-center justify-between py-4"
             onPress={() => setShowTravelersPicker(true)}
+            disabled={typeof id === "string" && id.trim() !== ""}
+
           >
             <View className="flex-row items-center flex-1">
               <View className="w-10 h-10 rounded-full bg-yellow-50 items-center justify-center mr-3">
@@ -622,7 +662,7 @@ const TripPlannerScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            <Icon name="chevron-right" size={20} color="#9ca3af" />
+            {!(typeof id === "string" && id.trim() !== "") && <Icon name="chevron-right" size={20} color="#9ca3af" />}
           </TouchableOpacity>
         </View>
 
@@ -671,6 +711,57 @@ const TripPlannerScreen: React.FC = () => {
         tripSettings={tripSettings}
         setTripSettings={setTripSettings}
       />
+
+      <Modal
+        transparent={true}
+        visible={isModalVisible}
+        animationType="fade"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-lg p-6 w-80 shadow-lg">
+            <Text className="text-lg font-bold text-gray-800">Confirm Delete</Text>
+            <Text className="text-base text-gray-600 my-4">Are you sure you want to delete booking ?</Text>
+            <View className="flex-row justify-center gap-3">
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(false)}
+                className="px-4 py-2 rounded"
+              >
+                <Text className="font-semibold text-red-500">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+
+                  const res = await fetch(`http://localhost:8080/traveler/trip?id=${selectedId}`, {
+
+                    method: 'DELETE'
+
+                  });
+
+                  if (res.ok) {
+
+                    const data = await res.text();
+                    console.log(data);
+                    setIsModalVisible(false);
+
+                  } else {
+
+                    console.log('Delete failed');
+                    setIsModalVisible(false);
+
+                  }
+
+
+                }}
+                className=" px-4 py-2"
+              >
+                <Text className="font-semibold text-blue-500">Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };

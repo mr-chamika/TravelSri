@@ -53,6 +53,7 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
     'share': '📤',
     'download': '📥',
     'support': '🎧',
+
   };
 
   return (
@@ -134,7 +135,15 @@ const BookingsScreen: React.FC = () => {
 
               const data = await res.json()
 
-              setBookings(data.reverse)
+              if (data.length > 0) {
+
+                setBookings(data.reverse())
+
+              } else {
+
+                setBookings([])
+
+              }
 
             }
 
@@ -423,9 +432,6 @@ const BookingsScreen: React.FC = () => {
   };
 
   const handleCancelBooking = async (booking: Booking) => {
-
-    console.log('ddddddddddddd')
-    console.log(booking._id)
 
     await fetch(`http://localhost:8080/traveler/booking-cancel`, {
 

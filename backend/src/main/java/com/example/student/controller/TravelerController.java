@@ -935,4 +935,26 @@ System.out.println(list.getClass().isArray());
         return ResponseEntity.ok(list);
     }
 
+    @DeleteMapping("/trip")
+    public String DeleteTrip(@RequestParam String id) {
+
+        Optional<SoloTrip> x = soloTripRepo.findById(id);
+
+        if(x.isPresent()) {
+
+            Optional<TravelerBooking> y = travelerBookingRepo.findById(id);
+            if(y.isPresent()) {
+
+                travelerBookingRepo.delete(y.get());
+
+            }
+
+            soloTripRepo.delete(x.get());
+            return "Success";
+
+        }
+        return "Delete Trip Failed";
+
+    }
+
 }
