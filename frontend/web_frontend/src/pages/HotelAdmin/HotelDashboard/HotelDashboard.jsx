@@ -53,9 +53,13 @@ const HotelDashboard = () => {
   
   // Hotel availability state
   const [hotelAvailability, setHotelAvailability] = useState(new Set()); // Set of available dates (YYYY-MM-DD format)
+  const [unavailabilityReasons, setUnavailabilityReasons] = useState({}); // Object mapping dates to reasons
+  const [availabilityStatus, setAvailabilityStatus] = useState({}); // Object mapping dates to their status (available/unavailable/booked)
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [selectedDateForAvailability, setSelectedDateForAvailability] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [reasonText, setReasonText] = useState(''); // State for reason input
+  const [selectedStatus, setSelectedStatus] = useState('available'); // available, unavailable, or booked
 
   // Get current user helper function
   const getCurrentUserId = () => {
@@ -90,6 +94,16 @@ const HotelDashboard = () => {
       const savedUnavailability = localStorage.getItem(userKey);
       let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
       
+      // Load saved unavailability reasons for current user
+      const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
+      const savedReasons = localStorage.getItem(userReasonsKey);
+      let reasons = savedReasons ? JSON.parse(savedReasons) : {};
+      
+      // Load saved availability status for current user
+      const userStatusKey = `hotelAvailabilityStatus_${getCurrentUserId()}`;
+      const savedStatus = localStorage.getItem(userStatusKey);
+      let statusMap = savedStatus ? JSON.parse(savedStatus) : {};
+      
       const today = new Date();
       const todayString = format(today, 'yyyy-MM-dd');
       
@@ -104,16 +118,22 @@ const HotelDashboard = () => {
       if (pastDatesToRemove.length > 0) {
         pastDatesToRemove.forEach(dateString => {
           unavailableDates.delete(dateString);
+          delete reasons[dateString]; // Also remove reasons for past dates
+          delete statusMap[dateString]; // Also remove status for past dates
         });
         
-        // Save cleaned unavailable dates for current user
+        // Save cleaned unavailable dates, reasons, and status for current user
         const unavailabilityArray = Array.from(unavailableDates);
         localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
+        localStorage.setItem(userReasonsKey, JSON.stringify(reasons));
+        localStorage.setItem(userStatusKey, JSON.stringify(statusMap));
         console.log('Cleaned past unavailable dates');
       }
       
-      // Store unavailable dates (all future dates are available by default)
+      // Store unavailable dates, reasons, and status (all future dates are available by default)
       setHotelAvailability(unavailableDates);
+      setUnavailabilityReasons(reasons);
+      setAvailabilityStatus(statusMap);
       
     } catch (err) {
       console.error('Failed to fetch hotel availability:', err);
@@ -123,13 +143,28 @@ const HotelDashboard = () => {
   };
 
   // Save hotel availability (user-specific - in real app this would save to backend)
-  const saveHotelAvailability = async (newUnavailability) => {
+  const saveHotelAvailability = async (newUnavailability, newReasons = null, newStatus = null) => {
     try {
       // Save unavailable dates for current user
       const userKey = getUserAvailabilityKey();
       const unavailabilityArray = Array.from(newUnavailability);
       localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
       setHotelAvailability(newUnavailability);
+      
+      // Save reasons if provided
+      if (newReasons !== null) {
+        const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
+        localStorage.setItem(userReasonsKey, JSON.stringify(newReasons));
+        setUnavailabilityReasons(newReasons);
+      }
+      
+      // Save status if provided
+      if (newStatus !== null) {
+        const userStatusKey = `hotelAvailabilityStatus_${getCurrentUserId()}`;
+        localStorage.setItem(userStatusKey, JSON.stringify(newStatus));
+        setAvailabilityStatus(newStatus);
+      }
+      
       return true;
     } catch (err) {
       console.error('Failed to save hotel availability:', err);
@@ -138,7 +173,7 @@ const HotelDashboard = () => {
   };
 
   // Toggle availability for a specific date
-  const toggleDateAvailability = async (dateString) => {
+  const toggleDateAvailability = async (dateString, status, reason = '') => {
     const today = new Date();
     const todayString = format(today, 'yyyy-MM-dd');
     
@@ -148,20 +183,27 @@ const HotelDashboard = () => {
     }
     
     const newUnavailability = new Set(hotelAvailability);
+    const newReasons = { ...unavailabilityReasons };
+    const newStatus = { ...availabilityStatus };
     const unavailableKey = `unavailable_${dateString}`;
     
-    // Toggle between available and unavailable
-    if (newUnavailability.has(unavailableKey)) {
-      // Currently unavailable, make it available
+    if (status === 'available') {
+      // Make available by removing from unavailable set
       newUnavailability.delete(unavailableKey);
+      delete newReasons[dateString];
+      delete newStatus[dateString];
     } else {
-      // Currently available, make it unavailable
+      // Make unavailable or booked
       newUnavailability.add(unavailableKey);
+      newStatus[dateString] = status; // 'unavailable' or 'booked'
+      if (reason.trim()) {
+        newReasons[dateString] = reason.trim();
+      }
     }
     
-    const success = await saveHotelAvailability(newUnavailability);
+    const success = await saveHotelAvailability(newUnavailability, newReasons, newStatus);
     if (success) {
-      console.log(`Hotel availability updated for ${dateString}`);
+      console.log(`Hotel availability updated for ${dateString}`, status, reason ? `with reason: ${reason}` : '');
     }
   };
 
@@ -415,6 +457,17 @@ const HotelDashboard = () => {
     setSelectedDateForAvailability(date);
     setShowAvailabilityModal(true);
   };
+
+  // useEffect to load existing reason and status when modal opens
+  useEffect(() => {
+    if (showAvailabilityModal && selectedDateForAvailability) {
+      const dateStr = format(selectedDateForAvailability, 'yyyy-MM-dd');
+      const existingReason = unavailabilityReasons[dateStr] || '';
+      const existingStatus = availabilityStatus[dateStr] || 'available';
+      setReasonText(existingReason);
+      setSelectedStatus(existingStatus);
+    }
+  }, [showAvailabilityModal, selectedDateForAvailability, unavailabilityReasons, availabilityStatus]);
 
   // State for monthly data calculated from real bookings
   const [monthlyData, setMonthlyData] = useState([]);
@@ -736,14 +789,32 @@ const HotelDashboard = () => {
     const isAvailable = isHotelAvailable(selectedDateForAvailability);
     const hasBookings = hasBookingsOnDate(selectedDateForAvailability);
     const formattedDate = format(selectedDateForAvailability, 'MMMM dd, yyyy');
+    const existingReason = unavailabilityReasons[dateString] || '';
+    const currentStatus = availabilityStatus[dateString] || 'available';
 
-    const handleToggleAvailability = async () => {
-      await toggleDateAvailability(dateString);
+    const handleSaveAvailability = async () => {
+      // Validate that reason is provided for unavailable or booked status
+      if ((selectedStatus === 'unavailable' || selectedStatus === 'booked') && !reasonText.trim()) {
+        alert('Please provide a reason for marking this date as ' + selectedStatus);
+        return;
+      }
+
+      await toggleDateAvailability(dateString, selectedStatus, reasonText);
       setShowAvailabilityModal(false);
+      setReasonText(''); // Clear the reason text after closing
+      setSelectedStatus('available'); // Reset status
     };
 
-    const handleBulkAvailability = async (days, available) => {
+    const handleBulkAvailability = async (days, status) => {
+      // Validate reason for bulk unavailable/booked
+      if ((status === 'unavailable' || status === 'booked') && !reasonText.trim()) {
+        alert('Please provide a reason for marking dates as ' + status);
+        return;
+      }
+
       const newUnavailability = new Set(hotelAvailability);
+      const newReasons = { ...unavailabilityReasons };
+      const newStatus = { ...availabilityStatus };
       const today = new Date();
       const todayString = format(today, 'yyyy-MM-dd');
       
@@ -754,121 +825,226 @@ const HotelDashboard = () => {
         
         // Only modify current and future dates
         if (dayString >= todayString) {
-          if (available) {
+          if (status === 'available') {
             // Make available by removing from unavailable set
-            newUnavailability.delete(dayString);
+            newUnavailability.delete(`unavailable_${dayString}`);
+            delete newReasons[dayString];
+            delete newStatus[dayString];
           } else {
-            // Make unavailable by adding to unavailable set
-            newUnavailability.add(dayString);
+            // Make unavailable or booked
+            newUnavailability.add(`unavailable_${dayString}`);
+            newStatus[dayString] = status;
+            if (reasonText.trim()) {
+              newReasons[dayString] = reasonText.trim();
+            }
           }
         }
       }
       
-      await saveHotelAvailability(newUnavailability);
+      await saveHotelAvailability(newUnavailability, newReasons, newStatus);
       setShowAvailabilityModal(false);
+      setReasonText(''); // Clear the reason text after closing
+      setSelectedStatus('available'); // Reset status
+    };
+
+    const handleModalClose = () => {
+      setShowAvailabilityModal(false);
+      setReasonText('');
+      setSelectedStatus('available');
     };
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold">Manage Hotel Availability</h3>
+        <div className="bg-white rounded-lg shadow-xl p-5 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">Manage Availability</h3>
             <button
-              onClick={() => setShowAvailabilityModal(false)}
-              className="text-gray-500 hover:text-gray-700"
+              onClick={handleModalClose}
+              className="text-gray-400 hover:text-gray-600"
             >
-              <span className="material-icons">close</span>
+              <span className="material-icons text-xl">close</span>
             </button>
           </div>
 
-          <div className="mb-6">
-            <div className="text-center mb-4">
-              <h4 className="text-lg font-semibold">{formattedDate}</h4>
-              <div className="flex items-center justify-center mt-2">
-                <div className={`w-4 h-4 rounded-full mr-2 ${
-                  isAvailable ? 'bg-green-500' : 'bg-red-500'
+          <div className="space-y-4">
+            {/* Date Display */}
+            <div className="text-center pb-3 border-b">
+              <h4 className="text-base font-semibold text-gray-700">{formattedDate}</h4>
+              <div className="flex items-center justify-center mt-2 text-sm">
+                <div className={`w-3 h-3 rounded-full mr-2 ${
+                  currentStatus === 'available' ? 'bg-green-500' : 
+                  currentStatus === 'booked' ? 'bg-yellow-500' : 'bg-red-500'
                 }`}></div>
                 <span className={`font-medium ${
-                  isAvailable ? 'text-green-600' : 'text-red-600'
+                  currentStatus === 'available' ? 'text-green-600' : 
+                  currentStatus === 'booked' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {isAvailable ? 'Available' : 'Unavailable'}
+                  Current: {currentStatus === 'available' ? 'Available' : 
+                   currentStatus === 'booked' ? 'Booked' : 'Unavailable'}
                 </span>
               </div>
-              {hasBookings && (
-                <div className="flex items-center justify-center mt-1">
-                  <span className="material-icons text-yellow-500 text-sm mr-1">event</span>
-                  <span className="text-sm text-yellow-600">Has existing bookings</span>
-                </div>
-              )}
             </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={handleToggleAvailability}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                  isAvailable
-                    ? 'bg-red-100 hover:bg-red-200 text-red-700'
-                    : 'bg-green-100 hover:bg-green-200 text-green-700'
-                }`}
-                disabled={hasBookings && isAvailable}
-              >
-                {hasBookings && isAvailable 
-                  ? 'Cannot make unavailable (has bookings)'
-                  : isAvailable 
-                    ? 'Mark as Unavailable' 
-                    : 'Mark as Available'
+            {/* Status Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Set Status:
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus('available')}
+                  className={`py-2 px-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedStatus === 'available'
+                      ? 'bg-green-500 text-white shadow-md'
+                      : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
+                  }`}
+                >
+                  Available
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus('booked')}
+                  className={`py-2 px-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedStatus === 'booked'
+                      ? 'bg-yellow-500 text-white shadow-md'
+                      : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
+                  }`}
+                >
+                  Booked
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus('unavailable')}
+                  className={`py-2 px-2 rounded-lg text-sm font-medium transition-all ${
+                    selectedStatus === 'unavailable'
+                      ? 'bg-red-500 text-white shadow-md'
+                      : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+                  }`}
+                >
+                  Unavailable
+                </button>
+              </div>
+            </div>
+
+            {/* Reason Input */}
+            <div>
+              <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-2">
+                Reason {(selectedStatus === 'booked' || selectedStatus === 'unavailable') && 
+                  <span className="text-red-500">*</span>}
+              </label>
+              <textarea
+                id="reason"
+                value={reasonText}
+                onChange={(e) => setReasonText(e.target.value)}
+                placeholder={
+                  selectedStatus === 'booked' 
+                    ? 'Private booking, Wedding, etc.' 
+                    : selectedStatus === 'unavailable'
+                    ? 'Maintenance, Renovation, etc.'
+                    : 'Optional notes...'
                 }
-              </button>
-
-              <div className="border-t pt-3">
-                <h5 className="font-medium mb-2">Bulk Actions:</h5>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleBulkAvailability(7, true)}
-                    className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm"
-                  >
-                    Next 7 Days Available
-                  </button>
-                  <button
-                    onClick={() => handleBulkAvailability(7, false)}
-                    className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
-                  >
-                    Next 7 Days Unavailable
-                  </button>
-                  <button
-                    onClick={() => handleBulkAvailability(30, true)}
-                    className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded text-sm"
-                  >
-                    Next 30 Days Available
-                  </button>
-                  <button
-                    onClick={() => handleBulkAvailability(30, false)}
-                    className="py-2 px-3 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
-                  >
-                    Next 30 Days Unavailable
-                  </button>
-                </div>
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent resize-none"
+                rows="2"
+                maxLength={200}
+                required={selectedStatus === 'booked' || selectedStatus === 'unavailable'}
+              />
+              <div className="flex justify-between items-center mt-1">
+                <p className="text-xs text-gray-400">{reasonText.length}/200</p>
+                {(selectedStatus === 'booked' || selectedStatus === 'unavailable') && !reasonText.trim() && (
+                  <p className="text-xs text-red-500 font-medium">Required</p>
+                )}
               </div>
             </div>
-          </div>
 
-          <div className="text-xs text-gray-500">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                <span>Available</span>
+            {/* Existing Reason Display */}
+            {existingReason && (
+              <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-xs font-semibold text-blue-700 mb-0.5">Previous Reason:</p>
+                <p className="text-xs text-blue-600">{existingReason}</p>
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                <span>Unavailable</span>
+            )}
+
+            {/* Save Button */}
+            <button
+              type="button"
+              onClick={handleSaveAvailability}
+              className="w-full py-2.5 px-4 rounded-lg font-medium transition-colors bg-yellow-400 hover:bg-yellow-500 text-gray-800 shadow-sm"
+              disabled={hasBookings && selectedStatus !== 'available'}
+            >
+              {hasBookings && selectedStatus !== 'available'
+                ? 'Cannot change (has bookings)'
+                : 'Save Changes'
+              }
+            </button>
+
+            {/* Bulk Actions - Collapsible */}
+            <details className="border-t pt-3">
+              <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900 flex items-center justify-between">
+                <span>Bulk Actions</span>
+                <span className="material-icons text-sm">expand_more</span>
+              </summary>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(7, 'available')}
+                  className="py-1.5 px-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded text-xs font-medium"
+                >
+                  7 Days Available
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(7, 'booked')}
+                  className="py-1.5 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded text-xs font-medium"
+                >
+                  7 Days Booked
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(7, 'unavailable')}
+                  className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded text-xs font-medium"
+                >
+                  7 Days Unavailable
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(30, 'available')}
+                  className="py-1.5 px-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded text-xs font-medium"
+                >
+                  30 Days Available
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(30, 'booked')}
+                  className="py-1.5 px-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border border-yellow-200 rounded text-xs font-medium"
+                >
+                  30 Days Booked
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkAvailability(30, 'unavailable')}
+                  className="py-1.5 px-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded text-xs font-medium"
+                >
+                  30 Days Unavailable
+                </button>
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                <span>Has Bookings</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                <span>Today</span>
+            </details>
+
+            {/* Legend */}
+            <div className="text-xs text-gray-500 pt-2 border-t">
+              <div className="flex flex-wrap gap-3 justify-center">
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full mr-1.5"></div>
+                  <span>Available</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full mr-1.5"></div>
+                  <span>Booked</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 bg-red-500 rounded-full mr-1.5"></div>
+                  <span>Unavailable</span>
+                </div>
               </div>
             </div>
           </div>
