@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
-import { fetchPendingTrips, fetchSubmittedQuotations, PendingTrip, SubmittedQuotation, submitQuotation } from '../../services/quotationService';
+import { fetchPendingTrips, fetchSubmittedQuotations, PendingTrip, SubmittedQuotation, submitQuotation, withdrawQuotation } from '../../services/quotationService';
 import { useNavigation } from '@react-navigation/native';
 
 const QuotationsScreen = () => {
@@ -214,11 +214,14 @@ const QuotationsScreen = () => {
       // Close modal immediately after successful submission
       setShowQuotationModal(false);
 
+      // Auto-refresh data immediately after successful submission
+      await loadPendingTrips();
+
       Alert.alert('Success', 'Quotation submitted successfully!', [
         {
           text: 'OK',
           onPress: () => {
-            loadPendingTrips();
+            // Data already refreshed, just dismiss alert
           },
         },
       ]);
@@ -230,6 +233,49 @@ const QuotationsScreen = () => {
     }
   };
 
+  const handleWithdrawQuotation = async (quotation: SubmittedQuotation) => {
+    try {
+      Alert.alert(
+        'Withdraw Quotation',
+        'Are you sure you want to withdraw this quotation?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Withdraw cancelled'),
+            style: 'cancel',
+          },
+          {
+            text: 'Withdraw',
+            onPress: async () => {
+              try {
+                const quotationId = quotation._id || quotation.quotationId || quotation.sqId;
+                
+                if (!quotationId) {
+                  Alert.alert('Error', 'Could not identify quotation');
+                  return;
+                }
+
+                console.log('🗑️ Withdrawing quotation:', quotationId);
+                
+                await withdrawQuotation(quotationId);
+
+                // Auto-refresh data
+                await loadPendingTrips();
+
+                Alert.alert('Success', 'Quotation withdrawn successfully!');
+              } catch (err) {
+                console.error('❌ Withdraw error:', err);
+                Alert.alert('Error', err instanceof Error ? err.message : 'Failed to withdraw quotation');
+              }
+            },
+            style: 'destructive',
+          },
+        ]
+      );
+    } catch (err) {
+      console.error('❌ Error in withdraw handler:', err);
+    }
+  };
   // Loading state
   if (loading && !refreshing) {
     return (
@@ -371,6 +417,7 @@ const QuotationsScreen = () => {
                 trip={trip} 
                 index={index}
                 onSubmitQuotation={handleQuotationPress}
+                onWithdrawQuotation={handleWithdrawQuotation}
                 status={filterType}
               />
             ))}
@@ -421,10 +468,11 @@ interface TripCardProps {
   trip: PendingTrip | SubmittedQuotation;
   index: number;
   onSubmitQuotation?: (trip: PendingTrip) => void;
+  onWithdrawQuotation?: (quotation: SubmittedQuotation) => void;
   status?: 'request' | 'submitted';
 }
 
-const TripCard = ({ trip, index, onSubmitQuotation, status = 'request' }: TripCardProps) => {
+const TripCard = ({ trip, index, onSubmitQuotation, onWithdrawQuotation, status = 'request' }: TripCardProps) => {
   const [expanded, setExpanded] = useState(false);
 
   // Type guard: check if it's an original PendingTrip (has path field) vs SubmittedQuotation
@@ -636,12 +684,27 @@ const TripCard = ({ trip, index, onSubmitQuotation, status = 'request' }: TripCa
             </TouchableOpacity>
           )}
 
-          {status === 'submitted' && (
-            <View style={styles.submittedButton}>
-              <View style={styles.submitButtonContent}>
-                <Text style={styles.submitButtonIcon}>✅</Text>
-                <Text style={styles.submittedButtonText}>Quotation Submitted</Text>
-              </View>
+          {status === 'submitted' && submittedQuotation && (
+            <View style={styles.submittedButtonsContainer}>
+              {submittedQuotation.status === 'pending' ? (
+                <TouchableOpacity 
+                  style={[styles.submitButton, styles.withdrawButton]}
+                  onPress={() => onWithdrawQuotation && onWithdrawQuotation(submittedQuotation)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.submitButtonContent}>
+                    <Text style={styles.submitButtonIcon}>🗑️</Text>
+                    <Text style={styles.withdrawButtonText}>Withdraw Quotation</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.submittedButton}>
+                  <View style={styles.submitButtonContent}>
+                    <Text style={styles.submitButtonIcon}>✅</Text>
+                    <Text style={styles.submittedButtonText}>Quotation {submittedQuotation.status}</Text>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -1191,6 +1254,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#28A745',
+    letterSpacing: 0.3,
+  },
+  submittedButtonsContainer: {
+    marginTop: 16,
+  },
+  withdrawButton: {
+    backgroundColor: '#F8D7DA',
+    shadowColor: '#DC3545',
+    shadowOpacity: 0.2,
+  },
+  withdrawButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#DC3545',
     letterSpacing: 0.3,
   },
 

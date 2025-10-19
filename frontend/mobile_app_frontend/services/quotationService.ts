@@ -244,3 +244,44 @@ export const fetchSubmittedQuotations = async (): Promise<SubmittedQuotation[]> 
     throw error;
   }
 };
+
+/**
+ * Withdraw a submitted quotation
+ * @param quotationId - The quotation ID to withdraw
+ */
+export const withdrawQuotation = async (quotationId: string): Promise<any> => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    console.log(`📤 Withdrawing quotation: ${quotationId}`);
+
+    const url = `${BASE_URL}/guide/withdrawQuotation/${quotationId}`;
+    console.log(`📤 API URL: ${url}`);
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    console.log(`📥 Response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to withdraw quotation: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Quotation withdrawn successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error withdrawing quotation:', error);
+    throw error;
+  }
+};

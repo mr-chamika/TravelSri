@@ -44,6 +44,8 @@ public class GuideQuotationController {
 
     private String guideid = "TEMP_GUIDE_ID_001";
 
+
+    //to fetch pending trips that unsubmitted
     @GetMapping("/groupTours")
     public List<PendingTrip> getUnsubmittedToursForGuide(@RequestParam String userId) {
 
@@ -164,7 +166,6 @@ public class GuideQuotationController {
         return guideTourRepo.save(guide);
     }
 
-    // Fixed endpoint to submit quotation price - now accepts tourId in path and data in body
 
 
     // Fixed endpoint to get submitted quotations by guide ID
@@ -224,6 +225,39 @@ public class GuideQuotationController {
         }
     }
 
+
+    //not link or implement with ui
+    @DeleteMapping("/withdrawQuotation/{quotationId}")
+    public ResponseEntity<?> withdrawQuotation(@PathVariable String quotationId) {
+        System.out.println("Request to withdraw quotation ID: " + quotationId);
+
+        try {
+            Optional<GuideQuotation> quotationOpt = quotationRepo.findById(quotationId);
+
+            if (quotationOpt.isEmpty()) {
+                System.out.println("Quotation not found with ID: " + quotationId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Quotation not found");
+            }
+
+            GuideQuotation quotation = quotationOpt.get();
+
+            // Option 1: Soft delete by updating status
+            quotation.setStatus("withdrawn");
+            quotation.setUpdatedAt(new Date());
+            quotationRepo.save(quotation);
+
+            // Option 2: Hard delete by uncommenting the next line instead
+            // quotationRepo.deleteById(quotationId);
+
+            System.out.println("Quotation withdrawn successfully for ID: " + quotationId);
+            return ResponseEntity.ok("Quotation withdrawn successfully");
+
+        } catch (Exception e) {
+            System.err.println("Error withdrawing quotation: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error withdrawing quotation");
+        }
+    }
 
 
 
