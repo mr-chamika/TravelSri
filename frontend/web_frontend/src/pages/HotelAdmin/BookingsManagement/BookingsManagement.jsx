@@ -45,11 +45,21 @@ const BookingsManagement = () => {
         console.log('No available rooms found');
         showFlashMessage('No available rooms found in the database', 'warning');
       } else {
+        console.log('Raw available rooms data:', availableRooms);
+        
         availableRooms.forEach(room => {
+          console.log('Processing room:', room);
           if (!roomsByType[room.type]) {
             roomsByType[room.type] = [];
           }
-          roomsByType[room.type].push(room.number);
+          
+          // Make sure room.roomNumber exists and convert to string
+          if (room.roomNumber !== undefined && room.roomNumber !== null) {
+            roomsByType[room.type].push(String(room.roomNumber));
+            console.log(`Added room number ${room.roomNumber} to type ${room.type}`);
+          } else {
+            console.warn(`Room has no roomNumber property:`, room);
+          }
         });
         
         console.log('Available rooms by type:', roomsByType);
@@ -375,6 +385,17 @@ const BookingsManagement = () => {
     const availableRooms = availableRoomsByType[selected] || [];
     console.log(`Available rooms for ${selected}:`, availableRooms);
     
+    // Debug the roomsByType structure
+    console.log('Current availableRoomsByType structure:', availableRoomsByType);
+    
+    // If rooms exist, log their type
+    if (availableRooms.length > 0) {
+      console.log('Room numbers type check:', availableRooms.map(room => ({
+        room,
+        type: typeof room
+      })));
+    }
+    
     setNewBooking((prev) => ({
       ...prev,
       roomType: selected,
@@ -411,6 +432,31 @@ const BookingsManagement = () => {
     e.preventDefault();
     
     try {
+      // Validate inputs
+      if (!newBooking.guestName || !newBooking.guestEmail || !newBooking.roomType || 
+          !newBooking.roomNumber || !newBooking.checkIn || !newBooking.checkOut) {
+        showFlashMessage('Please fill in all required fields.', 'error');
+        return;
+      }
+      
+      // Show processing message
+      showFlashMessage('Creating booking...', 'info');
+      
+      // First test authentication
+      try {
+        console.log("Testing authentication before creating booking...");
+        const authTest = await bookingService.testAuth();
+        console.log("Authentication test result:", authTest);
+        if (!authTest.success) {
+          showFlashMessage("Authentication failed. Please log in again.", "error");
+          return;
+        }
+      } catch (authError) {
+        console.error("Authentication test failed:", authError);
+        showFlashMessage("Authentication failed. Please log in again.", "error");
+        return;
+      }
+      
       // Calculate total amount before sending
       const calculatedAmount = calculateAmount(newBooking);
       const bookingToAdd = {
@@ -418,64 +464,88 @@ const BookingsManagement = () => {
         totalAmount: calculatedAmount
       };
       
+      console.log('Preparing to create booking with data:', bookingToAdd);
+      
       // Call the API to create booking
-      const createdBooking = await bookingService.createBooking(bookingToAdd);
-      
-      // Update the room status in the inventory based on booking status
       try {
-        // If booking is confirmed, mark room as Booked, if cancelled mark as Available, otherwise as Reserved
-        let newRoomStatus;
-        if (createdBooking.status === 'Confirmed') {
-          newRoomStatus = 'Booked';
-        } else if (createdBooking.status === 'Cancelled') {
-          newRoomStatus = 'Available';
-        } else {
-          newRoomStatus = 'Reserved';
-        }
-        await roomService.updateRoomStatus(
-          createdBooking.roomType,
-          createdBooking.roomNumber,
-          newRoomStatus
-        );
-        console.log(`Room status updated: ${createdBooking.roomType} ${createdBooking.roomNumber} -> ${newRoomStatus}`);
+        const createdBooking = await bookingService.createBooking(bookingToAdd);
+        console.log('Booking created successfully:', createdBooking);
         
-        // Refresh available rooms after status update
-        fetchAvailableRooms();
-      } catch (roomError) {
-        console.error('Failed to update room status:', roomError);
-        showFlashMessage('Booking created but room status update failed.', 'warning');
+        // Update the room status in the inventory based on booking status
+        try {
+          // If booking is confirmed, mark room as Booked, if cancelled mark as Available, otherwise as Reserved
+          let newRoomStatus;
+          if (createdBooking.status === 'Confirmed') {
+            newRoomStatus = 'Booked';
+          } else if (createdBooking.status === 'Cancelled') {
+            newRoomStatus = 'Available';
+          } else {
+            newRoomStatus = 'Reserved';
+          }
+          await roomService.updateRoomStatus(
+            createdBooking.roomType,
+            createdBooking.roomNumber,
+            newRoomStatus
+          );
+          console.log(`Room status updated: ${createdBooking.roomType} ${createdBooking.roomNumber} -> ${newRoomStatus}`);
+          
+          // Refresh available rooms after status update
+          fetchAvailableRooms();
+        } catch (roomError) {
+          console.error('Failed to update room status:', roomError);
+          showFlashMessage('Booking created but room status update failed.', 'warning');
+        }
+        
+        // Transform the response to match our frontend model
+        const frontendBooking = {
+          id: createdBooking.id,
+          displayId: nextDisplayId, // Add sequential display ID
+          guestName: createdBooking.guestName,
+          guestEmail: createdBooking.guestEmail,
+          guestPhone: newBooking.guestPhone, // Keep frontend data that's not in backend
+          roomType: createdBooking.roomType,
+          roomNumber: String(createdBooking.roomNumber), 
+          adults: newBooking.adults,
+          children: newBooking.children,
+          checkIn: createdBooking.checkIn,
+          checkOut: createdBooking.checkOut,
+          status: createdBooking.status,
+          paymentStatus: newBooking.paymentStatus,
+          totalAmount: createdBooking.totalCost,
+          specialRequests: newBooking.specialRequests,
+          paymentMethod: newBooking.paymentMethod
+        };
+        
+        // Update local state
+        setBookings((prev) => [...prev, frontendBooking]);
+        // Increment the next display ID for future bookings
+        setNextDisplayId(nextDisplayId + 1);
+        setShowBookingModal(false);
+        setNewBooking(blankBooking);
+        // Show success message
+        showFlashMessage('Booking created successfully!', 'success');
+      } catch (apiError) {
+        console.error('API error during booking creation:', apiError);
+        
+        if (apiError.response) {
+          // The server responded with an error status
+          if (apiError.response.status === 401) {
+            showFlashMessage('Authentication failed. Please log in again.', 'error');
+          } else if (apiError.response.status === 400) {
+            showFlashMessage(`Invalid booking data: ${apiError.response.data?.message || 'Please check your inputs.'}`, 'error');
+          } else {
+            showFlashMessage(`Server error: ${apiError.response.status}. Please try again.`, 'error');
+          }
+        } else if (apiError.request) {
+          // The request was made but no response was received
+          showFlashMessage('No response from server. Please check your internet connection.', 'error');
+        } else {
+          // Something happened in setting up the request
+          showFlashMessage(`Error: ${apiError.message}`, 'error');
+        }
       }
-      
-      // Transform the response to match our frontend model
-      const frontendBooking = {
-        id: createdBooking.id,
-        displayId: nextDisplayId, // Add sequential display ID
-        guestName: createdBooking.guestName,
-        guestEmail: createdBooking.guestEmail,
-        guestPhone: newBooking.guestPhone, // Keep frontend data that's not in backend
-        roomType: createdBooking.roomType,
-        roomNumber: String(createdBooking.roomNumber), 
-        adults: newBooking.adults,
-        children: newBooking.children,
-        checkIn: createdBooking.checkIn,
-        checkOut: createdBooking.checkOut,
-        status: createdBooking.status,
-        paymentStatus: newBooking.paymentStatus,
-        totalAmount: createdBooking.totalCost,
-        specialRequests: newBooking.specialRequests,
-        paymentMethod: newBooking.paymentMethod
-      };
-      
-      // Update local state
-      setBookings((prev) => [...prev, frontendBooking]);
-      // Increment the next display ID for future bookings
-      setNextDisplayId(nextDisplayId + 1);
-      setShowBookingModal(false);
-      setNewBooking(blankBooking);
-      // Show success message
-      showFlashMessage('Booking created successfully!', 'success');
     } catch (error) {
-      console.error('Error creating booking:', error);
+      console.error('Error in booking submission process:', error);
       showFlashMessage('Failed to create booking. Please try again.', 'error');
     }
   };
@@ -949,9 +1019,14 @@ const BookingsManagement = () => {
                     onChange={handleInputChange}
                     options={[
                       '',
-                      ...(availableRoomsByType[newBooking.roomType] || []),
+                      ...(newBooking.roomType && availableRoomsByType[newBooking.roomType] 
+                          ? availableRoomsByType[newBooking.roomType].map(num => String(num))
+                          : [])
                     ]}
-                    displayFn={(val) => (val ? `Room ${val}` : 'Select a room')}
+                    displayFn={(val) => {
+                      console.log('Displaying room number:', val, 'with type:', typeof val);
+                      return val ? `Room ${val}` : 'Select a room';
+                    }}
                     required
                     disabled={isLoadingRooms || !newBooking.roomType}
                   />
@@ -1161,9 +1236,14 @@ const BookingsManagement = () => {
                     onChange={handleEditInputChange}
                     options={[
                       '',
-                      ...(availableRoomsByType[editBooking.roomType] || []),
+                      ...(editBooking.roomType && availableRoomsByType[editBooking.roomType] 
+                          ? availableRoomsByType[editBooking.roomType].map(num => String(num))
+                          : [])
                     ]}
-                    displayFn={(val) => (val ? `Room ${val}` : 'Select a room')}
+                    displayFn={(val) => {
+                      console.log('Displaying edit room number:', val);
+                      return val ? `Room ${val}` : 'Select a room';
+                    }}
                     required
                     disabled={isLoadingRooms || !editBooking.roomType}
                   />
@@ -1582,26 +1662,34 @@ const Select = ({
   options,
   displayFn = (val) => val,
   ...rest
-}) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      {label}
-    </label>
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-      {...rest}
-    >
-      {Array.isArray(options) ? options.map((opt) => (
-        <option key={opt} value={opt}>
-          {displayFn(opt)}
-        </option>
-      )) : <option value="">No options available</option>}
-    </select>
-  </div>
-);
+}) => {
+  console.log(`Rendering Select for ${name}:`, { value, options });
+  
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      <select
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        {...rest}
+      >
+        {Array.isArray(options) ? options.map((opt, index) => {
+          // Ensure option value is never undefined or null
+          const optValue = opt !== undefined && opt !== null ? String(opt) : '';
+          return (
+            <option key={`${optValue}-${index}`} value={optValue}>
+              {displayFn(optValue)}
+            </option>
+          );
+        }) : <option value="">No options available</option>}
+      </select>
+    </div>
+  );
+};
 
 // Add CSS keyframes for animations
 const styles = `

@@ -8,48 +8,51 @@ import { Calendar } from 'react-native-calendars';
 
 cssInterop(Image, { className: "style" });
 
-// 1. Define the interface for a single vehicle object
+// Updated interface to match the form's FormData structure
 interface Vehicle {
   _id: string;
-  additionalComments?: string;
-  driverDateOfBirth?: string;
-  phone: string;
-  drivingLicenseNumber?: string;
+  // Driver details
   firstName: string;
-  gender?: string;
-  driverAge?: string;
-  location?: string;
-  image?: string; // driver photo
-  insuranceDocument?: string;
-  insuranceDocument2?: string;
-  languagesSpoken?: string;
   lastName: string;
-  licenseExpiryDate?: string;
-  licensePhoto?: string;
+  nicNumber: string;
+  driverDateOfBirth: string;
+  location: string;
+  gender: string;
+  phone: string;
+  additionalComments: string;
+  drivingLicenseNumber: string;
+  licenseExpiryDate: string;
+  experience: number; // Changed from licenseYearsOfExperience
+  languages: string[]; // Changed from languagesSpoken
+  image: string; // driver photo
+  insuranceDocument: string;
+  insuranceDocument2?: string;
+  licensePhoto: string;
   licensePhoto2?: string;
-  licenseYearsOfExperience: string;
-  nicNumber?: string;
+  driverNicpic1: string;
+  driverNicpic2: string;
+  
+  // Vehicle details
   vehicleNumber: string;
-  images?: string[]; // vehicle images array
-  vehicleLicenseCopy?: string;
   vehicleModel: string;
-  ac: string;
+  ac: boolean;
   fuelType: string;
-  vehicleOwnerId?: string;
-  vehicleSeatingCapacity: string;
-  catId?: string;
-  vehicleYearOfManufacture?: string;
-  gearType?: boolean;
-  perKm?: boolean;
-  perKmPrice?: number;
-  dailyRate?: boolean;
-  dailyRatePrice?: number;
-  verified?: string;
-  driverNicpic1?: string;
-  driverNicpic2?: string;
+  seats: number; // Changed from vehicleSeatingCapacity
+  catId: string;
+  vehicleYearOfManufacture: string;
+  gearType: boolean;
+  perKm: boolean;
+  perKmPrice: number;
+  dailyRate: boolean;
+  dailyRatePrice: number;
+  vehicleLicenseCopy: string;
+  images: string[]; // vehicle images array
+  doors: number;
+  mileage: string;
+  whatsIncluded: string[];
 }
 
-// 2. Apply the Vehicle type to the component's prop
+// Vehicle Card Component - showing only major details
 const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (vehicle: Vehicle) => void }) => {
   // Helper to get vehicle image URI from images array
   const getVehicleImageUri = () => {
@@ -72,6 +75,18 @@ const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (v
     return undefined;
   };
 
+  // Helper to format pricing information
+  const getPricingInfo = () => {
+    const pricing = [];
+    if (vehicle.perKm && vehicle.perKmPrice > 0) {
+      pricing.push(`LKR ${vehicle.perKmPrice}/km`);
+    }
+    if (vehicle.dailyRate && vehicle.dailyRatePrice > 0) {
+      pricing.push(`LKR ${vehicle.dailyRatePrice}/day`);
+    }
+    return pricing.length > 0 ? pricing.join(' • ') : 'Price on request';
+  };
+
   return (
     <View className="bg-white rounded-2xl p-5 mb-4 mx-4 shadow-sm border border-gray-100">
       {/* Header with Vehicle Info */}
@@ -79,6 +94,9 @@ const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (v
         <View className="flex-1">
           <Text className="text-xl font-bold text-gray-900 mb-1">
             {vehicle.vehicleModel}
+          </Text>
+          <Text className="text-sm text-gray-500">
+            {vehicle.vehicleYearOfManufacture} • {vehicle.catId}
           </Text>
         </View>
       </View>
@@ -101,13 +119,25 @@ const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (v
 
         <View className="flex-1 justify-center">
           <View className="mb-3">
-            {/* vehicleType not present in Vehicle.java, so skip or use catId if needed */}
-            <Text className="text-sm text-gray-600 mb-1">No Of Seats: {vehicle.vehicleSeatingCapacity}</Text>
-            <Text className="text-sm text-gray-600 mb-1">Number Plate: {vehicle.vehicleNumber}</Text>
-            <Text className="text-sm text-gray-600 mb-1">Fuel Type: {vehicle.fuelType}</Text>
-            <Text className="text-sm text-gray-600 mb-1">{vehicle.ac?.toLowerCase() === 'ac' ? 'AC' : 'Non-AC'}</Text>
+            <Text className="text-sm text-gray-600 mb-1">Seats: {vehicle.seats}</Text>
+            <Text className="text-sm text-gray-600 mb-1">Plate: {vehicle.vehicleNumber}</Text>
+            <Text className="text-sm text-gray-600 mb-1">Fuel: {vehicle.fuelType}</Text>
+            <Text className="text-sm text-gray-600 mb-1">{vehicle.ac ? 'AC' : 'Non-AC'}</Text>
+            <Text className="text-sm text-gray-600 mb-1">Gear: {vehicle.gearType ? 'Auto' : 'Manual'}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Pricing Info */}
+      <View className="mb-4 bg-green-50 p-3 rounded-xl">
+        <Text className="text-sm font-medium text-green-800">
+          {getPricingInfo()}
+        </Text>
+        {vehicle.mileage && (
+          <Text className="text-xs text-green-600 mt-1">
+            Mileage: {vehicle.mileage}
+          </Text>
+        )}
       </View>
 
       {/* Driver Info Section */}
@@ -126,10 +156,34 @@ const VehicleCard = ({ vehicle, onSchedule }: { vehicle: Vehicle; onSchedule: (v
         </View>
         <View className="flex-1">
           <Text className="text-base font-semibold text-gray-900">{vehicle.firstName} {vehicle.lastName}</Text>
-          <Text className="text-sm text-gray-600">{vehicle.licenseYearsOfExperience} years experience</Text>
-          <Text className="text-sm text-gray-600">Phone No: {vehicle.phone}</Text>
+          <Text className="text-sm text-gray-600">{vehicle.experience} years experience</Text>
+          <Text className="text-sm text-gray-600">Phone: {vehicle.phone}</Text>
+          {vehicle.languages && vehicle.languages.length > 0 && (
+            <Text className="text-xs text-gray-500">
+              Languages: {vehicle.languages.slice(0, 2).join(', ')}{vehicle.languages.length > 2 ? '...' : ''}
+            </Text>
+          )}
         </View>
       </View>
+
+      {/* What's Included - showing first few items */}
+      {vehicle.whatsIncluded && vehicle.whatsIncluded.length > 0 && (
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">What's Included:</Text>
+          <View className="flex-row flex-wrap">
+            {vehicle.whatsIncluded.slice(0, 3).map((item, index) => (
+              <View key={index} className="bg-blue-100 px-2 py-1 rounded-full mr-2 mb-1">
+                <Text className="text-xs text-blue-700">{item}</Text>
+              </View>
+            ))}
+            {vehicle.whatsIncluded.length > 3 && (
+              <View className="bg-gray-100 px-2 py-1 rounded-full">
+                <Text className="text-xs text-gray-600">+{vehicle.whatsIncluded.length - 3} more</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Action Buttons */}
       <View className="flex-row gap-3">
@@ -155,6 +209,7 @@ export default function App() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [vehicleData, setVehicleData] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const handleSchedule = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
@@ -162,31 +217,67 @@ export default function App() {
   };
 
   const getData = async () => {
-
     try {
-
-      const response = await fetch(`http://localhost:8080/vehicle/all`)
-
-      const data = await response.json()
-
-      //console.log(data)
-      setVehicleData(data)
-
+      setLoading(true);
+      const response = await fetch(`http://localhost:8080/vehicle/all`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform the data to match our interface
+      const transformedData = data.map((vehicle: any) => ({
+        ...vehicle,
+        // Ensure boolean fields are properly converted
+        ac: typeof vehicle.ac === 'string' 
+          ? vehicle.ac.toLowerCase() === 'ac' || vehicle.ac.toLowerCase() === 'true'
+          : Boolean(vehicle.ac),
+        gearType: typeof vehicle.gearType === 'string'
+          ? vehicle.gearType.toLowerCase() === 'automatic' || vehicle.gearType.toLowerCase() === 'true'
+          : Boolean(vehicle.gearType),
+        perKm: Boolean(vehicle.perKm),
+        dailyRate: Boolean(vehicle.dailyRate),
+        
+        // Ensure arrays are properly handled
+        languages: Array.isArray(vehicle.languages) ? vehicle.languages : 
+                  (typeof vehicle.languages === 'string' && vehicle.languages.length > 0) 
+                    ? vehicle.languages.split(',').map((lang: string) => lang.trim()) 
+                    : [],
+        whatsIncluded: Array.isArray(vehicle.whatsIncluded) ? vehicle.whatsIncluded : 
+                      (vehicle.whatsIncluded && typeof vehicle.whatsIncluded === 'object') 
+                        ? Object.values(vehicle.whatsIncluded) 
+                        : [],
+        images: Array.isArray(vehicle.images) ? vehicle.images : 
+               (vehicle.images && typeof vehicle.images === 'object') 
+                 ? Object.values(vehicle.images) 
+                 : [],
+        
+        // Ensure numbers are properly converted
+        experience: parseInt(vehicle.experience) || 0,
+        seats: parseInt(vehicle.seats) || 0,
+        doors: parseInt(vehicle.doors) || 0,
+        perKmPrice: parseFloat(vehicle.perKmPrice) || 0,
+        dailyRatePrice: parseFloat(vehicle.dailyRatePrice) || 0,
+      }));
+      
+      setVehicleData(transformedData);
     } catch (err) {
-      console.log(err)
-
+      console.log('Error fetching vehicle data:', err);
+      Alert.alert('Error', 'Failed to load vehicle data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-
-    getData()
-
-  }, [])
+    getData();
+  }, []);
 
   const handleDateSelect = (day: any) => {
     const dateString = day.dateString;
-
+    
     setSelectedDates(prevDates => {
       if (prevDates.includes(dateString)) {
         // Remove date if already selected
@@ -203,7 +294,7 @@ export default function App() {
       const datesList = selectedDates.sort().join('\n');
       Alert.alert(
         'Schedule Confirmed',
-        `Vehicle: ${selectedVehicle.vehicleModel}\nDates:\n${datesList}`,
+        `Vehicle: ${selectedVehicle.vehicleModel}\nDriver: ${selectedVehicle.firstName} ${selectedVehicle.lastName}\nDates:\n${datesList}`,
         [
           {
             text: 'OK',
@@ -226,6 +317,14 @@ export default function App() {
     setSelectedVehicle(null);
   };
 
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#F2F0EF] justify-center items-center">
+        <Text className="text-lg text-gray-600">Loading vehicles...</Text>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-[#F2F0EF]">
       <ScrollView
@@ -245,9 +344,17 @@ export default function App() {
         </View>
 
         {/* Vehicle Cards */}
-        {vehicleData.map((vehicle) => (
-          <VehicleCard key={vehicle._id} vehicle={vehicle} onSchedule={handleSchedule} />
-        ))}
+        {vehicleData.length > 0 ? (
+          vehicleData.map((vehicle) => (
+            <VehicleCard key={vehicle._id} vehicle={vehicle} onSchedule={handleSchedule} />
+          ))
+        ) : (
+          <View className="flex-1 justify-center items-center py-20">
+            <FontAwesome name="car" size={64} color="#ccc" />
+            <Text className="text-gray-500 text-lg mt-4">No vehicles found</Text>
+            <Text className="text-gray-400 text-sm mt-2">Add your first vehicle to get started</Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Schedule Modal */}
@@ -257,7 +364,7 @@ export default function App() {
         visible={isModalVisible}
         onRequestClose={handleCloseModal}
       >
-        <View className="flex-1 justify-center items-center bg-gray-100">
+        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
           <View className="bg-white rounded-2xl p-6 mx-4 w-full max-w-sm">
             <View className="flex-row justify-between items-center mb-4">
               <Text className="text-xl font-bold text-gray-900">Schedule Vehicle</Text>
@@ -272,13 +379,16 @@ export default function App() {
                   {selectedVehicle.vehicleModel}
                 </Text>
                 <Text className="text-sm text-gray-600">
-                  {selectedVehicle.vehicleModel}
+                  Driver: {selectedVehicle.firstName} {selectedVehicle.lastName}
+                </Text>
+                <Text className="text-sm text-gray-600">
+                  Phone: {selectedVehicle.phone}
                 </Text>
               </View>
             )}
 
             <Text className="text-base font-medium text-gray-900 mb-3">Select Dates:</Text>
-
+            
             <Calendar
               onDayPress={handleDateSelect}
               markedDates={selectedDates.reduce((acc, date) => {

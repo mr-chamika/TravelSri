@@ -6,16 +6,19 @@ import com.example.student.utils.PayHereUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PayHereRefundService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PayHereRefundService.class);
 
     @Autowired
     private PayHereRefundRepo refundRepo;
@@ -24,7 +27,7 @@ public class PayHereRefundService {
     private TravelerWalletRepo travelerWalletRepo;
 
     @Autowired
-    private MoneyFlowService moneyFlowService;
+    private ITravelerWalletService travelerWalletService; // Use the service instead of direct access
 
     @Autowired
     private PayHereUtils payHereUtils;
@@ -38,15 +41,13 @@ public class PayHereRefundService {
     @Value("${payhere.api.base-url}")
     private String payHereBaseUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
-
-    public PayHereRefund processRealRefund(Booking booking, BigDecimal refundAmount, String reason) {
+    /**
+     * Process refund through PayHere (simplified version)
+     */
+    public PayHereRefund processRefund(Booking booking, BigDecimal refundAmount, String reason) {
         try {
-            System.out.println("💸 Initiating PayHere Refund:");
-            System.out.println("   Booking ID: " + booking.getId());
-            System.out.println("   Original Payment ID: " + booking.getPayHerePaymentId());
-            System.out.println("   Refund Amount: $" + refundAmount);
-            System.out.println("   Reason: " + reason);
+            logger.info("💸 Initiating PayHere Refund for booking: {}, amount: {} {}",
+                    booking.getId(), refundAmount, booking.getCurrency());
 
             // 1. Create refund record
             PayHereRefund refund = new PayHereRefund();
@@ -58,31 +59,29 @@ public class PayHereRefundService {
             refund.setStatus("PENDING");
             refund.setInitiatedAt(LocalDateTime.now());
 
-            // 2. Call PayHere Refund API (or simulate)
-            String payHereRefundId = callPayHereRefundAPI(booking.getPayHerePaymentId(), refundAmount, reason);
+            // 2. Process refund (simulate for now)
+            String payHereRefundId = simulateRefund(booking.getPayHerePaymentId(), refundAmount, reason);
 
             // 3. Update refund record with PayHere response
             refund.setPayHereRefundId(payHereRefundId);
             refund.setStatus("SUCCESS");
             refund.setCompletedAt(LocalDateTime.now());
-            refund.setPayHereResponse("Refund processed successfully via API");
+            refund.setPayHereResponse("Refund processed successfully");
 
             // 4. Save refund record
             PayHereRefund savedRefund = refundRepo.save(refund);
 
-            // 5. Update traveler wallet
-            updateTravelerWalletWithRefund(booking.getTravelerId(), refundAmount, reason, savedRefund.getId(), payHereRefundId);
+            // 5. Update traveler wallet using the service
+            updateTravelerWalletWithRefund(booking.getTravelerId(), refundAmount, reason,
+                    savedRefund.getId(), payHereRefundId);
 
-            System.out.println("✅ PayHere Refund Completed:");
-            System.out.println("   💳 Refund Amount: $" + refundAmount);
-            System.out.println("   🆔 PayHere Refund ID: " + payHereRefundId);
-            System.out.println("   📝 Database Record ID: " + savedRefund.getId());
-            System.out.println("   ⏱️ Processing Time: 3-5 business days");
+            logger.info("✅ PayHere Refund Completed: Amount: {} {}, Refund ID: {}",
+                    refundAmount, booking.getCurrency(), payHereRefundId);
 
             return savedRefund;
 
         } catch (Exception e) {
-            System.err.println("❌ PayHere refund processing failed: " + e.getMessage());
+            logger.error("❌ PayHere refund processing failed for booking: {}", booking.getId(), e);
 
             // Handle failed refund
             PayHereRefund failedRefund = new PayHereRefund();
@@ -100,181 +99,128 @@ public class PayHereRefundService {
         }
     }
 
-    private String callPayHereRefundAPI(String originalPaymentId, BigDecimal refundAmount, String reason) {
-        try {
-            System.out.println("🔗 Calling PayHere Refund API:");
-            System.out.println("   Payment ID: " + originalPaymentId);
-            System.out.println("   Amount: $" + refundAmount);
-
-            // Check if we have a valid payment ID
-            if (originalPaymentId == null || originalPaymentId.trim().isEmpty() || "null".equals(originalPaymentId)) {
-                System.out.println("⚠️ No valid payment ID found, using simulation");
-                return simulateRefund(originalPaymentId, refundAmount, reason);
-            }
-
-            // Prepare PayHere refund API request
-            Map<String, Object> refundRequest = new HashMap<>();
-            refundRequest.put("merchant_id", merchantId);
-            refundRequest.put("payment_id", originalPaymentId);
-            refundRequest.put("amount", payHereUtils.formatAmount(refundAmount));
-            refundRequest.put("reason", reason);
-            refundRequest.put("notify_url", "https://your-domain.com/api/payments/payhere/refund-notify");
-
-            // Generate refund hash (NOW THIS METHOD EXISTS!)
-            String refundHash = payHereUtils.generateRefundHash(merchantId, originalPaymentId, refundAmount);
-            refundRequest.put("hash", refundHash);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("User-Agent", "TravelBookingApp/1.0");
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(refundRequest, headers);
-
-            // Call PayHere refund API
-            String refundApiUrl = payHereBaseUrl.replace("/pay/checkout", "/api/v1/refund");
-
-            System.out.println("📡 API Call Details:");
-            System.out.println("   URL: " + refundApiUrl);
-            System.out.println("   Merchant ID: " + merchantId);
-            System.out.println("   Hash: " + refundHash);
-
-            try {
-                ResponseEntity<Map> response = restTemplate.postForEntity(refundApiUrl, request, Map.class);
-
-                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                    Map<String, Object> responseBody = response.getBody();
-                    String status = (String) responseBody.get("status");
-
-                    System.out.println("📬 PayHere API Response:");
-                    System.out.println("   Status: " + status);
-                    System.out.println("   Response: " + responseBody);
-
-                    if ("SUCCESS".equalsIgnoreCase(status) || "APPROVED".equalsIgnoreCase(status)) {
-                        String refundId = (String) responseBody.get("refund_id");
-                        if (refundId != null) {
-                            return refundId;
-                        } else {
-                            return "REFUND_" + System.currentTimeMillis();
-                        }
-                    } else {
-                        String message = (String) responseBody.get("message");
-                        throw new RuntimeException("PayHere refund rejected: " + message);
-                    }
-                } else {
-                    throw new RuntimeException("PayHere API error: HTTP " + response.getStatusCode());
-                }
-
-            } catch (Exception apiException) {
-                System.err.println("⚠️ PayHere API call failed: " + apiException.getMessage());
-                System.out.println("🎭 Falling back to simulation");
-                return simulateRefund(originalPaymentId, refundAmount, reason);
-            }
-
-        } catch (Exception e) {
-            System.err.println("❌ Refund API call failed: " + e.getMessage());
-            return simulateRefund(originalPaymentId, refundAmount, reason);
-        }
-    }
-
+    /**
+     * Simulate PayHere refund for testing/development
+     */
     private String simulateRefund(String originalPaymentId, BigDecimal refundAmount, String reason) {
-        // Simulate PayHere refund for testing/development
         String simulatedRefundId = "SIM_REFUND_" + System.currentTimeMillis();
 
-        System.out.println("🎭 SIMULATED PayHere Refund:");
-        System.out.println("   Original Payment: " + originalPaymentId);
-        System.out.println("   Refund Amount: $" + refundAmount);
-        System.out.println("   Simulated Refund ID: " + simulatedRefundId);
-        System.out.println("   Reason: " + reason);
-        System.out.println("   ⚠️ In production, this would be a real refund to the traveler's card");
+        logger.info("🎭 SIMULATED PayHere Refund:");
+        logger.info("   Original Payment: {}", originalPaymentId);
+        logger.info("   Refund Amount: {}", refundAmount);
+        logger.info("   Simulated Refund ID: {}", simulatedRefundId);
+        logger.info("   Reason: {}", reason);
+        logger.info("   ⚠️ In production, this would be a real refund to the traveler's card");
 
         return simulatedRefundId;
     }
 
+    /**
+     * Update traveler wallet with refund using the service
+     * ✅ FIXED: Use correct RefundHistory field names
+     */
     private void updateTravelerWalletWithRefund(String travelerId, BigDecimal refundAmount,
                                                 String reason, String refundRecordId, String payHereRefundId) {
         try {
-            TravelerWallet travelerWallet = moneyFlowService.getTravelerWallet(travelerId);
+            logger.info("💰 Updating traveler wallet for refund: {}", travelerId);
 
-            // Update wallet totals
-            travelerWallet.setTotalRefunded(travelerWallet.getTotalRefunded().add(refundAmount));
-            travelerWallet.setCurrentBalance(travelerWallet.getCurrentBalance().add(refundAmount));
-            travelerWallet.setLastUpdated(LocalDateTime.now());
+            // Use the traveler wallet service to add refund
+            travelerWalletService.addRefund(travelerId, refundAmount, refundRecordId, reason, "FULL");
 
-            // Add to refund history
-            RefundHistory refundHistory = new RefundHistory();
-            refundHistory.setRefundId(refundRecordId);
-            refundHistory.setAmount(refundAmount);
-            refundHistory.setReason(reason);
-            refundHistory.setRefundedAt(LocalDateTime.now());
-            refundHistory.setPayHereRefundId(payHereRefundId);
-
-            if (travelerWallet.getRefundHistory() != null) {
-                travelerWallet.getRefundHistory().add(refundHistory);
-            } else {
-                travelerWallet.setRefundHistory(java.util.Arrays.asList(refundHistory));
-            }
-
-            travelerWalletRepo.save(travelerWallet);
-
-            System.out.println("💰 Traveler Wallet Updated:");
-            System.out.println("   Traveler ID: " + travelerId);
-            System.out.println("   Total Refunded: $" + travelerWallet.getTotalRefunded());
-            System.out.println("   Current Balance: $" + travelerWallet.getCurrentBalance());
+            logger.info("✅ Traveler wallet updated successfully for: {}", travelerId);
 
         } catch (Exception e) {
-            System.err.println("❌ Error updating traveler wallet: " + e.getMessage());
+            logger.error("❌ Error updating traveler wallet for traveler: {}", travelerId, e);
+            // Don't throw - this shouldn't stop the refund process
         }
     }
 
     // ===== QUERY METHODS =====
 
+    /**
+     * Get refund by ID
+     */
     public PayHereRefund getRefundById(String refundId) {
-        return refundRepo.findById(refundId).orElse(null);
+        try {
+            return refundRepo.findById(refundId).orElse(null);
+        } catch (Exception e) {
+            logger.error("Error getting refund by ID: {}", refundId, e);
+            return null;
+        }
     }
 
-    public java.util.List<PayHereRefund> getRefundsByBooking(String bookingId) {
-        return refundRepo.findByBookingId(bookingId);
+    /**
+     * Get all refunds for a booking
+     */
+    public List<PayHereRefund> getRefundsByBooking(String bookingId) {
+        try {
+            return refundRepo.findByBookingId(bookingId);
+        } catch (Exception e) {
+            logger.error("Error getting refunds for booking: {}", bookingId, e);
+            return List.of();
+        }
     }
 
-    public java.util.List<PayHereRefund> getRefundsByTraveler(String travelerId) {
-        return refundRepo.findByTravelerId(travelerId);
+    /**
+     * Get all refunds for a traveler
+     */
+    public List<PayHereRefund> getRefundsByTraveler(String travelerId) {
+        try {
+            return refundRepo.findByTravelerId(travelerId);
+        } catch (Exception e) {
+            logger.error("Error getting refunds for traveler: {}", travelerId, e);
+            return List.of();
+        }
     }
 
-    public java.util.Optional<PayHereRefund> getRefundByOriginalPayment(String originalPaymentId) {
-        return refundRepo.findByOriginalPaymentId(originalPaymentId);
+    /**
+     * Get refund by original payment ID
+     */
+    public Optional<PayHereRefund> getRefundByOriginalPayment(String originalPaymentId) {
+        try {
+            return refundRepo.findByOriginalPaymentId(originalPaymentId);
+        } catch (Exception e) {
+            logger.error("Error getting refund by original payment ID: {}", originalPaymentId, e);
+            return Optional.empty();
+        }
     }
 
-    // ===== REFUND STATUS CHECK =====
-
+    /**
+     * Check refund status from PayHere
+     */
     public String checkRefundStatus(String payHereRefundId) {
         try {
-            // In a real implementation, you would call PayHere status API
-            // For now, simulate status check
-            System.out.println("🔍 Checking PayHere Refund Status:");
-            System.out.println("   Refund ID: " + payHereRefundId);
+            logger.info("🔍 Checking PayHere Refund Status for: {}", payHereRefundId);
+
+            if (payHereRefundId == null || payHereRefundId.trim().isEmpty()) {
+                return "UNKNOWN";
+            }
 
             if (payHereRefundId.startsWith("SIM_")) {
                 return "SIMULATED_SUCCESS";
+            } else if (payHereRefundId.startsWith("MANUAL_")) {
+                return "MANUAL_PROCESSED";
             } else {
+                // In a real implementation, you would call PayHere status API
                 return "SUCCESS"; // Assume success for now
             }
         } catch (Exception e) {
+            logger.error("Error checking refund status: {}", payHereRefundId, e);
             return "UNKNOWN";
         }
     }
 
-    // ===== MANUAL REFUND PROCESSING =====
-
-    public PayHereRefund processManualRefund(String bookingId, BigDecimal amount, String reason, String adminNote) {
+    /**
+     * Process manual refund (admin initiated)
+     */
+    public PayHereRefund processManualRefund(String bookingId, String travelerId, BigDecimal amount,
+                                             String reason, String adminNote) {
         try {
-            System.out.println("🔧 Processing Manual Refund:");
-            System.out.println("   Booking ID: " + bookingId);
-            System.out.println("   Amount: $" + amount);
-            System.out.println("   Reason: " + reason);
-            System.out.println("   Admin Note: " + adminNote);
+            logger.info("🔧 Processing Manual Refund for booking: {}, amount: {}", bookingId, amount);
 
             PayHereRefund manualRefund = new PayHereRefund();
             manualRefund.setBookingId(bookingId);
+            manualRefund.setTravelerId(travelerId);
             manualRefund.setRefundAmount(amount);
             manualRefund.setRefundReason(reason);
             manualRefund.setStatus("MANUAL_PROCESSED");
@@ -283,9 +229,101 @@ public class PayHereRefundService {
             manualRefund.setInitiatedAt(LocalDateTime.now());
             manualRefund.setCompletedAt(LocalDateTime.now());
 
-            return refundRepo.save(manualRefund);
+            PayHereRefund savedRefund = refundRepo.save(manualRefund);
+
+            // Update traveler wallet
+            updateTravelerWalletWithRefund(travelerId, amount, reason,
+                    savedRefund.getId(), savedRefund.getPayHereRefundId());
+
+            logger.info("✅ Manual refund processed successfully: {}", savedRefund.getId());
+            return savedRefund;
+
         } catch (Exception e) {
+            logger.error("❌ Manual refund processing failed for booking: {}", bookingId, e);
             throw new RuntimeException("Manual refund processing failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get refund statistics
+     */
+    public java.util.Map<String, Object> getRefundStatistics() {
+        try {
+            java.util.Map<String, Object> stats = new java.util.HashMap<>();
+
+            List<PayHereRefund> allRefunds = refundRepo.findAll();
+
+            // Count by status
+            java.util.Map<String, Long> statusCounts = allRefunds.stream()
+                    .collect(java.util.stream.Collectors.groupingBy(
+                            PayHereRefund::getStatus,
+                            java.util.stream.Collectors.counting()
+                    ));
+
+            // Calculate total amounts
+            BigDecimal totalRefunded = allRefunds.stream()
+                    .filter(r -> "SUCCESS".equals(r.getStatus()) || "MANUAL_PROCESSED".equals(r.getStatus()))
+                    .map(PayHereRefund::getRefundAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            stats.put("totalRefunds", allRefunds.size());
+            stats.put("statusCounts", statusCounts);
+            stats.put("totalRefundedAmount", totalRefunded);
+            stats.put("currency", "LKR");
+
+            return stats;
+
+        } catch (Exception e) {
+            logger.error("Error getting refund statistics", e);
+            throw new RuntimeException("Error getting refund statistics: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get recent refunds
+     */
+    public List<PayHereRefund> getRecentRefunds(int limit) {
+        try {
+            if (limit <= 0 || limit > 100) {
+                limit = 10; // Default limit
+            }
+
+            // Get all refunds and sort by initiated date descending
+            return refundRepo.findAll().stream()
+                    .sorted((r1, r2) -> r2.getInitiatedAt().compareTo(r1.getInitiatedAt()))
+                    .limit(limit)
+                    .collect(java.util.stream.Collectors.toList());
+
+        } catch (Exception e) {
+            logger.error("Error getting recent refunds", e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Check if booking has any refunds
+     */
+    public boolean hasRefunds(String bookingId) {
+        try {
+            return !refundRepo.findByBookingId(bookingId).isEmpty();
+        } catch (Exception e) {
+            logger.error("Error checking refunds for booking: {}", bookingId, e);
+            return false;
+        }
+    }
+
+    /**
+     * Get total refunded amount for a booking
+     */
+    public BigDecimal getTotalRefundedAmount(String bookingId) {
+        try {
+            return refundRepo.findByBookingId(bookingId).stream()
+                    .filter(r -> "SUCCESS".equals(r.getStatus()) || "MANUAL_PROCESSED".equals(r.getStatus()))
+                    .map(PayHereRefund::getRefundAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        } catch (Exception e) {
+            logger.error("Error calculating total refunded amount for booking: {}", bookingId, e);
+            return BigDecimal.ZERO;
         }
     }
 }

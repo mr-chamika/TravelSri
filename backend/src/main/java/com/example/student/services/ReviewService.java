@@ -35,9 +35,31 @@ public class ReviewService {
         reviewRepo.deleteById(id);
     }
 
-    // NEW: Method to get a list of reviews based on a serviceId
+    // FIXED: Method to get reviews by serviceId with memory limit protection
     public List<Review> getReviewsByServiceId(String serviceId) {
-        return reviewRepo.findByServiceIdOrderByStarsDesc(serviceId);
+        try {
+            System.out.println("🔍 Fetching reviews for service: " + serviceId);
+
+            // Use limited query to avoid memory overflow
+            List<Review> reviews = reviewRepo.findTop50ByServiceIdOrderByStarsDesc(serviceId);
+
+            System.out.println("✅ Successfully fetched " + reviews.size() + " reviews (limited to 50)");
+            return reviews;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching reviews: " + e.getMessage());
+            // Fallback: try without sorting if limited sorting still fails
+            try {
+                List<Review> reviews = reviewRepo.findByServiceId(serviceId);
+                // Sort in Java (works for small to medium datasets)
+                reviews.sort((r1, r2) -> Integer.compare(r2.getStars(), r1.getStars()));
+                // Limit to 50 reviews max
+                return reviews.stream().limit(50).collect(Collectors.toList());
+            } catch (Exception fallbackError) {
+                System.err.println("❌ Fallback also failed: " + fallbackError.getMessage());
+                return new ArrayList<>();
+            }
+        }
     }
 
     // Get reviews by service ID and star rating
@@ -53,37 +75,52 @@ public class ReviewService {
         return reviewRepo.findByServiceIdAndSearchTerms(serviceId, query.toLowerCase());
     }
 
-    // Calculate review statistics for a service
+    // FIXED: Calculate review statistics with memory protection
     public Map<String, Object> getReviewStats(String serviceId) {
-        List<Review> reviews = reviewRepo.findByServiceId(serviceId);
+        try {
+            System.out.println("🔍 Calculating stats for service: " + serviceId);
 
-        Map<String, Object> stats = new HashMap<>();
-        if (reviews.isEmpty()) {
-            stats.put("averageRating", 0.0);
-            stats.put("totalReviews", 0);
-            stats.put("ratingDistribution", createEmptyDistribution());
+            // Use basic query without sorting for stats calculation
+            List<Review> reviews = reviewRepo.findByServiceId(serviceId);
+
+            Map<String, Object> stats = new HashMap<>();
+            if (reviews.isEmpty()) {
+                stats.put("averageRating", 0.0);
+                stats.put("totalReviews", 0);
+                stats.put("ratingDistribution", createEmptyDistribution());
+                return stats;
+            }
+
+            // Calculate average rating
+            double averageRating = reviews.stream()
+                    .mapToInt(Review::getStars)
+                    .average()
+                    .orElse(0.0);
+
+            // Calculate rating distribution (1-5 stars)
+            Map<Integer, Long> distribution = reviews.stream()
+                    .collect(Collectors.groupingBy(Review::getStars, Collectors.counting()));
+
+            // Ensure all ratings 1-5 are present
+            Map<Integer, Long> completeDistribution = createEmptyDistribution();
+            completeDistribution.putAll(distribution);
+
+            stats.put("averageRating", Math.round(averageRating * 10.0) / 10.0);
+            stats.put("totalReviews", reviews.size());
+            stats.put("ratingDistribution", completeDistribution);
+
+            System.out.println("✅ Stats calculated: " + reviews.size() + " total reviews, avg rating: " +
+                    Math.round(averageRating * 10.0) / 10.0);
             return stats;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error calculating stats: " + e.getMessage());
+            Map<String, Object> emptyStats = new HashMap<>();
+            emptyStats.put("averageRating", 0.0);
+            emptyStats.put("totalReviews", 0);
+            emptyStats.put("ratingDistribution", createEmptyDistribution());
+            return emptyStats;
         }
-
-        // Calculate average rating
-        double averageRating = reviews.stream()
-                .mapToInt(Review::getStars)
-                .average()
-                .orElse(0.0);
-
-        // Calculate rating distribution (1-5 stars)
-        Map<Integer, Long> distribution = reviews.stream()
-                .collect(Collectors.groupingBy(Review::getStars, Collectors.counting()));
-
-        // Ensure all ratings 1-5 are present
-        Map<Integer, Long> completeDistribution = createEmptyDistribution();
-        completeDistribution.putAll(distribution);
-
-        stats.put("averageRating", Math.round(averageRating * 10.0) / 10.0); // Round to 1 decimal
-        stats.put("totalReviews", reviews.size());
-        stats.put("ratingDistribution", completeDistribution);
-
-        return stats;
     }
 
     // Helper method to create empty rating distribution

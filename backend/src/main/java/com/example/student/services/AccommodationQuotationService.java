@@ -7,5 +7,10 @@ public interface AccommodationQuotationService {
     AccommodationQuotation saveQuotation(AccommodationQuotation quotation);
     List<AccommodationQuotation> getAllQuotations();
     AccommodationQuotation getQuotationById(String id);
+    AccommodationQuotation getQuotationByQuoteNumber(String quoteNumber);
     void deleteQuotation(String id);
+    void deleteQuotationByQuoteNumber(String quoteNumber);
+
+    //Tharusha Samarawickrama
+    List<AccommodationQuotation> getQuotationsByPendingTripId(String pendingTripId);
 }

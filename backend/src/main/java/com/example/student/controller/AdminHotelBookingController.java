@@ -3,9 +3,9 @@ package com.example.student.controller;
 import com.example.student.model.AdminHotelBooking;
 import com.example.student.services.AdminHotelBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -15,6 +15,12 @@ public class AdminHotelBookingController {
 
     @Autowired
     private AdminHotelBookingService bookingService;
+    
+    // Debug endpoint to check authentication
+    @GetMapping("/test-auth")
+    public ResponseEntity<String> testAuth() {
+        return ResponseEntity.ok("Authentication successful");
+    }
 
     @PostMapping
     public AdminHotelBooking createBooking(@RequestBody AdminHotelBooking booking) {
@@ -22,8 +28,14 @@ public class AdminHotelBookingController {
     }
 
     @GetMapping
-    public List<AdminHotelBooking> getAllBookings() {
-        return bookingService.getAllBookings();
+    public List<AdminHotelBooking> getAllBookings(@RequestParam(required = false) String hotelId) {
+        if (hotelId != null && !hotelId.isEmpty()) {
+            // If hotelId is provided, filter bookings by hotel
+            return bookingService.getBookingsByHotelId(hotelId);
+        } else {
+            // Otherwise return all bookings
+            return bookingService.getAllBookings();
+        }
     }
     
     @GetMapping("/{id}")

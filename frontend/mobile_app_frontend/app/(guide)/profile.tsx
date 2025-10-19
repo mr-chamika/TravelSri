@@ -1,6 +1,8 @@
 import { Text, TouchableOpacity, View, StyleSheet, SafeAreaView } from 'react-native'
 import { Image } from 'expo-image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { jwtDecode } from 'jwt-decode'
 import BackButton from '../../components/ui/backButton';
 
 import Animated, {
@@ -17,13 +19,72 @@ const edit = require('../../assets/images/profile/edit.png')
 const off = require('../../assets/images/profile/off.png')
 const on = require('../../assets/images/profile/on.png')
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string;
+  avatar?: string;
+  name?: string;
+}
+
 export default function Profile() {
     const [notify, setNotify] = useState(false);
     const [settings, setSettings] = useState([{ dark: true }, { dark: true }, { dark: true }])
     const [show, setShow] = useState(false);
+    const [userInfo, setUserInfo] = useState({
+        username: 'User',
+        email: 'user@example.com',
+        phone: '0123456789',
+    });
 
     // Create one animated value for the press interaction using react-native-reanimated
     const scaleAnim = useSharedValue(1);
+
+    // Load JWT user info on component mount
+    useEffect(() => {
+        const loadUserInfo = async () => {
+            try {
+                const token = await AsyncStorage.getItem('token');
+                console.log('📋 Token from storage:', token ? 'Found' : 'Not found');
+                
+                if (token) {
+                    try {
+                        const decoded = jwtDecode<MyToken>(token);
+                        console.log('🔐 Full decoded token:', JSON.stringify(decoded, null, 2));
+                        console.log('🔐 Token fields:', Object.keys(decoded));
+                        
+                        // Try multiple fields for username with detailed logging
+                        const username = decoded.username || decoded.name || decoded.sub || 'User';
+                        const email = decoded.email || 'user@example.com';
+                        
+                        console.log('👤 Extracted username:', username);
+                        console.log('   - decoded.username:', decoded.username);
+                        console.log('   - decoded.name:', decoded.name);
+                        console.log('   - decoded.sub:', decoded.sub);
+                        console.log('   - decoded.email:', decoded.email);
+                        
+                        setUserInfo({
+                            username: username,
+                            email: email,
+                            phone: '0123456789',
+                        });
+                        
+                        console.log('👤 User info loaded:', { username, email });
+                    } catch (decodeError) {
+                        console.error('❌ Error decoding token:', decodeError);
+                    }
+                } else {
+                    console.warn('⚠️ No JWT token found in AsyncStorage');
+                }
+            } catch (error) {
+                console.error('❌ Error loading user info:', error);
+            }
+        };
+        
+        loadUserInfo();
+    }, []);
 
     // Animation for when the user presses down using react-native-reanimated
     const onPressIn = () => {
@@ -97,7 +158,7 @@ export default function Profile() {
                 <View style={styles.profileSection}>
                     <View style={styles.profileImageContainer}>
                         <Image style={styles.profileImage} source={profile} />
-                        <Text style={styles.profileName}>John Doe</Text>
+                        <Text style={styles.profileName}>{userInfo.username}</Text>
                     </View>
                 </View>
                 <View style={styles.contentContainer}>
@@ -111,15 +172,15 @@ export default function Profile() {
                         <View style={styles.sectionContent}>
                             <View style={styles.detailRow}>
                                 <Text style={styles.detailLabel}>Email</Text>
-                                <Text style={styles.detailValue}>doe1234@gmail.com</Text>
+                                <Text style={styles.detailValue}>{userInfo.email}</Text>
                             </View>
                             <View style={styles.detailRow}>
                                 <Text style={styles.detailLabel}>Phone</Text>
-                                <Text style={styles.detailValue}>0123456789</Text>
+                                <Text style={styles.detailValue}>{userInfo.phone}</Text>
                             </View>
                             <View style={styles.detailRow}>
                                 <Text style={styles.detailLabel}>Username</Text>
-                                <Text style={styles.detailValue}>john</Text>
+                                <Text style={styles.detailValue}>{userInfo.username}</Text>
                             </View>
                         </View>
                     </View>

@@ -44,6 +44,11 @@ management:
       exposure:
         include: health,info
 
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:TravelSriSecretKey2024ForHotelAndUserAuthentication}
+  expiration-ms: 86400000
+
 # PayHere Configuration
 payhere:
   merchant:

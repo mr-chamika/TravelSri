@@ -6,6 +6,7 @@ import java.util.List;
 public interface AdminHotelBookingService {
     AdminHotelBooking saveBooking(AdminHotelBooking booking);
     List<AdminHotelBooking> getAllBookings();
+    List<AdminHotelBooking> getBookingsByHotelId(String hotelId);
     AdminHotelBooking getBookingById(String id);
     AdminHotelBooking updateBooking(AdminHotelBooking booking);
     boolean deleteBooking(String id);

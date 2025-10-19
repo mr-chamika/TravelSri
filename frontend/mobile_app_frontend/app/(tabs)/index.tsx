@@ -8,9 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 import { Client } from "@stomp/stompjs";
 
 
-
 cssInterop(Image, { className: "style" });
-
 
 // const pic = require('../../assets/images/tabbar/tower.png')
 const pic = require('../../assets/images/tabbar/towert.png')
@@ -19,7 +17,6 @@ const t = require('../../assets/images/tabbar/tower.jpg')
 const srch = require('../../assets/images/search1.png');
 
 interface Trip {
-
   _id: string,
   dates: string[],
   adults: number,
@@ -35,15 +32,6 @@ interface MyToken {
   id: string
 }
 
-/* const placesCollection = [
-  { id: '1', image: pic, title: 'Lotus Tower' },
-  { id: '2', image: bg, title: 'Another Place' },
-  { id: '3', image: t, title: 'Another Place' },
-  { id: '4', image: pic, title: 'Lotus Tower' },
-  { id: '5', image: bg, title: 'Another Place' },
-  { id: '6', image: t, title: 'Another Place' },
-
-]; */
 const groupCollection = [
   { id: '1', image: pic, title: 'Matara to Colombo', duration: 2, date: '04 june 2020', stats: 'Confirm', price: 5000, max: 20, current: 3 },
   { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13 },
@@ -51,20 +39,9 @@ const groupCollection = [
   { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4 },
   { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10 },
   { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24 },
-
 ];
 
-/* interface MyToken {
-  sub: string;
-  roles: string[];
-  username: string;
-  email: string
-  exp:number,
-  iat:number
-} */
-
 export default function Index() {
-
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [username, setUsername] = useState('')
@@ -291,7 +268,6 @@ export default function Index() {
           loggingout();
 
         }
-
       }
       getAll();
 
@@ -318,22 +294,17 @@ export default function Index() {
       }
 
     } catch (err) {
-
       console.log('Error from getting solotrip dto')
-
     }
   }
 
-
   const loggingout = async (reason = null) => {
-
     await AsyncStorage.removeItem('token')
 
     router.replace({
       pathname: '/(auth)', // 👈 Your login route path (e.g., the file at app/login.tsx)
       params: { reason: 'TOKEN_EXPIRED' }
     });
-
   }
 
 
@@ -397,9 +368,7 @@ export default function Index() {
 
   return (
     <View className="bg-[#F2F5FA] justify-evenly h-full w-full">
-
       <View className="w-full items-center mt-1 ">
-
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
         <TouchableOpacity onPress={sendMessage}>
@@ -413,8 +382,8 @@ export default function Index() {
         </TouchableOpacity>
 
       </View>
+      
       <View className="h-[40%]">
-
         <Text className="text-[22px] font-semibold m-3">My Plans</Text>
 
         <ScrollView
@@ -424,9 +393,12 @@ export default function Index() {
           contentContainerClassName={`pr-16 ${!trips || trips.length === 0 ? 'w-full' : ''}`}
         >
           <View className=" flex-row gap-10 w-full">
-            {(!trips || trips.length == 0) && <View className=" w-full h-full justify-center items-center"><Text className="text-gray-400">No plans yet</Text></View>}
+            {(!trips || trips.length == 0) && 
+              <View className=" w-full h-full justify-center items-center">
+                <Text className="text-gray-400">No plans yet</Text>
+              </View>
+            }
             {trips.map((item) => {
-
               return (
                 //<TouchableOpacity onPress={() => router.push(`/views/plan/${item._id}`)} className="w-[83px]" key={item._id}>
                 <TouchableOpacity onPress={() => router.push({ pathname: `/(tabs)/creates`, params: { id: item._id } })} className="w-[83px]" key={item._id}>
@@ -440,19 +412,12 @@ export default function Index() {
                   </Text>
                 </TouchableOpacity>
               )
-
-            })
-
-
-
-            }
-
-
+            })}
           </View>
         </ScrollView>
       </View>
-      <View>
 
+      <View>
         <Text className="text-[22px] font-semibold mt-10 m-3">Group Travels</Text>
 
         <ScrollView
@@ -462,7 +427,6 @@ export default function Index() {
           contentContainerStyle={{ paddingRight: 20 }}
         >
           {groupCollection.map((item, index) => {
-
             return (
               <View className="flex-row gap-10" key={index}>
                 <View className="bg-gray-200 w-[350px] h-[220px] items-center rounded-[20px] ml-3">
@@ -497,19 +461,20 @@ export default function Index() {
                       <Text className="mt-1 text-[20px] text-start font-bold">
                         {item.price}.00 LKR
                       </Text>
-                      <TouchableOpacity className="rounded-md bg-black justify-center w-16 items-center" onPress={() => router.push(`/views/group/join/${item.id}`)}>
+                      <TouchableOpacity 
+                        className="rounded-md bg-black justify-center w-16 items-center" 
+                        onPress={() => router.push(`/views/group/join/${item.id}`)}
+                      >
                         <Text className=" text-white font-semibold">JOIN</Text>
                       </TouchableOpacity>
                     </View>
-
                   </View>
                 </View>
-              </View>)
-          })
-          }
+              </View>
+            )
+          })}
         </ScrollView>
       </View>
-
-    </View>)
+    </View>
+  )
 }
-
