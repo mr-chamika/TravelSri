@@ -22,7 +22,7 @@ public class AccommodationQuotation {
     private String quoteNumber; // Unique quotation number
     private String pendingTripId;//private String quotationId;
     private String pendingTripName;//private String packageName;
-//    private String contactPersonName;
+    //    private String contactPersonName;
 //    private String contactEmail;
 //    private String contactPhone;
 //    private String accommodationType; hotelId
@@ -40,15 +40,25 @@ public class AccommodationQuotation {
     private String specialRequirements;
     private double totalAmount;
     private double finalAmount;
-    
+
+    // Per-person price breakdowns
+    private Double accommodationPricePerPerson;
+    private Double mealPricePerPerson;
+    private Double totalPricePerPerson;
+
+    // Hotel user information for filtering quotations
+    private String hotelUsername;
+    private String createdBy;
+
+
     // Additional fields for status tracking
     private String status = "Pending"; // Default status: Pending, Approved, Rejected, Under Review
     private String adminNotes; // Notes from admin when approving/rejecting
-    
+
     // Audit fields
     @CreatedDate
     private LocalDateTime createdAt;
-    
+
     @LastModifiedDate
     private LocalDateTime updatedAt;
 }

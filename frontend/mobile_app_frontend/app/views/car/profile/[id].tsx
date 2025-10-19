@@ -1,36 +1,18 @@
-//views/car/profile/[id].tsx
-
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, TouchableOpacity, ScrollView, Platform } from "react-native";
-import { useEffect, useState } from "react";
 import { cssInterop } from 'nativewind'
 import { Image } from 'expo-image'
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
-cssInterop(Image, { className: "style" });
-
-const pic = require('../../../../assets/images/tabbar/towert.png')
-const location = require('../../../../assets/images/pin.png')
-const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelthumb.png')
-const star = require('../../../../assets/images/tabbar/create/hotel/stars.png')
-const back = require('../../../../assets/images/back.png')
-const profile = require('../../../../assets/images/sideTabs/profile.jpg')
-const tele = require('../../../../assets/images/tabbar/create/guide/telephones.png')
-const mark = require('../../../../assets/images/mark.png')
-
-interface Data {
-
-    _id: string;
-    name: string;
-    image: string;
-    driverAge: number;
-    vehicleNumber: string;
-    phone: string;
-    stars: number;
-    images: string[];
-    price: number;
-    location: string;
-
+interface Book {
+    date: string;
+    start: string;
+    end: string;
+    language: string;
+    oneWay: boolean;
+    time: string;
 }
 
 interface Review {
@@ -44,253 +26,510 @@ interface Review {
     dp: string,
 
 }
+interface Category {
+
+    _id: string,
+    title: string,
+
+}
+
+cssInterop(Image, { className: "style" });
+
+const pic = require('../../../../assets/images/tabbar/towert.png')
+const location = require('../../../../assets/images/pin.png')
+const thumbnail = require('../../../../assets/images/tabbar/create/hotel/hotelthumb.png')
+const star = require('../../../../assets/images/tabbar/create/hotel/stars.png')
+const back = require('../../../../assets/images/back.png')
+const profile = require('../../../../assets/images/sideTabs/profile.jpg')
+const tele = require('../../../../assets/images/tabbar/create/guide/telephones.png')
+const mark = require('../../../../assets/images/mark.png')
+const setting = require('../../../../assets/images/setting.png')
+const infinity = require('../../../../assets/images/infinity.png')
+
+// Define a clear interface for your data
+interface Vehicle {
+    _id: string;
+    image: any;
+    firstName: string;
+    lastName: string;
+    stars: number;
+    location: string;
+    dailyRatePrice: number;
+    driverAge: number;
+    vehicleNumber: string;
+    phone: string;
+    reviewCount: number;
+    vehicleModel: string;
+    catId: string;
+    doors: number;
+    seats: number;
+    gearType: string;
+    mileage: string;
+    images: string[]; // Assuming 'images' is an array of images for the gallery
+    whatsIncluded: string[];
+    ac: boolean,
+    languages: string[],
+    verified: string,
+    experience: string,
+    pp: string,
+}
+
+
+export interface Booking {
+    _id: string;
+    userId: string;
+    serviceId: string;
+    type: string;
+    thumbnail: string;
+    title: string;
+    subtitle: string[];
+    location: string;
+    bookingDates: string[];
+    stars: number;
+    ratings: number;
+    paymentStatus: boolean;
+    guests: number;
+    facilities: string[];
+    price: number;
+    status: string;
+    mobileNumber: string;
+}
+
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string
+}
+
 
 export default function Views() {
+
     const router = useRouter();
     const { id } = useLocalSearchParams();
 
-    /* useEffect(() => {
-        getItem(id)
-    }, [id]) */
+    const [booking, setBooking] = useState<Book | null>(null);
+    const [vehicle, setVehicle] = useState<Vehicle | null>(null)
+    const [categories, setCategories] = useState<Category[]>([])
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [bookings, setBookings] = useState<Booking | null>(null)
 
-    const [data, setData] = useState<Data | null>(null)
-    const [review, setReview] = useState<Review[]>([])
-
-    const getData = async () => {
-
-        try {
-            const res = await fetch(`http://localhost:8080/traveler/driver-data?id=${id}`)
-            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/driver-data?id=${id}`)
-
-            var data;
-            try {
-                data = await res.json();
-            } catch {
-                data = await res.text();
-            }
-
-            if (typeof (data) == 'object') {
-
-                //console.log(data)
-                setData(data)
-            } else {
-
-                console.log(data)
-            }
-        } catch (err) {
-
-            console.log(err)
-
-        }
-
-    }
-
-    const getReviews = async () => {
-
-        try {
-
-            const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
-            //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
-
-            if (res) {
-
-                const data = await res.json()
-                //console.log(data)
-                setReview(data)
-
-            }
-
-        } catch (err) {
-
-            console.log(`Error in guide reviews getting : ${err}`)
-
-        }
-
-    }
 
 
     useEffect(() => {
 
-        getData();
-        getReviews();
+        const getDetails = async () => {
+            try {
+                const res = await fetch(`http://localhost:8080/traveler/vehicle-data?id=${id}`)
 
+                const data = await res.json();
+
+                if (data) {
+
+                    console.log('vehicle', data)
+                    setVehicle(data)
+
+                }
+
+                const res1 = await fetch(`http://localhost:8080/traveler/vehicles-all`)
+                //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/vehicles-all`)
+
+                const data1 = await res1.json()
+
+                if (data1.length > 0) {
+                    //console.log(data1)
+                    setCategories(data1)
+                }
+
+                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
+
+                if (res2) {
+
+                    const data2 = await res2.json()
+                    //console.log(data2)
+                    setReviews(data2)
+
+                }
+
+            } catch (err) {
+
+                console.log(err)
+
+            }
+        }
+        getDetails()
     }, [])
 
-    /* const groupCollection = [
-        {
-            id: '1',
-            age: 50,
-            image: profile,
-            name: 'Kasthuri',
-            stars: 3,
-            location: 'Colombo',
-            price: 100,
-            vehicle: 'ABC 0123',
-            mobile: '0123456789',
-            reviewers: [
-                {
-                    id: '1',
-                    name: 'Sunny',
-                    from: 'America',
-                    images: pic,
-                    review: 'mmh maru',
-                    stars: 3
-                },
-                {
-                    id: '2',
-                    name: 'Lena',
-                    from: 'Spain',
-                    images: pic,
-                    review: "set na meka",
-                    stars: 2
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '4',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '5',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                },
-                {
-                    id: '6',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    stars: 0
-                }
-            ],
-            langs: ['sinhala', 'English', 'French', 'Mexican', 'Tamil', 'Japan'],
-            ys: [pic, thumbnail, thumbnail, thumbnail, thumbnail, thumbnail]
-        },
-    ];
-
-    const getItem = (Id: string | string[]) => {
-        groupCollection.map((collection, i) => {
-            if (collection.id == Id) {
-                setItem(collection)
-            }
-        })
-    }
- */
-    const handleBookNow = async () => {
-        try {
-            // Set a new session timestamp to indicate new booking intent
-            await AsyncStorage.setItem('bookingSession', Date.now().toString());
-            await AsyncStorage.setItem('driver', id.toString())
-            router.push(`/(tabs)/create/car`);
-        } catch (error) {
-            console.error('Error updating booking session in AsyncStorage:', error);
-            router.push(`/(tabs)/create/car`);
-        }
+    const getReviewLabel = (score: number): string => {
+        if (score >= 9) return 'Excellent';
+        if (score >= 8) return 'Very Good';
+        if (score >= 7) return 'Good';
+        if (score >= 5) return 'Average';
+        return 'Poor';
     };
 
+    const catName = categories.find(cat => cat._id == vehicle?.catId)
+
+    const rating = vehicle && vehicle?.reviewCount > 0
+        ? parseFloat(((vehicle?.stars / vehicle?.reviewCount) * 2).toFixed(1))
+        : 0;
+
+    useFocusEffect(
+        useCallback(() => {
+            const loadData = async () => {
+                try {
+                    // 1. Get the item from storage using its key
+                    const savedBooking = await AsyncStorage.getItem('cbookings');
+
+                    // 2. Check if data exists
+                    if (savedBooking) {
+                        // 3. Parse the JSON string back into an object
+                        setBooking(JSON.parse(savedBooking));
+                    }
+                } catch (error) {
+                    console.error("Failed to load booking data:", error);
+                }
+            };
+
+            loadData();
+        }, [])
+    );
+
+    const handleBooking = async () => {
+
+        if (vehicle) {
+            await AsyncStorage.setItem('selectedCar', vehicle?._id);
+
+            //implementing car service create
+
+            const orderx = await AsyncStorage.getItem('order');
+            const bookingx = await AsyncStorage.getItem('cbookings');
+            const tokenString = await AsyncStorage.getItem('token');
+
+            if (!orderx || !bookingx || !tokenString) return;
+
+            const token: MyToken = jwtDecode(tokenString);
+
+            const order = JSON.parse(orderx);
+            const booking = JSON.parse(bookingx);
+
+            await fetch('http://localhost:8080/traveler/create-trip', {
+
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ obj: booking, order: order, type: 'vehicle', serviceId: id, userId: token.id })
+
+            })
+                .then(res => res.text())
+                .then(data => router.push({ pathname: `/(tabs)/creates`, params: { id: data } }))
+                .catch(err => console.log(err))
+
+        } else {
+
+            alert('Error : vehicle not detected')
+
+        }
+
+    }
+
     return (
-        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'}`}>
+
+        <View className={`${Platform.OS === 'web' ? 'h-screen overflow-auto' : 'h-full'} bg-gray-200`}>
+
             <TouchableOpacity className="pl-3" onPress={() => router.back()}><Text>Back</Text></TouchableOpacity>
+
             <ScrollView
+
                 className="w-full h-[97%]"
-                contentContainerClassName="flex-col px-3 py-5"
+                contentContainerClassName="flex-col w-full py-5"
                 showsVerticalScrollIndicator={false}
+
             >
-                <View className="justify-between gap-10">
+                <View className="justify-between gap-5">
                     <View className="w-full gap-5">
-                        <View className=" items-center">
-                            <Image className="rounded-full w-[200px] h-[200px] mb-2" source={{ uri: `data:image/jpeg;base64,${data && data.image}` }} />
-                            <Text className="text-center font-semibold text-xl">Theekshana Doe</Text>
-                            <View className="flex-row">
-                                <Text className="font-light">{data && data.driverAge} years old | {data && data.vehicleNumber} | {data && data.phone} |</Text>
-                                <View className="flex-row items-center">
-                                    <Image className="w-5 h-5" source={star} /><Text className=" font-light">{data && data.stars}/5</Text>
+
+                        <View className="w-full">
+
+                            <View className="w-full flex-row gap-5 bg-white mx-0">
+
+
+                                {/* Vehicle Image */}
+                                <View className="w-[200px] h-[160px] p-3">
+                                    <Image source={{ uri: `data:image/jpeg;base64,${vehicle && vehicle?.image}` }} className="w-full h-full" />
+                                </View>
+                                <View className="flex-1 pr-3 mt-1">
+                                    <View className="flex-row justify-between">
+                                        <Text className="text-base font-semibold text-gray-800 mb-0.5">{vehicle?.vehicleModel}</Text>
+                                        <Text className="text-base font-semibold text-gray-800 mb-0.5 bg-yellow-200 px-1 rounded-lg">{vehicle?.vehicleNumber}</Text>
+                                    </View>
+                                    <View>
+                                        <View className="w-[80%] flex-row justify-between">
+                                            <Text className="text-xs text-gray-500 mb-2">{catName?.title}</Text>
+                                            <View className="flex-row items-start gap-2">
+                                                <Image source={mark} className='w-4 h-4' />
+                                                <Text className="text-xs text-gray-500 mb-2">{vehicle?.ac ? 'A/C' : 'Non A/C'}</Text>
+
+                                            </View>
+                                        </View>
+                                        <View className="flex-row gap-1">
+
+                                            <Image source={setting} className='w-4 h-4' />
+                                            <Text className="text-xs text-gray-500 mb-2">{vehicle?.gearType}</Text>
+                                        </View>
+
+                                        <View className="flex-row items-center gap-1">
+
+                                            <Image source={infinity} className='w-5 h-5' />
+                                            <Text className="text-xs text-gray-600">{vehicle?.mileage}</Text>
+                                        </View>
+                                    </View>
+                                    {/* Location */}
+                                    <View className="mb-3 item">
+                                        <Text className="text-sm font-semibold text-gray-800">Around {vehicle?.location}</Text>
+                                    </View>
+
+                                    <View className="flex-row justify-between">
+                                        <View>
+                                            <Text>{vehicle?.doors} doors</Text>
+                                            <Text>{vehicle?.seats} seats</Text>
+                                        </View>
+                                        {/* Supplier stars */}
+                                        <View className="justify-between mb-3">
+                                            <View className="flex-row gap-2">
+                                                <View className={`rounded px-3 py-1 ${rating >= 9 ? 'bg-green-500' :
+                                                    rating >= 8 ? 'bg-emerald-400' :
+                                                        rating >= 7 ? 'bg-yellow-400' :
+                                                            rating >= 5 ? 'bg-orange-400' :
+                                                                'bg-red-500'}`}>
+                                                    <Text className="text-white text-lg font-semibold">{rating}</Text>
+                                                </View>
+                                                <View>
+                                                    <Text className="text-md font-semibold text-gray-800">{getReviewLabel(rating)}</Text>
+                                                    <Text className="text-sm text-gray-500">{vehicle?.reviewCount} reviews</Text>
+                                                </View>
+                                            </View>
+
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
+
+
                         </View>
 
-                        <View>
+                        <View className="bg-white mx-4 my-2 pb-8 px-3 rounded-lg shadow-md">
                             <Text className=" text-2xl font-semibold py-1">Photos</Text>
+
+
                             <View className="w-full items-center">
                                 <ScrollView
                                     horizontal
-                                    className=" h-50 border-black rounded-2xl border-2 w-[89%]"
-                                    contentContainerClassName=" py-3 pl-3"
+                                    className="w-[80%] h-50 border-gray-200 rounded-2xl"
+                                    contentContainerClassName="flex-row gap-1"
                                     showsHorizontalScrollIndicator={false}
                                     nestedScrollEnabled={true}
+
                                 >
-                                    {data && data.images.map((x, i) => {
+                                    {vehicle?.images.map((x, i) => {
+
                                         return (
-                                            <View key={i} className=" w-[310px] h-40">
-                                                <Image className=" w-[300px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
+
+                                            <View key={i} className="flex-row w-[310px] h-40">
+
+                                                <Image className=" w-[310px] h-full" source={{ uri: `data:image/jpeg;base64,${x}` }} />
+
                                             </View>
                                         )
-                                    })}
+                                    })
+
+                                    }
                                 </ScrollView>
+
                             </View>
+
                         </View>
 
-                        <View>
-                            <View className="w-[35%] flex-row justify-between">
-                                <Text className=" text-2xl font-semibold py-1">Reviews</Text>
-                                <View className="flex-row items-center">
-                                    <Image className="w-5 h-5" source={star} />
-                                    <Text>{data && data.stars}/5</Text>
+                        <View className="bg-white mx-4 px-3 rounded-lg shadow-md">
+                            <Text className="text-xl py-2 font-semibold">Driver Details</Text>
+                            <View>
+
+                                <View className="flex-row items-center px-2 gap-10">
+
+
+                                    <Image source={{ uri: `data:image/jpeg;base64,${vehicle && vehicle?.pp}` }} className="w-24 h-24 rounded-full mb-10" />
+
+
+                                    <View className=" gap-3 flex-col">
+                                        <View className="flex-row gap-10">
+                                            <View className="flex-1 ml-2">
+                                                <Text className="text-xl font-bold text-gray-800">{vehicle?.firstName}</Text>
+                                                <Text className="text-sm text-gray-500">{vehicle?.lastName}</Text>
+                                            </View>
+                                            <View>
+                                                {vehicle?.verified && (
+                                                    <View className="bg-white p-1 rounded-full flex-row items-end gap-2">
+                                                        <Image source={mark} className="w-4 h-4" />
+                                                        <Text>Verified</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </View>
+                                        {/* <View className="items-center flex-row gap-3 justify-center">
+
+                                            <Image source={tele} className="w-4 h-4" />
+                                            <Text>{vehicle?.phone}</Text>
+
+                                        </View> */}
+                                        <View className="flex-row flex-wrap gap-2 pt-3">
+                                            {vehicle?.languages.map((language, index) => (
+                                                <View key={index} className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 gap-1.5">
+
+                                                    <Text className="text-sm text-blue-600 font-medium">{language}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </View>
                                 </View>
                             </View>
-                            <View>
-                                <ScrollView
-                                    className="w-full h-72 border-2 border-gray-200 rounded-2xl px-2"
-                                    contentContainerClassName={`flex-col px-2 py-3 gap-5 ${!review || review.length == 0 ? 'h-full' : ''}`}
-                                    showsVerticalScrollIndicator={false}
-                                    nestedScrollEnabled={true}
-                                >
-                                    {(!review || review.length == 0) && <View className='w-full h-full items-center justify-center'><Text className='italic text-gray-400'>No Reviews Yet</Text></View>}
-                                    {review.map((x, i) => {
-                                        return (
-                                            <View key={i} className="bg-gray-200 px-3 rounded-2xl">
-                                                <View className="flex-row items-center">
-                                                    <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
-                                                    <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
-                                                    <View className="flex-row items-center gap-1">
-                                                        <Image className="w-5 h-5" source={star} />
-                                                        <Text>{x.stars}/5</Text>
-                                                    </View>
-                                                </View>
-                                                <Text className="text-lg mx-5 my-2">{x.text}</Text>
-                                            </View>
-                                        )
-                                    })}
-                                </ScrollView>
+
+                            {/* --- Stats Section --- */}
+                            <View className="flex-row justify-around my-4 py-3 bg-gray-50 rounded-lg">
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-gray-800">{vehicle?.driverAge}</Text>
+                                    <Text className="text-sm text-gray-500">Age</Text>
+                                </View>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-gray-800">{vehicle?.experience} years</Text>
+                                    <Text className="text-sm text-gray-500">Experience</Text>
+                                </View>
+                                <View className="items-center">
+                                    <Text className="text-lg font-bold text-gray-800">{vehicle?.location}</Text>
+                                    <Text className="text-sm text-gray-500">Based In</Text>
+                                </View>
+
                             </View>
                         </View>
+
+                        <View className="p-4 m-4 bg-white rounded-lg shadow">
+                            <View className="my-4 flex-row justify-between">
+                                <View className="flex-col items-start">
+                                    <Text className="text-base text-gray-700">{booking?.start}</Text>
+                                    <Image source={location} className="w-5 h-5" />
+                                </View>
+                                <View className="flex-col items-end">
+                                    <Text className="text-base text-gray-700">{booking?.end}</Text>
+                                    <Image source={location} className="w-5 h-5" />
+                                </View>
+                            </View>
+                            <View className="flex-1 mx-1 border-t-8 border-dotted border-gray-300" />
+
+                            <View className="h-px bg-gray-200" />
+
+                            {/* Date & Duration Details */}
+                            <View className="my-4 flex-row justify-between items-center">
+                                <View className="flex-row items-center">
+                                    <View className="ml-3">
+                                        <Text className="text-sm text-gray-500">Date</Text>
+                                        <Text className="text-base font-semibold text-gray-800">{booking?.date}</Text>
+                                    </View>
+                                </View>
+                                <View className="items-end">
+                                    <Text className="text-sm text-gray-500">Duration</Text>
+                                    <Text className="text-base font-semibold text-gray-800">1 Day</Text>
+                                </View>
+                            </View>
+
+                            <View className="h-px bg-gray-200" />
+
+                            {/* Trip Type */}
+                            <View className="mt-4 flex-row justify-between items-center">
+                                <Text className="text-base font-semibold text-gray-700">Trip Type</Text>
+                                <View className="flex-row items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
+                                    <Text className="text-blue-700 font-bold">
+                                        {booking?.oneWay ? 'One-Way' : 'Way Back'}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                        <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
+                            <Text className="text-lg font-semibold text-gray-800 mb-4">What's included</Text>
+                            <View className="space-y-3">
+                                {vehicle?.whatsIncluded.map((item, index) => (
+                                    <View key={index} className="flex-row items-center gap-3">
+                                        <Image source={mark} className="w-5 h-5" />
+                                        <Text className="text-sm text-gray-600 flex-1">{item}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+
+
+                        {reviews.length > 0 &&
+
+                            <View className="bg-white mx-4 my-2 p-4 rounded-lg shadow-md">
+
+                                <View className="w-[35%] flex-row justify-between">
+                                    <Text className=" text-2xl font-semibold py-1">Reviews</Text>
+
+                                </View>
+                                <View>
+                                    <ScrollView
+
+                                        className="w-full h-72 rounded-2xl mx-2"
+                                        contentContainerClassName=" flex-col px-2 py-3 gap-5 "
+                                        showsVerticalScrollIndicator={false}
+                                        nestedScrollEnabled={true}
+
+                                    >
+                                        {reviews.map((x, i) => {
+
+                                            return (
+
+                                                <View key={i} className="bg-gray-200 px-3 rounded-2xl">
+                                                    <View className="flex-row items-center">
+                                                        <Image className="w-10 h-10 rounded-full" source={{ uri: `data:image/jpeg;base64,${x.dp}` }} />
+                                                        <Text className="px-3 text-justify my-5 text-gray-500 font-semibold">{x.author} from {x.country}</Text>
+                                                        <View className="flex-row items-center gap-1">
+                                                            <Image className="w-5 h-5" source={star} />
+                                                            <Text>{x.stars}/5</Text>
+                                                        </View>
+                                                    </View>
+                                                    <Text className="text-lg mx-5 my-2">{x.text}</Text>
+
+                                                </View>
+                                            )
+                                        })
+
+                                        }
+                                    </ScrollView>
+
+                                </View>
+
+                            </View>
+                        }
+
+
                     </View>
 
+
                     <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
-                        <Text className="px-3 font-extrabold text-xl">{data && data.price}.00 LKR/km</Text>
-                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%] " onPress={handleBookNow}>
+
+                        <Text className="px-3 font-extrabold text-xl">{vehicle?.dailyRatePrice}.00 LKR/km</Text>
+
+                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%] " onPress={handleBooking}>
                             <View className="py-2 px-2 flex-row justify-between items-center w-full">
-                                <Text>Book Now</Text>
+                                <Text>Choose</Text>
                                 <Image className="w-5 h-5" source={back} />
                             </View>
                         </TouchableOpacity>
                     </View>
                 </View>
-            </ScrollView>
-        </View>
+
+            </ScrollView >
+        </View >
+
     )
+
 }

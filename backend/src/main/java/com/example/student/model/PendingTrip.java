@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 
 @Data
@@ -39,6 +40,9 @@ public class PendingTrip {
 
     @Field("description_about_start_location")
     private String descriptionAboutStartLocation;
+
+    @Field("intermediate_places")
+    private String intermediatePlaces;
 
     @Field("pickup_time")
     private LocalTime pickupTime;

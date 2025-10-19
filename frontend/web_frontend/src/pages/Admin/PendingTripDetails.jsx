@@ -21,7 +21,7 @@ const PendingTripDetails = () => {
 
     // API base URLs
     const API_BASE_URLS = {
-        hotel: "http://localhost:8080/api/hotel-quotation",
+        hotel: "http://localhost:8080/api/quotations",
         vehicle: "http://localhost:8080/api/quotation",
         guide: "http://localhost:8080/api/guide-quotation"
     };
@@ -46,14 +46,16 @@ const PendingTripDetails = () => {
             setError("");
 
             const [hotelResponse, vehicleResponse, guideResponse] = await Promise.all([
-                axios.get(`${API_BASE_URLS.hotel}/trip/${pendingTripId}`),
-                axios.get(`${API_BASE_URLS.vehicle}/trip/${pendingTripId}`),
-                axios.get(`${API_BASE_URLS.guide}/trip/${pendingTripId}`)
+                axios.get(`${API_BASE_URLS.hotel}/trip/${pendingTripId}`)
+                //axios.get(`${API_BASE_URLS.vehicle}/trip/${pendingTripId}`),
+                // axios.get(`${API_BASE_URLS.guide}/trip/${pendingTripId}`)
             ]);
 
             setHotelQuotations(hotelResponse.data || []);
-            setVehicleQuotations(vehicleResponse.data || []);
-            setGuideQuotations(guideResponse.data || []);
+
+            console.log("Hotel Quotations:", hotelResponse.data);
+            //setVehicleQuotations(vehicleResponse.data || []);
+            //setGuideQuotations(guideResponse.data || []);
 
         } catch (error) {
             console.error("Error fetching quotations:", error);
@@ -182,6 +184,10 @@ const PendingTripDetails = () => {
                                             <span className="ml-2 text-gray-900">{tripData.endLocation}</span>
                                         </div>
                                         <div>
+                                            <span className="font-semibold text-gray-700">Intermidiate Destinations:</span>
+                                            <span className="ml-2 text-gray-900">{tripData.intermediatePlaces}</span>
+                                        </div>
+                                        <div>
                                             <span className="font-semibold text-gray-700">Date:</span>
                                             <span className="ml-2 text-gray-900">{formatDate(tripData.date)}</span>
                                         </div>
@@ -231,7 +237,7 @@ const PendingTripDetails = () => {
                                                     </span>
                                                     {item.count > 0 && !loadingQuotations && (
                                                         <span className="text-xs text-gray-600">
-                                                            Price range: {formatPriceLKR(Math.min(...item.data.map(q => q.price)))} - {formatPriceLKR(Math.max(...item.data.map(q => q.price)))}
+                                                            Price range: {formatPriceLKR(Math.min(...item.data.map(q => q.totalPricePerPerson)))} - {formatPriceLKR(Math.max(...item.data.map(q => q.totalPricePerPerson)))}
                                                         </span>
                                                     )}
                                                 </div>

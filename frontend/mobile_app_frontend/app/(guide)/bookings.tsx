@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MyToken {
     sub: string;
@@ -63,18 +64,23 @@ export default function App() {
 
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8080/api/bookings/traveler/${userToken.id}`);
+            console.log('🔍 Fetching bookings for guide ID:', userToken.id);
+            
+            // Fetch booking requests for this guide (as provider)
+            const response = await fetch(`http://localhost:8080/api/bookings/provider/${userToken.id}`);
             
             if (response.ok) {
                 const data = await response.json();
+                console.log('✅ Booking requests fetched:', data.length, 'bookings');
+                console.log('📋 Booking data:', JSON.stringify(data, null, 2));
                 setBookings(data);
                 filterBookings(data, activeFilter);
             } else {
-                console.error("Failed to fetch bookings:", response.status);
+                console.error("❌ Failed to fetch bookings:", response.status);
                 setBookings([]);
             }
         } catch (error) {
-            console.error("Error fetching bookings:", error);
+            console.error("❌ Error fetching bookings:", error);
             setBookings([]);
         } finally {
             setLoading(false);
@@ -88,9 +94,10 @@ export default function App() {
         
         switch (filter) {
             case 'Pending':
+                // For guides: pending means awaiting their acceptance
                 filtered = bookingsList.filter(booking => 
-                    booking.status === 'PENDING_PAYMENT' || 
-                    booking.status === 'PENDING_PROVIDER_ACCEPTANCE'
+                    booking.status === 'PENDING_PROVIDER_ACCEPTANCE' || 
+                    booking.status === 'PENDING_PAYMENT'
                 );
                 break;
             case 'Confirmed':
@@ -197,10 +204,10 @@ export default function App() {
         };
 
         // Extract location from service description
-        const getLocationFromDescription = (description: string) => {
-            const match = description.match(/Route: (.+?) to (.+?)(\||\s|$)/);
-            return match ? `${match[1]} to ${match[2]}` : 'Location not specified';
-        };
+        // const getLocationFromDescription = (description: string) => {
+        //     const match = description.match(/Route: (.+?) to (.+?)(\||\s|$)/);
+        //     return match ? `${match[1]} to ${match[2]}` : 'Location not specified';
+        // };
 
         // Get service type icon
         const getServiceIcon = (providerType: string) => {
@@ -239,7 +246,7 @@ export default function App() {
                     <View className="flex-row items-center mb-2">
                         <Text className="text-gray-500 text-sm">📍</Text>
                         <Text className="text-sm text-gray-600 ml-2">
-                            {getLocationFromDescription(booking.serviceDescription)}
+                            {/* {getLocationFromDescription(booking.serviceDescription)} */}
                         </Text>
                     </View>
                     {booking.languagePreference && (
@@ -262,8 +269,17 @@ export default function App() {
                     className="py-3 rounded-lg bg-white border border-gray-300"
                     onPress={() => {
                         // Navigate to booking details
-                        if (booking.providerType === 'vehicle') {
-                            router.push(`/views/bookings/soloTrips/${booking._id}`);
+                        console.log('🔗 Navigating to booking details');
+                        console.log('  - Booking ID:', booking._id);
+                        console.log('  - Provider Type:', booking.providerType);
+                        
+                        if (booking.providerType === 'guide') {
+                            const route = `/views/bookings/soloTrips/guide/${booking._id}`;
+                            console.log('  - Route path:', route);
+                            router.push({
+                                pathname: '/views/bookings/soloTrips/guide/[id]',
+                                params: { id: booking._id }
+                            });
                         } else {
                             router.push(`/views/bookings/groupTrips/${booking._id}`);
                         }
@@ -292,6 +308,20 @@ export default function App() {
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
         >
+            {/* Header with Back Button */}
+            <View className="bg-gradient-to-b from-[#EAB308] to-[#FDE047] px-4 pt-3 pb-4 flex-row items-center justify-between shadow-sm">
+                <TouchableOpacity 
+                    onPress={() => router.back()}
+                    className="py-2 px-2"
+                >
+                    <Ionicons name="chevron-back" size={28} color="#000" />
+                </TouchableOpacity>
+                <Text className="text-xl font-bold text-gray-800 flex-1 ml-2">
+                    Booking Requests
+                </Text>
+                <View className="w-10" />
+            </View>
+
             <View className="px-4 pt-4 pb-24">
                 {/* Filter Tabs */}
                 <View className="flex-row space-x-3 mb-6">
@@ -304,11 +334,11 @@ export default function App() {
                 {/* Booking Cards */}
                 {filteredBookings.length === 0 ? (
                     <View className="flex-1 justify-center items-center py-20">
-                        <Text className="text-gray-500 text-lg mb-2">No bookings found</Text>
+                        <Text className="text-gray-500 text-lg mb-2">No booking requests</Text>
                         <Text className="text-gray-400 text-center">
                             {activeFilter === 'All' 
-                                ? "You haven't made any bookings yet"
-                                : `No ${activeFilter.toLowerCase()} bookings`
+                                ? "You don't have any booking requests yet"
+                                : `No ${activeFilter.toLowerCase()} booking requests`
                             }
                         </Text>
                     </View>

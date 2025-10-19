@@ -295,6 +295,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: '#000',
+        textAlign: 'center',
     },
     notificationButton: {
         padding: 8,
