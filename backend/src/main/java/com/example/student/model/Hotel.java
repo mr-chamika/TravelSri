@@ -81,10 +81,15 @@ public class Hotel{
     
     // Business Documents (stored as file paths or URLs)
     private String businessRegistrationDocPath;
+    private String businessRegistrationDocData; // Base64 data
     private String taxCertificateDocPath;
+    private String taxCertificateDocData; // Base64 data
     private String hotelCertificationDocPath;
+    private String hotelCertificationDocData; // Base64 data
     private String healthAndSafetyDocPath;
+    private String healthAndSafetyDocData; // Base64 data
     private String[] otherDocumentsPaths;
+    private String[] otherDocumentsData; // Base64 data array
     
     // Hotel Images (additional to existing images array)
     private String[] hotelImagesPaths;

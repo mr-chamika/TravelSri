@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import quotationService from '../../../services/quotationService';
 import pendingTripService from '../../../services/pendingTripService';
 import hotelService from '../../../services/hotelService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 import { Link } from 'react-router-dom';
 
 // Input component
@@ -603,10 +604,40 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               <span className="text-xl">LKR {(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
             </div>
             
+            {/* Per-Person Breakdown */}
+            <div className="mt-4 bg-blue-50 p-3 border border-blue-200 rounded">
+              <h5 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                Per Person Breakdown (Group Size: {quotation.groupSize})
+              </h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-blue-700">Accommodation per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {quotation.accommodationPricePerPerson 
+                    ? quotation.accommodationPricePerPerson.toFixed(2) 
+                    : (calculateAccommodationTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700">Meal plan per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {quotation.mealPricePerPerson 
+                    ? quotation.mealPricePerPerson.toFixed(2) 
+                    : (calculateMealPlanUpgradeTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700 font-semibold border-t pt-1">Total per person:</div>
+                <div className="text-right font-bold text-blue-900 border-t pt-1">
+                  LKR {quotation.totalPricePerPerson 
+                    ? quotation.totalPricePerPerson.toFixed(2) 
+                    : calculatePerPersonPrice(quotation).toFixed(2)}
+                </div>
+              </div>
+            </div>
+            
             <div className="mt-4 text-xs text-gray-500 bg-white p-3 border border-gray-100 rounded">
               <div className="flex items-start mb-1">
                 <span className="material-icons text-yellow-600 text-sm mr-2">info</span>
-                <p>Rates are based on group accommodation package.</p>
+                <p>Rates are based on group accommodation package. Per-person prices are calculated and saved automatically.</p>
               </div>
               <div className="flex items-start">
                 <span className="material-icons text-yellow-600 text-sm mr-2">event</span>
@@ -928,8 +959,8 @@ const QuotationsManagement = () => {
     checkOutDate: '',
     groupSize: 10,
     pricePerPersonPerNight: 0, // Price per person per night for accommodation
-    mealPlan: 'Breakfast Only',
-    mealPlanPricePerPerson: 15, // Price per person per night for meal plan
+    mealPlan: '',
+    mealPlanPricePerPerson: 0, // Price per person per night for meal plan
     specialRequirements: '',
     totalAmount: 0,
     discountOffered: 0,
@@ -1387,10 +1418,10 @@ const QuotationsManagement = () => {
       } 
       // Fall back to default pricing if not set
       return quotation.groupSize * 
-        (quotation.mealPlan === 'Breakfast Only' ? 15 :
-         quotation.mealPlan === 'Half Board' ? 25 : 
-         quotation.mealPlan === 'Full Board' ? 40 : 
-         quotation.mealPlan === 'All Inclusive' ? 60 : 0) * nights;
+        (quotation.mealPlan === 'Breakfast Only' ? 1000 :
+         quotation.mealPlan === 'Half Board' ? 1500 : 
+         quotation.mealPlan === 'Full Board' ? 2000 : 
+         quotation.mealPlan === 'All Inclusive' ? 2500 : 0) * nights;
     }
     return 0;
   };
@@ -1553,7 +1584,7 @@ const QuotationsManagement = () => {
       groupSize: tripPackage.maxGroupSize,
       pricePerPersonPerNight: 5000, // Default starting price per person per night in LKR
       mealPlan: 'Breakfast Only',
-      mealPlanPricePerPerson: 1500, // Default meal plan price in LKR
+      mealPlanPricePerPerson: 1000, // Default meal plan price in LKR
       // Add reference to the original trip
       originalTripId: tripPackage.id,
       // Use real hotel data from API
@@ -1585,6 +1616,29 @@ const QuotationsManagement = () => {
         // window.location.href = '/hotel/login';
         return;
       }
+
+      // Get current user info and fetch hotel details
+      const currentUser = HotelAuthService.getCurrentUser();
+      const currentUsername = currentUser?.username;
+      
+      if (!currentUsername) {
+        console.error('Username not found in authentication data');
+        showFlashMessage('Unable to identify hotel user. Please login again.', 'error');
+        return;
+      }
+
+      console.log('Fetching hotel details for username:', currentUsername);
+      
+      // Fetch hotel details by username to get hotel ID
+      let hotelDetails = null;
+      try {
+        hotelDetails = await hotelService.getHotelByUsername(currentUsername);
+        console.log('Hotel details fetched:', hotelDetails);
+      } catch (error) {
+        console.error('Failed to fetch hotel details:', error);
+        showFlashMessage('Unable to fetch hotel information. Please contact support.', 'error');
+        return;
+      }
       
       // Validate package name - ensure it's not empty
       if (!newQuotation.packageName || newQuotation.packageName.trim() === '') {
@@ -1592,9 +1646,17 @@ const QuotationsManagement = () => {
         return;
       }
       
-      // Calculate total amount
+      // Calculate total amount and per-person prices
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
+      const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+      const transportationTotal = calculateTransportationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+      
+      // Calculate per-person prices
+      const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+      // For mealPricePerPerson, use the direct per-person per-day rate instead of calculating from total
+      const mealPricePerPerson = newQuotation.mealPlanPricePerPerson || 0; // This is already per person per day
+      const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
       
       // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
@@ -1609,16 +1671,29 @@ const QuotationsManagement = () => {
         finalAmount: finalTotal,
         quoteNumber: `HQ-${Date.now().toString().substr(-6)}`, // Generate a unique quote number
         
-        // Ensure consistent field names for hotel details
-        hotelId: newQuotation.hotelId || hotelData.id || '',
-        hotelName: newQuotation.hotelName || hotelData.hotelName || '',
-        hotelAddress: newQuotation.hotelAddress || hotelData.address || '',
-        hotelWebsite: newQuotation.hotelWebsite || hotelData.website || '',
+        // Add hotel user information for filtering quotations by hotel
+        hotelUsername: currentUsername,
+        createdBy: currentUsername,
+        
+        // Add hotel ID and details from fetched hotel information
+        hotelId: hotelDetails?._id || hotelDetails?.id || '',
+        hotelName: hotelDetails?.hotelName || hotelDetails?.name || '',
+        hotelAddress: hotelDetails?.hotelAddress || hotelDetails?.address || '',
+        hotelWebsite: hotelDetails?.website || '',
+        hotelPhone: hotelDetails?.phoneNumber || hotelDetails?.phone || '',
+        hotelEmail: hotelDetails?.email || hotelDetails?.contactEmail || '',
+        hotelCity: hotelDetails?.city || '',
+        hotelDistrict: hotelDetails?.district || '',
+        
+        // Add calculated per-person prices to be saved in database
+        accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+        mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+        totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
         
         // Ensure consistent field names for contact details
-        contactPersonName: newQuotation.contactPersonName || hotelData.managerName || '',
-        contactEmail: newQuotation.contactEmail || hotelData.email || '',
-        contactPhone: newQuotation.contactPhone || hotelData.phone || '',
+        contactPersonName: newQuotation.contactPersonName || hotelDetails?.contactPerson || hotelDetails?.managerName || '',
+        contactEmail: newQuotation.contactEmail || hotelDetails?.contactEmail || hotelDetails?.email || '',
+        contactPhone: newQuotation.contactPhone || hotelDetails?.phoneNumber || hotelDetails?.phone || '',
         
         // Ensure both new and old field names are sent for pool facilities
         poolFacilities: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
@@ -1630,9 +1705,16 @@ const QuotationsManagement = () => {
       // Call the API to create quotation
       console.log('Sending quotation data:', quotationToAdd);
       console.log('Package name being sent to database:', quotationToAdd.packageName);
+      console.log('Hotel ID being sent to database:', quotationToAdd.hotelId);
+      console.log('Per-person prices being sent to database:', {
+        accommodationPricePerPerson: quotationToAdd.accommodationPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson,
+        totalPricePerPerson: quotationToAdd.totalPricePerPerson
+      });
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       console.log('Created quotation response:', createdQuotation);
       console.log('Package name in response:', createdQuotation.packageName || createdQuotation.pendingTripName);
+      console.log('Hotel ID in response:', createdQuotation.hotelId);
       
       // Even if the API call fails with 401 but returns a mock object, we proceed
       // to give the user a better experience, but we won't refetch the list from API
@@ -1666,7 +1748,14 @@ const QuotationsManagement = () => {
         
         // This is a workaround: create a local quotation object to give better UX
         const accommodationTotal = calculateAccommodationTotal(newQuotation);
+        const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+        const transportationTotal = calculateTransportationTotal(newQuotation);
         const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+        
+        // Calculate per-person prices
+        const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+        const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
+        const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
         
         const mockQuotation = {
           ...newQuotation,
@@ -1676,6 +1765,9 @@ const QuotationsManagement = () => {
           status: 'Pending',
           totalAmount: accommodationTotal,
           finalAmount: finalTotal,
+          accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+          mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+          totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
         };
         
         // Add to state and close modal
@@ -2512,7 +2604,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     
                     <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded mt-2">
-                      Add-on Services
+                      Meal Plan
                     </div>
                     
                     <div className="text-gray-600 pl-2 flex items-center">
@@ -2521,13 +2613,13 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     <div className="text-gray-600">
                       {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${quotation.mealPlanPricePerPerson || 0} × ${quotation.groupSize} people × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                      `LKR ${quotation.mealPlanPricePerPerson} × ${quotation.groupSize} people × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
                     </div>
                     <div className="text-right">
                       {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? `LKR ${(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
                     </div>
                     
-                    <div className="text-gray-600 pl-2 flex items-center">
+                    {/* <div className="text-gray-600 pl-2 flex items-center">
                       <span className="material-icons text-yellow-600 text-xs mr-1">pool</span>
                       Pool Facilities:
                     </div>
@@ -2536,7 +2628,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     <div className="text-right">
                       {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice?.toFixed(2) || '0.00'}` : 'LKR 0.00'}
-                    </div>
+                    </div> */}
                     
                     <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
                       Subtotal (before discount):
@@ -3342,7 +3434,7 @@ const StatusBadge = ({ status }) => {
                           <span className="material-icons text-yellow-500 text-xs mr-1">info</span>
                           Room allocation will be determined after quotation approval
                         </div>
-                      </div>
+                      </div> 
                       
                       <div className="mt-2 flex items-center justify-between">
                         <div className="text-sm font-medium text-yellow-800">Total Accommodation Price:</div>
@@ -3371,10 +3463,10 @@ const StatusBadge = ({ status }) => {
                           const selectedMealPlan = e.target.value;
                           // Set default prices based on meal plan
                           let mealPlanPrice = 0;
-                          if (selectedMealPlan === 'Breakfast Only') mealPlanPrice = 15;
-                          else if (selectedMealPlan === 'Half Board') mealPlanPrice = 25;
-                          else if (selectedMealPlan === 'Full Board') mealPlanPrice = 40;
-                          else if (selectedMealPlan === 'All Inclusive') mealPlanPrice = 60;
+                          if (selectedMealPlan === 'Breakfast Only') mealPlanPrice = 1000;
+                          else if (selectedMealPlan === 'Half Board') mealPlanPrice = 1500;
+                          else if (selectedMealPlan === 'Full Board') mealPlanPrice = 2000;
+                          else if (selectedMealPlan === 'All Inclusive') mealPlanPrice = 2500;
                           
                           setNewQuotation({
                             ...newQuotation, 
@@ -3534,6 +3626,37 @@ const StatusBadge = ({ status }) => {
                           
                           <div className="text-gray-600 border-t pt-1 mt-1">Total Amount:</div>
                           <div className="text-right font-medium border-t pt-1 mt-1">LKR {calculateFinalTotal(newQuotation)}</div>
+                        </div>
+                      </div>
+
+                      {/* Per-Person Price Breakdown */}
+                      <div className="mb-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium flex items-center text-blue-800">
+                            <span className="material-icons text-blue-600 text-sm mr-1">person</span>
+                            Per Person Breakdown
+                          </span>
+                          <span className="text-sm text-blue-600">Saved to Database</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-blue-700">Accommodation per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateAccommodationTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700">Meal plan per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateMealPlanUpgradeTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700 font-semibold border-t border-blue-300 pt-1">Total per person:</div>
+                          <div className="text-right font-bold text-blue-900 border-t border-blue-300 pt-1">
+                            LKR {calculatePerPersonPrice(newQuotation).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-blue-600">
+                          <span className="material-icons text-xs mr-1">info</span>
+                          These calculated values will be saved to the database when you create the quotation.
                         </div>
                       </div>
 

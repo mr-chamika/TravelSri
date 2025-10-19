@@ -41,6 +41,16 @@ public class AccommodationQuotation {
     private double totalAmount;
     private double finalAmount;
     
+    // Per-person price breakdowns
+    private Double accommodationPricePerPerson;
+    private Double mealPricePerPerson;
+    private Double totalPricePerPerson;
+    
+    // Hotel user information for filtering quotations
+    private String hotelUsername;
+    private String createdBy;
+
+    
     // Additional fields for status tracking
     private String status = "Pending"; // Default status: Pending, Approved, Rejected, Under Review
     private String adminNotes; // Notes from admin when approving/rejecting

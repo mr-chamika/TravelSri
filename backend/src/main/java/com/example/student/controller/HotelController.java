@@ -586,6 +586,27 @@ public class HotelController {
 
     // ========== ADDITIONAL ENDPOINTS ==========
     
+    @GetMapping("/username/{username}")
+    public ResponseEntity<?> getHotelByUsername(@PathVariable String username) {
+        try {
+            Optional<Hotel> hotelOpt = hotelService.findByUsername(username);
+            
+            if (hotelOpt.isPresent()) {
+                Hotel hotel = hotelOpt.get();
+                return new ResponseEntity<>(hotel, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found with username: " + username);
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fetch hotel by username: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/verify-hotel-by-username/{username}")
     public ResponseEntity<?> verifyHotelByUsername(@PathVariable String username) {
         try {
@@ -660,6 +681,97 @@ public class HotelController {
             
         } catch (Exception e) {
             return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ========== ROOM AVAILABILITY SYNC ENDPOINTS ==========
+    
+    /**
+     * Manually update hotel availability based on room counts
+     */
+    @PatchMapping("/{id}/sync-availability")
+    public ResponseEntity<?> updateHotelAvailability(
+            @PathVariable String id,
+            @RequestParam int totalStandardRooms,
+            @RequestParam int totalDeluxeRooms,
+            @RequestParam int availableStandardRooms,
+            @RequestParam int availableDeluxeRooms) {
+        try {
+            Hotel updatedHotel = hotelService.updateHotelAvailabilityFromRooms(
+                    id, totalStandardRooms, totalDeluxeRooms, 
+                    availableStandardRooms, availableDeluxeRooms);
+            
+            if (updatedHotel != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel availability updated successfully");
+                response.put("hotel", updatedHotel);
+                response.put("maxSingle", updatedHotel.getMaxSingle());
+                response.put("maxDouble", updatedHotel.getMaxDouble());
+                response.put("availableSingle", updatedHotel.getAvailableSingle());
+                response.put("availableDouble", updatedHotel.getAvailableDouble());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to update hotel availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Automatically sync hotel availability from hotelRooms collection
+     */
+    @PatchMapping("/{id}/sync-availability-auto")
+    public ResponseEntity<?> syncHotelAvailabilityFromRooms(@PathVariable String id) {
+        try {
+            Hotel updatedHotel = hotelService.syncHotelAvailabilityFromRoomsCollection(id);
+            
+            if (updatedHotel != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel availability synced successfully from rooms collection");
+                response.put("hotel", updatedHotel);
+                response.put("maxSingle", updatedHotel.getMaxSingle());
+                response.put("maxDouble", updatedHotel.getMaxDouble());
+                response.put("availableSingle", updatedHotel.getAvailableSingle());
+                response.put("availableDouble", updatedHotel.getAvailableDouble());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found or sync failed");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to sync hotel availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Sync availability for all hotels from their room collections
+     */
+    @PatchMapping("/sync-all-availability")
+    public ResponseEntity<?> syncAllHotelsAvailability() {
+        try {
+            hotelService.syncAllHotelsAvailabilityFromRooms();
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "All hotels availability synced successfully");
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to sync all hotels availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

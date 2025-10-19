@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import quotationService from '../../../services/quotationService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 
 // Status Badge component
 const StatusBadge = ({ status }) => {
@@ -56,15 +57,45 @@ const QuotationsList = () => {
   
   // Pagination settings
   const itemsPerPage = 10;
+
+  // Get current hotel user
+  const getCurrentHotelUser = () => {
+    const user = HotelAuthService.getCurrentUser();
+    return user ? user.username : null;
+  };
   
   // Fetch quotations on component mount
   useEffect(() => {
     const fetchQuotations = async () => {
       setIsLoading(true);
       try {
+        const currentHotelUser = getCurrentHotelUser();
+        if (!currentHotelUser) {
+          setError('Please log in to view quotations.');
+          setQuotations([]);
+          return;
+        }
+
         const data = await quotationService.getAllQuotations();
-        setQuotations(data);
+        
+        // Debug: Log fetched data
+        console.log('QuotationsList - Raw data from API:', data);
+        console.log('QuotationsList - First quotation mealPricePerPerson:', data[0]?.mealPricePerPerson);
+        
+        // Filter quotations by current hotel user
+        // Assuming quotations have a hotelUsername field that matches the logged-in user
+        const userQuotations = data.filter(quotation => 
+          quotation.hotelUsername === currentHotelUser || 
+          quotation.createdBy === currentHotelUser ||
+          // Fallback: if no hotel field, show all for now (during development)
+          (!quotation.hotelUsername && !quotation.createdBy)
+        );
+        
+        console.log('QuotationsList - Filtered user quotations:', userQuotations);
+        setQuotations(userQuotations);
         setError(null);
+        
+        console.log(`Loaded ${userQuotations.length} quotations for hotel user: ${currentHotelUser}`);
       } catch (err) {
         console.error('Error fetching quotations:', err);
         setError('Failed to load quotations. Please try again later.');
@@ -298,7 +329,7 @@ const QuotationsList = () => {
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                     onClick={() => handleSort('totalAmount')}
                   >
-                    Amount & Discount
+                    Total Amount & Per Person
                     {sortField === 'totalAmount' && (
                       <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                     )}
@@ -358,6 +389,11 @@ const QuotationsList = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div>LKR {quotation.totalAmount.toFixed(2)}</div>
+                        {quotation.totalPricePerPerson && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            LKR {parseFloat(quotation.totalPricePerPerson).toFixed(2)} per person
+                          </div>
+                        )}
                         {quotation.discountOffered > 0 && (
                           <div className="text-xs text-green-600 mt-1">
                             {quotation.discountOffered}% discount

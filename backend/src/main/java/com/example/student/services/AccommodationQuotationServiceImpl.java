@@ -26,17 +26,22 @@ public class AccommodationQuotationServiceImpl implements AccommodationQuotation
     public AccommodationQuotation getQuotationById(String id) {
         return repo.findById(id).orElse(null);
     }
-    
+
     @Override
     public AccommodationQuotation getQuotationByQuoteNumber(String quoteNumber) {
         return repo.findByQuoteNumber(quoteNumber);
     }
 
     @Override
+    public List<AccommodationQuotation> getQuotationsByHotelUsername(String hotelUsername) {
+        return repo.findByHotelUsername(hotelUsername);
+    }
+
+    @Override
     public void deleteQuotation(String id) {
         repo.deleteById(id);
     }
-    
+
     @Override
     public void deleteQuotationByQuoteNumber(String quoteNumber) {
         AccommodationQuotation quotation = repo.findByQuoteNumber(quoteNumber);

@@ -10,7 +10,29 @@ const HotelAdminSidebar = () => {
   return (
     <div className="bg-white shadow-lg h-screen w-64 fixed left-0 top-0 border-r border-gray-200 overflow-y-auto">
       <div className="p-6 border-b border-gray-200">
-        <img src="/hotel-logo.svg" alt="Hotel Logo" className="h-10 mx-auto mb-2" />
+        {/* Hotel Profile Image */}
+        <div className="flex justify-center mb-4">
+          {hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? (
+            <img 
+              src={hotel?.thumbnail || hotel?.images[0]} 
+              alt="Hotel Profile" 
+              className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400 shadow-lg"
+              onError={(e) => {
+                // Fallback to default icon if image fails to load
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div 
+            className={`w-20 h-20 rounded-full bg-yellow-400 flex items-center justify-center border-4 border-yellow-500 shadow-lg ${
+              hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? 'hidden' : 'flex'
+            }`}
+          >
+            <span className="material-icons text-white text-4xl">business</span>
+          </div>
+        </div>
+        
         <h2 className="text-lg font-bold text-center text-gray-800">
           {loading ? 'Loading...' : hotel?.hotelName || 'Hotel Admin'}
         </h2>

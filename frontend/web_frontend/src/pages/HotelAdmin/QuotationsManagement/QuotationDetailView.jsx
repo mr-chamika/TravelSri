@@ -74,6 +74,10 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
   const [editedQuotation, setEditedQuotation] = useState({...quotation});
   const [notes, setNotes] = useState('');
   
+  // Debug: Log quotation data to console
+  console.log('QuotationDetailView - Quotation data:', quotation);
+  console.log('QuotationDetailView - mealPricePerPerson:', quotation.mealPricePerPerson);
+  
   // Calculate nights
   const calculateNights = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return 0;
@@ -241,17 +245,57 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
         <section>
           <h4 className="text-lg font-medium mb-3">Price Details</h4>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between mb-2">
-              <span>Base Price:</span>
-              <span>LKR {quotation.totalAmount}</span>
+            {/* Meal Plan Information */}
+            <div className="bg-blue-50 p-3 rounded mb-4 border-l-4 border-blue-500">
+              <h5 className="font-medium text-blue-800 mb-2">Meal Plan</h5>
+              <p className="text-blue-700">
+                {quotation.mealPlan || 'Not specified'}
+              </p>
             </div>
-            <div className="flex justify-between mb-2">
-              <span>Discount ({quotation.discountOffered}%):</span>
-              <span>-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+
+            {/* Per-Person Pricing Breakdown */}
+            <div className="space-y-3 mb-4">
+              <h5 className="font-medium text-gray-800">Per Person Pricing</h5>
+              <div className="pl-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Accommodation per person:</span>
+                  <span className="font-medium">
+                    LKR {quotation.accommodationPricePerPerson ? quotation.accommodationPricePerPerson.toFixed(2) : 'Not calculated'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Meals per person:</span>
+                  <span className="font-medium">
+                    LKR {quotation.mealPricePerPerson ? quotation.mealPricePerPerson.toFixed(2) : 'Not calculated'}
+                    {/* Debug info */}
+                    <span className="text-xs text-gray-400 block">
+                      (Raw: {JSON.stringify(quotation.mealPricePerPerson)})
+                    </span>
+                  </span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">Total per person:</span>
+                  <span className="font-bold text-lg">
+                    LKR {quotation.totalPricePerPerson ? quotation.totalPricePerPerson.toFixed(2) : 'Not calculated'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-              <span>Total Amount:</span>
-              <span>LKR {(quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+
+            {/* Overall Totals */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between mb-2">
+                <span>Base Total Amount:</span>
+                <span>LKR {quotation.totalAmount}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span>Discount ({quotation.discountOffered}%):</span>
+                <span>-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                <span>Final Total Amount:</span>
+                <span>LKR {(quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+              </div>
             </div>
           </div>
         </section>

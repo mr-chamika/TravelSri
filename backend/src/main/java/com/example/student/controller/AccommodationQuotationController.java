@@ -26,6 +26,11 @@ public class AccommodationQuotationController {
         return service.getAllQuotations();
     }
 
+    @GetMapping("/by-hotel/{hotelUsername}")
+    public List<AccommodationQuotation> getQuotationsByHotel(@PathVariable String hotelUsername) {
+        return service.getQuotationsByHotelUsername(hotelUsername);
+    }
+
     @GetMapping("/{id}")
     public AccommodationQuotation getQuotation(@PathVariable String id) {
         return service.getQuotationById(id);
