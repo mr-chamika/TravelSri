@@ -1036,9 +1036,11 @@ export default function SignupForm() {
 
     const validateStep4 = () => {
         const step4Errors: { [key: string]: string } = {};
-        const fieldsToValidate: (keyof typeof formData)[] = [
-            'identitypic1', 'location', 'agreeTerms'
-        ];
+        // Location is only required for business roles (not for travelers)
+        const fieldsToValidate: (keyof typeof formData)[] = ['identitypic1', 'agreeTerms'];
+        if (formData.role !== 'user' && formData.role !== 'vehicle') {
+            fieldsToValidate.push('location');
+        }
         if (formData.role == 'merchant') {
             fieldsToValidate.push('confirmCondition');
         }
@@ -1056,8 +1058,10 @@ export default function SignupForm() {
         if (!formData.identitypic1) {
             step4Errors.identitypic1 = 'NIC photo is required.';
         }
-        if (!formData.location) {
-            step4Errors.location = 'Location is required.';
+        if (formData.role !== 'user' && formData.role !== 'vehicle') {
+            if (!formData.location) {
+                step4Errors.location = 'Location is required.';
+            }
         }
 
         setErrors(step4Errors);
@@ -1759,48 +1763,6 @@ export default function SignupForm() {
                         <View className="mb-5">
                             <Text className="mb-2 font-bold text-base text-gray-800">Current Address</Text>
                             <View>
-                                {showLocationSuggestions && locationSuggestions.length > 0 && (
-                                    <View style={{ 
-                                        backgroundColor: 'white', 
-                                        borderRadius: 8, 
-                                        borderWidth: 1, 
-                                        borderColor: '#FDE047',
-                                        maxHeight: 200,
-                                        marginBottom: 8,
-                                        overflow: 'hidden'
-                                    }}>
-                                        <ScrollView 
-                                            scrollEnabled={true}
-                                            nestedScrollEnabled={true}
-                                            scrollEventThrottle={16}
-                                            keyboardShouldPersistTaps="always"
-                                        >
-                                            {locationSuggestions.map((place, index) => (
-                                                <TouchableOpacity
-                                                    key={`address-${index}`}
-                                                    activeOpacity={0.7}
-                                                    onPress={() => {
-                                                        console.log('Selected address:', place);
-                                                        handleLocationSelect(place, 'address');
-                                                    }}
-                                                    style={{ 
-                                                        padding: 12, 
-                                                        borderBottomWidth: 1, 
-                                                        borderBottomColor: '#E5E7EB',
-                                                        backgroundColor: '#FFFBEB'
-                                                    }}
-                                                >
-                                                    <Text style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}>
-                                                        {place.description || place.main_text}
-                                                    </Text>
-                                                    <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-                                                        {place.secondary_text}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    </View>
-                                )}
                                 <TextInput 
                                     className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
                                     placeholder="Address"
@@ -1808,7 +1770,6 @@ export default function SignupForm() {
                                     value={formData.address} 
                                     onChangeText={(text) => {
                                         handleChange('address', text);
-                                        searchLocations(text);
                                     }}
                                 />
                             </View>
@@ -1929,7 +1890,7 @@ export default function SignupForm() {
                 {step === 2 && (
                     <View>
                         <View className="items-center w-full my-7">
-                            {/* <TextInput placeholder="URL for business item photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.bp} onChangeText={v => handleChange('bp', v)} /> */}
+                            {/* Business Photo */}
                             <TouchableOpacity
                                 onPress={() => { handleChoosePhoto('bp') }}
                                 className={`w-[98%] h-44 rounded-lg bg-gray-100 justify-center items-center ${formData.bp == null ? 'border-2 border-dashed border-gray-300' : ''}`}
@@ -1939,7 +1900,6 @@ export default function SignupForm() {
                                         source={{ uri: formData.bp.uri }}
                                         className="w-full h-full rounded-lg border-2 border-gray-100"
                                         resizeMode="cover"
-
                                     />
                                 ) : (
                                     <Image
@@ -1949,17 +1909,16 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            <View>
-                                {formData.role === 'guide' && (
-                                    <View className="flex-row items-center justify-center mt-2 gap-1">
-                                        <Ionicons name="information-circle" size={16} color="#9CA3AF" />
-                                        <Text className="font-normal text-gray-500 text-center text-sm">Not compulsory if you don't have</Text>
-                                    </View>
-                                )}
-                            </View>
+                            {formData.role === 'guide' && (
+                                <View className="flex-row items-center justify-center mt-2 gap-1">
+                                    <Ionicons name="information-circle" size={16} color="#9CA3AF" />
+                                    <Text className="font-normal text-gray-500 text-center text-sm">Not compulsory if you don't have</Text>
+                                </View>
+                            )}
                             <Text className={`text-red-500 text-sm mt-1 ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">Business Photo</Text>
                         </View>
+
                         <View className="mb-4">
                             <View className="flex-row justify-between items-center">
                                 <Text className="mb-1 font-semibold text-base">Business Name</Text>
@@ -1973,41 +1932,51 @@ export default function SignupForm() {
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessName} onChangeText={v => handleChange('businessName', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessName ? 'opacity-100' : 'opacity-0'}`}>{errors.businessName || ' '}</Text>
                         </View>
+
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Registration Number</Text>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.registrationNumber} onChangeText={v => handleChange('registrationNumber', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.registrationNumber ? 'opacity-100' : 'opacity-0'}`}>{errors.registrationNumber || ' '}</Text>
                         </View>
-                        {/* <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Business Type</Text>
-                            <View className="border border-gray-300 rounded-lg">
-                                <Picker selectedValue={formData.businessType} onValueChange={v => handleChange('businessType', v as string)}>
-                                    <Picker.Item label="Select Type..." value="" />
-                                    <Picker.Item label="Guiding" value="guide" />
-                                    <Picker.Item label="Vehicle Renting" value="vehicle renter" />
-                                    <Picker.Item label="Equipment Renting" value="equipment rental" />
-                                    <Picker.Item label="Hotel Service" value="hotel service" />
-                                </Picker>
-                            </View>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.businessType ? 'opacity-100' : 'opacity-0'}`}>{errors.businessType || ' '}</Text>
-                        </View> */}
+
                         <View className="mb-4">
                             <Text className="mb-1 font-semibold text-base">Description</Text>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3 h-24" multiline value={formData.description} onChangeText={v => handleChange('description', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.description ? 'opacity-100' : 'opacity-0'}`}>{errors.description || ' '}</Text>
                         </View>
+
                         <View className="mb-8">
-                            <View className="flex-row justify-between items-center">
-                                <Text className="mb-1 font-semibold text-base">Business Address</Text>
-                                {formData.role === 'guide' && (
-                                    <View className="flex-row items-center gap-1">
-                                        <Ionicons name="information-circle" size={14} color="#9CA3AF" />
-                                        <Text className="font-normal text-gray-500 text-xs">Not compulsory</Text>
-                                    </View>
-                                )}
-                            </View>
+                            <Text className="mb-1 font-semibold text-base">Business Address</Text>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessAddress} onChangeText={v => handleChange('businessAddress', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessAddress ? 'opacity-100' : 'opacity-0'}`}>{errors.businessAddress || ' '}</Text>
+                        </View>
+
+                        <View className="my-10">
+                            <View className='flex-row items-center mb-5'>
+                                <TouchableOpacity onPress={() => handleChange('agreeTerms', !formData.agreeTerms)}>
+                                    <View className={`w-6 h-6 border-2 rounded mr-3 justify-center items-center ${formData.agreeTerms ? 'bg-[#FEFA17]' : 'border-gray-400'}`}>
+                                        {formData.agreeTerms && <Text className="text-black font-extrabold text-center">✓</Text>}
+                                    </View>
+                                </TouchableOpacity>
+                                <Text className="text-base text-gray-700 flex-1 font-bold">I agree to the terms and conditions</Text>
+                            </View>
+                            {formData.role == 'merchant' && (
+                                <View className='flex-row items-center mb-4'>
+                                    <TouchableOpacity onPress={() => handleChange('confirmCondition', !formData.confirmCondition)}>
+                                        <View className={`w-6 h-6 border-2 rounded mr-3 justify-center items-center ${formData.confirmCondition ? 'bg-[#FEFA17]' : 'border-gray-400'}`}>
+                                            {formData.confirmCondition && <Text className="text-black font-extrabold text-center">✓</Text>}
+                                        </View>
+                                    </TouchableOpacity>
+                                    <Text className="text-base text-gray-700">I confirm the item condition</Text>
+                                </View>
+                            )}
+
+                            {formData.role === 'guide' && (
+                                <View className="flex-row items-center gap-1">
+                                    <Ionicons name="information-circle" size={14} color="#9CA3AF" />
+                                    <Text className="font-normal text-gray-500 text-xs">Not compulsory</Text>
+                                </View>
+                            )}
                         </View>
                     </View>
                 )}
@@ -2379,69 +2348,69 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic12 || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">National Identity Card / Passport (side 2)</Text>
                         </View>
-                        <View className="my-8">
-                            <View className="flex-row justify-between items-center mb-2">
-                                <Text className="font-bold text-base text-gray-800">Enter Location you expert</Text>
-                                {formData.role !== 'user' && formData.role !== 'vehicle' && (
+                        {formData.role !== 'user' && formData.role !== 'vehicle' && (
+                            <View className="my-8">
+                                <View className="flex-row justify-between items-center mb-2">
+                                    <Text className="font-bold text-base text-gray-800">Enter Location you expert</Text>
                                     <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Sri Lanka Only</Text>
-                                )}
+                                </View>
+                                <View>
+                                    {showLocationSuggestions && locationSuggestions.length > 0 && (
+                                        <View style={{ 
+                                            backgroundColor: 'white', 
+                                            borderRadius: 8, 
+                                            borderWidth: 1, 
+                                            borderColor: '#FDE047',
+                                            maxHeight: 200,
+                                            marginBottom: 8,
+                                            overflow: 'hidden'
+                                        }}>
+                                            <ScrollView 
+                                                scrollEnabled={true}
+                                                nestedScrollEnabled={true}
+                                                scrollEventThrottle={16}
+                                                keyboardShouldPersistTaps="always"
+                                            >
+                                                {locationSuggestions.map((place, index) => (
+                                                    <TouchableOpacity
+                                                        key={`location-${index}`}
+                                                        activeOpacity={0.7}
+                                                        onPress={() => {
+                                                            console.log('Selected location:', place);
+                                                            handleLocationSelect(place);
+                                                        }}
+                                                        style={{ 
+                                                            padding: 12, 
+                                                            borderBottomWidth: 1, 
+                                                            borderBottomColor: '#E5E7EB',
+                                                            backgroundColor: '#FFFBEB'
+                                                        }}
+                                                    >
+                                                        <Text style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}>
+                                                            {place.description || place.main_text}
+                                                        </Text>
+                                                        <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                                                            {place.secondary_text}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                ))}
+                                            </ScrollView>
+                                        </View>
+                                    )}
+                                    <TextInput 
+                                        className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                        placeholder="Search location..."
+                                        placeholderTextColor="#999"
+                                        value={formData.location} 
+                                        onChangeText={(text) => {
+                                            handleChange('location', text);
+                                            searchLocations(text);
+                                        }}
+                                    />
+                                </View>
+                                <Text className={`text-red-500 text-sm mt-1 ${errors.location ? 'opacity-100' : 'opacity-0'}`}>{errors.location || ' '}</Text>
                             </View>
-                            <View>
-                                {showLocationSuggestions && locationSuggestions.length > 0 && (
-                                    <View style={{ 
-                                        backgroundColor: 'white', 
-                                        borderRadius: 8, 
-                                        borderWidth: 1, 
-                                        borderColor: '#FDE047',
-                                        maxHeight: 200,
-                                        marginBottom: 8,
-                                        overflow: 'hidden'
-                                    }}>
-                                        <ScrollView 
-                                            scrollEnabled={true}
-                                            nestedScrollEnabled={true}
-                                            scrollEventThrottle={16}
-                                            keyboardShouldPersistTaps="always"
-                                        >
-                                            {locationSuggestions.map((place, index) => (
-                                                <TouchableOpacity
-                                                    key={`location-${index}`}
-                                                    activeOpacity={0.7}
-                                                    onPress={() => {
-                                                        console.log('Selected location:', place);
-                                                        handleLocationSelect(place);
-                                                    }}
-                                                    style={{ 
-                                                        padding: 12, 
-                                                        borderBottomWidth: 1, 
-                                                        borderBottomColor: '#E5E7EB',
-                                                        backgroundColor: '#FFFBEB'
-                                                    }}
-                                                >
-                                                    <Text style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}>
-                                                        {place.description || place.main_text}
-                                                    </Text>
-                                                    <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
-                                                        {place.secondary_text}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </ScrollView>
-                                    </View>
-                                )}
-                                <TextInput 
-                                    className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
-                                    placeholder="Search location..."
-                                    placeholderTextColor="#999"
-                                    value={formData.location} 
-                                    onChangeText={(text) => {
-                                        handleChange('location', text);
-                                        searchLocations(text);
-                                    }}
-                                />
-                            </View>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.location ? 'opacity-100' : 'opacity-0'}`}>{errors.location || ' '}</Text>
-                        </View>
+                        )}
                         <View className="my-10">
                             <View className='flex-row items-center mb-5'>
                                 <TouchableOpacity onPress={() => handleChange('agreeTerms', !formData.agreeTerms)}>

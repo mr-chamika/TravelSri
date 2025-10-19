@@ -166,4 +166,5 @@ public interface BookingRepo extends MongoRepository<Booking, String> {
     default List<Booking> findRecentBookings(int limit) {
         return findTop10ByOrderByCreatedAtDesc(); // Default to top 10, you can customize this
     }
+
 }

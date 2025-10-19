@@ -213,9 +213,9 @@ public class MoneyFlowService {
     }
 
     // ===== MONEY FLOW TRACKING =====
-    private void recordMoneyFlow(String bookingId, String fromEntity, String toEntity,
-                                 String fromEntityId, String toEntityId, BigDecimal amount,
-                                 String flowType, String description, String status) {
+    void recordMoneyFlow(String bookingId, String fromEntity, String toEntity,
+                         String fromEntityId, String toEntityId, BigDecimal amount,
+                         String flowType, String description, String status) {
         MoneyFlow flow = new MoneyFlow();
         flow.setBookingId(bookingId);
         flow.setFromEntity(fromEntity);

@@ -11,6 +11,9 @@ public interface IBookingService {
 
     // Existing booking operations
     Booking createBooking(BookingRequest request);
+
+    Booking createGuideBooking(BookingRequest request);
+
     Optional<Booking> getBookingById(String bookingId);
     List<Bookingdto> getBookingsByTraveler(String travelerId);
     List<Bookingdto> getBookingsByProvider(String providerId);

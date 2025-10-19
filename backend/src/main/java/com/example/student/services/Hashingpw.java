@@ -218,7 +218,8 @@ public class Hashingpw {
                                 "/api/availability/user-unavailable-vehicles",
                                 "/api/availability/update-user-status",
                                 "/api/availability/delete-user-unavailability",
-                                "/api/availability/user-schedules/{userId}"
+                                "/api/availability/user-schedules/{userId}",
+                                "/api/bookings/guide/{bookingId}/accept"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

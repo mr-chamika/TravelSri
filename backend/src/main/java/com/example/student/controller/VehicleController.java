@@ -144,17 +144,17 @@ public class VehicleController {
     }
 
     // NEW: Accept vehicle booking
-    @PostMapping("/bookings/{bookingId}/accept")
-    public ResponseEntity<?> acceptVehicleBooking(@PathVariable String bookingId,
-                                                  @RequestParam String providerId) {
-        try {
-            Booking booking = bookingService.acceptBooking(bookingId, providerId);
-            return new ResponseEntity<>(booking, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error accepting vehicle booking: " + e.getMessage(),
-                    HttpStatus.BAD_REQUEST);
-        }
-    }
+//    @PostMapping("/bookings/{bookingId}/accept")
+//    public ResponseEntity<?> acceptVehicleBooking(@PathVariable String bookingId,
+//                                                  @RequestParam String providerId) {
+//        try {
+//            Booking booking = bookingService.acceptBooking(bookingId, providerId);
+//            return new ResponseEntity<>(booking, HttpStatus.OK);
+//        } catch (Exception e) {
+//            return new ResponseEntity<>("Error accepting vehicle booking: " + e.getMessage(),
+//                    HttpStatus.BAD_REQUEST);
+//        }
+//    }
 
     // NEW: Reject vehicle booking
     @PostMapping("/bookings/{bookingId}/reject")
