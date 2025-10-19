@@ -134,7 +134,7 @@ const BookingsScreen: React.FC = () => {
 
               const data = await res.json()
 
-              setBookings(data)
+              setBookings(data.reverse)
 
             }
 
