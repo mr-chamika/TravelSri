@@ -240,6 +240,35 @@ public class BookingController {
         }
     }
 
+    @PostMapping("/{bookingId}/complete")
+    public ResponseEntity<?> completeBooking(@PathVariable String bookingId,
+                                           @RequestParam String providerId) {
+        try {
+            Optional<TravelerBooking> optionalBooking = newrepo.findById(bookingId);
+            if (optionalBooking.isEmpty()) {
+                return new ResponseEntity<>("Booking not found", HttpStatus.NOT_FOUND);
+            }
+            TravelerBooking booking = optionalBooking.get();
+
+            if (!"active".equalsIgnoreCase(booking.getStatus())) {
+                return new ResponseEntity<>("Only active bookings can be rejected. Current status: " + booking.getStatus(), HttpStatus.BAD_REQUEST);
+            }
+
+            if (booking.getServiceId() != null && !booking.getServiceId().equals(providerId)) {
+                return new ResponseEntity<>("Booking assigned to a different provider", HttpStatus.BAD_REQUEST);
+            }
+
+            booking.setStatus("complete");
+            booking.onUpdate();
+            newrepo.save(booking);
+
+            return new ResponseEntity<>(booking, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return new ResponseEntity<>("Internal error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
 
 
@@ -266,21 +295,7 @@ public class BookingController {
     }
 
 
-    @PostMapping("/{bookingId}/complete")
-    public ResponseEntity<?> completeBooking(@PathVariable("bookingId") String bookingId) {
-        try {
-            if (bookingId == null || bookingId.trim().isEmpty()) {
-                return new ResponseEntity<>("Booking ID cannot be null or empty", HttpStatus.BAD_REQUEST);
-            }
 
-            Booking booking = bookingService.completeBooking(bookingId);
-            return new ResponseEntity<>(booking, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>("Error completing booking: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Internal error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     //hotel bookings from/with check out
     //step 1

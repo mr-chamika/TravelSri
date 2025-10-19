@@ -187,7 +187,10 @@ export default function App() {
             case 'Completed':
                 // Show completed bookings
                 filtered = bookingsList.filter(booking => {
-                    const isCompleted = booking.status === 'complete';
+                    const isCompleted = booking.status === 'complete' || 
+                        booking.status === 'COMPLETE' ||
+                        booking.status === 'completed' ||
+                        booking.status === 'COMPLETED';
                     if (isCompleted) {
                         console.log(`  ✅ Completed: ${booking.username} (${booking.status})`);
                     }
@@ -300,33 +303,37 @@ export default function App() {
         const isActive = booking.status === 'ACTIVE' || booking.status === 'active';
         const isRejected = booking.status === 'reject' || booking.status === 'REJECT' || booking.status === 'rejected' || booking.status === 'REJECTED';
         const isCanceled = booking.status === 'canceled' || booking.status === 'CANCELED' || booking.status === 'cancelled' || booking.status === 'CANCELLED';
+        const isCompleted = booking.status === 'complete' || booking.status === 'COMPLETE' || booking.status === 'completed' || booking.status === 'COMPLETED';
         const isToday = isBookingToday();
         const firstDate = booking.bookingDates?.[0] || '';
 
-        console.log(`🎯 BookingCard status check - status: "${booking.status}", isActive: ${isActive}, isRejected: ${isRejected}, isCanceled: ${isCanceled}`);
+        console.log(`🎯 BookingCard status check - status: "${booking.status}", isActive: ${isActive}, isRejected: ${isRejected}, isCanceled: ${isCanceled}, isCompleted: ${isCompleted}`);
         if (isRejected) {
             console.log(`🔴 REJECTED BOOKING DETECTED - Buttons should be hidden!`);
         }
         if (isCanceled) {
             console.log(`🚫 CANCELED BOOKING DETECTED - Buttons should be hidden!`);
         }
+        if (isCompleted) {
+            console.log(`✅ COMPLETED BOOKING DETECTED - Buttons should be hidden!`);
+        }
 
         return (
             <View className="mb-4">
                 <View className="bg-white rounded-2xl overflow-hidden shadow-lg">
                     {/* Header Section with Gradient Background */}
-                    <View className={`px-5 pt-5 pb-4 ${isCanceled ? 'bg-gray-500' : isRejected ? 'bg-red-500' : 'bg-gradient-to-r from-[#FEFA17] to-[#FFD700]'}`}>
+                    <View className={`px-5 pt-5 pb-4 ${isCompleted ? 'bg-green-500' : isCanceled ? 'bg-gray-500' : isRejected ? 'bg-red-500' : 'bg-gradient-to-r from-[#FEFA17] to-[#FFD700]'}`}>
                         <View className="flex-row items-center justify-between">
                             <View className="flex-1 pr-3">
-                                <Text className={`text-xs font-medium mb-2 uppercase tracking-wider ${isCanceled ? 'text-gray-100' : isRejected ? 'text-red-100' : 'text-gray-600'}`}>
-                                    {isCanceled ? 'Canceled' : isRejected ? 'Rejected' : isActive ? 'Active Service' : 'New Request'}
+                                <Text className={`text-xs font-medium mb-2 uppercase tracking-wider ${isCompleted ? 'text-green-100' : isCanceled ? 'text-gray-100' : isRejected ? 'text-red-100' : 'text-gray-600'}`}>
+                                    {isCompleted ? 'Completed' : isCanceled ? 'Canceled' : isRejected ? 'Rejected' : isActive ? 'Active Service' : 'New Request'}
                                 </Text>
-                                <Text className={`text-xl font-bold mb-1 ${isCanceled ? 'text-white' : isRejected ? 'text-white' : 'text-gray-900'}`}>
+                                <Text className={`text-xl font-bold mb-1 ${isCompleted ? 'text-white' : isCanceled ? 'text-white' : isRejected ? 'text-white' : 'text-gray-900'}`}>
                                     {booking.username}
                                 </Text>
                             </View>
-                            <View className={`rounded-full w-12 h-12 items-center justify-center shadow-md ${isCanceled ? 'bg-gray-100' : isRejected ? 'bg-red-100' : 'bg-white'}`}>
-                                <Ionicons name={isCanceled ? "ban" : isRejected ? "close-circle" : "person-circle"} size={28} color={isCanceled ? "#6B7280" : isRejected ? "#DC2626" : "#FEFA17"} />
+                            <View className={`rounded-full w-12 h-12 items-center justify-center shadow-md ${isCompleted ? 'bg-green-100' : isCanceled ? 'bg-gray-100' : isRejected ? 'bg-red-100' : 'bg-white'}`}>
+                                <Ionicons name={isCompleted ? "checkmark-circle" : isCanceled ? "ban" : isRejected ? "close-circle" : "person-circle"} size={28} color={isCompleted ? "#16A34A" : isCanceled ? "#6B7280" : isRejected ? "#DC2626" : "#FEFA17"} />
                             </View>
                         </View>
                     </View>
@@ -401,8 +408,8 @@ export default function App() {
                         )}
                     </View>
 
-                    {/* Action Buttons - Hide for rejected and canceled bookings */}
-                    {!isRejected && !isCanceled && (
+                    {/* Action Buttons - Hide for rejected, canceled, and completed bookings */}
+                    {!isRejected && !isCanceled && !isCompleted && (
                     <View className={`flex-row gap-3 px-5 pb-5 pt-2 ${isActive ? 'flex-wrap' : ''}`}>
                         {/* Decline/Cancel Button */}
                         <TouchableOpacity
