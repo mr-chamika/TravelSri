@@ -32,6 +32,15 @@ interface MarkingProps {
   selected?: boolean;
   selectedColor?: string;
   dotColor?: string;
+  textColor?: string;
+  selectedTextColor?: string;
+  startingDay?: boolean;
+  endingDay?: boolean;
+  color?: string;
+  recurring?: boolean;
+  recurrencePattern?: string;
+  booking?: any;
+  disableTouchEvent?: boolean;
 }
 
 interface UnavailabilityItem {
@@ -91,27 +100,70 @@ export default function AvailabilityScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [userToken, setUserToken] = useState<MyToken | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
 
   // Load JWT token on component mount
   useEffect(() => {
     const loadToken = async () => {
       try {
+        console.log('🔐 [INIT] Starting token load');
         const token = await AsyncStorage.getItem('token');
+        console.log('🔐 [INIT] Token retrieved:', token ? `Yes (${token.length} chars)` : 'No');
+        
         if (token) {
-          const decoded = jwtDecode<MyToken>(token);
-          setUserToken(decoded);
-          fetchUnavailability(decoded.id);
+          try {
+            const decoded = jwtDecode<MyToken>(token);
+            console.log('🔐 [INIT] Token decoded successfully');
+            console.log('🔐 [INIT] User ID:', decoded.id);
+            console.log('🔐 [INIT] User email:', decoded.email);
+            
+            setUserToken(decoded);
+            console.log('🔐 [INIT] User token set in state');
+            
+            console.log('🔐 [INIT] Calling fetchUnavailability with userId:', decoded.id);
+            fetchUnavailability(decoded.id);
+            
+            console.log('🔐 [INIT] Calling fetchBookingsFromBackend with userId:', decoded.id);
+            // Fetch bookings from the API
+            fetchBookingsFromBackend(decoded.id);
+          } catch (decodeError) {
+            console.error('❌ [INIT] Error decoding token:', decodeError);
+          }
+        } else {
+          console.warn('⚠️ [INIT] No token found in AsyncStorage');
         }
       } catch (error) {
-        console.error('Error loading token:', error);
+        console.error('❌ [INIT] Error loading token from storage:', error);
       }
     };
+    
+    console.log('🔐 [INIT] useEffect triggered - component mounted');
     loadToken();
   }, []);
 
   // Function to handle date selection with correct types
   const handleDateSelection = (day: DateData) => {
     const dateString = day.dateString;
+    
+    // Check if this date is a pending or accepted booking date
+    const isBookingDate = bookings.some((booking: any) => {
+      if (booking.status === 'PENDING' || booking.status === 'ACCEPTED') {
+        return booking.bookingDates.some((bookingDate: string) => {
+          // Extract just the date part (YYYY-MM-DD format)
+          const datePart = bookingDate.split('T')[0];
+          return datePart === dateString;
+        });
+      }
+      return false;
+    });
+
+    if (isBookingDate) {
+      Alert.alert(
+        'Cannot Select This Date',
+        'You cannot mark pending or accepted booking dates as unavailable. Please cancel or complete the booking first.'
+      );
+      return;
+    }
     
     // Check if this date has an unavailability item
     const dateDetails = currentUnavailability.find((item) => {
@@ -237,6 +289,198 @@ export default function AvailabilityScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fetch bookings from the backend API
+  const fetchBookingsFromBackend = async (userId: string) => {
+    try {
+      const apiUrl = `http://localhost:8080/api/bookings/provider/${userId}?providerId=${userId}`;
+      console.log('🔍 [BOOKINGS] START - Fetching bookings from URL:', apiUrl);
+      console.log('🔍 [BOOKINGS] Using userId:', userId);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log('🔍 [BOOKINGS] Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('❌ [BOOKINGS] HTTP error! status:', response.status);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 [BOOKINGS] Raw API response:', JSON.stringify(data, null, 2));
+      console.log('📦 [BOOKINGS] Response type:', typeof data);
+      console.log('📦 [BOOKINGS] Is array?', Array.isArray(data));
+      
+      let bookingsArray: any[] = [];
+      
+      if (data && Array.isArray(data)) {
+        console.log('📦 [BOOKINGS] Data is array, length:', data.length);
+        bookingsArray = data;
+      } else if (data && data.content && Array.isArray(data.content)) {
+        console.log('📦 [BOOKINGS] Data has content array, length:', data.content.length);
+        bookingsArray = data.content;
+      } else {
+        console.warn('⚠️ [BOOKINGS] Unexpected data structure');
+      }
+      
+      console.log('📦 [BOOKINGS] Total bookings to process:', bookingsArray.length);
+      
+      // Filter and format bookings
+      const formattedBookings = bookingsArray
+        .map((dto: any, index: number) => {
+          console.log(`📌 [BOOKINGS] Processing booking #${index}`);
+          console.log(`📌 [BOOKINGS] Available fields:`, Object.keys(dto));
+          console.log(`📌 [BOOKINGS] Full booking object:`, JSON.stringify(dto, null, 2));
+          
+          // Extract booking ID from various possible fields
+          let bookingId = dto._id || dto.id || dto.bookingId || 'unknown';
+          console.log(`📌 [BOOKINGS] Booking ID: ${bookingId}`);
+          console.log(`📌 [BOOKINGS] Status: ${dto.status || 'PENDING'}`);
+          console.log(`📌 [BOOKINGS] Booking dates: ${JSON.stringify(dto.bookingDates)}`);
+          
+          return {
+            _id: bookingId,
+            price: dto.price || 0,
+            bookingDates: dto.bookingDates || [],
+            location: dto.location || '',
+            userId: dto.userId || '',
+            mobileNumber: dto.mobileNumber || '',
+            username: dto.username || '',
+            status: (dto.status || 'PENDING').toUpperCase(),
+          };
+        })
+        .filter((booking: any) => {
+          // Show all booking statuses: PENDING, ACTIVE/CONFIRMED, ACCEPTED, COMPLETED
+          const isValid = ['PENDING', 'CONFIRMED', 'COMPLETED', 'ACTIVE', 'ACCEPTED'].includes(booking.status);
+          console.log(`🔍 [BOOKINGS] Filtering ${booking._id}: status=${booking.status}, pass=${isValid}`);
+          return isValid;
+        });
+      
+      console.log('📋 [BOOKINGS] Formatted and filtered bookings count:', formattedBookings.length);
+      console.log('📋 [BOOKINGS] Formatted bookings:', JSON.stringify(formattedBookings, null, 2));
+      
+      setBookings(formattedBookings);
+      
+      if (formattedBookings.length > 0) {
+        console.log('✅ [BOOKINGS] Found bookings, adding to calendar');
+        // Add bookings with confirmed/completed status to calendar
+        addBookingsToCalendar(formattedBookings);
+      } else {
+        console.warn('⚠️ [BOOKINGS] No confirmed/completed bookings found');
+      }
+    } catch (error) {
+      console.error('❌ [BOOKINGS] Error fetching bookings:', error);
+      console.error('❌ [BOOKINGS] Error stack:', error instanceof Error ? error.stack : 'N/A');
+    }
+  };
+
+  // Add bookings to calendar marking based on status
+  const addBookingsToCalendar = (bookingsData: any[]) => {
+    console.log('📅 [CALENDAR] START - Adding bookings to calendar');
+    console.log('📅 [CALENDAR] Bookings to add:', bookingsData.length);
+    
+    setSelectedDates(prevMarkedDates => {
+      const newMarkedDates = { ...prevMarkedDates };
+      
+      console.log('📅 [CALENDAR] Previous marked dates count:', Object.keys(prevMarkedDates).length);
+      console.log('📅 [CALENDAR] Previous marked dates:', Object.keys(prevMarkedDates).slice(0, 5), '...');
+      
+      bookingsData.forEach((booking: any, bookingIndex: number) => {
+        try {
+          console.log(`📅 [CALENDAR] Processing booking #${bookingIndex}:`, booking._id);
+          console.log(`📅 [CALENDAR] Booking status:`, booking.status);
+          console.log(`📅 [CALENDAR] Booking dates array:`, booking.bookingDates);
+          
+          if (!booking.bookingDates || booking.bookingDates.length === 0) {
+            console.warn(`⚠️ [CALENDAR] No booking dates found for booking:`, booking._id);
+            return;
+          }
+          
+          console.log(`📅 [CALENDAR] Dates to mark: ${booking.bookingDates.length}`);
+          
+          // Process all dates in the bookingDates array
+          booking.bookingDates.forEach((dateEntry: any, dateIndex: number) => {
+            try {
+              console.log(`📅 [CALENDAR] Processing date #${dateIndex} from booking ${booking._id}`);
+              console.log(`📅 [CALENDAR] Raw date entry:`, dateEntry, 'Type:', typeof dateEntry);
+              
+              let dateString = dateEntry;
+              
+              // Handle date object or date string
+              if (typeof dateEntry === 'object' && dateEntry.date) {
+                console.log(`📅 [CALENDAR] Extracting date from object.date`);
+                dateString = dateEntry.date;
+              } else if (typeof dateEntry === 'object') {
+                console.log(`📅 [CALENDAR] Converting object to string`);
+                dateString = dateEntry.toString ? dateEntry.toString().split('T')[0] : '';
+              }
+              
+              if (!dateString) {
+                console.warn(`⚠️ [CALENDAR] Could not extract date string from:`, dateEntry);
+                return;
+              }
+              
+              // Ensure date string is in YYYY-MM-DD format
+              if (dateString.length > 10) {
+                dateString = dateString.split('T')[0];
+              }
+              
+              console.log(`📅 [CALENDAR] Final date string: ${dateString}, Status: ${booking.status}`);
+              
+              // Determine color based on status
+              let displayColor = '#ffe600ff';   // Green for PENDING (default)
+              let dotColor = '#ffee00ff';
+              let disableTouchEvent = false;  // By default allow selection
+              
+              if (booking.status === 'COMPLETED') {
+                displayColor = '#1565C0';     // Blue for COMPLETED
+                dotColor = '#1565C0';
+                console.log(`📅 [CALENDAR] Using COMPLETED color: Blue #1565C0`);
+              } else if (booking.status === 'CONFIRMED' || booking.status === 'ACTIVE' || booking.status === 'ACCEPTED') {
+                displayColor = '#4CAF50';     // Bright Green for CONFIRMED/ACCEPTED
+                dotColor = '#4CAF50';
+                disableTouchEvent = true;     // Disable selection for ACCEPTED bookings
+                console.log(`📅 [CALENDAR] Using CONFIRMED/ACCEPTED color: Bright Green #4CAF50 - DISABLED`);
+              } else if (booking.status === 'PENDING') {
+                displayColor = '#2E7D32';     // Dark Green for PENDING
+                dotColor = '#2E7D32';
+                disableTouchEvent = true;     // Disable selection for PENDING bookings
+                console.log(`📅 [CALENDAR] Using PENDING color: Dark Green #2E7D32 - DISABLED`);
+              }
+              
+              newMarkedDates[dateString] = {
+                marked: true,
+                selected: true,
+                selectedColor: displayColor,
+                dotColor: dotColor,
+                textColor: '#ffffff',
+                disableTouchEvent: disableTouchEvent,
+                booking: booking, // Store booking reference
+              };
+              
+              console.log(`✅ [CALENDAR] Marked date: ${dateString} with color: ${displayColor}`);
+            } catch (dateError) {
+              console.error(`❌ [CALENDAR] Error processing date entry:`, dateEntry, dateError);
+            }
+          });
+        } catch (error) {
+          console.error(`❌ [CALENDAR] Error processing booking:`, booking, error);
+        }
+      });
+      
+      console.log('📅 [CALENDAR] Final marked dates count:', Object.keys(newMarkedDates).length);
+      console.log('📅 [CALENDAR] New marked dates (first 10):', Object.keys(newMarkedDates).slice(0, 10));
+      console.log('📅 [CALENDAR] Complete marked dates object:', JSON.stringify(newMarkedDates, null, 2).substring(0, 500) + '...');
+      
+      return newMarkedDates;
+    });
   };
 
   // Update calendar with unavailable dates
@@ -861,6 +1105,28 @@ export default function AvailabilityScreen() {
               textDisabledColor: '#d9e1e8',
             }}
           />
+        </View>
+
+        {/* Color Legend for Bookings */}
+        <View style={styles.colorLegendSection}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#fbff00ff' }]} />
+              <Text style={styles.legendText}>Pending </Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#4CAF50' }]} />
+              <Text style={styles.legendText}>Accepted</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#1565C0' }]} />
+              <Text style={styles.legendText}>Completed</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#ff0f07ff' }]} />
+              <Text style={styles.legendText}>Unavailable</Text>
+            </View>
+          </View>
         </View>
 
         {/* Current Unavailability Section */}
@@ -1937,5 +2203,42 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Color Legend Styles
+  colorLegendSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  colorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: '500',
   },
 });

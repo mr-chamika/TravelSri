@@ -1,5 +1,8 @@
 package com.example.student.controller;
 
+import com.example.student.repo.BookingRepo;
+import com.example.student.repo.GuideRepo;
+import com.example.student.repo.MoneyFlowRepo;
 import com.example.student.services.IPaymentService;
 import com.example.student.services.IBookingService;
 import com.example.student.services.IMoneyFlowService;
@@ -45,6 +48,60 @@ public class PaymentController {
 
     @Autowired
     private ITravelerWalletService travelerWalletService;
+
+    @Autowired
+    private GuideRepo guideBookingRepo;
+
+    @Autowired
+    private MoneyFlowRepo moneyFlowRepo;
+    @Autowired
+    private BookingRepo bookingRepo;
+
+
+    @GetMapping("/provider/{providerId}/total-income")
+    public ResponseEntity<?> getTotalIncomeByProvider(@PathVariable String providerId) {
+        try {
+            logger.info("Calculating total income for providerId={}", providerId);
+
+            // Fetch all completed bookings for the given provider by serviceId and status ignoring case
+            List<Booking> completedBookings = bookingRepo.findByServiceIdAndStatusIgnoreCase(providerId, "complete");
+            logger.info("Found {} completed bookings for providerId={}", completedBookings.size(), providerId);
+
+            BigDecimal totalIncome = BigDecimal.ZERO;
+
+            // Sum the providerAmount from money flow entries per booking
+            for (Booking booking : completedBookings) {
+                logger.info("Processing booking ID: {}", booking.getId());
+
+                List<MoneyFlow> moneyFlows = moneyFlowRepo.findByBookingId(booking.getId());
+                logger.info(" - Found {} money flow records for booking ID: {}", moneyFlows.size(), booking.getId());
+
+                for (MoneyFlow mf : moneyFlows) {
+                    logger.info("   - MoneyFlow status: {}, toEntity: {}, providerAmount: {}",
+                            mf.getStatus(), mf.getToEntity(), mf.getProviderAmount());
+
+                    // Sum all providerAmount from COMPLETED money flows without filtering by toEntity
+                    if ("COMPLETED".equalsIgnoreCase(mf.getStatus())) {
+                        BigDecimal amount = mf.getProviderAmount() != null ? mf.getProviderAmount() : BigDecimal.ZERO;
+                        totalIncome = totalIncome.add(amount);
+                        logger.info("   - Added amount: {}, totalIncome now: {}", amount, totalIncome);
+                    }
+                }
+            }
+
+            logger.info("Total income for providerId={} calculated as {}", providerId, totalIncome);
+
+            // Return JSON with providerId and the calculated total income
+            return ResponseEntity.ok(Map.of("providerId", providerId, "totalIncome", totalIncome));
+
+        } catch (Exception e) {
+            logger.error("Failed to calculate total income for providerId={}", providerId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to calculate total income", "details", e.getMessage()));
+        }
+    }
+
+
 
     // ===== NEW PAYMENT STATUS CHECKING ENDPOINTS =====
 
@@ -1131,4 +1188,6 @@ public class PaymentController {
         public String getTransactionId() { return transactionId; }
         public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
     }
+
+
 }

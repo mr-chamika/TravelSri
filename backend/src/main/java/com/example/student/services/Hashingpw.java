@@ -37,7 +37,9 @@ public class Hashingpw {
                                 "/hotels/reset-password",
                                 "/hotels",
                                 "/hotels/**",
+                                //"/guide/groupTours/{userId}",
                                 "/guide/groupTours",
+                                "/guide/test",
                                 "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
                                 "/guide/submittedQuotation/{guideId}", // Fixed: Allow all submittedQuotation endpoints
                                 "/vehicle/addVehicle",
@@ -141,6 +143,7 @@ public class Hashingpw {
                                 "/api/wallet/platform",
                                 "/api/wallet/traveler/{travelerId}",
                                 "/api/payments/payhere/status/{orderId}",
+                                "/api/payments/provider/{providerId}/total-income",
                                 "/api/bookings/{bookingId}/accept",
                                 "api/payments/payhere/process-confirmation-fee/{bookingId}",
                                 "/api/wallet/provider/{providerId}",

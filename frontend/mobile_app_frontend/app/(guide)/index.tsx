@@ -4,6 +4,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Text
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -30,6 +31,7 @@ import AvailabilityScreen from './availability';
 import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
 import ProfileScreen from '../(guide)/profile';
 import RatingScreen from '../views/guideRating/[id]';
+import { method } from 'lodash';
 
 // Type definitions
 interface Stats {
@@ -260,6 +262,8 @@ const TravelMateGuideHome = () => {
     }
   };
 
+  
+
   return (
     <SafeAreaView style={styles.container}>
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
@@ -278,6 +282,7 @@ const TravelMateGuideHome = () => {
             onMenuItemPress={handleMenuItemPress}
           />
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
