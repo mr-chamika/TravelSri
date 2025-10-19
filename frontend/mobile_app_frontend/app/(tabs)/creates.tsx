@@ -304,7 +304,11 @@ const TripPlannerScreen: React.FC = () => {
         facilities: [],
         price: 0,
         status: 'active',
-        mobileNumber: ''
+        mobileNumber: '',
+        stars: 0,
+        singleRooms: bookingData.singleRooms || 0,
+        doubleRooms: bookingData.doubleRooms || 0,
+        guests: bookingData.guests || 0
       }
 
       console.log(book)

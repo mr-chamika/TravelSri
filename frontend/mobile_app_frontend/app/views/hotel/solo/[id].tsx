@@ -502,6 +502,8 @@ export default function Views() {
             book.singleRooms = selectedRoomCounts[0] ? selectedRoomCounts[0] : 0
             book.doubleRooms = selectedRoomCounts[1] ? selectedRoomCounts[1] : 0
 
+
+
             await fetch(`http://localhost:8080/traveler/create-booking`, {
 
                 method: 'POST',

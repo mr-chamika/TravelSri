@@ -533,6 +533,7 @@ System.out.println(list);
                 //storing hotel booking data
                 x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
                 x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+                x.getBookingData().put("guests",Integer.parseInt(order.get("adults").toString())+Integer.parseInt(order.get("children").toString()));
 
                 Hotel hotel = hotelsRepo.findById(obj.get("id").toString()).get();
 
@@ -616,6 +617,9 @@ System.out.println(list.getClass().isArray());
     @Autowired
     private TravelerBookingRepo travelerBookingRepo;
 
+    @Autowired
+    private FaciRepo faciRepo;
+
     @PutMapping("/booking-cancel")
     public String bookingCancel(@RequestBody Map<String, Object> body) {
 
@@ -630,7 +634,7 @@ System.out.println(list.getClass().isArray());
 
     @PostMapping("/create-booking")
     public String CreateBooking(@RequestBody TravelerBooking obj) {
-System.out.println(obj.toString());
+
         if(obj.getType().equals("guides")) {
 
             User guide = userRepo.findById(obj.getServiceId()).get();
@@ -678,6 +682,102 @@ System.out.println(obj.toString());
                 obj.setMobileNumber(guide.getMobileNumber());
 
             }
+
+            obj.setStatus("active");
+
+        }if(obj.getType().equals("hotels")) {
+
+            Hotel hotel = hotelsRepo.findById(obj.getServiceId()).get();
+
+            obj.setType("hotel");
+
+            if(obj.getThumbnail().isEmpty()) {
+
+                obj.setThumbnail(hotel.getThumbnail());
+
+            }
+            if(obj.getTitle().equals("")) {
+
+                obj.setTitle(hotel.getName());
+
+            }
+
+            obj.setLocation(hotel.getLocation());
+
+            if(obj.getSubtitle().length==0) {
+
+                String x = "";
+                String y = "";
+
+                if(obj.getSingleRooms() != 0){
+
+                    x = obj.getSingleRooms()!=0 ? obj.getSingleRooms()+" single rooms":"";
+
+                }if(obj.getDoubleRooms() != 0){
+
+                    y = obj.getDoubleRooms()!=0 ? obj.getDoubleRooms()+" double rooms":"";
+
+                }
+
+                if(x!=null && y!=null){
+
+                obj.setSubtitle(new String[]{x,y});
+
+                }else if(x!=null && y==null){
+
+                    obj.setSubtitle(new String[]{x});
+
+
+                }else if(x==null && y!=null){
+
+                    obj.setSubtitle(new String[]{y});
+
+                }
+
+            }
+
+            if(obj.getRatings() ==0 && hotel.getStars()!=0 && hotel.getReviewCount()!=0){
+
+                obj.setRatings(Math.round(((float)hotel.getStars()/hotel.getReviewCount())*2*10)/10f);
+
+            }
+
+
+            if((obj.getFacilities() == null || obj.getFacilities().length == 0) && hotel.getFacilities()!=null && hotel.getFacilities().length>=2) {
+
+                List<String> list = new ArrayList<>();
+
+                for(String id : hotel.getFacilities() ){
+
+                    Faci x = faciRepo.findById(id).get();
+
+                    list.add(x.getTitle());
+
+                }
+
+                obj.setFacilities(list.toArray(new String[0]));
+
+            }
+
+            if(obj.getPrice()==0 && hotel.getCurrentPrice()!=0){
+
+                obj.setPrice(hotel.getCurrentPrice());
+
+            }
+
+            if(obj.getMobileNumber().equals("")){
+
+                obj.setMobileNumber(hotel.getMobileNumber());
+
+            }
+
+            if(obj.getStars()==0){
+
+                obj.setStars(hotel.getStars());
+
+            }
+
+            obj.setStatus("active");
 
         }
 
