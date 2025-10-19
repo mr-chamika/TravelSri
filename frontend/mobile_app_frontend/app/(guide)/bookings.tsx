@@ -194,6 +194,32 @@ export default function App() {
                     return isCompleted;
                 });
                 break;
+            case 'Reject':
+                // Show rejected bookings
+                filtered = bookingsList.filter(booking => {
+                    const isRejected = booking.status === 'reject' || 
+                        booking.status === 'REJECT' ||
+                        booking.status === 'rejected' || 
+                        booking.status === 'REJECTED';
+                    if (isRejected) {
+                        console.log(`  ❌ Rejected: ${booking.username} (${booking.status})`);
+                    }
+                    return isRejected;
+                });
+                break;
+            case 'Canceled':
+                // Show canceled bookings
+                filtered = bookingsList.filter(booking => {
+                    const isCanceled = booking.status === 'canceled' || 
+                        booking.status === 'CANCELED' ||
+                        booking.status === 'cancelled' || 
+                        booking.status === 'CANCELLED';
+                    if (isCanceled) {
+                        console.log(`  🚫 Canceled: ${booking.username} (${booking.status})`);
+                    }
+                    return isCanceled;
+                });
+                break;
             case 'All':
             default:
                 // Show all bookings
@@ -272,27 +298,35 @@ export default function App() {
         };
 
         const isActive = booking.status === 'ACTIVE' || booking.status === 'active';
+        const isRejected = booking.status === 'reject' || booking.status === 'REJECT' || booking.status === 'rejected' || booking.status === 'REJECTED';
+        const isCanceled = booking.status === 'canceled' || booking.status === 'CANCELED' || booking.status === 'cancelled' || booking.status === 'CANCELLED';
         const isToday = isBookingToday();
         const firstDate = booking.bookingDates?.[0] || '';
 
-        console.log(`🎯 BookingCard status check - status: "${booking.status}", isActive: ${isActive}`);
+        console.log(`🎯 BookingCard status check - status: "${booking.status}", isActive: ${isActive}, isRejected: ${isRejected}, isCanceled: ${isCanceled}`);
+        if (isRejected) {
+            console.log(`🔴 REJECTED BOOKING DETECTED - Buttons should be hidden!`);
+        }
+        if (isCanceled) {
+            console.log(`🚫 CANCELED BOOKING DETECTED - Buttons should be hidden!`);
+        }
 
         return (
             <View className="mb-4">
                 <View className="bg-white rounded-2xl overflow-hidden shadow-lg">
                     {/* Header Section with Gradient Background */}
-                    <View className="bg-gradient-to-r from-[#FEFA17] to-[#FFD700] px-5 pt-5 pb-4">
+                    <View className={`px-5 pt-5 pb-4 ${isCanceled ? 'bg-gray-500' : isRejected ? 'bg-red-500' : 'bg-gradient-to-r from-[#FEFA17] to-[#FFD700]'}`}>
                         <View className="flex-row items-center justify-between">
                             <View className="flex-1 pr-3">
-                                <Text className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wider">
-                                    {isActive ? 'Active Service' : 'New Request'}
+                                <Text className={`text-xs font-medium mb-2 uppercase tracking-wider ${isCanceled ? 'text-gray-100' : isRejected ? 'text-red-100' : 'text-gray-600'}`}>
+                                    {isCanceled ? 'Canceled' : isRejected ? 'Rejected' : isActive ? 'Active Service' : 'New Request'}
                                 </Text>
-                                <Text className="text-xl font-bold text-gray-900 mb-1">
+                                <Text className={`text-xl font-bold mb-1 ${isCanceled ? 'text-white' : isRejected ? 'text-white' : 'text-gray-900'}`}>
                                     {booking.username}
                                 </Text>
                             </View>
-                            <View className="bg-white rounded-full w-12 h-12 items-center justify-center shadow-md">
-                                <Ionicons name="person-circle" size={28} color="#FEFA17" />
+                            <View className={`rounded-full w-12 h-12 items-center justify-center shadow-md ${isCanceled ? 'bg-gray-100' : isRejected ? 'bg-red-100' : 'bg-white'}`}>
+                                <Ionicons name={isCanceled ? "ban" : isRejected ? "close-circle" : "person-circle"} size={28} color={isCanceled ? "#6B7280" : isRejected ? "#DC2626" : "#FEFA17"} />
                             </View>
                         </View>
                     </View>
@@ -351,28 +385,6 @@ export default function App() {
                             </View>
                         </View>
 
-                        {/* Status and IDs - Only show for non-active bookings */}
-                        {!isActive && (
-                            <View className="border-t border-gray-100 mt-4 pt-3">
-                                {booking.status && (
-                                    <View className="mb-2 pb-2">
-                                        <Text className="text-xs text-gray-500 font-semibold uppercase mb-1 tracking-wide">
-                                            Status
-                                        </Text>
-                                        <Text className="text-xs font-bold text-blue-600 uppercase">
-                                            {booking.status}
-                                        </Text>
-                                    </View>
-                                )}
-                                <Text className="text-xs text-gray-400 font-medium mb-1">
-                                    Booking ID: {booking._id && booking._id !== '' ? booking._id.substring(0, 16) : 'N/A'}
-                                </Text>
-                                <Text className="text-xs text-gray-400 font-medium">
-                                    User ID: {booking.userId?.substring(0, 12)}...
-                                </Text>
-                            </View>
-                        )}
-
                         {/* Mobile Number - Only show for active bookings */}
                         {isActive && booking.mobileNumber && (
                             <View className="border-t border-gray-100 mt-4 pt-3">
@@ -389,7 +401,8 @@ export default function App() {
                         )}
                     </View>
 
-                    {/* Action Buttons */}
+                    {/* Action Buttons - Hide for rejected and canceled bookings */}
+                    {!isRejected && !isCanceled && (
                     <View className={`flex-row gap-3 px-5 pb-5 pt-2 ${isActive ? 'flex-wrap' : ''}`}>
                         {/* Decline/Cancel Button */}
                         <TouchableOpacity
@@ -412,10 +425,12 @@ export default function App() {
                                         console.error('No provider ID found in token');
                                         return;
                                     }
-                                    console.log(`booking id ${booking.userId}`);
+                                    console.log(`booking id ${booking._id}`);
 
+                                    // Use cancel endpoint for active bookings, reject for pending
+                                    const endpoint = isActive ? 'cancel' : 'cancel';
                                     const response = await fetch(
-                                        `http://localhost:8080/api/bookings/${booking.userId}/decline?providerId=${userToken.id}`,
+                                        `http://localhost:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
                                         {
                                             method: 'POST',
                                             headers: {
@@ -500,6 +515,7 @@ export default function App() {
                             </Text>
                         </TouchableOpacity>
                     </View>
+                    )}
 
                     {/* Info Message for Active Bookings */}
                     {isActive && !isToday && (
@@ -560,6 +576,8 @@ export default function App() {
                         <FilterTab title="Pending" isActive={activeFilter === 'Pending'} />
                         <FilterTab title="Confirmed" isActive={activeFilter === 'Confirmed'} />
                         <FilterTab title="Completed" isActive={activeFilter === 'Completed'} />
+                        <FilterTab title="Reject" isActive={activeFilter === 'Reject'} />
+                        <FilterTab title="Canceled" isActive={activeFilter === 'Canceled'} />
                     </View>
                 </ScrollView>
             </View>
