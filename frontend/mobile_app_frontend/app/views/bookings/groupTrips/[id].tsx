@@ -1,40 +1,69 @@
-import { useLocalSearchParams, router } from 'expo-router'
-import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar, TextInput } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { useLocalSearchParams, router, useRouter } from 'expo-router'
+import { Text, View, ScrollView, StyleSheet, TouchableOpacity, StatusBar, TextInput, Dimensions } from 'react-native'
+import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 
 export default function Bookings() {
     const { id } = useLocalSearchParams()
+    const { width } = Dimensions.get('window')
+    const routerHook = useRouter()
+
+    const handleBackPress = () => {
+        console.log('Back button pressed')
+        router.back()
+    }
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFEB3B" />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            {/* Enhanced Header */}
+            <LinearGradient
+                colors={['#FFEB3B', '#FDD835']}
+                style={styles.header}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+            >
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={handleBackPress}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Go back"
+                    accessibilityRole="button"
+                >
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>TravelSri</Text>
-                <View style={styles.headerRight}>
-                    <TouchableOpacity style={styles.notificationButton}>
-                        <Ionicons name="notifications-outline" size={24} color="#000" />
-                    </TouchableOpacity>
-                </View>
-            </View>
+                <Text style={styles.headerTitle}>Group Tour Quotation</Text>
+                <TouchableOpacity style={styles.notificationButton}>
+                    <Ionicons name="notifications-outline" size={24} color="#000" />
+                </TouchableOpacity>
+            </LinearGradient>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Trip Header */}
+                {/* Enhanced Trip Header */}
                 <View style={styles.tripHeader}>
-                    <Text style={styles.tripTitle}>Trip Assignment</Text>
-                    <Text style={styles.tripDate}>#TSL-2024-001</Text>
-                    <TouchableOpacity style={styles.shareButton}>
-                        <Text style={styles.shareButtonText}>Download PDF</Text>
+                    <View style={styles.tripHeaderTop}>
+                        <View style={styles.tripTitleContainer}>
+                            <FontAwesome5 name="users" size={20} color="#FFB300" style={styles.tripIcon} />
+                            <Text style={styles.tripTitle}>Group Tour Request</Text>
+                        </View>
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>QUOTATION</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.tripId}>#TSL-2024-001</Text>
+                    <TouchableOpacity style={styles.downloadButton}>
+                        <MaterialIcons name="file-download" size={16} color="#FFB300" />
+                        <Text style={styles.downloadButtonText}>Download PDF</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Customer Information */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Customer Information</Text>
+                    <View style={styles.sectionTitle}>
+                        <Ionicons name="person" size={20} color="#FFB300" style={{ marginRight: 8 }} />
+                        <Text style={styles.sectionTitle}>Customer Information</Text>
+                    </View>
                     <View style={styles.customerInfo}>
                         <View style={styles.customerRow}>
                             <Text style={styles.customerLabel}>Name:</Text>
@@ -53,7 +82,10 @@ export default function Bookings() {
 
                 {/* Trip Details */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Trip Details</Text>
+                    <View style={styles.sectionTitle}>
+                        <MaterialIcons name="schedule" size={20} color="#FFB300" style={{ marginRight: 8 }} />
+                        <Text style={styles.sectionTitle}>Trip Details</Text>
+                    </View>
                     <View style={styles.tripDetails}>
                         <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>Date:</Text>
@@ -70,31 +102,67 @@ export default function Bookings() {
                     </View>
                 </View>
 
-                {/* Booking Services */}
+                {/* Route Overview */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Route Overview</Text>
+                    <View style={styles.sectionTitle}>
+                        <FontAwesome5 name="route" size={18} color="#FFB300" style={{ marginRight: 8 }} />
+                        <Text style={styles.sectionTitle}>Route Overview</Text>
+                    </View>
                     <View style={styles.servicesContainer}>
-                        <TouchableOpacity style={[styles.serviceItem, styles.serviceActive]}>
-                            <Text style={styles.serviceText}>#1  Bandaranayake International Airport</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.serviceItem, styles.serviceInactive]}>
-                            <Text style={styles.serviceText}>#2  Pinnawala Elephant Orphanage</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.serviceItem, styles.serviceInactive]}>
-                            <Text style={styles.serviceText}>#3  Royal Botanical Gardens,Peradeniya</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.serviceItem, styles.serviceInactive]}>
-                            <Text style={styles.serviceText}>#4  Temple of Sacred Tooth relic,Kandy</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.serviceItem, styles.serviceCancelled]}>
-                            <Text style={styles.serviceText}>#5  Colombo Fort</Text>
-                        </TouchableOpacity>
+                        <View style={[styles.serviceItem, styles.serviceActive]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#4CAF50', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>1</Text>
+                                </View>
+                                <Text style={styles.serviceText}>Bandaranayake International Airport</Text>
+                            </View>
+                            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                        </View>
+                        <View style={[styles.serviceItem, styles.serviceInactive]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#E0E0E0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <Text style={{ color: '#666', fontSize: 12, fontWeight: 'bold' }}>2</Text>
+                                </View>
+                                <Text style={styles.serviceText}>Pinnawala Elephant Orphanage</Text>
+                            </View>
+                            <Ionicons name="ellipse-outline" size={20} color="#E0E0E0" />
+                        </View>
+                        <View style={[styles.serviceItem, styles.serviceInactive]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#E0E0E0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <Text style={{ color: '#666', fontSize: 12, fontWeight: 'bold' }}>3</Text>
+                                </View>
+                                <Text style={styles.serviceText}>Royal Botanical Gardens, Peradeniya</Text>
+                            </View>
+                            <Ionicons name="ellipse-outline" size={20} color="#E0E0E0" />
+                        </View>
+                        <View style={[styles.serviceItem, styles.serviceInactive]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#E0E0E0', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <Text style={{ color: '#666', fontSize: 12, fontWeight: 'bold' }}>4</Text>
+                                </View>
+                                <Text style={styles.serviceText}>Temple of Sacred Tooth relic, Kandy</Text>
+                            </View>
+                            <Ionicons name="ellipse-outline" size={20} color="#E0E0E0" />
+                        </View>
+                        <View style={[styles.serviceItem, styles.serviceCancelled]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: '#F44336', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                    <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>5</Text>
+                                </View>
+                                <Text style={styles.serviceText}>Colombo Fort</Text>
+                            </View>
+                            <Ionicons name="close-circle" size={20} color="#F44336" />
+                        </View>
                     </View>
                 </View>
 
-                {/* Booking Information */}
+                {/* Vehicle Information */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Vehicle Information</Text>
+                    <View style={styles.sectionTitle}>
+                        <FontAwesome5 name="car" size={18} color="#FFB300" style={{ marginRight: 8 }} />
+                        <Text style={styles.sectionTitle}>Vehicle Information</Text>
+                    </View>
                     <View style={styles.bookingInfo}>
                         <View style={styles.bookingRow}>
                             <Text style={styles.bookingLabel}>Vehicle Type:</Text>
@@ -113,7 +181,10 @@ export default function Bookings() {
 
                 {/* Important Notes */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Important Notes</Text>
+                    <View style={styles.sectionTitle}>
+                        <Ionicons name="information-circle" size={20} color="#FFB300" style={{ marginRight: 8 }} />
+                        <Text style={styles.sectionTitle}>Important Notes</Text>
+                    </View>
                     <View style={styles.notesContainer}>
                         <Text style={styles.notesText}>
                             Please arrive at the hotel at least 30 minutes before your check-in time.
@@ -124,22 +195,25 @@ export default function Bookings() {
                 </View>
             </ScrollView>
 
-            {/* Bottom Actions */}
+            {/* Enhanced Bottom Actions */}
             <View style={styles.bottomActions}>
-                <TextInput
-                    style={{
-                        borderWidth: 2,
-                        borderColor: '#DDD',
-                        borderRadius: 12,
-                        paddingHorizontal: 12,
-                        flex: 1,
-                        marginRight: 8,
-                    }}
-                    placeholder="Enter your price"
-                    placeholderTextColor='black'
-                />
-                <TouchableOpacity style={styles.cancelButton}>
-                    <Text style={styles.cancelButtonText}>Send quotation</Text>
+                <View style={styles.priceInputContainer}>
+                    <Text style={styles.priceLabel}>Quotation Amount</Text>
+                    <View style={styles.priceInputWrapper}>
+                        <Text style={styles.currencySymbol}>Rs.</Text>
+                        <TextInput
+                            style={styles.priceInput}
+                            placeholder="Enter your price"
+                            placeholderTextColor='#999'
+                            keyboardType="numeric"
+                            textAlignVertical="center"
+                            multiline={false}
+                        />
+                    </View>
+                </View>
+                <TouchableOpacity style={styles.confirmButton}>
+                    <FontAwesome5 name="paper-plane" size={16} color="#FFFFFF" />
+                    <Text style={styles.confirmButtonText}>Send Quotation</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -148,209 +222,353 @@ export default function Bookings() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#F8F9FA',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        // backgroundColor: '#FFEB3B',
-        // paddingTop: 50,
+        paddingVertical: 16,
+        paddingTop: 50,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
     },
     backButton: {
         padding: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#000000',
+        flex: 1,
+        textAlign: 'center',
+        marginHorizontal: 16,
     },
     headerRight: {
         flexDirection: 'row',
+        gap: 8,
     },
     notificationButton: {
         padding: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
     },
     content: {
         flex: 1,
         paddingHorizontal: 16,
     },
     tripHeader: {
-        backgroundColor: '#FFEB3B',
-        padding: 16,
+        backgroundColor: '#FFFFFF',
+        padding: 20,
         marginTop: 16,
-        borderRadius: 8,
+        borderRadius: 16,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        borderLeftWidth: 5,
+        borderLeftColor: '#FFB300',
     },
-    tripTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#000',
-        marginBottom: 4,
-    },
-    tripDate: {
-        fontSize: 14,
-        color: '#666',
+    tripHeaderTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 12,
     },
-    shareButton: {
-        backgroundColor: '#FFF',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        alignSelf: 'flex-start',
+    tripTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
     },
-    shareButtonText: {
-        color: '#000',
+    tripIcon: {
+        marginRight: 10,
+    },
+    tripTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#2E2E2E',
+        flex: 1,
+    },
+    statusBadge: {
+        backgroundColor: '#FFF8E1',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FFB300',
+    },
+    statusText: {
         fontSize: 12,
+        fontWeight: '600',
+        color: '#FFB300',
+        letterSpacing: 0.5,
+    },
+    tripId: {
+        fontSize: 16,
+        color: '#666',
+        marginBottom: 12,
         fontWeight: '500',
+    },
+    downloadButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF8E1',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 25,
+        alignSelf: 'flex-start',
+        gap: 6,
+    },
+    downloadButtonText: {
+        color: '#FFB300',
+        fontSize: 14,
+        fontWeight: '600',
     },
     section: {
         marginTop: 16,
-        backgroundColor: '#FFF',
-        borderRadius: 8,
-        padding: 16,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
     },
     sectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#000',
-        marginBottom: 12,
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#2E2E2E',
+        marginBottom: 16,
     },
     customerInfo: {
-        gap: 8,
+        gap: 12,
     },
     customerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
     customerLabel: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#666',
+        fontWeight: '500',
+        flex: 1,
     },
     customerValue: {
-        fontSize: 14,
-        color: '#000',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#2E2E2E',
+        fontWeight: '600',
+        textAlign: 'right',
+        flex: 1.2,
     },
     tripDetails: {
-        gap: 8,
+        gap: 12,
     },
     detailRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
     detailLabel: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#666',
+        fontWeight: '500',
+        flex: 1,
     },
     detailValue: {
-        fontSize: 14,
-        color: '#000',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#2E2E2E',
+        fontWeight: '600',
+        textAlign: 'right',
+        flex: 1.2,
     },
     servicesContainer: {
-        gap: 8,
+        gap: 12,
     },
     serviceItem: {
-        padding: 12,
-        borderRadius: 8,
-        borderWidth: 1,
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     serviceActive: {
-        backgroundColor: '#E8F5E8',
+        backgroundColor: '#E8F8F5',
         borderColor: '#4CAF50',
     },
     serviceInactive: {
-        backgroundColor: '#F0F0F0',
-        borderColor: '#DDD',
+        backgroundColor: '#F8F9FA',
+        borderColor: '#E0E0E0',
     },
     serviceCancelled: {
-        backgroundColor: '#FFE8E8',
+        backgroundColor: '#FFF5F5',
         borderColor: '#F44336',
     },
     serviceText: {
-        fontSize: 14,
-        color: '#000',
+        fontSize: 15,
+        color: '#2E2E2E',
+        fontWeight: '600',
     },
     bookingInfo: {
-        gap: 8,
+        gap: 12,
     },
     bookingRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
     bookingLabel: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#666',
+        fontWeight: '500',
+        flex: 1,
     },
     bookingValue: {
-        fontSize: 14,
-        color: '#000',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#2E2E2E',
+        fontWeight: '600',
+        textAlign: 'right',
+        flex: 1.2,
     },
     financialDetails: {
-        gap: 8,
+        gap: 12,
     },
     financialRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
     },
     financialLabel: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#666',
+        fontWeight: '500',
+        flex: 1,
     },
     financialValue: {
-        fontSize: 14,
-        color: '#000',
-        fontWeight: '500',
+        fontSize: 15,
+        color: '#2E2E2E',
+        fontWeight: '600',
+        textAlign: 'right',
+        flex: 1.2,
     },
     notesContainer: {
         backgroundColor: '#FFF8E1',
-        padding: 12,
-        borderRadius: 8,
+        padding: 16,
+        borderRadius: 12,
         borderLeftWidth: 4,
-        borderLeftColor: '#FFC107',
+        borderLeftColor: '#FFB300',
+        marginTop: 8,
     },
     notesText: {
-        fontSize: 14,
-        color: '#333',
-        lineHeight: 20,
+        fontSize: 15,
+        color: '#2E2E2E',
+        lineHeight: 22,
+        fontWeight: '500',
     },
     bottomActions: {
         flexDirection: 'row',
         paddingHorizontal: 16,
-        paddingVertical: 16,
-        backgroundColor: '#FFF',
-        gap: 12,
-        justifyContent: 'space-between'
+        paddingVertical: 20,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'flex-end',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     cancelButton: {
-        
-        backgroundColor: '#FFE8E8',
-        paddingVertical: 12,
-        borderRadius: 8,
+        backgroundColor: '#FFF5F5',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 25,
         alignItems: 'center',
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: '#F44336',
-        paddingHorizontal:6
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
+        flex: 0.8,
     },
     cancelButtonText: {
         color: '#F44336',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     confirmButton: {
-        flex: 1,
-        backgroundColor: '#4CAF50',
-        paddingVertical: 12,
-        borderRadius: 8,
+        backgroundColor: '#FFB300',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 25,
         alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#FFB300',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
+        height: 50,
+        minWidth: 150,
     },
     confirmButtonText: {
-        color: '#FFF',
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    priceInputContainer: {
+        flex: 1,
+        marginRight: 16,
+    },
+    priceLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#666',
+        marginBottom: 8,
+    },
+    priceInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#E0E0E0',
+        paddingHorizontal: 12,
+        height: 50,
+    },
+    currencySymbol: {
         fontSize: 16,
         fontWeight: '600',
+        color: '#FFB300',
+        marginRight: 8,
+    },
+    priceInput: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2E2E2E',
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        textAlignVertical: 'center',
+        includeFontPadding: false,
+        height: '100%',
     },
 })

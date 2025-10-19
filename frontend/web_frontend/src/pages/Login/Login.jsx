@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'
+import {jwtDecode} from 'jwt-decode';
 // Flash Message Component
 const FlashMessage = ({ type, message, onClose }) => {
   const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
@@ -100,7 +101,7 @@ const LoginPage = () => {
   const validateCredentials = async (username, password) => {
     try {
       // Make an actual API call to validate credentials
-      const response = await fetch('http://localhost:8080/hotels/login', {
+      const response = await fetch('http://localhost:8080/web/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,8 +111,12 @@ const LoginPage = () => {
       
       // Parse the JSON response
       const data = await response.json();
-      
+      console.log(data.token)
       if (response.ok && data.token) {
+
+        const decoded = jwtDecode(data.token);
+
+        if(decoded.role == 'hotel'){
         // Success! Show success message and navigate to dashboard
         showFlash('success', 'Login successful! Welcome back!');
         
@@ -173,6 +178,11 @@ const LoginPage = () => {
               window.location.href = '/dashboard';
           }
         }, 1500);
+      }else{
+
+        navigate('/admin');
+
+      }
       } else {
         // Failed login - show error message from server or generic error
         const errorMessage = data.error || 'Invalid username or password. Please try again.';

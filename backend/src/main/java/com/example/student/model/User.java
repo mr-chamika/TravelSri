@@ -57,7 +57,7 @@ public class User {
     private String[] images;
     private String guideType;//travel with me or visit
     private String experience;
-    private String specialization;
+    private String[] specializations;
     private Integer dailyRate;//charge per day
     private String bio;//about me
     private String responseTime;

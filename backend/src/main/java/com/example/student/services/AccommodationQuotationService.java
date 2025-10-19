@@ -11,4 +11,7 @@ public interface AccommodationQuotationService {
     AccommodationQuotation getQuotationByQuoteNumber(String quoteNumber);
     void deleteQuotation(String id);
     void deleteQuotationByQuoteNumber(String quoteNumber);
+
+    //Tharusha Samarawickrama
+    List<AccommodationQuotation> getQuotationsByPendingTripId(String pendingTripId);
 }

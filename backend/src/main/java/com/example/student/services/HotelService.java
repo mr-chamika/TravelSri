@@ -170,7 +170,7 @@ public class HotelService {
         System.out.println("Hotel authenticated: >>>>>" + hotel);
         
         // Check if the password matches
-        System.out.println("password: " + password);
+        System.out.println("passwordx: " + password);
         boolean passwordMatches = passwordEncoder.matches(password, hotel.getPassword());
         System.out.println("Password matches: " + passwordMatches);
         if (passwordMatches) {

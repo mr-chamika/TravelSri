@@ -6,14 +6,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
+@EnableWebSecurity
 public class Hashingpw {
 
     @Autowired
@@ -33,8 +40,12 @@ public class Hashingpw {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/user/signup",
                                 "/user/login",
+                                "/web/login",
+                                "/ws/**",
+                                "/ws",
+                                "/system/**",
+                                "/user/signup",
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
@@ -167,13 +178,90 @@ public class Hashingpw {
                                 "/reviews/service-search",
                                 "/reviews/by-rating",
                                 "/api/test/public",
-                                "/hotel-rooms/**"
+                                "/hotel-rooms/**",
+                                "/api/guide/search",
+                                "/api/payments/payhere/simple-health",
+                                "/api/payments/payhere/create-checkout",
+                                "/api/payments/payhere/test/booking-info/{bookingId}",
+                                "api/payments/payhere/test/generate-hash",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/return/{bookingId}",
+                                "/api/payments/payhere/sdk/payment-completed/",
+                                "/api/guide/bookings/{guideId}",
+                                "/api/guide/bookings/{guideId}/pending",
+                                "/api/guide/bookings/{guideId}/confirmed",
+                                "/api/guide/bookings/{guideId}/completed",
+                                "/api/guide/bookings/{guideId}/today",
+                                "/api/guide/bookings/{guideId}/upcoming",
+                                "/api/guide/bookings/{bookingId}/accept",
+                                "/api/guide/bookings/{bookingId}/reject",
+                                "/api/guide/bookings/{bookingId}/complete",
+                                "/api/guide/bookings/{guideId}/stats",
+                                "/api/guide/bookings/{guideId}/daterange",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/payhere/config-check",
+                                "/api/payments/payhere/test/verify-hash",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "/api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/status/check",
+                                "/api/payments/status/bulk-check",
+                                "/api/payments/status/update",
+                                "/api/payments/history/{bookingId}",
+                                "/api/payments/summary/{bookingId}",
+                                "/api/payments/money-flow/{bookingId}",
+                                "/api/payments/wallet/{travelerId}",
+                                "/api/payments/refund/partial/{bookingId}",
+                                "/api/payments/refund/full/{bookingId}",
+                                "/api/payments/payout/confirmation-fee/{bookingId}",
+                                "/api/payments/payout/final/{bookingId}",
+                                "/api/payments/validate/{bookingId}",
+                                "/api/bookings/hotel/create",
+                                "/api/posts/getPosts/{userId}",
+                                "/api/posts/create",
+                                "/api/posts/like/{postId}",
+                                "/api/places/health",
+                                "/api/places/test",
+                                "/api/places/autocomplete",
+                                "/api/places/details",
+                                "/api/places/nearby",
+                                "/api/posts/post/{postId}",
+                                "/api/posts/edit/{postId}",
+                                "/api/posts/delete/{postId}",
+                                "/api/availability/create-unavailability",
+                                "/api/availability/check-provider",
+                                "/api/availability/user-unavailable-guides",
+                                "/api/availability/user-unavailable-vehicles",
+                                "/api/availability/update-user-status",
+                                "/api/availability/delete-user-unavailability",
+                                "/api/availability/user-schedules/{userId}",
+                                "/notification/**"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
+
                 )
-                .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
+                .formLogin(form -> form
+                        .loginPage("/user/login") // Specify a custom login page
+                        .usernameParameter("email")
+                        .permitAll()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(withDefaults()) // Apply the global CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .formLogin(form -> form.disable())
+                .httpBasic(basic->basic.disable()) ;// Use Basic Auth for the secured endpoints
+        //.formLogin(form -> form.disable());
+
 
         return http.build();
     }
+
 }

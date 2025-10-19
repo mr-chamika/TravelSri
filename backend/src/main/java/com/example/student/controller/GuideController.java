@@ -1,14 +1,22 @@
 package com.example.student.controller;
 
+import com.example.student.model.Booking;
 import com.example.student.model.User;
+import com.example.student.model.dto.Bookingdto;
+import com.example.student.services.BookingServiceImpl;
+import com.example.student.services.IBookingService;
 import com.example.student.services.IGuideService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/guide")
@@ -16,6 +24,9 @@ import java.util.Optional;
 public class GuideController {
     @Autowired
     public IGuideService guideService;
+
+    @Autowired
+    public IBookingService bookingService;
 
     // Create new guide
     @PostMapping("/create")
@@ -170,6 +181,235 @@ public class GuideController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/bookings/{guideId}")
+    public ResponseEntity<List<Bookingdto>> getGuideBookings(@PathVariable("guideId") String guideId) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+
+            List<Bookingdto> bookings = bookingService.getBookingsByProvider(guideId);
+            return new ResponseEntity<>(bookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Get pending booking requests for a guide (awaiting acceptance)
+    @GetMapping("/bookings/{guideId}/pending")
+    public ResponseEntity<List<Bookingdto>> getPendingBookingRequests(@PathVariable("guideId") String guideId) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> allBookings = bookingService.getBookingsByProvider(guideId);
+            List<Bookingdto> pendingBookings = allBookings.stream()
+                    .filter(booking -> "PENDING_PROVIDER_ACCEPTANCE".equals(booking.getStatus())
+                            && "SUCCESS".equals(booking.getPaymentStatus()))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(pendingBookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Get confirmed bookings for a guide (upcoming services)
+    @GetMapping("/bookings/{guideId}/confirmed")
+    public ResponseEntity<List<Bookingdto>> getConfirmedBookings(@PathVariable("guideId") String guideId) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> allBookings = bookingService.getBookingsByProvider(guideId);
+            List<Bookingdto> confirmedBookings = allBookings.stream()
+                    .filter(booking -> "CONFIRMED".equals(booking.getStatus()))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(confirmedBookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Accept a booking request
+    @PutMapping("/bookings/{bookingId}/accept")
+    public ResponseEntity<Booking> acceptBookingRequest(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam("guideId") String guideId) {
+        try {
+            if (bookingId == null || bookingId.trim().isEmpty() ||
+                    guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            Booking acceptedBooking = bookingService.acceptBooking(bookingId, guideId);
+            return new ResponseEntity<>(acceptedBooking, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            } else if (e.getMessage().contains("not authorized")) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Reject a booking request
+    @PutMapping("/bookings/{bookingId}/reject")
+    public ResponseEntity<Booking> rejectBookingRequest(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam("guideId") String guideId,
+            @RequestParam(value = "reason", required = false) String reason) {
+        try {
+            if (bookingId == null || bookingId.trim().isEmpty() ||
+                    guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            Booking rejectedBooking = bookingService.rejectBooking(bookingId, guideId);
+
+            // If reason is provided, update it
+            if (reason != null && !reason.trim().isEmpty()) {
+                rejectedBooking.setRejectionReason(reason);
+                bookingService.updateBooking(rejectedBooking);
+            }
+
+            return new ResponseEntity<>(rejectedBooking, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            } else if (e.getMessage().contains("not authorized")) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Get booking statistics for a guide
+    @GetMapping("/bookings/{guideId}/stats")
+    public ResponseEntity<Map<String, Object>> getGuideBookingStats(@PathVariable("guideId") String guideId) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> allBookings = bookingService.getBookingsByProvider(guideId);
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalBookings", allBookings.size());
+            stats.put("pendingRequests", allBookings.stream()
+                    .filter(b -> "PENDING_PROVIDER_ACCEPTANCE".equals(b.getStatus()))
+                    .count());
+            stats.put("confirmedBookings", allBookings.stream()
+                    .filter(b -> "CONFIRMED".equals(b.getStatus()))
+                    .count());
+            stats.put("completedBookings", allBookings.stream()
+                    .filter(b -> "COMPLETED".equals(b.getStatus()))
+                    .count());
+            stats.put("cancelledBookings", allBookings.stream()
+                    .filter(b -> b.getStatus() != null && b.getStatus().contains("CANCELLED"))
+                    .count());
+
+            // Calculate total earnings from completed bookings
+            BigDecimal totalEarnings = allBookings.stream()
+                    .filter(b -> "COMPLETED".equals(b.getStatus()))
+                    .map(Bookingdto::getTotalAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            stats.put("totalEarnings", totalEarnings);
+
+            return new ResponseEntity<>(stats, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Get bookings by date range for a guide
+    @GetMapping("/bookings/{guideId}/daterange")
+    public ResponseEntity<List<Bookingdto>> getGuideBookingsByDateRange(
+            @PathVariable("guideId") String guideId,
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> allBookings = bookingService.getBookingsByProvider(guideId);
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDateTime start = LocalDate.parse(startDate, formatter).atStartOfDay();
+            LocalDateTime end = LocalDate.parse(endDate, formatter).atTime(23, 59, 59);
+
+            List<Bookingdto> filteredBookings = allBookings.stream()
+                    .filter(booking -> booking.getServiceStartDate() != null &&
+                            !booking.getServiceStartDate().isBefore(start) &&
+                            !booking.getServiceStartDate().isAfter(end))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(filteredBookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Mark booking as completed (for guides)
+    @PutMapping("/bookings/{bookingId}/complete")
+    public ResponseEntity<Booking> completeBooking(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam("guideId") String guideId) {
+        try {
+            if (bookingId == null || bookingId.trim().isEmpty() ||
+                    guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            // Verify the booking belongs to this guide
+            Optional<Booking> bookingOpt = bookingService.getBookingById(bookingId);
+            if (bookingOpt.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            Booking booking = bookingOpt.get();
+            if (!booking.getProviderId().equals(guideId)) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+
+            if (!"CONFIRMED".equals(booking.getStatus())) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            Booking completedBooking = bookingService.completeBooking(bookingId);
+            return new ResponseEntity<>(completedBooking, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

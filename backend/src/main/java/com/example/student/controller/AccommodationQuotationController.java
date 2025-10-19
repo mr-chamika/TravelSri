@@ -3,6 +3,7 @@ package com.example.student.controller;
 import com.example.student.model.AccommodationQuotation;
 import com.example.student.services.AccommodationQuotationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -104,6 +105,21 @@ public class AccommodationQuotationController {
                 "error", "Failed to delete quotation by quote number",
                 "message", e.getMessage()
             ));
+        }
+    }
+
+
+    //Tharusha Samarawickrama
+
+    @GetMapping("/trip/{pendingTripId}")
+    public ResponseEntity<List<AccommodationQuotation>> getQuotationsByPendingTripId(@PathVariable("pendingTripId") String pendingTripId) {
+        try {
+            List<AccommodationQuotation> quotations = service.getQuotationsByPendingTripId(pendingTripId);
+            return new ResponseEntity<>(quotations, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
