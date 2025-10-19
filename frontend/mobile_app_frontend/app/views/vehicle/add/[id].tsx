@@ -107,7 +107,6 @@ const genderOptions = [
   { label: 'Select Gender', value: '' },
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
-  { label: 'Other', value: 'other' },
 ];
 
 // Options for vehicle type dropdown (Section 2)
@@ -159,11 +158,13 @@ const gearTypeOptions = [
 
 // Options for categories
 const categoryOptions = [
-  { label: 'Select Category', value: '' },
-  { label: 'Economy', value: 'economy' },
-  { label: 'Standard', value: 'standard' },
-  { label: 'Premium', value: 'premium' },
-  { label: 'Luxury', value: 'luxury' },
+  { label: 'Select Vehicle Category', value: '' },
+  { label: 'Tuk (Three Wheeler)', value: 'tuk' },
+  { label: 'Car', value: 'car' },
+  { label: 'Van', value: 'van' },
+  { label: 'Minivan', value: 'minivan' },
+  { label: 'Bus', value: 'bus' },
+  { label: 'Bike (Motorcycle)', value: 'bike' },
 ];
 
 // Year options
@@ -623,9 +624,12 @@ export default function MultiStepForm() {
   };
 
   /**
-   * Simulates the final form submission.
+   * Handles the final form submission.
    */
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const submitForm = async () => {
+    setIsSubmitting(true);
     console.log('Form Data before submission:', formData);
 
     try {
@@ -700,17 +704,40 @@ export default function MultiStepForm() {
       
       Alert.alert(
         'Registration Complete!',
-        'Your driver registration has been submitted successfully.',
+        'Your vehicle registration has been submitted successfully. You will now be redirected to your vehicles list.',
         [{ 
           text: 'OK',
           onPress: () => {
-            router.push('/(vehicle)/myVehicles');
+            // Reset form data
+            setFormData({
+              firstName: '', lastName: '', nicNumber: '', driverDateOfBirth: '',
+              location: '', gender: '', phone: '', additionalComments: '',
+              drivingLicenseNumber: '', licenseExpiryDate: '', experience: 0,
+              languages: [], image: null, insuranceDocument: null,
+              insuranceDocument2: null, licensePhoto: null, licensePhoto2: null,
+              vehicleNumber: '', vehicleModel: '', ac: false, fuelType: '',
+              seats: 0, catId: '', vehicleYearOfManufacture: '', gearType: false,
+              perKm: false, perKmPrice: 0, dailyRate: false, dailyRatePrice: 0,
+              driverNicpic1: null, driverNicpic2: null, vehicleLicenseCopy: null,
+              images: [], doors: 0, mileage: '', whatsIncluded: []
+            });
+            setErrors({});
+            setStep(1);
+            
+            // Navigate to myVehicles
+            router.replace('/(vehicle)/myVehicles');
           }
         }]
       );
     } catch (err) {
       console.log('Error from submit form:', err);
-      Alert.alert('Error', `Failed to submit registration: ${err}. Please try again.`);
+      Alert.alert(
+        'Registration Failed', 
+        `Failed to submit vehicle registration. Please check your internet connection and try again.\n\nError: ${err}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1249,17 +1276,22 @@ export default function MultiStepForm() {
           )}
           
           <TouchableOpacity
-  className={`flex-1 ${step > 1 ? 'ml-2' : ''} py-3 px-4 rounded-lg`}
-  style={{
-    backgroundColor: '#FEFA17'
-  }}
-  onPress={handleNext}
-
->
-  <Text className="text-center text-black font-medium">
-    {step === 3 ? 'Submit' : 'Next'}
-  </Text>
-</TouchableOpacity>
+            className={`flex-1 ${step > 1 ? 'ml-2' : ''} py-3 px-4 rounded-lg ${
+              isValidating || isSubmitting ? 'opacity-50' : ''
+            }`}
+            style={{
+              backgroundColor: '#FEFA17'
+            }}
+            onPress={handleNext}
+            disabled={isValidating || isSubmitting}
+          >
+            <Text className="text-center text-black font-medium">
+              {isValidating || isSubmitting 
+                ? (step === 3 ? 'Submitting...' : 'Validating...')
+                : (step === 3 ? 'Submit' : 'Next')
+              }
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

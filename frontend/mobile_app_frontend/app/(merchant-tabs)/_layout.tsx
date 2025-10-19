@@ -4,7 +4,7 @@ import { Feather, MaterialIcons, FontAwesome5, AntDesign } from '@expo/vector-ic
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View, Image } from 'react-native';
-import Topbar from '../../components/Topbar';
+import topbar from '../../components/topbar';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -54,7 +54,7 @@ export default function MerchantTabLayout() {
 
   return (
     <View className='flex-1'>
-      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      {/* <topbar pressing={toggleMenu} notifying={toggling} on={notify} /> */}
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,

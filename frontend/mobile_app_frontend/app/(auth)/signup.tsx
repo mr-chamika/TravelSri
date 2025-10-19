@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import isValidPhoneNumber, { type CountryCode } from 'libphonenumber-js/min';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { ImagePickerAsset } from 'expo-image-picker';
@@ -19,28 +20,6 @@ const steps = [
     { id: 3, title: 'Availability & Documents' },
     { id: 4, title: 'Confirmation' },
     { id: 5, title: 'Authentication' },
-];
-
-const countries = [
-    { label: 'Select Country...', value: '', phoneCode: '' },
-    { label: 'Sri Lanka', value: 'LK', phoneCode: '+94' },
-    { label: 'India', value: 'IN', phoneCode: '+91' },
-    { label: 'United States', value: 'US', phoneCode: '+1' },
-    { label: 'United Kingdom', value: 'GB', phoneCode: '+44' },
-    { label: 'Australia', value: 'AU', phoneCode: '+61' },
-    { label: 'Germany', value: 'DE', phoneCode: '+49' },
-    { label: 'Japan', value: 'JP', phoneCode: '+81' },
-];
-
-const timeOptions = [
-    '12:00 AM', '12:30 AM', '01:00 AM', '01:30 AM', '02:00 AM', '02:30 AM',
-    '03:00 AM', '03:30 AM', '04:00 AM', '04:30 AM', '05:00 AM', '05:30 AM',
-    '06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM',
-    '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-    '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
-    '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM',
-    '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
-    '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM'
 ];
 
 interface FormData {
@@ -79,7 +58,7 @@ interface FormData {
     // Step 4 & Others
     identitypic1: ImagePickerAsset | null;
     identitypic2: ImagePickerAsset | null;
-    locpic: ImagePickerAsset | null;
+    locpic: string; // Location name from API search
     agreeTerms: boolean;
     confirmCondition: boolean;
     status: string;
@@ -95,44 +74,44 @@ export default function SignupForm() {
     const [generatedOtp, setGeneratedOtp] = useState({ code: '', timestamp: 0 });
     const [formData, setFormData] = useState<FormData>({
         // Step 1
-        firstName: 'hasith',//
-        lastName: 'wijesinghe',
-        mobileNumber: '771161615',//
-        whatsappNumber: '0786715765',//
-        email: 'hasithchamika2001@gmail.com',//
-        username: 'chmai',//
-        address: 'Colombo',//
-        nicPassport: '200124102989',//
-        dob: '2001-08-28',//
-        gender: 'male',//
-        country: 'SL',//
-        password: '1234$Rweq',//
-        confirmPassword: '1234$Rweq',
-        role: '',//
+        firstName: '',
+        lastName: '',
+        mobileNumber: '',
+        whatsappNumber: '',
+        email: '',
+        username: '',
+        address: '',
+        nicPassport: '',
+        dob: '',
+        gender: '',
+        country: '',
+        password: '',
+        confirmPassword: '',
+        role: '',
         pp: null, // Profile Picture
 
         // Step 2
-        businessName: '',//
-        registrationNumber: '',//
-        businessType: '',//
-        description: '',//
-        businessAddress: '',//
+        businessName: '',
+        registrationNumber: '',
+        businessType: '',
+        description: '',
+        businessAddress: '',
         bp: null, // Business Photo
 
         // Step 3
-        daysPerWeek: [],//
-        startTime: '',//
-        endTime: '',//
-        businessRegPic1: null,//
-        businessRegPic2: null,//
+        daysPerWeek: [],
+        startTime: '',
+        endTime: '',
+        businessRegPic1: null,
+        businessRegPic2: null,
 
         // Step 4 & Others
-        identitypic1: null,//
-        identitypic2: null,//
-        locpic: null,//
-        agreeTerms: false,//
-        confirmCondition: false,//
-        status: '',//
+        identitypic1: null,
+        identitypic2: null,
+        locpic: '',
+        agreeTerms: false,
+        confirmCondition: false,
+        status: '',
         verified: "pending",
         identified: "pending"
     });
@@ -142,6 +121,449 @@ export default function SignupForm() {
     const [selectedImage, setSelectedImage] = useState(null)
 
     const [isCalendarVisible, setIsCalendarVisible] = useState(false)
+    
+    // Time picker states
+    const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+    const [startHour, setStartHour] = useState('09');
+    const [startMinute, setStartMinute] = useState('00');
+    const [endHour, setEndHour] = useState('17');
+    const [endMinute, setEndMinute] = useState('00');
+
+    // Location search states
+    const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+    const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+
+    // Country search states
+    const [countries, setCountries] = useState<any[]>([]);
+    const [countrySearch, setCountrySearch] = useState('');
+    const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
+    const [countrySuggestions, setCountrySuggestions] = useState<any[]>([]);
+    const [isCountrySelected, setIsCountrySelected] = useState(false);
+
+    // Fallback countries list in case API fails
+    const FALLBACK_COUNTRIES = [
+        { label: 'Afghanistan', value: 'AF', phoneCode: '+93' },
+        { label: 'Albania', value: 'AL', phoneCode: '+355' },
+        { label: 'Algeria', value: 'DZ', phoneCode: '+213' },
+        { label: 'Andorra', value: 'AD', phoneCode: '+376' },
+        { label: 'Angola', value: 'AO', phoneCode: '+244' },
+        { label: 'Argentina', value: 'AR', phoneCode: '+54' },
+        { label: 'Armenia', value: 'AM', phoneCode: '+374' },
+        { label: 'Australia', value: 'AU', phoneCode: '+61' },
+        { label: 'Austria', value: 'AT', phoneCode: '+43' },
+        { label: 'Azerbaijan', value: 'AZ', phoneCode: '+994' },
+        { label: 'Bahamas', value: 'BS', phoneCode: '+1-242' },
+        { label: 'Bahrain', value: 'BH', phoneCode: '+973' },
+        { label: 'Bangladesh', value: 'BD', phoneCode: '+880' },
+        { label: 'Barbados', value: 'BB', phoneCode: '+1-246' },
+        { label: 'Belarus', value: 'BY', phoneCode: '+375' },
+        { label: 'Belgium', value: 'BE', phoneCode: '+32' },
+        { label: 'Belize', value: 'BZ', phoneCode: '+501' },
+        { label: 'Benin', value: 'BJ', phoneCode: '+229' },
+        { label: 'Bhutan', value: 'BT', phoneCode: '+975' },
+        { label: 'Bolivia', value: 'BO', phoneCode: '+591' },
+        { label: 'Bosnia and Herzegovina', value: 'BA', phoneCode: '+387' },
+        { label: 'Botswana', value: 'BW', phoneCode: '+267' },
+        { label: 'Brazil', value: 'BR', phoneCode: '+55' },
+        { label: 'Brunei', value: 'BN', phoneCode: '+673' },
+        { label: 'Bulgaria', value: 'BG', phoneCode: '+359' },
+        { label: 'Burkina Faso', value: 'BF', phoneCode: '+226' },
+        { label: 'Burundi', value: 'BI', phoneCode: '+257' },
+        { label: 'Cambodia', value: 'KH', phoneCode: '+855' },
+        { label: 'Cameroon', value: 'CM', phoneCode: '+237' },
+        { label: 'Canada', value: 'CA', phoneCode: '+1' },
+        { label: 'Cape Verde', value: 'CV', phoneCode: '+238' },
+        { label: 'Central African Republic', value: 'CF', phoneCode: '+236' },
+        { label: 'Chad', value: 'TD', phoneCode: '+235' },
+        { label: 'Chile', value: 'CL', phoneCode: '+56' },
+        { label: 'China', value: 'CN', phoneCode: '+86' },
+        { label: 'Colombia', value: 'CO', phoneCode: '+57' },
+        { label: 'Comoros', value: 'KM', phoneCode: '+269' },
+        { label: 'Congo', value: 'CG', phoneCode: '+242' },
+        { label: 'Costa Rica', value: 'CR', phoneCode: '+506' },
+        { label: 'Croatia', value: 'HR', phoneCode: '+385' },
+        { label: 'Cuba', value: 'CU', phoneCode: '+53' },
+        { label: 'Cyprus', value: 'CY', phoneCode: '+357' },
+        { label: 'Czech Republic', value: 'CZ', phoneCode: '+420' },
+        { label: 'Denmark', value: 'DK', phoneCode: '+45' },
+        { label: 'Djibouti', value: 'DJ', phoneCode: '+253' },
+        { label: 'Dominica', value: 'DM', phoneCode: '+1-767' },
+        { label: 'Dominican Republic', value: 'DO', phoneCode: '+1-809' },
+        { label: 'Ecuador', value: 'EC', phoneCode: '+593' },
+        { label: 'Egypt', value: 'EG', phoneCode: '+20' },
+        { label: 'El Salvador', value: 'SV', phoneCode: '+503' },
+        { label: 'Equatorial Guinea', value: 'GQ', phoneCode: '+240' },
+        { label: 'Eritrea', value: 'ER', phoneCode: '+291' },
+        { label: 'Estonia', value: 'EE', phoneCode: '+372' },
+        { label: 'Eswatini', value: 'SZ', phoneCode: '+268' },
+        { label: 'Ethiopia', value: 'ET', phoneCode: '+251' },
+        { label: 'Fiji', value: 'FJ', phoneCode: '+679' },
+        { label: 'Finland', value: 'FI', phoneCode: '+358' },
+        { label: 'France', value: 'FR', phoneCode: '+33' },
+        { label: 'Gabon', value: 'GA', phoneCode: '+241' },
+        { label: 'Gambia', value: 'GM', phoneCode: '+220' },
+        { label: 'Georgia', value: 'GE', phoneCode: '+995' },
+        { label: 'Germany', value: 'DE', phoneCode: '+49' },
+        { label: 'Ghana', value: 'GH', phoneCode: '+233' },
+        { label: 'Greece', value: 'GR', phoneCode: '+30' },
+        { label: 'Grenada', value: 'GD', phoneCode: '+1-473' },
+        { label: 'Guatemala', value: 'GT', phoneCode: '+502' },
+        { label: 'Guinea', value: 'GN', phoneCode: '+224' },
+        { label: 'Guinea-Bissau', value: 'GW', phoneCode: '+245' },
+        { label: 'Guyana', value: 'GY', phoneCode: '+592' },
+        { label: 'Haiti', value: 'HT', phoneCode: '+509' },
+        { label: 'Honduras', value: 'HN', phoneCode: '+504' },
+        { label: 'Hong Kong', value: 'HK', phoneCode: '+852' },
+        { label: 'Hungary', value: 'HU', phoneCode: '+36' },
+        { label: 'Iceland', value: 'IS', phoneCode: '+354' },
+        { label: 'India', value: 'IN', phoneCode: '+91' },
+        { label: 'Indonesia', value: 'ID', phoneCode: '+62' },
+        { label: 'Iran', value: 'IR', phoneCode: '+98' },
+        { label: 'Iraq', value: 'IQ', phoneCode: '+964' },
+        { label: 'Ireland', value: 'IE', phoneCode: '+353' },
+        { label: 'Israel', value: 'IL', phoneCode: '+972' },
+        { label: 'Italy', value: 'IT', phoneCode: '+39' },
+        { label: 'Jamaica', value: 'JM', phoneCode: '+1-876' },
+        { label: 'Japan', value: 'JP', phoneCode: '+81' },
+        { label: 'Jordan', value: 'JO', phoneCode: '+962' },
+        { label: 'Kazakhstan', value: 'KZ', phoneCode: '+7' },
+        { label: 'Kenya', value: 'KE', phoneCode: '+254' },
+        { label: 'Kiribati', value: 'KI', phoneCode: '+686' },
+        { label: 'Kosovo', value: 'XK', phoneCode: '+383' },
+        { label: 'Kuwait', value: 'KW', phoneCode: '+965' },
+        { label: 'Kyrgyzstan', value: 'KG', phoneCode: '+996' },
+        { label: 'Laos', value: 'LA', phoneCode: '+856' },
+        { label: 'Latvia', value: 'LV', phoneCode: '+371' },
+        { label: 'Lebanon', value: 'LB', phoneCode: '+961' },
+        { label: 'Lesotho', value: 'LS', phoneCode: '+266' },
+        { label: 'Liberia', value: 'LR', phoneCode: '+231' },
+        { label: 'Libya', value: 'LY', phoneCode: '+218' },
+        { label: 'Liechtenstein', value: 'LI', phoneCode: '+423' },
+        { label: 'Lithuania', value: 'LT', phoneCode: '+370' },
+        { label: 'Luxembourg', value: 'LU', phoneCode: '+352' },
+        { label: 'Macao', value: 'MO', phoneCode: '+853' },
+        { label: 'Madagascar', value: 'MG', phoneCode: '+261' },
+        { label: 'Malawi', value: 'MW', phoneCode: '+265' },
+        { label: 'Malaysia', value: 'MY', phoneCode: '+60' },
+        { label: 'Maldives', value: 'MV', phoneCode: '+960' },
+        { label: 'Mali', value: 'ML', phoneCode: '+223' },
+        { label: 'Malta', value: 'MT', phoneCode: '+356' },
+        { label: 'Marshall Islands', value: 'MH', phoneCode: '+692' },
+        { label: 'Mauritania', value: 'MR', phoneCode: '+222' },
+        { label: 'Mauritius', value: 'MU', phoneCode: '+230' },
+        { label: 'Mexico', value: 'MX', phoneCode: '+52' },
+        { label: 'Micronesia', value: 'FM', phoneCode: '+691' },
+        { label: 'Moldova', value: 'MD', phoneCode: '+373' },
+        { label: 'Monaco', value: 'MC', phoneCode: '+377' },
+        { label: 'Mongolia', value: 'MN', phoneCode: '+976' },
+        { label: 'Montenegro', value: 'ME', phoneCode: '+382' },
+        { label: 'Morocco', value: 'MA', phoneCode: '+212' },
+        { label: 'Mozambique', value: 'MZ', phoneCode: '+258' },
+        { label: 'Myanmar', value: 'MM', phoneCode: '+95' },
+        { label: 'Namibia', value: 'NA', phoneCode: '+264' },
+        { label: 'Nauru', value: 'NR', phoneCode: '+674' },
+        { label: 'Nepal', value: 'NP', phoneCode: '+977' },
+        { label: 'Netherlands', value: 'NL', phoneCode: '+31' },
+        { label: 'New Zealand', value: 'NZ', phoneCode: '+64' },
+        { label: 'Nicaragua', value: 'NI', phoneCode: '+505' },
+        { label: 'Niger', value: 'NE', phoneCode: '+227' },
+        { label: 'Nigeria', value: 'NG', phoneCode: '+234' },
+        { label: 'North Korea', value: 'KP', phoneCode: '+850' },
+        { label: 'North Macedonia', value: 'MK', phoneCode: '+389' },
+        { label: 'Norway', value: 'NO', phoneCode: '+47' },
+        { label: 'Oman', value: 'OM', phoneCode: '+968' },
+        { label: 'Pakistan', value: 'PK', phoneCode: '+92' },
+        { label: 'Palau', value: 'PW', phoneCode: '+680' },
+        { label: 'Palestine', value: 'PS', phoneCode: '+970' },
+        { label: 'Panama', value: 'PA', phoneCode: '+507' },
+        { label: 'Papua New Guinea', value: 'PG', phoneCode: '+675' },
+        { label: 'Paraguay', value: 'PY', phoneCode: '+595' },
+        { label: 'Peru', value: 'PE', phoneCode: '+51' },
+        { label: 'Philippines', value: 'PH', phoneCode: '+63' },
+        { label: 'Poland', value: 'PL', phoneCode: '+48' },
+        { label: 'Portugal', value: 'PT', phoneCode: '+351' },
+        { label: 'Qatar', value: 'QA', phoneCode: '+974' },
+        { label: 'Romania', value: 'RO', phoneCode: '+40' },
+        { label: 'Russia', value: 'RU', phoneCode: '+7' },
+        { label: 'Rwanda', value: 'RW', phoneCode: '+250' },
+        { label: 'Saint Kitts and Nevis', value: 'KN', phoneCode: '+1-869' },
+        { label: 'Saint Lucia', value: 'LC', phoneCode: '+1-758' },
+        { label: 'Saint Vincent and the Grenadines', value: 'VC', phoneCode: '+1-784' },
+        { label: 'Samoa', value: 'WS', phoneCode: '+685' },
+        { label: 'San Marino', value: 'SM', phoneCode: '+378' },
+        { label: 'Sao Tome and Principe', value: 'ST', phoneCode: '+239' },
+        { label: 'Saudi Arabia', value: 'SA', phoneCode: '+966' },
+        { label: 'Senegal', value: 'SN', phoneCode: '+221' },
+        { label: 'Serbia', value: 'RS', phoneCode: '+381' },
+        { label: 'Seychelles', value: 'SC', phoneCode: '+248' },
+        { label: 'Sierra Leone', value: 'SL', phoneCode: '+232' },
+        { label: 'Singapore', value: 'SG', phoneCode: '+65' },
+        { label: 'Slovakia', value: 'SK', phoneCode: '+421' },
+        { label: 'Slovenia', value: 'SI', phoneCode: '+386' },
+        { label: 'Solomon Islands', value: 'SB', phoneCode: '+677' },
+        { label: 'Somalia', value: 'SO', phoneCode: '+252' },
+        { label: 'South Africa', value: 'ZA', phoneCode: '+27' },
+        { label: 'South Korea', value: 'KR', phoneCode: '+82' },
+        { label: 'South Sudan', value: 'SS', phoneCode: '+211' },
+        { label: 'Spain', value: 'ES', phoneCode: '+34' },
+        { label: 'Sri Lanka', value: 'LK', phoneCode: '+94' },
+        { label: 'Sudan', value: 'SD', phoneCode: '+249' },
+        { label: 'Suriname', value: 'SR', phoneCode: '+597' },
+        { label: 'Sweden', value: 'SE', phoneCode: '+46' },
+        { label: 'Switzerland', value: 'CH', phoneCode: '+41' },
+        { label: 'Syria', value: 'SY', phoneCode: '+963' },
+        { label: 'Taiwan', value: 'TW', phoneCode: '+886' },
+        { label: 'Tajikistan', value: 'TJ', phoneCode: '+992' },
+        { label: 'Tanzania', value: 'TZ', phoneCode: '+255' },
+        { label: 'Thailand', value: 'TH', phoneCode: '+66' },
+        { label: 'Timor-Leste', value: 'TL', phoneCode: '+670' },
+        { label: 'Togo', value: 'TG', phoneCode: '+228' },
+        { label: 'Tonga', value: 'TO', phoneCode: '+676' },
+        { label: 'Trinidad and Tobago', value: 'TT', phoneCode: '+1-868' },
+        { label: 'Tunisia', value: 'TN', phoneCode: '+216' },
+        { label: 'Turkey', value: 'TR', phoneCode: '+90' },
+        { label: 'Turkmenistan', value: 'TM', phoneCode: '+993' },
+        { label: 'Tuvalu', value: 'TV', phoneCode: '+688' },
+        { label: 'Uganda', value: 'UG', phoneCode: '+256' },
+        { label: 'Ukraine', value: 'UA', phoneCode: '+380' },
+        { label: 'United Arab Emirates', value: 'AE', phoneCode: '+971' },
+        { label: 'United Kingdom', value: 'GB', phoneCode: '+44' },
+        { label: 'United States', value: 'US', phoneCode: '+1' },
+        { label: 'Uruguay', value: 'UY', phoneCode: '+598' },
+        { label: 'Uzbekistan', value: 'UZ', phoneCode: '+998' },
+        { label: 'Vanuatu', value: 'VU', phoneCode: '+678' },
+        { label: 'Vatican City', value: 'VA', phoneCode: '+379' },
+        { label: 'Venezuela', value: 'VE', phoneCode: '+58' },
+        { label: 'Vietnam', value: 'VN', phoneCode: '+84' },
+        { label: 'Yemen', value: 'YE', phoneCode: '+967' },
+        { label: 'Zambia', value: 'ZM', phoneCode: '+260' },
+        { label: 'Zimbabwe', value: 'ZW', phoneCode: '+263' },
+    ];
+
+    // Load countries from external API on component mount
+    useEffect(() => {
+        const loadCountries = async () => {
+            try {
+                console.log('Loading countries from API...');
+                const response = await fetch('https://restcountries.com/v3.1/all');
+                const data = await response.json();
+                
+                console.log('Countries loaded:', data.length);
+                
+                // Sort countries by name
+                const sortedCountries = data
+                    .map((country: any) => ({
+                        label: country.name.common,
+                        value: country.cca2,
+                        phoneCode: country.idd?.root ? country.idd.root + (country.idd.suffixes?.[0] || '') : '',
+                    }))
+                    .sort((a: any, b: any) => a.label.localeCompare(b.label));
+                
+                console.log('Countries sorted and set:', sortedCountries.slice(0, 5));
+                setCountries(sortedCountries);
+            } catch (error) {
+                console.error('Error loading countries from API:', error);
+                console.log('Using fallback countries list');
+                // Use fallback list
+                setCountries(FALLBACK_COUNTRIES);
+            }
+        };
+
+        loadCountries();
+    }, []);
+
+    // Helper function to get days in a month considering leap years
+    const getDaysInMonth = (year: string, month: string): number => {
+        if (!year || !month) return 31;
+        
+        const yearNum = parseInt(year);
+        const monthNum = parseInt(month);
+        
+        if (monthNum === 2) {
+            // February - check for leap year
+            const isLeapYear = (yearNum % 4 === 0 && yearNum % 100 !== 0) || (yearNum % 400 === 0);
+            return isLeapYear ? 29 : 28;
+        }
+        
+        // Months with 30 days: April (4), June (6), September (9), November (11)
+        if ([4, 6, 9, 11].includes(monthNum)) {
+            return 30;
+        }
+        
+        // All other months have 31 days
+        return 31;
+    };
+
+    // Location search function using backend API
+    const searchLocations = async (query: string) => {
+        if (!query || query.length < 2) {
+            setLocationSuggestions([]);
+            setShowLocationSuggestions(false);
+            return;
+        }
+
+        try {
+            const BACKEND_BASE_URL = 'http://localhost:8080';
+            
+            // For business users (guide, merchant, vehicle owner), restrict to Sri Lanka
+            const isSriLankanOnly = formData.role !== 'user' && formData.role !== 'vehicle';
+            
+            let searchQuery = query;
+            // If business user and not already mentioning Sri Lanka, add it to search
+            if (isSriLankanOnly && !query.toLowerCase().includes('sri lanka')) {
+                searchQuery = `${query}, Sri Lanka`;
+            }
+            
+            const response = await fetch(
+                `${BACKEND_BASE_URL}/api/places/autocomplete?input=${encodeURIComponent(searchQuery)}&types=geocode`
+            );
+            const data = await response.json();
+            
+            if (data.predictions) {
+                // For business users, filter to only Sri Lankan locations
+                let filteredPredictions = data.predictions;
+                if (isSriLankanOnly) {
+                    filteredPredictions = data.predictions.filter((place: any) => {
+                        const description = place.description || '';
+                        return description.toLowerCase().includes('sri lanka');
+                    });
+                }
+                
+                setLocationSuggestions(filteredPredictions);
+                setShowLocationSuggestions(filteredPredictions.length > 0);
+            } else {
+                setLocationSuggestions([]);
+                setShowLocationSuggestions(false);
+            }
+        } catch (error) {
+            console.error('Location search error:', error);
+            setLocationSuggestions([]);
+            setShowLocationSuggestions(false);
+        }
+    };
+
+    // Handle location selection
+    const handleLocationSelect = (place: any, fieldName: 'address' | 'locpic' = 'locpic') => {
+        const locationName = place.description || place.main_text || '';
+        console.log('Location selected:', locationName, 'for field:', fieldName);
+        handleChange(fieldName as keyof FormData, locationName);
+        setShowLocationSuggestions(false);
+        setLocationSuggestions([]);
+    };
+
+    // Country search function using location API
+    const handleCountrySearch = async (text: string) => {
+        console.log('handleCountrySearch called with text:', text);
+        console.log('countries.length:', countries.length);
+        setCountrySearch(text);
+        
+        // If nothing typed and countries are loaded, show all countries
+        if (!text || text.length < 1) {
+            console.log('Empty search, countries available:', countries.length > 0);
+            if (countries.length > 0) {
+                console.log('Showing all countries (first 15)');
+                setCountrySuggestions(countries.slice(0, 15));
+                setShowCountrySuggestions(true);
+            } else {
+                console.log('No countries loaded yet');
+                setCountrySuggestions([]);
+                setShowCountrySuggestions(false);
+            }
+            return;
+        }
+
+        try {
+            // Wait a bit for countries to load if not loaded yet
+            let countriesToSearch = countries;
+            if (countriesToSearch.length === 0) {
+                // Give it a moment for countries to load
+                console.log('Waiting for countries to load...');
+                await new Promise(resolve => setTimeout(resolve, 100));
+                countriesToSearch = countries;
+            }
+
+            console.log('Filtering from', countriesToSearch.length, 'countries');
+            
+            // Filter from the loaded countries
+            const localFiltered = countriesToSearch.filter((c: any) => 
+                c.label.toLowerCase().includes(text.toLowerCase()) ||
+                c.value.toLowerCase().includes(text.toLowerCase())
+            );
+            
+            console.log('Local search results:', localFiltered.length);
+            
+            if (localFiltered.length > 0) {
+                // Use local results - they already have proper country codes
+                console.log('Setting suggestions to filtered results');
+                setCountrySuggestions(localFiltered.slice(0, 15));
+                setShowCountrySuggestions(true);
+            } else {
+                // No matches found
+                console.log('No matches found');
+                setCountrySuggestions([]);
+                setShowCountrySuggestions(false);
+            }
+        } catch (error) {
+            console.error('Country search error:', error);
+            // Fallback to local search if any error
+            const filtered = countries.filter((c: any) => 
+                c.label.toLowerCase().includes(text.toLowerCase()) ||
+                c.value.toLowerCase().includes(text.toLowerCase())
+            );
+            console.log('Fallback local search results:', filtered.length);
+            setCountrySuggestions(filtered.slice(0, 15));
+            setShowCountrySuggestions(filtered.length > 0);
+        }
+    };
+
+    // Handle country selection
+    const handleCountrySelect = (country: any) => {
+        console.log('handleCountrySelect called with:', country);
+        if (country && country.label) {
+            console.log('Country value before setting:', country.value);
+            console.log('Country label:', country.label);
+            console.log('Setting country display to:', country.label);
+            
+            // Update form data with country code
+            // If country.value is empty, try to find it from the countries array
+            let countryCode = country.value;
+            if (!countryCode) {
+                const foundCountry = countries.find((c: any) => 
+                    c.label.toLowerCase() === country.label.toLowerCase()
+                );
+                countryCode = foundCountry?.value || country.value || '';
+                console.log('Country code resolved to:', countryCode);
+            }
+            
+            handleChange('country', countryCode);
+            
+            // Show the country name in the input field using ONLY countrySearch
+            setCountrySearch(country.label);
+            
+            // Close the dropdown
+            setShowCountrySuggestions(false);
+            setCountrySuggestions([]);
+            setIsCountrySelected(true);
+            
+            // Log formData after update
+            setTimeout(() => {
+                console.log('FormData after update - country:', country);
+                console.log('CountrySearch state:', countrySearch);
+            }, 100);
+        } else {
+            console.log('Invalid country object:', country);
+        }
+    };
+
+    // Reset country selection
+    const resetCountrySelection = () => {
+        handleChange('country', '');
+        setCountrySearch('');
+        setShowCountrySuggestions(false);
+        setCountrySuggestions([]);
+        setIsCountrySelected(false);
+    };
 
     const handleChoosePhoto = async (field: keyof FormData) => {
         // 1. Request permission
@@ -212,6 +634,17 @@ export default function SignupForm() {
     };
     const validateField = (field: string, value: string | boolean, currentFormData: FormData) => {
         let error = '';
+        const countryCode = currentFormData.country;
+        const isSriLankan = countryCode === 'LK';
+
+        // Special handling for country field - check formData.country instead of value
+        if (field === 'country') {
+            if (!currentFormData.country || !currentFormData.country.trim()) {
+                error = 'This field is required.';
+            }
+            return error;
+        }
+
         if (typeof value === 'string' && !value.trim()) {
             error = 'This field is required.';
         } else if (field === 'agreeTerms' && !value) {
@@ -239,37 +672,32 @@ export default function SignupForm() {
             }
 
         } else if (field === 'nicPassport' && typeof value === 'string') {
+            // ONLY validate NIC/Passport for Sri Lankans
+            if (!isSriLankan) {
+                // Non-Sri Lankans don't need to provide NIC/Passport
+                error = '';
+            } else {
+                // Sri Lankan validation
+                const nicValue = value.trim().toUpperCase();
 
-            const countryCode = currentFormData.country;
-            const nicValue = value.trim().toUpperCase(); // Force to uppercase for easier 'V' check
+                if (!countryCode) {
+                    error = 'Please select a country first.';
+                } else if (countryCode === 'LK') {
+                    const oldNicRegex = /^\d{9}V$/; // 9 digits ending in 'V'
+                    const newNicRegex = /^\d{12}$/; // 12 digits
 
-            // 1. Ensure a country is selected before proceeding.
-            if (!countryCode) {
-                error = 'Please select a country first.';
-            }
-            // 2. Apply Sri Lankan validation if country is 'LK'
-            else if (countryCode === 'LK') {
-                const oldNicRegex = /^\d{9}V$/; // 9 digits ending in 'V'
-                const newNicRegex = /^\d{12}$/; // 12 digits
-
-                if (oldNicRegex.test(nicValue)) {
-                    // Valid old format, no error
-                } else if (newNicRegex.test(nicValue)) {
-                    // New format is structurally valid, now check the year
-                    const year = parseInt(nicValue.substring(0, 4), 10);
-                    if (year <= 1900) {
-                        error = 'Invalid NIC';
+                    if (oldNicRegex.test(nicValue)) {
+                        // Valid old format, no error
+                    } else if (newNicRegex.test(nicValue)) {
+                        // New format is structurally valid, now check the year
+                        const year = parseInt(nicValue.substring(0, 4), 10);
+                        if (year <= 1900) {
+                            error = 'Invalid NIC';
+                        }
+                    } else {
+                        // Does not match either valid format
+                        error = 'Invalid NIC. Use 999999999V or a valid 12-digit format.';
                     }
-                } else {
-                    // Does not match either valid format
-                    error = 'Invalid NIC. Use 999999999V or a valid 12-digit format.';
-                }
-            }
-            // 3. Apply generic passport validation for all other countries
-            else {
-                const passportRegex = /^[A-Z0-9]{6,15}$/;
-                if (!passportRegex.test(nicValue)) {
-                    error = 'Please enter a valid Passport Number.';
                 }
             }
 
@@ -315,23 +743,33 @@ export default function SignupForm() {
         }
 
         else if ((field === 'mobileNumber' || field === 'whatsappNumber') && typeof value === 'string' && value.length > 0) {
-            // Use the selected country from the form state for validation.
-            // Default to 'LK' (Sri Lanka) if no country is selected yet.
-            const countryCode = (formData.country || 'LK') as CountryCode;
+            // ONLY validate phone numbers for Sri Lankans
+            if (!isSriLankan) {
+                // Non-Sri Lankans don't need strict phone validation
+                error = '';
+            } else {
+                // Sri Lankan phone validation
+                const countryCodeForPhone = (formData.country || 'LK') as CountryCode;
 
-            if (countryCode === 'LK' && value.length !== 9) {
-                error = 'Sri Lankan numbers should (e.g., 771234567).';
-            }
-            // General length check for other countries
-            else if (countryCode !== 'LK' && (value.length < 7 || value.length > 15)) {
-                error = 'Please enter a valid number of digits.';
-            }
-            // 2. If length is plausible, then check the actual format.
-            else if (!isValidPhoneNumber(value, countryCode)) {
-                const countryName = countries.find(c => c.value === countryCode)?.label || '';
-                error = `The format is not valid for a ${countryName} phone number.`;
+                if (countryCodeForPhone === 'LK' && value.length !== 9) {
+                    error = 'Sri Lankan numbers should (e.g., 771234567).';
+                }
+                // 2. If length is plausible, then check the actual format.
+                else if (!isValidPhoneNumber(value, countryCodeForPhone)) {
+                    const countryName = countries.find(c => c.value === countryCodeForPhone)?.label || '';
+                    error = `The format is not valid for a ${countryName} phone number.`;
+                }
             }
         }
+        
+        // Validate location for business users (guide, merchant, vehicle owner)
+        else if (field === 'locpic' && typeof value === 'string' && currentFormData.role !== 'user' && currentFormData.role !== 'vehicle') {
+            // For guides, merchants, vehicle owners - location must be in Sri Lanka
+            if (value && !value.toLowerCase().includes('sri lanka')) {
+                error = 'Location must be within Sri Lanka.';
+            }
+        }
+        
         return error;
     };
 
@@ -428,6 +866,11 @@ export default function SignupForm() {
             step1Errors.email = 'This email is already registered.';
         }
 
+        // Non-Sri Lankans can only register as traveler (user role)
+        if (formData.country !== 'LK' && formData.role !== 'user') {
+            step1Errors.role = 'Only Sri Lankans can register as business providers. Non-Sri Lankans can only register as travelers.';
+        }
+
         setErrors(step1Errors);
         return Object.keys(step1Errors).length === 0;
     };
@@ -483,12 +926,23 @@ export default function SignupForm() {
             }
         });
 
-        const startIndex = timeOptions.indexOf(formData.startTime);
-        const endIndex = timeOptions.indexOf(formData.endTime);
-
-        if (startIndex !== -1 && endIndex !== -1 && endIndex <= startIndex) {
-            step3Errors['endTime'] = 'End time must be after start time.';
+        // Validate time format and comparison (HH:MM format)
+        if (formData.startTime && formData.endTime) {
+            const isStartValid = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.startTime);
+            const isEndValid = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(formData.endTime);
+            
+            if (!isStartValid) {
+                step3Errors['startTime'] = 'Use HH:MM format (e.g., 09:00)';
+            }
+            if (!isEndValid) {
+                step3Errors['endTime'] = 'Use HH:MM format (e.g., 17:00)';
+            }
+            
+            if (isStartValid && isEndValid && formData.endTime <= formData.startTime) {
+                step3Errors['endTime'] = 'End time must be after start time.';
+            }
         }
+        
         if (formData.daysPerWeek.length === 0) {
             step3Errors.daysPerWeek = 'Please select at least one available day.';
         }
@@ -554,7 +1008,9 @@ export default function SignupForm() {
 
         if (step === 1 && (formData.role === 'user' || formData.role === 'vehicle')) {
             setStep(4);
-        } else if ((step === 4 && formData.role === 'user' || formData.role === 'vehicle') || step < steps.length) {
+        } else if (step === 4 && (formData.role === 'user' || formData.role === 'vehicle')) {
+            setStep(step + 1);
+        } else if (step < steps.length) {
             setStep(step + 1);
             //console.log(formData)
         }
@@ -567,6 +1023,20 @@ export default function SignupForm() {
         } else if (step > 1) {
             setStep(step - 1);
         }
+    };
+
+    // Handle start time picker
+    const handleStartTimeUpdate = () => {
+        const timeString = `${startHour}:${startMinute}`;
+        handleChange('startTime', timeString);
+        setShowStartTimePicker(false);
+    };
+
+    // Handle end time picker
+    const handleEndTimeUpdate = () => {
+        const timeString = `${endHour}:${endMinute}`;
+        handleChange('endTime', timeString);
+        setShowEndTimePicker(false);
     };
 
     const handleSendOtp = async () => {
@@ -682,7 +1152,7 @@ export default function SignupForm() {
                 }*/
 
                 const dataToSend: any = { ...formDatax, status: 'active' };
-                const imageFields: (keyof FormData)[] = ['pp'/* , 'bp', 'businessRegPic', 'businessRegPic2'*/, 'identitypic1', 'identitypic2', 'locpic'];
+                const imageFields: (keyof FormData)[] = ['pp'/* , 'bp', 'businessRegPic', 'businessRegPic2'*/, 'identitypic1', 'identitypic2'];
 
                 for (const field of imageFields) {
                     const imageAsset = formDatax[field] as ImagePickerAsset | null;
@@ -743,7 +1213,7 @@ export default function SignupForm() {
 
 
                 const dataToSend: any = { ...formDatax, status: 'pending', role: formDatax.role, reviewCount: 0, stars: 0, responseRate: 0 };
-                const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic1', 'businessRegPic2', 'identitypic1', 'identitypic2', 'locpic'];
+                const imageFields: (keyof FormData)[] = ['pp', 'bp', 'businessRegPic1', 'businessRegPic2', 'identitypic1', 'identitypic2'];
 
                 for (const field of imageFields) {
                     const imageAsset = formDatax[field] as ImagePickerAsset | null;
@@ -819,9 +1289,6 @@ export default function SignupForm() {
             <View>
                 {step === 1 && (
                     <View>
-                        <TouchableOpacity onPress={() => router.back()} className='bg-black border-2 w-14 py-1 px-1  rounded-lg'>
-                            <Text className='text-white'> Back</Text>
-                        </TouchableOpacity>
                         <View className="items-center w-full my-10">
                             {/* <TextInput placeholder="URL for owner photo" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.pp} onChangeText={v => handleChange('pp', v)} /> */}
                             <TouchableOpacity
@@ -846,64 +1313,324 @@ export default function SignupForm() {
                             <Text className="text-base text-gray-600 mt-2">Add Owner's Photo</Text>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.pp ? 'opacity-100' : 'opacity-0'}`}>{errors.pp || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">First Name</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.firstName} onChangeText={v => handleChange('firstName', v)} />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">First Name</Text>
+                            <TextInput 
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                placeholder="E.g., John"
+                                placeholderTextColor="#999"
+                                value={formData.firstName} 
+                                onChangeText={v => handleChange('firstName', v)} 
+                            />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.firstName ? 'opacity-100' : 'opacity-0'}`}>{errors.firstName || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Last Name</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.lastName} onChangeText={v => handleChange('lastName', v)} />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Last Name</Text>
+                            <TextInput 
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                placeholder="E.g., Doe"
+                                placeholderTextColor="#999"
+                                value={formData.lastName} 
+                                onChangeText={v => handleChange('lastName', v)} 
+                            />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.lastName ? 'opacity-100' : 'opacity-0'}`}>{errors.lastName || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Date of Birth</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" placeholder="YYYY-MM-DD" maxLength={10} value={formData.dob} onChangeText={v => handleChange('dob', v)} />
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.dob ? 'opacity-100' : 'opacity-0'}`}>{errors.dob || ' '}</Text>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Date of Birth</Text>
+                            <View className="flex-row gap-3">
+                                {/* Year Picker */}
+                                <View style={{ flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            overflow: 'hidden',
+                                            height: 56,
+                                            justifyContent: 'center',
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Picker 
+                                            selectedValue={formData.dob.split('-')[0] || ''} 
+                                            onValueChange={(year) => {
+                                                const [_, month, day] = formData.dob.split('-');
+                                                const newDob = `${year}-${month || '01'}-${day || '01'}`;
+                                                handleChange('dob', newDob);
+                                            }}
+                                            style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}
+                                        >
+                                            <Picker.Item label="Year" value="" color="#999" />
+                                            {Array.from({ length: 100 }, (_, i) => {
+                                                const year = new Date().getFullYear() - i;
+                                                return <Picker.Item key={year} label={year.toString()} value={year.toString()} color="#1a1a1a" />;
+                                            })}
+                                        </Picker>
+                                    </View>
+                                </View>
+
+                                {/* Month Picker */}
+                                <View style={{ flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            overflow: 'hidden',
+                                            height: 56,
+                                            justifyContent: 'center',
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Picker 
+                                            selectedValue={formData.dob.split('-')[1] || ''} 
+                                            onValueChange={(month) => {
+                                                const [year] = formData.dob.split('-');
+                                                const day = formData.dob.split('-')[2];
+                                                const newDob = `${year || new Date().getFullYear()}-${month}-${day || '01'}`;
+                                                handleChange('dob', newDob);
+                                            }}
+                                            style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}
+                                        >
+                                            <Picker.Item label="Month" value="" color="#999" />
+                                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((month, idx) => (
+                                                <Picker.Item key={idx} label={month} value={String(idx + 1).padStart(2, '0')} color="#1a1a1a" />
+                                            ))}
+                                        </Picker>
+                                    </View>
+                                </View>
+
+                                {/* Day Picker */}
+                                <View style={{ flex: 1 }}>
+                                    <View 
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            overflow: 'hidden',
+                                            height: 56,
+                                            justifyContent: 'center',
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Picker 
+                                            selectedValue={formData.dob.split('-')[2] || ''} 
+                                            onValueChange={(day) => {
+                                                const [year, month] = formData.dob.split('-');
+                                                const newDob = `${year || new Date().getFullYear()}-${month || '01'}-${day}`;
+                                                handleChange('dob', newDob);
+                                            }}
+                                            style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}
+                                        >
+                                            <Picker.Item label="Day" value="" color="#999" />
+                                            {Array.from({ length: getDaysInMonth(formData.dob.split('-')[0], formData.dob.split('-')[1]) }, (_, i) => (
+                                                <Picker.Item key={i + 1} label={String(i + 1).padStart(2, '0')} value={String(i + 1).padStart(2, '0')} color="#1a1a1a" />
+                                            ))}
+                                        </Picker>
+                                    </View>
+                                </View>
+                            </View>
+                            <Text className={`text-red-500 text-sm mt-2 ${errors.dob ? 'opacity-100' : 'opacity-0'}`}>{errors.dob || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base text-black">Gender</Text>
-                            <View className="border border-gray-300 rounded-lg py-3 px-3">
-                                <Picker selectedValue={formData.gender} onValueChange={v => handleChange('gender', v as string)}>
-                                    <Picker.Item label="Select Gender..." value="" />
-                                    <Picker.Item label="Male" value="male" />
-                                    <Picker.Item label="Female" value="female" />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Gender</Text>
+                            <View 
+                                style={{
+                                    borderWidth: 2,
+                                    borderColor: '#FDE047',
+                                    borderRadius: 12,
+                                    backgroundColor: '#FFFBEB',
+                                    overflow: 'hidden',
+                                    height: 56,
+                                    justifyContent: 'center',
+                                    shadowColor: '#EAB308',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.15,
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <Picker 
+                                    selectedValue={formData.gender} 
+                                    onValueChange={v => handleChange('gender', v as string)}
+                                    style={{ color: '#1a1a1a', fontSize: 16, fontWeight: '500' }}
+                                >
+                                    <Picker.Item label="Select Gender..." value="" color="#999" />
+                                    <Picker.Item label="Male" value="male" color="#1a1a1a" />
+                                    <Picker.Item label="Female" value="female" color="#1a1a1a" />
                                 </Picker>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.gender ? 'opacity-100' : 'opacity-0'}`}>{errors.gender || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base text-black">Country</Text>
-                            <View className="border border-gray-300 rounded-lg  py-3 px-3">
-                                <Picker selectedValue={formData.country} onValueChange={v => handleChange('country', v as string)}>
-                                    {countries.map(c => <Picker.Item key={c.value} label={c.label} value={c.value} />)}
-                                </Picker>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Country</Text>
+                            <View>
+                                <View style={{ 
+                                    position: 'relative',
+                                    borderWidth: 2,
+                                    borderColor: countrySearch ? '#FDE047' : '#E5E7EB',
+                                    borderRadius: 12,
+                                    backgroundColor: '#FFFBEB',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    paddingRight: 12,
+                                    zIndex: 10
+                                }}>
+                                    <TextInput 
+                                        className="flex-1 text-black text-base p-4" 
+                                        placeholder="Select country..."
+                                        placeholderTextColor="#999"
+                                        value={countrySearch} 
+                                        onChangeText={(text) => {
+                                            setIsCountrySelected(false);
+                                            handleCountrySearch(text);
+                                        }}
+                                        onFocus={() => {
+                                            console.log('Country field focused');
+                                            console.log('countrySearch:', countrySearch);
+                                            console.log('countries.length:', countries.length);
+                                            // When focused, show all countries if dropdown is empty
+                                            if (countrySearch === '' && countries.length > 0) {
+                                                console.log('Showing all countries on focus');
+                                                setCountrySuggestions(countries.slice(0, 15));
+                                                setShowCountrySuggestions(true);
+                                            } else if (countrySuggestions.length > 0) {
+                                                console.log('Showing existing suggestions');
+                                                setShowCountrySuggestions(true);
+                                            } else {
+                                                console.log('No suggestions available');
+                                            }
+                                        }}
+                                    />
+                                    {countrySearch ? (
+                                        <TouchableOpacity
+                                            onPress={resetCountrySelection}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color="#EAB308" />
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <Ionicons name="chevron-down" size={24} color="#999" />
+                                    )}
+                                </View>
+                                
+                                {showCountrySuggestions && countrySuggestions.length > 0 && (
+                                    <View style={{ 
+                                        backgroundColor: 'white', 
+                                        borderRadius: 8, 
+                                        borderWidth: 1, 
+                                        borderColor: '#FDE047',
+                                        maxHeight: 300,
+                                        marginTop: 8,
+                                        overflow: 'visible',
+                                        elevation: 10,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 4 },
+                                        shadowOpacity: 0.15,
+                                        shadowRadius: 6,
+                                        zIndex: 20,
+                                        pointerEvents: 'auto'
+                                    }}>
+                                        <ScrollView 
+                                            scrollEnabled={countrySuggestions.length > 5}
+                                            nestedScrollEnabled={true}
+                                            keyboardShouldPersistTaps="always"
+                                            pointerEvents="auto"
+                                        >
+                                            {countrySuggestions.map((country, index) => (
+                                                <TouchableOpacity
+                                                    key={`country-${index}-${country.value}`}
+                                                    activeOpacity={0.6}
+                                                    onPress={() => {
+                                                        console.log('Pressed country:', country);
+                                                        handleCountrySelect(country);
+                                                    }}
+                                                    style={{ 
+                                                        padding: 16, 
+                                                        borderBottomWidth: index < countrySuggestions.length - 1 ? 1 : 0, 
+                                                        borderBottomColor: '#E5E7EB',
+                                                        backgroundColor: '#FFFBEB'
+                                                    }}
+                                                >
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <View style={{ flex: 1 }}>
+                                                            <Text style={{ color: '#1a1a1a', fontSize: 15, fontWeight: '600' }}>
+                                                                {country.label}
+                                                            </Text>
+                                                            <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                                                                Code: {country.value || 'N/A'}
+                                                            </Text>
+                                                        </View>
+                                                        {country.phoneCode && (
+                                                            <Text style={{ color: '#EAB308', fontSize: 14, fontWeight: '600', marginLeft: 8 }}>
+                                                                {country.phoneCode}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
                             </View>
-                            <Text className={`text-red-500 text-sm mt-1 ${errors.country ? 'opacity-100' : 'opacity-0'}`}>{errors.country || ' '}</Text>
+                            {errors.country && (
+                                <Text className="text-red-500 text-sm mt-1">{errors.country}</Text>
+                            )}
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Mobile Number</Text>
-                            <View className="flex-row items-center border border-gray-300 rounded-lg px-3">
-                                <Text className="text-base text-gray-800 mr-2">{selectedCountry?.phoneCode || '+'}</Text>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Mobile Number</Text>
+                            <View className="flex-row items-center border-2 border-gray-200 rounded-xl px-4 bg-gray-50">
+                                <Text className="text-base text-gray-700 font-semibold mr-3">{selectedCountry?.phoneCode || '+'}</Text>
                                 <View className="w-px h-6 bg-gray-300 mr-3" />
-                                <TextInput className="flex-1 text-base text-black py-3" placeholder="771234567" value={formData.mobileNumber} onChangeText={v => handleChange('mobileNumber', v)} keyboardType="number-pad" />
+                                <TextInput 
+                                    className="flex-1 text-base text-black py-4" 
+                                    placeholder="771234567" 
+                                    placeholderTextColor="#999"
+                                    value={formData.mobileNumber} 
+                                    onChangeText={v => handleChange('mobileNumber', v)} 
+                                    keyboardType="number-pad" 
+                                />
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.mobileNumber ? 'opacity-100' : 'opacity-0'}`}>{errors.mobileNumber || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">WhatsApp Number</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.whatsappNumber} onChangeText={v => handleChange('whatsappNumber', v)} keyboardType="number-pad" />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">WhatsApp Number</Text>
+                            <TextInput 
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                placeholder="E.g., 0786715765"
+                                placeholderTextColor="#999"
+                                value={formData.whatsappNumber} 
+                                onChangeText={v => handleChange('whatsappNumber', v)} 
+                                keyboardType="number-pad" 
+                            />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.whatsappNumber ? 'opacity-100' : 'opacity-0'}`}>{errors.whatsappNumber || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Email</Text>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Email</Text>
                             <TextInput
-                                className="w-full text-black border border-gray-300 rounded-lg p-3"
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base"
+                                placeholder="E.g., your.email@example.com"
+                                placeholderTextColor="#999"
                                 value={formData.email}
                                 onChangeText={v => handleChange('email', v)}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
-                                onBlur={() => { // Trigger check on blur if not already checking or taken
+                                onBlur={() => {
                                     if (emailCheckStatus === 'idle' || emailCheckStatus === 'available') {
                                         checkEmailAvailability(formData.email);
                                     }
@@ -916,49 +1643,162 @@ export default function SignupForm() {
                                 {' '}
                             </Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Username</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.username} onChangeText={text => handleChange('username', text.replace(/\s/g, ''))} autoCapitalize="none" />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Username</Text>
+                            <TextInput 
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                placeholder="E.g., john_traveler"
+                                placeholderTextColor="#999"
+                                value={formData.username} 
+                                onChangeText={text => handleChange('username', text.replace(/\s/g, ''))} 
+                                autoCapitalize="none" 
+                            />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.username ? 'opacity-100' : 'opacity-0'}`}>{errors.username || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Current Address</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.address} onChangeText={v => handleChange('address', v)} />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Current Address</Text>
+                            <View>
+                                {showLocationSuggestions && locationSuggestions.length > 0 && (
+                                    <View style={{ 
+                                        backgroundColor: 'white', 
+                                        borderRadius: 8, 
+                                        borderWidth: 1, 
+                                        borderColor: '#FDE047',
+                                        maxHeight: 200,
+                                        marginBottom: 8,
+                                        overflow: 'hidden'
+                                    }}>
+                                        <ScrollView 
+                                            scrollEnabled={true}
+                                            nestedScrollEnabled={true}
+                                            scrollEventThrottle={16}
+                                            keyboardShouldPersistTaps="always"
+                                        >
+                                            {locationSuggestions.map((place, index) => (
+                                                <TouchableOpacity
+                                                    key={`address-${index}`}
+                                                    activeOpacity={0.7}
+                                                    onPress={() => {
+                                                        console.log('Selected address:', place);
+                                                        handleLocationSelect(place, 'address');
+                                                    }}
+                                                    style={{ 
+                                                        padding: 12, 
+                                                        borderBottomWidth: 1, 
+                                                        borderBottomColor: '#E5E7EB',
+                                                        backgroundColor: '#FFFBEB'
+                                                    }}
+                                                >
+                                                    <Text style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}>
+                                                        {place.description || place.main_text}
+                                                    </Text>
+                                                    <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                                                        {place.secondary_text}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+                                <TextInput 
+                                    className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                    placeholder="E.g., 123 Main St, City, Country"
+                                    placeholderTextColor="#999"
+                                    value={formData.address} 
+                                    onChangeText={(text) => {
+                                        handleChange('address', text);
+                                        searchLocations(text);
+                                    }}
+                                />
+                            </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.address ? 'opacity-100' : 'opacity-0'}`}>{errors.address || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">NIC / Passport Number</Text>
-                            <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.nicPassport} onChangeText={text => handleChange('nicPassport', sanitizeNicInput(text))} />
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">NIC / Passport Number</Text>
+                            <TextInput 
+                                className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                placeholder="E.g., 123456789V or 12-digit format"
+                                placeholderTextColor="#999"
+                                value={formData.nicPassport} 
+                                onChangeText={text => handleChange('nicPassport', sanitizeNicInput(text))} 
+                            />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.nicPassport ? 'opacity-100' : 'opacity-0'}`}>{errors.nicPassport || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Password</Text>
-                            <View className="flex-row items-center border border-gray-300 rounded-lg">
-                                <TextInput className="px-3 flex-1 text-base py-3" value={formData.password} onChangeText={v => handleChange('password', v)} secureTextEntry={!isPasswordVisible} />
-                                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} className='px-3'><Text className="font-semibold text-blue-500">{isPasswordVisible ? 'Hide' : 'Show'}</Text></TouchableOpacity>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Password</Text>
+                            <View className="flex-row items-center border-2 border-gray-200 rounded-xl bg-gray-50 px-4">
+                                <TextInput 
+                                    className="px-0 flex-1 text-base py-4 text-black" 
+                                    placeholder="Min 8 chars, 1 uppercase, 1 number, 1 symbol"
+                                    placeholderTextColor="#999"
+                                    value={formData.password} 
+                                    onChangeText={v => handleChange('password', v)} 
+                                    secureTextEntry={!isPasswordVisible} 
+                                />
+                                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} className='px-3'>
+                                    <Text className="font-bold text-yellow-600">{isPasswordVisible ? 'Hide' : 'Show'}</Text>
+                                </TouchableOpacity>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.password ? 'opacity-100' : 'opacity-0'}`}>{errors.password || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Confirm Password</Text>
-                            <View className="flex-row items-center border border-gray-300 rounded-lg">
-                                <TextInput className="px-3 flex-1 text-base py-3" value={formData.confirmPassword} onChangeText={v => handleChange('confirmPassword', v)} secureTextEntry={!isConfirmPasswordVisible} />
-                                <TouchableOpacity onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)} className='px-3'><Text className="font-semibold text-blue-500">{isConfirmPasswordVisible ? 'Hide' : 'Show'}</Text></TouchableOpacity>
+                        <View className="mb-5">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Confirm Password</Text>
+                            <View className="flex-row items-center border-2 border-gray-200 rounded-xl bg-gray-50 px-4">
+                                <TextInput 
+                                    className="px-0 flex-1 text-base py-4 text-black" 
+                                    placeholder="Re-enter your password"
+                                    placeholderTextColor="#999"
+                                    value={formData.confirmPassword} 
+                                    onChangeText={v => handleChange('confirmPassword', v)} 
+                                    secureTextEntry={!isConfirmPasswordVisible} 
+                                />
+                                <TouchableOpacity onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)} className='px-3'>
+                                    <Text className="font-bold text-yellow-600">{isConfirmPasswordVisible ? 'Hide' : 'Show'}</Text>
+                                </TouchableOpacity>
                             </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.confirmPassword ? 'opacity-100' : 'opacity-0'}`}>{errors.confirmPassword || ' '}</Text>
                         </View>
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base text-black">Register As</Text>
-                            <View className="border border-gray-300 rounded-lg  py-3 px-3">
-                                <Picker selectedValue={formData.role} onValueChange={v => handleChange('role', v as string)}>
-                                    <Picker.Item label="Select Role..." value="" />
-                                    <Picker.Item label="Traveler" value="user" />
-                                    <Picker.Item label="Vehicle Renter" value="vehicle" />
-                                    <Picker.Item label="Guide" value="guide" />
-                                    <Picker.Item label="Equipment Renter" value="merchant" />
-                                    {/* <Picker.Item label="Other" value="other" /> */}
+                        <View className="mb-6">
+                            <Text className="mb-2 font-bold text-base text-gray-800">Register As</Text>
+                            <View 
+                                style={{
+                                    borderWidth: 2,
+                                    borderColor: '#FDE047',
+                                    borderRadius: 12,
+                                    backgroundColor: '#FFFBEB',
+                                    overflow: 'hidden',
+                                    height: 56,
+                                    justifyContent: 'center',
+                                    shadowColor: '#EAB308',
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.15,
+                                    shadowRadius: 4,
+                                    elevation: 2,
+                                }}
+                            >
+                                <Picker 
+                                    selectedValue={formData.role} 
+                                    onValueChange={v => handleChange('role', v as string)}
+                                    style={{
+                                        color: '#1a1a1a',
+                                        fontSize: 16,
+                                        fontWeight: '500',
+                                    }}
+                                >
+                                    <Picker.Item label="Select Role..." value="" color="#999" />
+                                    <Picker.Item label="Traveler" value="user" color="#1a1a1a" />
+                                    {formData.country === 'LK' && (
+                                        <>
+                                            <Picker.Item label="Vehicle Renter" value="vehicle" color="#1a1a1a" />
+                                            <Picker.Item label="Guide" value="guide" color="#1a1a1a" />
+                                            <Picker.Item label="Equipment Renter" value="merchant" color="#1a1a1a" />
+                                        </>
+                                    )}
                                 </Picker>
                             </View>
+                            {formData.country !== 'LK' && formData.country && (
+                                <Text className="text-yellow-600 text-sm mt-2">Only Sri Lankans can register as business providers</Text>
+                            )}
                             <Text className={`text-red-500 text-sm mt-1 ${errors.role ? 'opacity-100' : 'opacity-0'}`}>{errors.role || ' '}</Text>
                         </View>
                     </View>
@@ -987,12 +1827,17 @@ export default function SignupForm() {
                                     />
                                 )}
                             </TouchableOpacity>
-                            {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                            <View>
+                                {formData.role === 'guide' && <Text className="font-normal text-gray-500 text-center">(optional)</Text>}
+                            </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.bp ? 'opacity-100' : 'opacity-0'}`}>{errors.bp || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">Business Photo</Text>
                         </View>
                         <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">Business Name</Text>{formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                            <View className="flex-row justify-between items-center">
+                                <Text className="mb-1 font-semibold text-base">Business Name</Text>
+                                {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                            </View>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessName} onChangeText={v => handleChange('businessName', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessName ? 'opacity-100' : 'opacity-0'}`}>{errors.businessName || ' '}</Text>
                         </View>
@@ -1020,7 +1865,10 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.description ? 'opacity-100' : 'opacity-0'}`}>{errors.description || ' '}</Text>
                         </View>
                         <View className="mb-8">
-                            <Text className="mb-1 font-semibold text-base">Business Address</Text>{formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                            <View className="flex-row justify-between items-center">
+                                <Text className="mb-1 font-semibold text-base">Business Address</Text>
+                                {formData.role === 'guide' && <Text className="font-normal text-gray-500">(optional)</Text>}
+                            </View>
                             <TextInput className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.businessAddress} onChangeText={v => handleChange('businessAddress', v)} />
                             <Text className={`text-red-500 text-sm mt-1 ${errors.businessAddress ? 'opacity-100' : 'opacity-0'}`}>{errors.businessAddress || ' '}</Text>
                         </View>
@@ -1038,9 +1886,9 @@ export default function SignupForm() {
                                         <TouchableOpacity
                                             key={day}
                                             onPress={() => handleDayToggle(day)}
-                                            className={`py-2 m-1 w-10 items-center rounded-full border-2 ${isSelected ? 'bg-blue-500 border-blue-500' : 'bg-gray-100 border-gray-300'}`}
+                                            className={`py-2 m-1 w-10 items-center rounded-full border-2 ${isSelected ? 'bg-yellow-500 border-yellow-600' : 'bg-gray-100 border-gray-300'}`}
                                         >
-                                            <Text className={`${isSelected ? 'text-white font-bold' : 'text-gray-700'}`}>{day.substring(0, 3)}</Text>
+                                            <Text className={`${isSelected ? 'text-gray-900 font-bold' : 'text-gray-700'}`}>{day.substring(0, 3)}</Text>
                                         </TouchableOpacity>
                                     );
                                 })}
@@ -1048,30 +1896,168 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.daysPerWeek ? 'opacity-100' : 'opacity-0'}`}>{errors.daysPerWeek || ' '}</Text>
                         </View>
 
-                        <View className="mb-4">
-                            <Text className="mb-1 font-semibold text-base">⏰ Time Slot</Text>
-                            <View className="flex-row justify-between">
-                                <View className="w-[48%]">
-                                    <Text className="text-sm text-gray-500">Start Time</Text>
-                                    <View className="border border-gray-300 rounded-lg">
-                                        <Picker numberOfLines={5} selectedValue={formData.startTime} onValueChange={(itemValue) => handleChange('startTime', itemValue)}>
-                                            <Picker.Item label="Select..." value="" />
-                                            {timeOptions.map((time, index) => (<Picker.Item key={index} label={time} value={time} />))}
-                                        </Picker>
-                                    </View>
+                        <View className="mb-6">
+                            <Text className="mb-3 font-bold text-base text-gray-800">⏰ Available Time Slot</Text>
+                            <View className="flex-row justify-between gap-4">
+                                <View className="flex-1">
+                                    <Text className="text-sm font-semibold text-gray-700 mb-2">Start Time</Text>
+                                    <TouchableOpacity 
+                                        onPress={() => setShowStartTimePicker(true)}
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 12,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            flexDirection: 'row',
+                                            gap: 8,
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Ionicons name="time" size={20} color="#1a1a1a" />
+                                        <Text style={{ color: formData.startTime ? '#1a1a1a' : '#999', fontSize: 16, fontWeight: '500' }}>
+                                            {formData.startTime || 'Select Time'}
+                                        </Text>
+                                    </TouchableOpacity>
                                     <Text className={`text-red-500 text-sm mt-1 ${errors.startTime ? 'opacity-100' : 'opacity-0'}`}>{errors.startTime || ' '}</Text>
                                 </View>
-                                <View className="w-[48%]">
-                                    <Text className="text-sm text-gray-500">End Time</Text>
-                                    <View className="border border-gray-300 rounded-lg">
-                                        <Picker itemStyle={{ height: 120 }} selectedValue={formData.endTime} onValueChange={(itemValue) => handleChange('endTime', itemValue)}>
-                                            <Picker.Item label="Select..." value="" />
-                                            {timeOptions.map((time, index) => (<Picker.Item key={index} label={time} value={time} />))}
-                                        </Picker>
-                                    </View>
+                                <View className="flex-1">
+                                    <Text className="text-sm font-semibold text-gray-700 mb-2">End Time</Text>
+                                    <TouchableOpacity 
+                                        onPress={() => setShowEndTimePicker(true)}
+                                        style={{
+                                            borderWidth: 2,
+                                            borderColor: '#FDE047',
+                                            borderRadius: 12,
+                                            backgroundColor: '#FFFBEB',
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 12,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            flexDirection: 'row',
+                                            gap: 8,
+                                            shadowColor: '#EAB308',
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.15,
+                                            shadowRadius: 4,
+                                            elevation: 2,
+                                        }}
+                                    >
+                                        <Ionicons name="time" size={20} color="#1a1a1a" />
+                                        <Text style={{ color: formData.endTime ? '#1a1a1a' : '#999', fontSize: 16, fontWeight: '500' }}>
+                                            {formData.endTime || 'Select Time'}
+                                        </Text>
+                                    </TouchableOpacity>
                                     <Text className={`text-red-500 text-sm mt-1 ${errors.endTime ? 'opacity-100' : 'opacity-0'}`}>{errors.endTime || ' '}</Text>
                                 </View>
                             </View>
+
+                            {/* Start Time Picker Modal */}
+                            <Modal
+                                visible={showStartTimePicker}
+                                transparent
+                                animationType="slide"
+                                onRequestClose={() => setShowStartTimePicker(false)}
+                            >
+                                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                                    <View style={{ backgroundColor: 'white', paddingHorizontal: 20, paddingVertical: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 15, textAlign: 'center', color: '#1a1a1a' }}>Select Start Time</Text>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 15, marginBottom: 20 }}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ textAlign: 'center', fontWeight: '600', marginBottom: 10, color: '#1a1a1a' }}>Hour</Text>
+                                                <View style={{ borderWidth: 2, borderColor: '#FDE047', borderRadius: 12, backgroundColor: '#FFFBEB', height: 200, overflow: 'hidden' }}>
+                                                    <Picker selectedValue={startHour} onValueChange={setStartHour} style={{ color: '#1a1a1a' }}>
+                                                        {Array.from({ length: 24 }, (_, i) => (
+                                                            <Picker.Item key={i} label={String(i).padStart(2, '0')} value={String(i).padStart(2, '0')} color="#1a1a1a" />
+                                                        ))}
+                                                    </Picker>
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ textAlign: 'center', fontWeight: '600', marginBottom: 10, color: '#1a1a1a' }}>Minute</Text>
+                                                <View style={{ borderWidth: 2, borderColor: '#FDE047', borderRadius: 12, backgroundColor: '#FFFBEB', height: 200, overflow: 'hidden' }}>
+                                                    <Picker selectedValue={startMinute} onValueChange={setStartMinute} style={{ color: '#1a1a1a' }}>
+                                                        {Array.from({ length: 60 }, (_, i) => (
+                                                            <Picker.Item key={i} label={String(i).padStart(2, '0')} value={String(i).padStart(2, '0')} color="#1a1a1a" />
+                                                        ))}
+                                                    </Picker>
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <TouchableOpacity 
+                                                onPress={() => setShowStartTimePicker(false)}
+                                                style={{ flex: 1, backgroundColor: '#E5E7EB', paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+                                            >
+                                                <Text style={{ fontWeight: '600', color: '#1a1a1a', fontSize: 16 }}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                onPress={handleStartTimeUpdate}
+                                                style={{ flex: 1, backgroundColor: '#FDE047', paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+                                            >
+                                                <Text style={{ fontWeight: '600', color: '#1a1a1a', fontSize: 16 }}>Confirm</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Modal>
+
+                            {/* End Time Picker Modal */}
+                            <Modal
+                                visible={showEndTimePicker}
+                                transparent
+                                animationType="slide"
+                                onRequestClose={() => setShowEndTimePicker(false)}
+                            >
+                                <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                                    <View style={{ backgroundColor: 'white', paddingHorizontal: 20, paddingVertical: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 }}>
+                                        <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 15, textAlign: 'center', color: '#1a1a1a' }}>Select End Time</Text>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 15, marginBottom: 20 }}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ textAlign: 'center', fontWeight: '600', marginBottom: 10, color: '#1a1a1a' }}>Hour</Text>
+                                                <View style={{ borderWidth: 2, borderColor: '#FDE047', borderRadius: 12, backgroundColor: '#FFFBEB', height: 200, overflow: 'hidden' }}>
+                                                    <Picker selectedValue={endHour} onValueChange={setEndHour} style={{ color: '#1a1a1a' }}>
+                                                        {Array.from({ length: 24 }, (_, i) => (
+                                                            <Picker.Item key={i} label={String(i).padStart(2, '0')} value={String(i).padStart(2, '0')} color="#1a1a1a" />
+                                                        ))}
+                                                    </Picker>
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ textAlign: 'center', fontWeight: '600', marginBottom: 10, color: '#1a1a1a' }}>Minute</Text>
+                                                <View style={{ borderWidth: 2, borderColor: '#FDE047', borderRadius: 12, backgroundColor: '#FFFBEB', height: 200, overflow: 'hidden' }}>
+                                                    <Picker selectedValue={endMinute} onValueChange={setEndMinute} style={{ color: '#1a1a1a' }}>
+                                                        {Array.from({ length: 60 }, (_, i) => (
+                                                            <Picker.Item key={i} label={String(i).padStart(2, '0')} value={String(i).padStart(2, '0')} color="#1a1a1a" />
+                                                        ))}
+                                                    </Picker>
+                                                </View>
+                                            </View>
+                                        </View>
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <TouchableOpacity 
+                                                onPress={() => setShowEndTimePicker(false)}
+                                                style={{ flex: 1, backgroundColor: '#E5E7EB', paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+                                            >
+                                                <Text style={{ fontWeight: '600', color: '#1a1a1a', fontSize: 16 }}>Cancel</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                onPress={handleEndTimeUpdate}
+                                                style={{ flex: 1, backgroundColor: '#FDE047', paddingVertical: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}
+                                            >
+                                                <Text style={{ fontWeight: '600', color: '#1a1a1a', fontSize: 16 }}>Confirm</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Modal>
                         </View>
                         <View className="items-center w-full my-8">
                             <Text className="w-full mb-1 font-semibold text-base">Business Registration Certificate(side 1)</Text>
@@ -1174,29 +2160,68 @@ export default function SignupForm() {
                             <Text className={`text-red-500 text-sm mt-1 ${errors.identitypic2 ? 'opacity-100' : 'opacity-0'}`}>{errors.identitypic12 || ' '}</Text>
                             <Text className="text-base text-gray-600 mt-2">National Identity Card / Passport (side 2)</Text>
                         </View>
-                        <View className="items-center w-full my-8">
-                            {/* <TextInput placeholder="URL for map location" className="w-full text-black border border-gray-300 rounded-lg p-3" value={formData.locpic} onChangeText={v => handleChange('locpic', v)} /> */}
-                            <TouchableOpacity
-                                onPress={() => { handleChoosePhoto('locpic') }}
-                                className={`w-[98%] h-44 bg-gray-100 justify-center items-center ${formData.locpic == null ? 'border-2 border-dashed border-gray-300' : ''}`}
-                            >
-                                {formData.locpic ? (
-                                    <Image
-                                        source={{ uri: formData.locpic.uri }}
-                                        className="w-full h-full border-2 border-gray-100"
-                                        resizeMode="cover"
-
-                                    />
-                                ) : (
-                                    <Image
-                                        source={plusIcon}
-                                        className="w-16 h-16 opacity-50"
-                                        resizeMode="contain"
-                                    />
+                        <View className="my-8">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="font-bold text-base text-gray-800">Select Location On Map</Text>
+                                {formData.role !== 'user' && formData.role !== 'vehicle' && (
+                                    <Text className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Sri Lanka Only</Text>
                                 )}
-                            </TouchableOpacity>
+                            </View>
+                            <View>
+                                {showLocationSuggestions && locationSuggestions.length > 0 && (
+                                    <View style={{ 
+                                        backgroundColor: 'white', 
+                                        borderRadius: 8, 
+                                        borderWidth: 1, 
+                                        borderColor: '#FDE047',
+                                        maxHeight: 200,
+                                        marginBottom: 8,
+                                        overflow: 'hidden'
+                                    }}>
+                                        <ScrollView 
+                                            scrollEnabled={true}
+                                            nestedScrollEnabled={true}
+                                            scrollEventThrottle={16}
+                                            keyboardShouldPersistTaps="always"
+                                        >
+                                            {locationSuggestions.map((place, index) => (
+                                                <TouchableOpacity
+                                                    key={`location-${index}`}
+                                                    activeOpacity={0.7}
+                                                    onPress={() => {
+                                                        console.log('Selected location:', place);
+                                                        handleLocationSelect(place);
+                                                    }}
+                                                    style={{ 
+                                                        padding: 12, 
+                                                        borderBottomWidth: 1, 
+                                                        borderBottomColor: '#E5E7EB',
+                                                        backgroundColor: '#FFFBEB'
+                                                    }}
+                                                >
+                                                    <Text style={{ color: '#1a1a1a', fontSize: 14, fontWeight: '500' }}>
+                                                        {place.description || place.main_text}
+                                                    </Text>
+                                                    <Text style={{ color: '#999', fontSize: 12, marginTop: 4 }}>
+                                                        {place.secondary_text}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
+                                <TextInput 
+                                    className="w-full text-black border-2 border-gray-200 rounded-xl p-4 bg-gray-50 text-base" 
+                                    placeholder="Search location..."
+                                    placeholderTextColor="#999"
+                                    value={formData.locpic} 
+                                    onChangeText={(text) => {
+                                        handleChange('locpic', text);
+                                        searchLocations(text);
+                                    }}
+                                />
+                            </View>
                             <Text className={`text-red-500 text-sm mt-1 ${errors.locpic ? 'opacity-100' : 'opacity-0'}`}>{errors.locpic || ' '}</Text>
-                            <Text className="text-base text-gray-600 mt-2 mb-8">Location On Map</Text>
                         </View>
                         <View className="my-10">
                             <View className='flex-row items-center mb-5'>
@@ -1261,7 +2286,7 @@ export default function SignupForm() {
                             <View className="mt-14 flex-row justify-center items-center">
                                 <Text className="text-base text-gray-500">Didn't receive the code?</Text>
                                 <TouchableOpacity onPress={handleSendOtp} className="py-2 ml-1">
-                                    <Text className="font-semibold text-blue-500 text-base">Resend</Text>
+                                    <Text className="font-semibold text-yellow-600 text-base">Resend</Text>
                                 </TouchableOpacity>
                             </View>
                             {/* <TouchableOpacity onPress={() => setStep(1)} className="py-2 mt-2">
@@ -1277,30 +2302,116 @@ export default function SignupForm() {
     };
 
     return (
-        <SafeAreaView className="flex-1 p-5 bg-white">
-            <View className="flex-row items-center justify-between">
-                <Text className="text-2xl font-bold">{steps[step - 1].title}</Text>
+        <SafeAreaView className="flex-1 bg-white">
+            {/* Header with Back Button */}
+            <View style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <TouchableOpacity
+                    onPress={() => {
+                        if (step > 1) {
+                            prevStep();
+                        } else {
+                            router.back();
+                        }
+                    }}
+                    style={{
+                        backgroundColor: '#FDE047',
+                        borderRadius: 8,
+                        padding: 8,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: '#EAB308',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 4,
+                        elevation: 4,
+                    }}
+                >
+                    <Ionicons name="arrow-back" size={20} color="#1a1a1a" />
+                </TouchableOpacity>
+                
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#1a1a1a', flex: 1, textAlign: 'center', marginLeft: 12 }}>
+                    {steps[step - 1].title}
+                </Text>
+
+                <View style={{ width: 36 }} />
             </View>
+
+            {/* Step Indicator */}
+            <View style={{ paddingHorizontal: 20, paddingVertical: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                {steps.map((s, index) => (
+                    <React.Fragment key={s.id}>
+                        <View
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                backgroundColor: step > s.id ? '#EAB308' : step === s.id ? '#FDE047' : '#E5E7EB',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderWidth: step === s.id ? 2 : 0,
+                                borderColor: '#EAB308',
+                                shadowColor: step >= s.id ? '#EAB308' : 'transparent',
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: step >= s.id ? 0.2 : 0,
+                                shadowRadius: 3,
+                                elevation: step >= s.id ? 2 : 0,
+                            }}
+                        >
+                            {step > s.id ? (
+                                <Ionicons name="checkmark" size={18} color="#1a1a1a" />
+                            ) : (
+                                <Text style={{ color: step === s.id ? '#1a1a1a' : '#999', fontWeight: '700', fontSize: 14 }}>
+                                    {s.id}
+                                </Text>
+                            )}
+                        </View>
+                        {index < steps.length - 1 && (
+                            <View
+                                style={{
+                                    flex: 1,
+                                    height: 2,
+                                    backgroundColor: step > s.id ? '#EAB308' : '#E5E7EB',
+                                    maxWidth: 40,
+                                }}
+                            />
+                        )}
+                    </React.Fragment>
+                ))}
+            </View>
+
             <ScrollView
-                className="flex-1 mt-5 pr-2"
+                className="flex-1 pr-2"
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
+                style={{ paddingHorizontal: 20, paddingTop: 8 }}
             >
                 {renderStepContent()}
-                {step != 5 && <View className="flex-row justify-between mt-6 mb-4">
+                {step != 5 && <View className="flex-row justify-between mt-8 mb-6">
                     {step > 1 ? (
-                        <TouchableOpacity className="bg-gray-300 py-3 px-8 rounded-lg" onPress={prevStep}>
+                        <TouchableOpacity 
+                            className="bg-gray-300 py-3 px-8 rounded-lg flex-row items-center gap-2" 
+                            onPress={prevStep}
+                        >
+                            <Ionicons name="arrow-back" size={18} color="#1a1a1a" />
                             <Text className="font-semibold text-gray-800">Previous</Text>
                         </TouchableOpacity>
                     ) : <View />}
 
                     {step < steps.length - 1 ? (
-                        <TouchableOpacity className="bg-[#FEFA17] py-3 px-8 rounded-lg" onPress={nextStep}>
+                        <TouchableOpacity 
+                            className="bg-[#FEFA17] py-3 px-8 rounded-lg flex-row items-center gap-2" 
+                            onPress={nextStep}
+                        >
                             <Text className="font-semibold text-gray-800">Next</Text>
+                            <Ionicons name="arrow-forward" size={18} color="#1a1a1a" />
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity className="bg-blue-500 py-3 px-8 rounded-lg" onPress={nextStep}>
-                            <Text className="font-semibold text-white">Submit</Text>
+                        <TouchableOpacity 
+                            className="bg-yellow-500 py-3 px-8 rounded-lg flex-row items-center gap-2" 
+                            onPress={nextStep}
+                        >
+                            <Text className="font-semibold text-gray-900">Submit</Text>
+                            <Ionicons name="checkmark" size={18} color="#1a1a1a" />
                         </TouchableOpacity>
                     )}
                 </View>}
