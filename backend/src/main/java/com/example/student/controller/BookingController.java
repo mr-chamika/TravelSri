@@ -170,11 +170,6 @@ public class BookingController {
             booking.onUpdate();
             newrepo.save(booking);
 
-            BigDecimal totalAmount = BigDecimal.valueOf(booking.getPrice());
-            String transactionReference = "TXN-" + bookingId + "-" + System.currentTimeMillis();
-
-            PayHereController.processMoneyFlowAfterPayment(bookingId, totalAmount, transactionReference);
-
             return new ResponseEntity<>(booking, HttpStatus.OK);
 
         } catch (Exception e) {
@@ -257,6 +252,11 @@ public class BookingController {
             if (booking.getServiceId() != null && !booking.getServiceId().equals(providerId)) {
                 return new ResponseEntity<>("Booking assigned to a different provider", HttpStatus.BAD_REQUEST);
             }
+
+            BigDecimal totalAmount = BigDecimal.valueOf(booking.getPrice());
+            String transactionReference = "TXN-" + bookingId + "-" + System.currentTimeMillis();
+
+            PayHereController.processMoneyFlowAfterPayment(bookingId, totalAmount, transactionReference);
 
             booking.setStatus("complete");
             booking.onUpdate();
