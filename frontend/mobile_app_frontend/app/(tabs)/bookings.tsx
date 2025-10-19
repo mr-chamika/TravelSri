@@ -148,7 +148,7 @@ const BookingsScreen: React.FC = () => {
 
       }
       getBookings();
-    }, [])
+    }, [activeFilter])
   );
 
   /*const bookings: Booking[] = [
@@ -422,15 +422,23 @@ const BookingsScreen: React.FC = () => {
     Alert.alert("Modify Booking", `Modify your ${getTypeLabel(booking.type).toLowerCase()} booking?`);
   };
 
-  const handleCancelBooking = (booking: Booking) => {
-    Alert.alert(
-      "Cancel Booking",
-      "Are you sure you want to cancel this booking?",
-      [
-        { text: "No", style: "cancel" },
-        { text: "Yes, Cancel", style: "destructive", onPress: () => console.log("Booking cancelled") }
-      ]
-    );
+  const handleCancelBooking = async (booking: Booking) => {
+
+    console.log('ddddddddddddd')
+    console.log(booking._id)
+
+    await fetch(`http://localhost:8080/traveler/booking-cancel`, {
+
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: booking._id })
+
+    })
+      .then(res => res.text())
+      .then(data => { if (data == "Booking cancelled") { setActiveFilter("cancelled") } })
+      .catch(err => console.log("Error from booking create " + err))
+
+
   };
 
   const renderStars = (rating: number) => {

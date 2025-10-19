@@ -616,6 +616,18 @@ System.out.println(list.getClass().isArray());
     @Autowired
     private TravelerBookingRepo travelerBookingRepo;
 
+    @PutMapping("/booking-cancel")
+    public String bookingCancel(@RequestBody Map<String, Object> body) {
+
+        TravelerBooking booking = travelerBookingRepo.findById(body.get("id").toString()).get();
+
+        booking.setStatus("cancelled");
+
+        travelerBookingRepo.save(booking);
+
+        return "Booking cancelled";
+    }
+
     @PostMapping("/create-booking")
     public String CreateBooking(@RequestBody TravelerBooking obj) {
 System.out.println(obj.toString());
