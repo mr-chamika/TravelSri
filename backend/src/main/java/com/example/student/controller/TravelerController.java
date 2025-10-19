@@ -635,6 +635,69 @@ System.out.println(list.getClass().isArray());
     @PostMapping("/create-booking")
     public String CreateBooking(@RequestBody TravelerBooking obj) {
 
+        if(obj.getType().equals("vehicles")) {
+
+            Vehicle vehicle = vehicleRepo.findById(obj.getServiceId()).get();
+            Category category = categoryRepo.findById(vehicle.getCatId()).get();
+
+            obj.setType("vehicle");
+
+            if(obj.getThumbnail().isEmpty()) {
+
+                obj.setThumbnail(vehicle.getImage());
+
+            }
+            if(obj.getTitle().equals("")) {
+
+                obj.setTitle(vehicle.getFirstName() + " " + vehicle.getLastName() + " | " + vehicle.getVehicleModel() + " | " + category.getTitle() );
+
+            }
+
+            if(obj.getRatings() ==0 && vehicle.getStars()!=0 && vehicle.getReviewCount()!=0){
+
+                obj.setRatings(Math.round(((float)vehicle.getStars()/vehicle.getReviewCount())*2*10)/10f);
+
+            }
+
+            if(obj.getStars()==0){
+
+                obj.setStars(vehicle.getStars());
+
+            }
+
+            if(obj.getLocation()==null) {
+
+                obj.setLocation(vehicle.getLocation());
+
+            }
+
+            if((obj.getFacilities() == null || obj.getFacilities().length == 0) && vehicle.getWhatsIncluded()!=null && vehicle.getWhatsIncluded().length>=2) {
+
+                obj.setFacilities(vehicle.getWhatsIncluded());
+
+            }
+
+            if(obj.getPrice()==0 && vehicle.getDailyRatePrice()!=0){
+
+                obj.setPrice(vehicle.getDailyRatePrice());
+
+            }
+
+
+            if(obj.getMobileNumber().equals("")){
+
+                obj.setMobileNumber(vehicle.getPhone());
+
+            }
+
+            obj.setStatus("active");
+
+            SoloTrip x = soloTripRepo.findById(obj.get_id()).get();
+            x.setStatus("active");
+
+            soloTripRepo.save(x);
+        }
+
         if(obj.getType().equals("guides")) {
 
             User guide = userRepo.findById(obj.getServiceId()).get();
@@ -685,7 +748,14 @@ System.out.println(list.getClass().isArray());
 
             obj.setStatus("active");
 
-        }if(obj.getType().equals("hotels")) {
+            SoloTrip x = soloTripRepo.findById(obj.get_id()).get();
+            x.setStatus("active");
+
+            soloTripRepo.save(x);
+
+        }
+
+        if(obj.getType().equals("hotels")) {
 
             Hotel hotel = hotelsRepo.findById(obj.getServiceId()).get();
 
@@ -778,6 +848,11 @@ System.out.println(list.getClass().isArray());
             }
 
             obj.setStatus("active");
+
+            SoloTrip x = soloTripRepo.findById(obj.get_id()).get();
+            x.setStatus("active");
+
+            soloTripRepo.save(x);
 
         }
 

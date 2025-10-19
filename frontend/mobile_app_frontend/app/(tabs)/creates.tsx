@@ -281,7 +281,7 @@ const TripPlannerScreen: React.FC = () => {
     }, [id])
   );
 
-  const bookNow = async (type: string, serviceId: string, bookingData: any, date: string) => {
+  const bookNow = async (id: string, type: string, serviceId: string, bookingData: any, date: string) => {
 
     const keys = await AsyncStorage.getItem("token");
 
@@ -290,13 +290,13 @@ const TripPlannerScreen: React.FC = () => {
       const token: MyToken = jwtDecode(keys)
 
       const book = {
-
+        _id: id,
         userId: token.id,
         serviceId: serviceId,
         type: type + 's',
         thumbnail: '',
         title: '',
-        subtitle: [],
+        subtitle: type == 'vehicle' ? [`${bookingData.startLocation} to ${bookingData.endLocation}`] : [],
         location: bookingData.location,
         bookingDates: [date],
         ratings: 0,
@@ -321,7 +321,7 @@ const TripPlannerScreen: React.FC = () => {
 
       })
         .then(res => res.text())
-        .then(data => { console.log(data); /*router.replace('/(tabs)/bookings')*/ })
+        .then(data => { console.log(data); router.replace('/(tabs)/bookings') })
         .catch(err => console.log("Error from booking create " + err))
 
     }
@@ -508,9 +508,9 @@ const TripPlannerScreen: React.FC = () => {
                     <Text className="text-xs text-gray-500">Location: {trip.hlocation}</Text>
                   </View>
                 )} */}
-                  <TouchableOpacity className='bg-green-400 items-center pb-2 pt-1 rounded-lg' onPress={() => bookNow(trip.type, trip.serviceId, trip.bookingData, trip.date)}>
+                  {trip.status == "pending" && <TouchableOpacity className='bg-green-400 items-center pb-2 pt-1 rounded-lg' onPress={() => bookNow(trip._id, trip.type, trip.serviceId, trip.bookingData, trip.date)}>
                     <View><Text>Book Now</Text></View>
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
                 </View>
               </TouchableOpacity>
             ))}
