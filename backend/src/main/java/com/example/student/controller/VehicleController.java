@@ -42,6 +42,13 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @GetMapping("/owner")
+    public ResponseEntity<List<Vehicle>> getVehiclesByOwner(@RequestParam String vehicleOwnerId) {
+        List<Vehicle> vehicles = vehicleRepo.findByVehicleOwnerId(vehicleOwnerId);
+        return ResponseEntity.ok(vehicles);
+    }
+
+
     @GetMapping("/edit")
     public ResponseEntity<Vehicle> getVehicleById(@RequestParam String id) {
         Optional<Vehicle> vehicle = vehicleRepo.findById(id);

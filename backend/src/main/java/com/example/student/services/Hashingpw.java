@@ -45,6 +45,7 @@ public class Hashingpw {
                                 "/vehicle/addVehicle",
                                 "/vehicle/all",
                                 "/vehicle/edit",
+                                "/vehicle/owner",
                                 "/traveler/**",
                                 "/api/pendingTrip/getall",
                                 "/api/pendingTrip/create",

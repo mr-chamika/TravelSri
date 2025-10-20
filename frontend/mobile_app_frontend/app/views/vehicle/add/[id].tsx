@@ -19,6 +19,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import * as FileSystem from 'expo-file-system';
 import { ImagePickerAsset } from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+
+// Interface for JWT token
+interface MyToken {
+  sub: string;
+  id: string;
+}
 
 // Combined FormData Interface for all steps
 interface FormData {
@@ -107,7 +115,6 @@ const genderOptions = [
   { label: 'Select Gender', value: '' },
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
-  { label: 'Other', value: 'other' },
 ];
 
 // Options for vehicle type dropdown (Section 2)
@@ -159,11 +166,13 @@ const gearTypeOptions = [
 
 // Options for categories
 const categoryOptions = [
-  { label: 'Select Category', value: '' },
-  { label: 'Economy', value: 'economy' },
-  { label: 'Standard', value: 'standard' },
-  { label: 'Premium', value: 'premium' },
-  { label: 'Luxury', value: 'luxury' },
+  { label: 'Select Vehicle Category', value: '' },
+  { label: 'Tuk (Three Wheeler)', value: 'tuk' },
+  { label: 'Car', value: 'car' },
+  { label: 'Van', value: 'van' },
+  { label: 'Minivan', value: 'minivan' },
+  { label: 'Bus', value: 'bus' },
+  { label: 'Bike (Motorcycle)', value: 'bike' },
 ];
 
 // Year options
@@ -192,6 +201,9 @@ const whatsIncludedOptions = [
 export default function MultiStepForm() {
   // State for current step in the form
   const [step, setStep] = useState(1);
+
+  // State for JWT user ID
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Language input state - moved to top level to avoid conditional hook usage
   const [languageInput, setLanguageInput] = useState('');
@@ -247,6 +259,87 @@ export default function MultiStepForm() {
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showGearTypePicker, setShowGearTypePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  // Extract JWT token on component mount
+  const extractUserIdFromJWT = async () => {
+    console.log('🔑 extractUserIdFromJWT() called');
+    try {
+      console.log('⏳ Attempting to retrieve token from AsyncStorage...');
+      
+      // Debug: List all AsyncStorage keys
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log('📚 All AsyncStorage keys:', allKeys);
+      } catch (debugError) {
+        console.error('❌ Error listing AsyncStorage keys:', debugError);
+      }
+      
+      // Try primary key first
+      let token = await AsyncStorage.getItem('access_token');
+      console.log('� Token with access_token:', !!token);
+      
+      // Try alternative key if primary not found
+      if (!token) {
+        console.log('⚠️ access_token not found, trying alternative key: token');
+        token = await AsyncStorage.getItem('token');
+        console.log('🔍 Token with token key:', !!token);
+      }
+      
+      if (token) {
+        console.log('📦 Token found in AsyncStorage');
+        console.log('🔓 Token length:', token.length, 'characters');
+        console.log('📄 Token preview:', token.substring(0, 50) + '...');
+        
+        try {
+          const decoded = jwtDecode<MyToken>(token);
+          console.log('✅ Token decoded successfully');
+          console.log('🔍 Decoded token:', decoded);
+          
+          const extractedId = decoded.id || decoded.sub;
+          console.log('👤 Extracted ID:', extractedId, '(from:', decoded.id ? 'id' : 'sub', ')');
+          
+          setUserId(extractedId);
+          console.log('💾 User ID set in state via setUserId():', extractedId);
+        } catch (decodeError) {
+          console.error('❌ JWT decode failed:', decodeError);
+          throw decodeError;
+        }
+      } else {
+        console.error('❌ No token found in AsyncStorage - user not authenticated');
+        console.error('⚠️ Token not found with keys: access_token, token');
+        Alert.alert('Login Required', 'Please log in to add a vehicle.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/');
+            }
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('❌ Error extracting JWT:', error);
+      console.error('📍 Error type:', error instanceof Error ? error.message : String(error));
+      Alert.alert('Authentication Error', 'Session expired. Please log in again.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.replace('/');
+          }
+        }
+      ]);
+    }
+  };
+
+  // Call extractUserIdFromJWT on component mount
+  React.useEffect(() => {
+    console.log('🎯 Component Mounted - Extracting JWT');
+    extractUserIdFromJWT();
+  }, []);
+
+  // Debug userId changes
+  React.useEffect(() => {
+    console.log('👤 userId state changed to:', userId);
+  }, [userId]);
 
   // Enhanced image upload handler to support driver photo and multiple vehicle images
   const handleImageUpload = async (field: keyof FormData) => {
@@ -623,14 +716,37 @@ export default function MultiStepForm() {
   };
 
   /**
-   * Simulates the final form submission.
+   * Handles the final form submission.
    */
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const submitForm = async () => {
+    setIsSubmitting(true);
+    console.log('📝 submitForm() called');
     console.log('Form Data before submission:', formData);
+    console.log('👤 User ID to be submitted:', userId);
+
+    // Check if userId was successfully extracted
+    if (!userId) {
+      console.error('❌ CRITICAL: No userId found in state');
+      Alert.alert(
+        'Authentication Error',
+        'Failed to retrieve user information. Please log in again.',
+        [{
+          text: 'OK',
+          onPress: () => {
+            router.replace('/');
+          }
+        }]
+      );
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       // Build payload matching backend Vehicle.java with correct field mapping
       const payload = {
+        vehicleOwnerId: userId, // 👈 ADD userId as vehicleOwnerId
         firstName: formData.firstName,
         lastName: formData.lastName,
         nicNumber: formData.nicNumber,
@@ -674,7 +790,10 @@ export default function MultiStepForm() {
         images: formData.images.map(img => img?.base64 || '').filter(str => str !== ''),
       };
 
+      console.log('📤 Sending payload to API...');
       console.log('Payload being sent:', payload);
+      const payloadSize = JSON.stringify(payload).length;
+      console.log('📊 Payload size:', payloadSize, 'bytes');
 
       const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
         method: "POST",
@@ -685,6 +804,7 @@ export default function MultiStepForm() {
         body: JSON.stringify(payload),
       });
 
+      console.log('📥 Response received');
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
 
@@ -700,17 +820,40 @@ export default function MultiStepForm() {
       
       Alert.alert(
         'Registration Complete!',
-        'Your driver registration has been submitted successfully.',
+        'Your vehicle registration has been submitted successfully. You will now be redirected to your vehicles list.',
         [{ 
           text: 'OK',
           onPress: () => {
-            router.push('/(vehicle)/myVehicles');
+            // Reset form data
+            setFormData({
+              firstName: '', lastName: '', nicNumber: '', driverDateOfBirth: '',
+              location: '', gender: '', phone: '', additionalComments: '',
+              drivingLicenseNumber: '', licenseExpiryDate: '', experience: 0,
+              languages: [], image: null, insuranceDocument: null,
+              insuranceDocument2: null, licensePhoto: null, licensePhoto2: null,
+              vehicleNumber: '', vehicleModel: '', ac: false, fuelType: '',
+              seats: 0, catId: '', vehicleYearOfManufacture: '', gearType: false,
+              perKm: false, perKmPrice: 0, dailyRate: false, dailyRatePrice: 0,
+              driverNicpic1: null, driverNicpic2: null, vehicleLicenseCopy: null,
+              images: [], doors: 0, mileage: '', whatsIncluded: []
+            });
+            setErrors({});
+            setStep(1);
+            
+            // Navigate to myVehicles
+            router.replace('/(vehicle)/myVehicles');
           }
         }]
       );
     } catch (err) {
       console.log('Error from submit form:', err);
-      Alert.alert('Error', `Failed to submit registration: ${err}. Please try again.`);
+      Alert.alert(
+        'Registration Failed', 
+        `Failed to submit vehicle registration. Please check your internet connection and try again.\n\nError: ${err}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1249,19 +1392,24 @@ export default function MultiStepForm() {
           )}
           
           <TouchableOpacity
-  className={`flex-1 ${step > 1 ? 'ml-2' : ''} py-3 px-4 rounded-lg`}
-  style={{
-    backgroundColor: '#FEFA17'
-  }}
-  onPress={handleNext}
-
->
-  <Text className="text-center text-black font-medium">
-    {step === 3 ? 'Submit' : 'Next'}
-  </Text>
-</TouchableOpacity>
+            className={`flex-1 ${step > 1 ? 'ml-2' : ''} py-3 px-4 rounded-lg ${
+              isValidating || isSubmitting ? 'opacity-50' : ''
+            }`}
+            style={{
+              backgroundColor: '#FEFA17'
+            }}
+            onPress={handleNext}
+            disabled={isValidating || isSubmitting}
+          >
+            <Text className="text-center text-black font-medium">
+              {isValidating || isSubmitting 
+                ? (step === 3 ? 'Submitting...' : 'Validating...')
+                : (step === 3 ? 'Submit' : 'Next')
+              }
+            </Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </View> 
     </View>
   );
 }
