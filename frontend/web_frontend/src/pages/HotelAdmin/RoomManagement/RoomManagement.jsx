@@ -506,7 +506,7 @@ const LabeledTextarea = ({label,...rest})=>(
 
 /* ---------- Modal layout ---------- */
 const Modal = ({title,onClose,children,large=false})=>(
-  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+  <div className="fixed inset-0 bg-grey bg-opacity-80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div className={`bg-white rounded-xl shadow-2xl w-full ${large ? 'max-w-3xl' : 'max-w-md'} max-h-[85vh] overflow-y-auto`}>
       {title && (
         <header className="px-5 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">

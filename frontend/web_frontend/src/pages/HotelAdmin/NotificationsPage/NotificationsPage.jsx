@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 /*  Quick modal for “View”                                            */
 /* ------------------------------------------------------------------ */
 const ViewModal = ({ notification, onClose }) => (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div className="fixed inset-0 bg-grey bg-opacity-80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
       <header className="flex justify-between items-center px-5 py-3 border-b bg-gray-50">
         <h3 className="font-semibold text-lg">{notification.title}</h3>
