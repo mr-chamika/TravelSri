@@ -10,6 +10,7 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, AntDesign } from '@expo/vector-icons';
@@ -28,6 +29,9 @@ const AddItem: React.FC = () => {
   const [image, setImageUri] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const API_BASE_URL = 'http://localhost:8080';
 
@@ -114,72 +118,67 @@ const AddItem: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix the errors before submitting.');
-      return;
+  if (!validateForm()) {
+    setIsSuccess(false);
+    setStatusMessage('Please fix the validation errors.');
+    setStatusModalVisible(true);
+    setTimeout(() => setStatusModalVisible(false), 2000);
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) throw new Error('Authentication token not found. Please log in again.');
+
+    const decodedToken: any = jwtDecode(token);
+    const shopId = decodedToken.id;
+    if (!shopId) throw new Error('Shop ID not found in token.');
+
+    const shopItem = {
+      name: name.trim(),
+      price: Number(price),
+      count: Number(count),
+      description: description.trim(),
+      image: image,
+      shopId: shopId,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(shopItem),
+    });
+
+    setIsSubmitting(false);
+
+    if (response.ok) {
+      setIsSuccess(true);
+      setStatusMessage('✅ Item added successfully!');
+      setStatusModalVisible(true);
+      setTimeout(() => {
+        setStatusModalVisible(false);
+        router.back();
+      }, 2000);
+    } else {
+      const errorText = await response.text();
+      setIsSuccess(false);
+      setStatusMessage(`❌ ${errorText || 'Failed to add item.'}`);
+      setStatusModalVisible(true);
+      setTimeout(() => setStatusModalVisible(false), 2000);
     }
+  } catch (err: any) {
+    setIsSubmitting(false);
+    setIsSuccess(false);
+    setStatusMessage(`❌ Failed to add item: ${err.message}`);
+    setStatusModalVisible(true);
+    setTimeout(() => setStatusModalVisible(false), 2000);
+  }
+};
 
-    setIsSubmitting(true);
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
-      }
-
-      let decodedToken: any;
-      try {
-        decodedToken = jwtDecode(token);
-      } catch (err) {
-        throw new Error('Invalid authentication token. Please log in again.');
-      }
-
-      const shopId = decodedToken.id;
-      if (!shopId) {
-        throw new Error('Shop ID not found in token.');
-      }
-
-      const shopItem = {
-        name: name.trim(),
-        price: Number(price),
-        count: Number(count),
-        description: description.trim(),
-        image: image,
-        shopId: shopId,
-      };
-
-      const response = await fetch(`${API_BASE_URL}/shopitems/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(shopItem),
-      });
-      
-      // --- FIX STARTS HERE ---
-      if (response.ok) {
-        setIsSubmitting(false); // Stop loading indicator
-        Alert.alert('Success', 'Item added successfully!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              router.back();
-            },
-          },
-        ]);
-      } else {
-        // Only process the body for error messages
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to add item');
-      }
-      // --- FIX ENDS HERE ---
-
-    } catch (err: any) {
-      setIsSubmitting(false); // Ensure loading stops on error
-      console.log('Catch error:', err);
-      Alert.alert('Error', `Failed to add item: ${err.message || 'Unknown error'}`);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -223,7 +222,7 @@ const AddItem: React.FC = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Price</Text>
+          <Text style={styles.sectionLabel}>Price (LKR)</Text>
           <TextInput
             style={styles.textInput}
             value={price}
@@ -270,8 +269,29 @@ const AddItem: React.FC = () => {
             <Text style={styles.publishButtonText}>Publish</Text>
           )}
         </TouchableOpacity>
+        
       </ScrollView>
+      <Modal
+  transparent
+  animationType="fade"
+  visible={statusModalVisible}
+  onRequestClose={() => setStatusModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View
+      style={[
+        styles.statusModal,
+        isSuccess ? styles.successModal : styles.errorModal,
+      ]}
+    >
+      <Text style={styles.statusText}>{statusMessage}</Text>
+    </View>
+  </View>
+</Modal>
+
     </SafeAreaView>
+
+    
   );
 };
 
@@ -371,5 +391,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 6,
   },
+  modalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0, 0, 0, 0.25)',
+},
+statusModal: {
+  width: '80%',
+  borderRadius: 12,
+  paddingVertical: 20,
+  paddingHorizontal: 15,
+  alignItems: 'center',
+  justifyContent: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 4,
+  elevation: 8,
+},
+successModal: {
+  backgroundColor: '#FFF7CC', // soft yellow background
+},
+errorModal: {
+  backgroundColor: '#FFD6D6', // light red background
+},
+statusText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#333',
+  textAlign: 'center',
+},
+
 });
 

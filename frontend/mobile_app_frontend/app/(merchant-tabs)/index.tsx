@@ -69,6 +69,7 @@ const Listings: React.FC = () => {
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [filteredListings, setFilteredListings] = useState<ListingItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
   const [shopId, setShopId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true); // Start loading initially
@@ -332,42 +333,87 @@ const Listings: React.FC = () => {
         )}
       </ScrollView>
 
-      <Modal
-        transparent
-        animationType="slide"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+      {/* Main Action Modal */}
+<Modal
+  transparent
+  animationType="slide"
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContainer}>
+      <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
+
+      {/* Delete button now opens confirm modal */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.deleteButton]}
+        onPress={() => {
+          setModalVisible(false);
+          setConfirmDeleteVisible(true); // Show confirmation modal
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
+        <Text style={styles.modalButtonText}>Delete</Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.deleteButton]}
-              onPress={handleDeleteItem}
-            >
-              <Text style={styles.modalButtonText}>Delete</Text>
-            </TouchableOpacity>
+      {/* Change Button */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.changeButton]}
+        onPress={handleChangeItem}
+      >
+        <Text style={styles.modalButtonText}>Change</Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.changeButton]}
-              onPress={handleChangeItem}
-            >
-              <Text style={styles.modalButtonText}>Change</Text>
-            </TouchableOpacity>
+      {/* Cancel Button */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.cancelButton]}
+        onPress={() => {
+          setModalVisible(false);
+          setSelectedItem(null);
+        }}
+      >
+        <Text style={[styles.modalButtonText, { color: '#666' }]}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setModalVisible(false);
-                setSelectedItem(null);
-              }}
-            >
-              <Text style={[styles.modalButtonText, { color: '#666' }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+{/* Delete Confirmation Modal */}
+<Modal
+  transparent
+  animationType="fade"
+  visible={confirmDeleteVisible}
+  onRequestClose={() => setConfirmDeleteVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.confirmModal}>
+      <Text style={styles.confirmTitle}>Confirm Delete</Text>
+      <Text style={styles.confirmMessage}>
+        Are you sure you want to delete "{selectedItem?.name}"?
+      </Text>
+
+      <View style={styles.confirmButtons}>
+        <TouchableOpacity
+          style={[styles.confirmButton, styles.confirmCancelButton]}
+          onPress={() => setConfirmDeleteVisible(false)}
+        >
+          <Text style={styles.confirmButtonText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.confirmButton, styles.confirmDeleteButton]}
+          onPress={async () => {
+            setConfirmDeleteVisible(false);
+            await handleDeleteItem();
+          }}
+        >
+          <Text style={styles.confirmButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
     </SafeAreaView>
   );
 };
@@ -601,4 +647,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
+  confirmModal: {
+  width: '85%',
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  paddingVertical: 25,
+  paddingHorizontal: 20,
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 5,
+  elevation: 8,
+},
+confirmTitle: {
+  fontSize: 22,
+  fontWeight: '600',
+  color: '#222',
+  marginBottom: 10,
+},
+confirmMessage: {
+  fontSize: 16,
+  color: '#555',
+  textAlign: 'center',
+  lineHeight: 22,
+  marginBottom: 25,
+  paddingHorizontal: 10,
+},
+confirmButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-evenly',
+  width: '100%',
+},
+confirmButton: {
+  flex: 1,
+  paddingVertical: 12,
+  marginHorizontal: 8,
+  borderRadius: 10,
+  alignItems: 'center',
+},
+confirmCancelButton: {
+  backgroundColor: '#E5E5E5',
+},
+confirmDeleteButton: {
+  backgroundColor: '#FFC107',
+},
+confirmButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#000',
+},
 });
