@@ -96,7 +96,7 @@ interface Guide {
 export default function Views() {
 
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id, viewMode } = useLocalSearchParams();
 
     const [item, setItem] = useState<Guide | null>(null)
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -491,12 +491,12 @@ export default function Views() {
 
                         <Text className="px-3 font-extrabold text-xl">{item?.dailyRate}.00 LKR/day</Text>
 
-                        <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={handleBooking}>
+                        {viewMode != 'true' && <TouchableOpacity className=" bg-[#84848460] rounded-xl w-[30%]" onPress={handleBooking}>
                             <View className="py-2 px-3 flex-row justify-between items-center w-full">
                                 <Text>Choose</Text>
                                 <Image className="w-5 h-5" source={back} />
                             </View>
-                        </TouchableOpacity>
+                        </TouchableOpacity>}
                     </View>
                 </View>
 

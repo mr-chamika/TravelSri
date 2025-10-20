@@ -102,7 +102,7 @@ const back = require('../../../../assets/images/back.png');
 
 export default function Views() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id, viewMode, tripId, dayNumber, date, singleRooms, doubleRooms } = useLocalSearchParams();
 
     const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, currentPrice: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", currentPrice: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
@@ -484,7 +484,7 @@ export default function Views() {
             }
             book.stars = hotelv?.stars;
             book.ratings = rating;
-            book.paymentStatus = false;
+            book.paymentStatus = true;
 
             var y = new Array();
 

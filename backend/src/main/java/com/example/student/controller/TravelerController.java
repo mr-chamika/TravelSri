@@ -507,7 +507,6 @@ System.out.println(list);
 
             if (order.get("createdId") == "") {// if this is first day plan
 
-
                 Created newCreatedTrip = new Created(
 
                         (String) body.get("userId"),
@@ -552,24 +551,41 @@ System.out.println(list);
 
             } else {
 
-                SoloTrip x = new SoloTrip(
+                if(body.get("id").equals("")) {
 
-                        (String) body.get("serviceId"),
-                        (String) order.get("date"),
-                        (String) order.get("createdId"),
-                        Integer.parseInt(order.get("dayNumber").toString()),
-                        (String) body.get("type"),
-                        "pending"
+                    SoloTrip x = new SoloTrip(
+
+                            (String) body.get("serviceId"),
+                            (String) order.get("date"),
+                            (String) order.get("createdId"),
+                            Integer.parseInt(order.get("dayNumber").toString()),
+                            (String) body.get("type"),
+                            "pending"
 
 
-                );
+                    );
 
-                //storing hotel booking data
-                x.getBookingData().put("singleRooms",Integer.parseInt(obj.get("s").toString()));
-                x.getBookingData().put("doubleRooms",Integer.parseInt(obj.get("d").toString()));
+                    //storing hotel booking data
+                    x.getBookingData().put("singleRooms", Integer.parseInt(obj.get("s").toString()));
+                    x.getBookingData().put("doubleRooms", Integer.parseInt(obj.get("d").toString()));
 
-                soloTripRepo.save(x);
-                return x.getCreatedId();
+                    soloTripRepo.save(x);
+                    return x.getCreatedId();
+
+                }else{
+
+                    Optional<SoloTrip> y = soloTripRepo.findById(body.get("id").toString());
+System.out.println("here"+body.get("id"));
+                    if(y.isPresent()) {
+                        System.out.println("this is y" + y.get());
+
+                        y.get().getBookingData().put("singleRooms", Integer.parseInt(obj.get("s").toString()));
+                        y.get().getBookingData().put("doubleRooms", Integer.parseInt(obj.get("d").toString()));
+
+                        soloTripRepo.save(y.get());
+                        return y.get().getCreatedId();
+                    }
+                }
 
             }
         }
@@ -933,6 +949,28 @@ System.out.println(list.getClass().isArray());
         }
 
         return ResponseEntity.ok(list);
+    }
+
+    @DeleteMapping("/trip")
+    public String DeleteTrip(@RequestParam String id) {
+
+        Optional<SoloTrip> x = soloTripRepo.findById(id);
+
+        if(x.isPresent()) {
+
+            Optional<TravelerBooking> y = travelerBookingRepo.findById(id);
+            if(y.isPresent()) {
+
+                travelerBookingRepo.delete(y.get());
+
+            }
+
+            soloTripRepo.delete(x.get());
+            return "Success";
+
+        }
+        return "Delete Trip Failed";
+
     }
 
 }
