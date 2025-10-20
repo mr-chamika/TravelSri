@@ -385,6 +385,14 @@ const SignupPage = () => {
           // Debug the image data
           debugImage(file, imageDataUrl);
           
+          console.log('Processing image:', {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            base64Length: imageDataUrl.length,
+            base64Preview: imageDataUrl.substring(0, 100) + '...'
+          });
+          
           // Add the file with its data URL preview
           imagesToAdd.push({
             file,
@@ -887,15 +895,23 @@ const SignupPage = () => {
           emergencyContact: formData.emergencyContact,
           businessLicense: formData.businessLicense,
           
-          // Business Documents (store file paths - in production, upload files first)
+          // Business Documents (store both file paths and base64 data)
           businessRegistrationDocPath: formData.businessDocuments?.businessRegistration?.name || null,
+          businessRegistrationDocData: formData.businessDocuments?.businessRegistration?.preview || null,
           taxCertificateDocPath: formData.businessDocuments?.taxCertificate?.name || null,
+          taxCertificateDocData: formData.businessDocuments?.taxCertificate?.preview || null,
           hotelCertificationDocPath: formData.businessDocuments?.hotelCertification?.name || null,
+          hotelCertificationDocData: formData.businessDocuments?.hotelCertification?.preview || null,
           healthAndSafetyDocPath: formData.businessDocuments?.healthAndSafety?.name || null,
+          healthAndSafetyDocData: formData.businessDocuments?.healthAndSafety?.preview || null,
           otherDocumentsPaths: formData.businessDocuments?.otherDocuments?.map(doc => doc.name) || [],
+          otherDocumentsData: formData.businessDocuments?.otherDocuments?.map(doc => doc.preview) || [],
           
-          // Hotel Images (store file names - in production, upload files first)
+          // Hotel Images (store base64 data for immediate use)
+          images: formData.hotelImages?.map(img => img.preview) || [],
           hotelImagesPaths: formData.hotelImages?.map(img => img.name) || [],
+          // Set the first image as thumbnail (profile image)
+          thumbnail: formData.hotelImages && formData.hotelImages.length > 0 ? formData.hotelImages[0].preview : null,
           
           // Room Types (convert to JSON strings for storage)
           roomTypeDetails: formData.roomTypes?.filter(room => room.added).map(room => JSON.stringify({
@@ -927,7 +943,6 @@ const SignupPage = () => {
           availableDouble: 0,
           maxSingle: 0,
           maxDouble: 0,
-          images: [],
           unavailable: [],
           distance: "",
           taxes: "",
@@ -941,6 +956,15 @@ const SignupPage = () => {
         
         // Log the submission data for debugging
         console.log('Submitting hotel registration data:', submissionData);
+        console.log('Images being submitted:', {
+          imageCount: submissionData.images?.length || 0,
+          imagePaths: submissionData.hotelImagesPaths,
+          firstImagePreview: submissionData.images?.[0]?.substring(0, 100) + '...' || 'No images'
+        });
+        console.log('Room types being submitted:', {
+          roomTypeCount: submissionData.roomTypeDetails?.length || 0,
+          roomTypes: submissionData.roomTypeDetails
+        });
         
         // Make API call to backend
         const response = await fetch('http://localhost:8080/hotels/register', {

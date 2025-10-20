@@ -116,7 +116,7 @@ const LoginPage = () => {
 
         const decoded = jwtDecode(data.token);
 
-        if(decoded.role == 'hotel'){
+        if(decoded.type == 'hotel'){
         // Success! Show success message and navigate to dashboard
         showFlash('success', 'Login successful! Welcome back!');
         

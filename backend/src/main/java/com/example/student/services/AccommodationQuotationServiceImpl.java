@@ -33,6 +33,11 @@ public class AccommodationQuotationServiceImpl implements AccommodationQuotation
     }
 
     @Override
+    public List<AccommodationQuotation> getQuotationsByHotelUsername(String hotelUsername) {
+        return repo.findByHotelUsername(hotelUsername);
+    }
+
+    @Override
     public void deleteQuotation(String id) {
         repo.deleteById(id);
     }

@@ -123,6 +123,19 @@ const generateMockQuotations = (count = 15) => {
       accommodationType: ['Hotel', 'Resort', 'Mixed'][Math.floor(Math.random() * 3)],
       transportationNeeded: Math.random() > 0.2,
       guidesRequired: 1 + Math.floor(Math.random() * 3), // 1-4 guides
+      
+      // Add the new per-person pricing fields for mock data
+      accommodationPricePerPerson: Math.round((baseAmount * 0.7) / groupSize), // 70% for accommodation
+      mealPricePerPerson: Math.round((baseAmount * 0.2) / groupSize), // 20% for meals  
+      mealPlanPricePerPerson: Math.round((baseAmount * 0.2) / groupSize), // Alternative field name for compatibility
+      totalPricePerPerson: Math.round(baseAmount / groupSize),
+      
+      // Add meal plan information for mock data
+      mealPlan: ['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive'][Math.floor(Math.random() * 4)],
+      
+      // Add hotel user information for filtering
+      hotelUsername: 'mock_hotel_user',
+      createdBy: 'mock_hotel_user'
     };
   });
 };
@@ -139,20 +152,31 @@ const quotationService = {
         return []; // Return empty array instead of throwing error
       }
       
+      console.log('QuotationService - Making API request to fetch quotations...');
+      
       // Make request with explicit token
       const response = await apiClient.get('/quotations', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      
+      console.log('QuotationService - API Response:', response.data);
+      console.log('QuotationService - First quotation from API:', response.data?.[0]);
+      
       return response.data || [];
     } catch (error) {
-      console.error('Error fetching quotations:', error);
+      console.error('QuotationService - Error fetching quotations:', error);
+      console.error('QuotationService - Error response:', error.response?.data);
+      console.error('QuotationService - Error status:', error.response?.status);
+      
       // Handle authentication errors
       if (error.response && error.response.status === 401) {
         console.error('Authentication failed. Please login again.');
       }
-      // Return empty array instead of mock data for consistency
+      
+      // Check if we should fall back to mock data for development
+      console.warn('QuotationService - API failed, returning empty array (not using mock data)');
       return [];
     }
   },
@@ -160,13 +184,34 @@ const quotationService = {
   // Get quotation by ID
   getQuotationById: async (id) => {
     try {
-      const response = await apiClient.get(`/quotations/${id}`);
+      console.log(`QuotationService - Fetching quotation by ID: ${id}`);
+      
+      // Check for authentication token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.warn('QuotationService - No authentication token found');
+      }
+      
+      const response = await apiClient.get(`/quotations/${id}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      console.log(`QuotationService - API Response for quotation ${id}:`, response.data);
+      console.log(`QuotationService - mealPricePerPerson value:`, response.data?.mealPricePerPerson);
+      console.log(`QuotationService - mealPlanPricePerPerson value:`, response.data?.mealPlanPricePerPerson);
+      
       return response.data;
     } catch (error) {
-      console.error(`Error fetching quotation ${id}:`, error);
+      console.error(`QuotationService - Error fetching quotation ${id}:`, error);
+      console.error(`QuotationService - Error status:`, error.response?.status);
+      console.error(`QuotationService - Error data:`, error.response?.data);
+      
       // Fallback to mock data
+      console.warn(`QuotationService - Falling back to mock data for quotation ${id}`);
       const quotations = generateMockQuotations();
-      return quotations.find(q => q.id === id) || null;
+      const mockQuotation = quotations.find(q => q.id === id) || null;
+      console.log(`QuotationService - Mock quotation:`, mockQuotation);
+      return mockQuotation;
     }
   },
   

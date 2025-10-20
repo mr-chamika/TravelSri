@@ -222,7 +222,7 @@ const RoomManagement = () => {
       {/* Loading state */}
       {loading && (
         <div className="flex justify-center items-center h-64">
-          <div className="w-10 h-10 border-4 border-gray-200 border-l-yellow-500 rounded-full animate-spin">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4">
             <span className="sr-only">Loading...</span>
           </div>
         </div>
@@ -330,23 +330,77 @@ const RoomManagement = () => {
 
       {/* ---------------- View Modal ---------------- */}
       {showViewModal && selectedRoom && (
-        <Modal title={`Room ${selectedRoom.roomNumber} Details`} onClose={()=>setShowViewModal(false)}>
-          <div className="grid grid-cols-2 gap-6 text-gray-800">
-            <Detail label="Room Type" value={selectedRoom.type}/>
-            <Detail label="Status" status value={selectedRoom.status}/>
-            <Detail label="Price / Night" value={`LKR ${selectedRoom.price}`}/>
-            <Detail label="Capacity" value={`${selectedRoom.capacity} Guests`}/>
+        <Modal title="" onClose={()=>setShowViewModal(false)}>
+          <div className="space-y-5">
+            {/* Header */}
+            <div className="text-center pb-4 border-b">
+              <h2 className="text-2xl font-bold text-gray-900">Room {selectedRoom.roomNumber}</h2>
+              <p className="text-gray-600 mt-1">{selectedRoom.type}</p>
+              <div className="mt-3 inline-block">
+                <StatusPill status={selectedRoom.status}/>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-3 py-2">
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Price</p>
+                <p className="text-lg font-bold text-gray-900">LKR {selectedRoom.price?.toLocaleString()}</p>
+              </div>
+              <div className="text-center border-x">
+                <p className="text-xs text-gray-500 mb-1">Guests</p>
+                <p className="text-lg font-bold text-gray-900">{selectedRoom.capacity}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-gray-500 mb-1">Amenities</p>
+                <p className="text-lg font-bold text-gray-900">{selectedRoom.amenities?.length || 0}</p>
+              </div>
+            </div>
+
+            {/* Description */}
             {selectedRoom.description && (
-              <div className="col-span-2"><Detail label="Description" value={selectedRoom.description}/></div>
+              <div>
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedRoom.description}</p>
+              </div>
             )}
-            {selectedRoom.amenities?.length>0 && (
-              <div className="col-span-2"><Detail label="Amenities" value={selectedRoom.amenities.join(', ')}/></div>
+
+            {/* Amenities */}
+            {selectedRoom.amenities?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Amenities</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRoom.amenities.map((amenity, index) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full"
+                    >
+                      <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-2"></span>
+                      {amenity}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
-          <div className="mt-6 text-right">
-            <button onClick={()=>setShowViewModal(false)}
-              className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm"
-            >Close</button>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4 border-t">
+              <button 
+                onClick={() => {
+                  setShowViewModal(false);
+                  openEdit(selectedRoom);
+                }}
+                className="flex-1 flex items-center justify-center px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 rounded-lg transition-colors text-sm font-medium"
+              >
+                <span className="material-icons text-base mr-1">edit</span>
+                Edit
+              </button>
+              <button 
+                onClick={()=>setShowViewModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </Modal>
       )}
@@ -451,16 +505,26 @@ const LabeledTextarea = ({label,...rest})=>(
 );
 
 /* ---------- Modal layout ---------- */
-const Modal = ({title,onClose,children})=>(
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <header className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-        <h3 className="text-xl font-bold">{title}</h3>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-          <span className="material-icons">close</span>
+const Modal = ({title,onClose,children,large=false})=>(
+  <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+    <div className={`bg-white rounded-xl shadow-2xl w-full ${large ? 'max-w-3xl' : 'max-w-md'} max-h-[85vh] overflow-y-auto`}>
+      {title && (
+        <header className="px-5 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <span className="material-icons text-xl">close</span>
+          </button>
+        </header>
+      )}
+      {!title && (
+        <button 
+          onClick={onClose} 
+          className="absolute top-3 right-3 z-20 text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          <span className="material-icons text-xl">close</span>
         </button>
-      </header>
-      <div className="p-6">{children}</div>
+      )}
+      <div className="p-5">{children}</div>
     </div>
   </div>
 );

@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 
 @Setter
 @Getter
@@ -23,8 +25,6 @@ public class Hotel{
     private Integer reviewCount;//reviewer can both post a review and give star rating when review
     Integer originalPrice;
     Integer currentPrice;
-    //ratings = (stars/reviewCount)*(10/5) 5 is no of stars we offer
-
     private Integer singlePrice;
     private Integer doublePrice;
     private String name;
@@ -83,10 +83,15 @@ public class Hotel{
     
     // Business Documents (stored as file paths or URLs)
     private String businessRegistrationDocPath;
+    private String businessRegistrationDocData; // Base64 data
     private String taxCertificateDocPath;
+    private String taxCertificateDocData; // Base64 data
     private String hotelCertificationDocPath;
+    private String hotelCertificationDocData; // Base64 data
     private String healthAndSafetyDocPath;
+    private String healthAndSafetyDocData; // Base64 data
     private String[] otherDocumentsPaths;
+    private String[] otherDocumentsData; // Base64 data array
     
     // Hotel Images (additional to existing images array)
     private String[] hotelImagesPaths;
@@ -105,5 +110,8 @@ public class Hotel{
     // Audit fields
     private String createdAt;
     private String updatedAt;
+    
+    // Hotel Availability Calendar
+    private List<HotelAvailability> availability;
 
 }
