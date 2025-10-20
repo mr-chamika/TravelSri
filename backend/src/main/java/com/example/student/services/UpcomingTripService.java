@@ -18,30 +18,66 @@ public class UpcomingTripService implements IUpcomingTripService {
 
     @Override
     public UpcomingTrip createUpcomingTrip(UpcomingTrip upcomingTrip) {
-        if (upcomingTrip == null) {
-            throw new IllegalArgumentException("UpcomingTrip cannot be null");
+        try {
+            if (upcomingTrip == null) {
+                throw new IllegalArgumentException("UpcomingTrip cannot be null");
+            }
+            
+            // Set audit fields
+            upcomingTrip.setCreatedAt(LocalDateTime.now());
+            upcomingTrip.setUpdatedAt(LocalDateTime.now());
+            upcomingTrip.setConfirmationDate(LocalDateTime.now());
+            
+            // Set default statuses if not provided
+            if (upcomingTrip.getTripStatus() == null) {
+                upcomingTrip.setTripStatus("Confirmed");
+            }
+            if (upcomingTrip.getBookingStatus() == null) {
+                upcomingTrip.setBookingStatus("Booked");
+            }
+            if (upcomingTrip.getPaymentStatus() == null) {
+                upcomingTrip.setPaymentStatus("Pending");
+            }
+            
+            // Calculate costs if not provided
+            if (upcomingTrip.getTotalTripCost() == null) {
+                Double calculatedCost = upcomingTrip.calculateTotalTripCost();
+                upcomingTrip.setTotalTripCost(calculatedCost);
+                System.out.println("Calculated total trip cost: " + calculatedCost);
+            }
+            
+            if (upcomingTrip.getTotalPricePerPerson() == null) {
+                Double calculatedPricePerPerson = upcomingTrip.calculateTotalPricePerPerson();
+                upcomingTrip.setTotalPricePerPerson(calculatedPricePerPerson);
+                System.out.println("Calculated price per person: " + calculatedPricePerPerson);
+            }
+            
+            // Log the trip being created
+            System.out.println("=== CREATING UPCOMING TRIP ===");
+            System.out.println("Trip ID: " + upcomingTrip.getId());
+            System.out.println("Original Pending Trip ID: " + upcomingTrip.getOriginalPendingTripId());
+            System.out.println("Title: " + upcomingTrip.getTitle());
+            System.out.println("Selected Hotel ID: " + upcomingTrip.getSelectedHotelId());
+            System.out.println("Selected Vehicle ID: " + upcomingTrip.getSelectedVehicleId());
+            System.out.println("Selected Guide ID: " + upcomingTrip.getSelectedGuideId());
+            System.out.println("Hotel Final Amount: " + upcomingTrip.getHotelFinalAmount());
+            System.out.println("Vehicle Quoted Amount: " + upcomingTrip.getVehicleQuotedAmount());
+            System.out.println("Guide Quoted Amount: " + upcomingTrip.getGuideQuotedAmount());
+            System.out.println("Total Trip Cost: " + upcomingTrip.getTotalTripCost());
+            System.out.println("Total Price Per Person: " + upcomingTrip.getTotalPricePerPerson());
+            System.out.println("Group Size: " + upcomingTrip.getGroupSize());
+            System.out.println("===============================");
+            
+            UpcomingTrip savedTrip = upcomingTripRepo.save(upcomingTrip);
+            System.out.println("Successfully saved upcoming trip with ID: " + savedTrip.getId());
+            
+            return savedTrip;
+            
+        } catch (Exception e) {
+            System.err.println("Error creating upcoming trip: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create upcoming trip: " + e.getMessage());
         }
-        
-        // Set creation timestamp
-        upcomingTrip.setCreatedAt(LocalDateTime.now());
-        upcomingTrip.setConfirmationDate(LocalDateTime.now());
-        
-        // Set default statuses if not provided
-        if (upcomingTrip.getTripStatus() == null) {
-            upcomingTrip.setTripStatus("Confirmed");
-        }
-        if (upcomingTrip.getBookingStatus() == null) {
-            upcomingTrip.setBookingStatus("Booked");
-        }
-        if (upcomingTrip.getPaymentStatus() == null) {
-            upcomingTrip.setPaymentStatus("Pending");
-        }
-        
-        // Calculate total costs
-        upcomingTrip.setTotalTripCost(upcomingTrip.calculateTotalTripCost());
-        upcomingTrip.setTotalPricePerPerson(upcomingTrip.calculateTotalPricePerPerson());
-        
-        return upcomingTripRepo.save(upcomingTrip);
     }
 
     @Override

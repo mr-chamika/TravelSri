@@ -197,20 +197,13 @@ const AllVehicleQuotation = () => {
                                             >
                                                 View Details
                                             </button>
-                                            {/* Uncomment if you have PDF functionality */}
-                                            {/* <button 
-                                                onClick={() => handleDownloadPDF(vehicle._id)}
-                                                className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
-                                            >
-                                                PDF
-                                            </button> */}
-                                            {/* <button 
+                                            <button 
                                                 onClick={() => handleSelectQuotation(vehicle)}
                                                 className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                                 title="Select this quotation"
                                             >
                                                 Select
-                                            </button> */}
+                                            </button>
                                         </div>
                                     </div>
                                 ))
@@ -220,7 +213,7 @@ const AllVehicleQuotation = () => {
                         <div className="flex justify-center">
                             <a href="/pendingtripdetails" className="w-full sm:w-auto">
                                 <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full sm:w-auto">
-                                    Continue
+                                    Back to Trip Planning
                                 </button>
                             </a>
                         </div>
