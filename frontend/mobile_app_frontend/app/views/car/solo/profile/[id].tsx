@@ -156,7 +156,7 @@ export default function Views() {
 
             } catch (err) {
 
-                console.log(err)
+                console.log('case: ' + err)
 
             }
         }

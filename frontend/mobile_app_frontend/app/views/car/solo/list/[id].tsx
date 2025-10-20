@@ -115,9 +115,11 @@ export default function App() {
         }
 
     }
-    useEffect(() => {
-        x();
-    }, [])
+    useFocusEffect(
+        useCallback(() => {
+            x();
+        }, [])
+    );
 
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
@@ -164,6 +166,7 @@ export default function App() {
             return acc;
         }, {} as { [key: string]: { selected: boolean; selectedColor: string } });
     }, [selectedDates]);
+
     const handleSubmit = async () => {
         // 1. Validate that all required fields are filled
         if (Object.keys(selectedDates).length === 0 || !startLocation.trim() || !endLocation.trim() || !language.trim() || !time) {
