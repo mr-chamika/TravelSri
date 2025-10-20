@@ -176,6 +176,7 @@ public class Hashingpw {
                                 "/api/vehicle/city/{baseCity}/capacity/min/{minCapacity}",
                                 "/api/vehicle/update/{id}",
                                 "/api/vehicle/trip/{pendingTripId}",
+                                "/api/upcomingTrip/cancel/{original_pending_trip_id}",
                                 "/api/quotations",
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",

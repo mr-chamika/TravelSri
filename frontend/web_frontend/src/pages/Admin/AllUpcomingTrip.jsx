@@ -98,9 +98,27 @@ const AllUpcomingTrips = () => {
   };
 
   const handleViewTrip = (trip) => {
-    // Store the selected trip ID in localStorage
-    localStorage.setItem('selectedUpcomingTripId', trip.upcomingTripId);
+    console.log("=== NAVIGATING TO TRIP DETAILS ===");
+    console.log("Full trip object:", trip);
+    console.log("Trip ID field:", trip.id);
+    console.log("Available fields:", Object.keys(trip));
+    
+    // Use the correct ID field from the UpcomingTrip model
+    const tripId = trip.id || trip.upcomingTripId;
+    
+    if (!tripId) {
+        console.error("No valid trip ID found in trip object:", trip);
+        alert("Unable to view trip details - missing trip ID");
+        return;
+    }
+    
+    // Store the selected trip ID and data in localStorage
+    localStorage.setItem('selectedUpcomingTripId', tripId);
     localStorage.setItem('selectedUpcomingTrip', JSON.stringify(trip));
+    
+    console.log("Stored trip ID:", tripId);
+    console.log("Navigating to trip details page...");
+    
     // Navigate to trip details page
     window.location.href = "/upcomingtripdetails";
   };
@@ -201,7 +219,7 @@ const AllUpcomingTrips = () => {
           <div className="flex flex-col gap-4 md:gap-6">
             {filteredTrips.map((trip, idx) => (
               <div
-                key={trip.upcomingTripId || idx}
+                key={trip.id || trip.upcomingTripId || idx} // Updated to use correct ID field
                 className="flex flex-col md:flex-row items-start md:items-center bg-gray-100 rounded-xl px-4 md:px-8 py-4 md:py-5 hover:bg-gray-50 transition-colors duration-200"
               >
                 <div className="flex-1 w-full flex flex-col md:flex-row md:justify-between md:items-center gap-2">

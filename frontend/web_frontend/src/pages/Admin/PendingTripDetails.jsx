@@ -199,34 +199,52 @@ const PendingTripDetails = () => {
         return upcomingTrip;
     };
 
-    // Add these helper functions
+    // Replace the existing calculateTotalTripCost function with this:
     const calculateTotalTripCost = () => {
-        let total = 0;
+        let totalQuotationPrice = 0;
         
+        // Hotel quotation price
         if (selectedQuotations.hotel?.finalAmount) {
-            total += parseFloat(selectedQuotations.hotel.finalAmount);
+            totalQuotationPrice += parseFloat(selectedQuotations.hotel.finalAmount);
+        } else if (selectedQuotations.hotel?.totalAmount) {
+            totalQuotationPrice += parseFloat(selectedQuotations.hotel.totalAmount);
         } else if (selectedQuotations.hotel?.totalPricePerPerson && selectedQuotations.hotel?.groupSize) {
-            total += parseFloat(selectedQuotations.hotel.totalPricePerPerson) * parseInt(selectedQuotations.hotel.groupSize);
+            totalQuotationPrice += parseFloat(selectedQuotations.hotel.totalPricePerPerson) * parseInt(selectedQuotations.hotel.groupSize);
         }
         
+        // Vehicle quotation price
         if (selectedQuotations.vehicle?.quotedAmount) {
-            total += parseFloat(selectedQuotations.vehicle.quotedAmount);
+            totalQuotationPrice += parseFloat(selectedQuotations.vehicle.quotedAmount);
         }
         
+        // Guide quotation price
         if (selectedQuotations.guide?.quotedAmount) {
-            total += parseFloat(selectedQuotations.guide.quotedAmount);
+            totalQuotationPrice += parseFloat(selectedQuotations.guide.quotedAmount);
         }
         
-        console.log("Calculated total trip cost:", total);
-        return total;
+        // Calculate 10% markup
+        const markupAmount = totalQuotationPrice * 0.10;
+        
+        // Total trip price = Total quotation price + 10% markup
+        const totalTripPrice = totalQuotationPrice + markupAmount;
+        
+        console.log("Total Quotation Price:", totalQuotationPrice);
+        console.log("Markup Amount (10%):", markupAmount);
+        console.log("Total Trip Price:", totalTripPrice);
+        
+        return totalTripPrice;
     };
 
+    // Replace the existing calculateTotalPricePerPerson function with this:
     const calculateTotalPricePerPerson = () => {
-        const totalCost = calculateTotalTripCost();
-        const groupSize = selectedQuotations.hotel?.groupSize || tripData?.numberOfSeats || 1;
-        const pricePerPerson = totalCost / groupSize;
+        const totalTripPrice = calculateTotalTripCost(); // This already includes the 10% markup
+        const numberOfPersons = selectedQuotations.hotel?.groupSize || tripData?.numberOfSeats || 1;
+        const pricePerPerson = totalTripPrice / numberOfPersons;
         
-        console.log("Calculated price per person:", pricePerPerson, "for group size:", groupSize);
+        console.log("Total Trip Price:", totalTripPrice);
+        console.log("Number of Persons:", numberOfPersons);
+        console.log("Price Per Person:", pricePerPerson);
+        
         return pricePerPerson;
     };
 
@@ -264,8 +282,9 @@ const PendingTripDetails = () => {
 
             console.log("Created upcoming trip response:", response.data);
 
-            // Store the upcoming trip data
+            // Store the upcoming trip data for the next step (ADDED)
             localStorage.setItem('currentUpcomingTrip', JSON.stringify(response.data));
+            localStorage.setItem('upcomingTripForNextStep', JSON.stringify(response.data));
             localStorage.setItem('upcomingTripCreated', 'true');
 
             // Clear selected quotations
@@ -273,16 +292,23 @@ const PendingTripDetails = () => {
             localStorage.removeItem('selectedVehicleQuotation');
             localStorage.removeItem('selectedGuideQuotation');
 
+            // Reset the selected quotations state to update UI
+            setSelectedQuotations({
+                hotel: null,
+                vehicle: null,
+                guide: null
+            });
+
             // Show success message with details
             const servicesIncluded = [];
             if (selectedQuotations.hotel) servicesIncluded.push('Hotel');
             if (selectedQuotations.vehicle) servicesIncluded.push('Vehicle');
             if (selectedQuotations.guide) servicesIncluded.push('Guide');
             
-            alert(`Upcoming trip created successfully!\nServices included: ${servicesIncluded.join(', ')}\nTotal cost: ${formatPriceLKR(calculateTotalTripCost())}`);
+            alert(`Upcoming trip created successfully!\nServices included: ${servicesIncluded.join(', ')}\nTotal cost: ${formatPriceLKR(calculateTotalTripCost())}\n\nYou can now continue to the next step or select quotations for other trips.`);
             
-            // Navigate to upcoming trips
-            window.location.href = "/upcomingtrips";
+            // REMOVED: Navigate to upcoming trips
+            // window.location.href = "/upcomingtrips";
             
         } catch (error) {
             console.error("Error creating upcoming trip:", error);
@@ -596,7 +622,16 @@ const PendingTripDetails = () => {
 
                             <div className="flex justify-center mt-auto">
                                 <a href="/pendingtripdetails02" className="w-full md:w-auto">
-                                    <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full md:w-auto">
+                                    <button 
+                                        className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full md:w-auto"
+                                        onClick={() => {
+                                            // Ensure trip data is available for next step
+                                            const upcomingTrip = localStorage.getItem('currentUpcomingTrip');
+                                            if (upcomingTrip) {
+                                                localStorage.setItem('upcomingTripForNextStep', upcomingTrip);
+                                            }
+                                        }}
+                                    >
                                         Next
                                     </button>
                                 </a>

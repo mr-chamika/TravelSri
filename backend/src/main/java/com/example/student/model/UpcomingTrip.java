@@ -368,4 +368,12 @@ public class UpcomingTrip {
 
     @Field("hotel_quote_number")
     private String hotelQuoteNumber;
+
+    // ========== CANCELLATION DETAILS ==========
+
+    @Field("cancellation_reason")
+    private String cancellationReason;
+
+    @Field("cancelled_at")
+    private LocalDateTime cancelledAt;
 }

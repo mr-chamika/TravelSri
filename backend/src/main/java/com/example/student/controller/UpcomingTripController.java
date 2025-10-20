@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -296,16 +297,28 @@ public class UpcomingTripController {
             @PathVariable("id") String upcomingTripId,
             @RequestParam("reason") String reason) {
         try {
-            if (reason == null || reason.trim().isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            // Get the existing trip
+            Optional<UpcomingTrip> existingTrip = upcomingTripService.getUpcomingTripById(upcomingTripId);
+
+            if (existingTrip.isEmpty()) {
+                return ResponseEntity.notFound().build();
             }
 
-            UpcomingTrip cancelledTrip = upcomingTripService.cancelUpcomingTrip(upcomingTripId, reason);
-            return new ResponseEntity<>(cancelledTrip, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            UpcomingTrip trip = existingTrip.get();
+
+            // Update the trip status and add cancellation details
+            trip.setTripStatus("Cancelled");
+            trip.setCancellationReason(reason);
+            trip.setCancelledAt(LocalDateTime.now());
+            trip.setUpdatedAt(LocalDateTime.now());
+
+            // Save the updated trip
+            UpcomingTrip updatedTrip = upcomingTripService.updateUpcomingTrip(upcomingTripId, trip);
+
+            return ResponseEntity.ok(updatedTrip);
+
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

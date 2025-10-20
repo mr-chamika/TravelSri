@@ -10,20 +10,58 @@ const PendingTripDetails02 = () => {
     const [calendarDate, setCalendarDate] = useState(null);
 
     useEffect(() => {
-        // Load upcoming trip data
-        const storedUpcomingTrip = localStorage.getItem('upcomingTripForNextStep') || 
-                                   localStorage.getItem('currentUpcomingTrip');
+        // Load upcoming trip data - prioritize the newly created trip
+        const upcomingTripForNextStep = localStorage.getItem('upcomingTripForNextStep');
+        const currentUpcomingTrip = localStorage.getItem('currentUpcomingTrip');
+        const upcomingTripCreated = localStorage.getItem('upcomingTripCreated');
         
-        if (storedUpcomingTrip) {
-            const parsedTrip = JSON.parse(storedUpcomingTrip);
-            setUpcomingTrip(parsedTrip);
+        console.log("=== LOADING TRIP DATA IN DETAILS02 ===");
+        console.log("upcomingTripForNextStep exists:", !!upcomingTripForNextStep);
+        console.log("currentUpcomingTrip exists:", !!currentUpcomingTrip);
+        console.log("upcomingTripCreated flag:", upcomingTripCreated);
+        
+        let tripDataToUse = null;
+        
+        // Priority 1: Use the trip data specifically stored for next step
+        if (upcomingTripForNextStep) {
+            try {
+                tripDataToUse = JSON.parse(upcomingTripForNextStep);
+                console.log("Using upcomingTripForNextStep data");
+            } catch (error) {
+                console.error("Error parsing upcomingTripForNextStep:", error);
+            }
+        }
+        
+        // Priority 2: Use current upcoming trip if first option failed
+        if (!tripDataToUse && currentUpcomingTrip) {
+            try {
+                tripDataToUse = JSON.parse(currentUpcomingTrip);
+                console.log("Using currentUpcomingTrip data");
+            } catch (error) {
+                console.error("Error parsing currentUpcomingTrip:", error);
+            }
+        }
+        
+        if (tripDataToUse) {
+            setUpcomingTrip(tripDataToUse);
             console.log("=== UPCOMING TRIP LOADED IN DETAILS02 ===");
-            console.log("Trip data:", parsedTrip);
+            console.log("Trip ID:", tripDataToUse.id);
+            console.log("Trip Title:", tripDataToUse.title);
+            console.log("Selected Hotel ID:", tripDataToUse.selectedHotelId);
+            console.log("Selected Vehicle ID:", tripDataToUse.selectedVehicleId);
+            console.log("Selected Guide ID:", tripDataToUse.selectedGuideId);
+            console.log("Hotel Final Amount:", tripDataToUse.hotelFinalAmount);
+            console.log("Vehicle Final Amount:", tripDataToUse.vehicleFinalAmount);
+            console.log("Guide Final Amount:", tripDataToUse.guideFinalAmount);
+            console.log("Total Trip Cost:", tripDataToUse.totalTripCost);
+            console.log("Total Price Per Person:", tripDataToUse.totalPricePerPerson);
             console.log("==========================================");
             
-            if (parsedTrip.date) {
-                setCalendarDate(dayjs(parsedTrip.date));
+            if (tripDataToUse.date) {
+                setCalendarDate(dayjs(tripDataToUse.date));
             }
+        } else {
+            console.warn("No upcoming trip data found in localStorage");
         }
     }, []);
 
@@ -48,13 +86,14 @@ const PendingTripDetails02 = () => {
         }
     };
 
-      // Service items with real data from upcoming trip
+    // Service items with real data from upcoming trip
     const selectedItems = [
         {
             icon: "bg-blue-400",
             type: "Hotel",
-            name: upcomingTrip?.selectedHotelId ? `Hotel ${upcomingTrip.selectedHotelId}` : "Marriot",
-            price: upcomingTrip?.hotelFinalAmount ? formatPriceLKR(upcomingTrip.hotelFinalAmount) : "Rs: 110,000",
+            name: upcomingTrip?.selectedHotelId ? `Hotel ${upcomingTrip.selectedHotelId}` : "No Hotel Selected",
+            price: upcomingTrip?.hotelFinalAmount ? formatPriceLKR(upcomingTrip.hotelFinalAmount) : 
+                   upcomingTrip?.hotelTotalAmount ? formatPriceLKR(upcomingTrip.hotelTotalAmount) : "LKR 0.00",
             href: "/allhotelquotation",
             action: "Edit",
             isSelected: !!upcomingTrip?.selectedHotelId,
@@ -68,11 +107,13 @@ const PendingTripDetails02 = () => {
         {
             icon: "bg-purple-400",
             type: "Vehicle",
-            name: upcomingTrip?.selectedVehicleId ? `Vehicle ${upcomingTrip.selectedVehicleId}` : "AAB-1289",
-            price: upcomingTrip?.vehicleFinalAmount ? formatPriceLKR(upcomingTrip.vehicleFinalAmount) : "Rs: 100,000",
+            name: upcomingTrip?.selectedVehicleId ? `Vehicle ${upcomingTrip.selectedVehicleId}` : "No Vehicle Selected",
+            price: upcomingTrip?.vehicleFinalAmount ? formatPriceLKR(upcomingTrip.vehicleFinalAmount) : 
+                   upcomingTrip?.vehicleQuotedAmount ? formatPriceLKR(upcomingTrip.vehicleQuotedAmount) : 
+                   upcomingTrip?.vehicleTotalAmount ? formatPriceLKR(upcomingTrip.vehicleTotalAmount) : "LKR 0.00",
             href: "/allvehiclequotation",
             action: "Edit",
-            isSelected: !!upcomingTrip?.selectedVehicleId,
+            isSelected: !!(upcomingTrip?.selectedVehicleId || upcomingTrip?.vehicleFinalAmount || upcomingTrip?.vehicleQuotedAmount),
             iconSvg: (
                 <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
                     <rect x="3" y="13" width="18" height="5" rx="2" />
@@ -84,8 +125,9 @@ const PendingTripDetails02 = () => {
         {
             icon: "bg-green-400",
             type: "Guide",
-            name: upcomingTrip?.selectedGuideId ? `Guide ${upcomingTrip.selectedGuideId}` : "A.K.Samaraweera",
-            price: upcomingTrip?.guideFinalAmount ? formatPriceLKR(upcomingTrip.guideFinalAmount) : "Rs: 10,000",
+            name: upcomingTrip?.selectedGuideId ? `Guide ${upcomingTrip.selectedGuideId}` : "No Guide Selected",
+            price: upcomingTrip?.guideFinalAmount ? formatPriceLKR(upcomingTrip.guideFinalAmount) : 
+                   upcomingTrip?.guideQuotedAmount ? formatPriceLKR(upcomingTrip.guideQuotedAmount) : "LKR 0.00",
             href: "/allguidequotation",
             action: "Edit",
             isSelected: !!upcomingTrip?.selectedGuideId,
@@ -118,30 +160,52 @@ const PendingTripDetails02 = () => {
     const calculateTotals = () => {
         if (!upcomingTrip) {
             return {
-                totalAmount: 220000,
-                systemCharge: 22000,
-                finalAmount: 242000,
-                amountPerPerson: 8000,
+                totalAmount: 0,
+                systemCharge: 0,
+                finalAmount: 0,
+                amountPerPerson: 0,
                 totalSeats: 30
             };
         }
 
-        const hotelAmount = upcomingTrip.hotelFinalAmount || 0;
-        const vehicleAmount = upcomingTrip.vehicleFinalAmount || 0;
-        const guideAmount = upcomingTrip.guideFinalAmount || 0;
-        const totalAmount = hotelAmount + vehicleAmount + guideAmount;
-        const systemCharge = totalAmount * 0.1; // 10% system charge
-        const finalAmount = totalAmount + systemCharge;
-        const totalSeats = upcomingTrip.numberOfSeats || upcomingTrip.groupSize || 30;
-        const amountPerPerson = finalAmount / totalSeats;
+        // Use the pre-calculated values from the database if available
+        if (upcomingTrip.totalTripCost && upcomingTrip.totalPricePerPerson) {
+            const totalSeats = upcomingTrip.numberOfSeats || upcomingTrip.groupSize || 30;
+            const finalAmount = upcomingTrip.totalTripCost;
+            const amountPerPerson = upcomingTrip.totalPricePerPerson;
+            
+            // Calculate the base amount and system charge from the final amount
+            // finalAmount = totalAmount + (totalAmount * 0.1)
+            // finalAmount = totalAmount * 1.1
+            const totalAmount = finalAmount / 1.1;
+            const systemCharge = finalAmount - totalAmount;
+            
+            return {
+                totalAmount,
+                systemCharge,
+                finalAmount,
+                amountPerPerson,
+                totalSeats
+            };
+        } else {
+            // Fallback to manual calculation if pre-calculated values aren't available
+            const hotelAmount = upcomingTrip.hotelFinalAmount || upcomingTrip.hotelTotalAmount || 0;
+            const vehicleAmount = upcomingTrip.vehicleFinalAmount || upcomingTrip.vehicleQuotedAmount || 0;
+            const guideAmount = upcomingTrip.guideFinalAmount || upcomingTrip.guideQuotedAmount || 0;
+            const totalAmount = hotelAmount + vehicleAmount + guideAmount;
+            const systemCharge = totalAmount * 0.1; // 10% system charge
+            const finalAmount = totalAmount + systemCharge;
+            const totalSeats = upcomingTrip.numberOfSeats || upcomingTrip.groupSize || 30;
+            const amountPerPerson = finalAmount / totalSeats;
 
-        return {
-            totalAmount,
-            systemCharge,
-            finalAmount,
-            amountPerPerson,
-            totalSeats
-        };
+            return {
+                totalAmount,
+                systemCharge,
+                finalAmount,
+                amountPerPerson,
+                totalSeats
+            };
+        }
     };
 
     const totals = calculateTotals();
@@ -178,7 +242,7 @@ const PendingTripDetails02 = () => {
                                     
                                     <div className="flex items-center gap-2">
                                         <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            Trip ID: {upcomingTrip.upcomingTripId}
+                                            Trip ID: {upcomingTrip.id || upcomingTrip.upcomingTripId}
                                         </span>
                                         <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             Status: {upcomingTrip.tripStatus}
