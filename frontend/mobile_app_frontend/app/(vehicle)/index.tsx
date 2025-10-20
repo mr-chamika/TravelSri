@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from "react";
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from 'jwt-decode';
 
@@ -13,12 +13,30 @@ interface MyToken {
   id: string
 }
 
+interface Vehicle {
+  _id: string;
+  vehicleModel: string;
+  vehicleNumber: string;
+  seats: number;
+  ac: boolean;
+  fuelType: string;
+  gearType: boolean;
+  perKmPrice?: number;
+  dailyRatePrice?: number;
+  year?: string;
+  vehicleYearOfManufacture?: string;
+  images?: string[];
+}
+
 export default function Index() {
   const router = useRouter();
   const [userName, setUserName] = useState('Vehicle Owner');
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [vehicleCount, setVehicleCount] = useState(0);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
 
   // Fetch and decode JWT token to get user information
   useEffect(() => {
@@ -60,116 +78,224 @@ export default function Index() {
     fetchUserName();
   }, []);
 
+  // Fetch vehicle count and details
+  const fetchVehicleCount = useCallback(async () => {
+    try {
+      console.log('🚗 Fetching vehicle count and details...');
+      setLoadingVehicles(true);
+      const token = await AsyncStorage.getItem('access_token') || await AsyncStorage.getItem('token');
+      
+      if (!token || !userId) {
+        console.warn('⚠️ No token or userId found');
+        return;
+      }
+
+      const apiUrl = `http://localhost:8080/vehicle/owner?vehicleOwnerId=${userId}`;
+      console.log('📍 Vehicle API URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ Failed to fetch vehicles:', response.status);
+        setLoadingVehicles(false);
+        return;
+      }
+
+      const data = await response.json();
+      const count = Array.isArray(data) ? data.length : 0;
+      console.log(`✅ Vehicle count fetched: ${count} vehicles`);
+      setVehicleCount(count);
+      
+      // Store vehicles for summary display
+      if (Array.isArray(data)) {
+        setVehicles(data.slice(0, 3)); // Show up to 3 vehicles in summary
+        console.log(`📊 Vehicles for summary: ${data.slice(0, 3).length} vehicles loaded`);
+      }
+      
+      setLoadingVehicles(false);
+    } catch (error) {
+      console.error('❌ Error fetching vehicle count:', error);
+      setLoadingVehicles(false);
+    }
+  }, [userId]);
+
+  // Fetch vehicle count when userId changes
+  useEffect(() => {
+    if (userId) {
+      fetchVehicleCount();
+    }
+  }, [userId, fetchVehicleCount]);
+
+  // Refresh vehicle count when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('👁️ Vehicle index screen focused - refreshing vehicle count');
+      if (userId) {
+        fetchVehicleCount();
+      }
+    }, [userId, fetchVehicleCount])
+  );
+
   return (
-    <ScrollView className="flex-1 bg-[#F2F0EF]">    
-      {/* Good Morning Section */}
-      <View className="bg-[#FEFA17] mx-4 mt-4 p-4 rounded-2xl">
-        <Text className="text-black text-lg font-semibold mb-2">Good Morning, {userName}!</Text>
-        <Text className="text-black text-sm mb-4">You have 3 new booking requests</Text>
-
-        <View className="flex-row justify-between items-center">
-          <View className="items-center">
-            <Text className="text-black text-2xl font-bold">8</Text>
-            <Text className="text-black text-xs">Confirmed Bookings</Text>
+    <ScrollView className="flex-1 bg-[#F2F0EF]" showsVerticalScrollIndicator={false}>    
+      {/* Header Banner */}
+      <View className="bg-gradient-to-br from-[#FEFA17] to-[#FEF08A] px-4 pt-6 pb-4">
+        <View className="flex-row justify-between items-start mb-4">
+          <View className="flex-1">
+            <Text className="text-gray-700 text-xs font-semibold opacity-80">Welcome Back 👋</Text>
+            <Text className="text-gray-900 text-2xl font-black mt-1">{userName}</Text>
           </View>
+          <TouchableOpacity className="bg-white rounded-full p-2.5 shadow-lg">
+            <Ionicons name="notifications" size={20} color="#FEFA17" />
+          </TouchableOpacity>
+        </View>
 
-          <View className="items-center">
-            <Text className="text-black text-xl font-bold">Rs.185 000</Text>
-            <Text className="text-black text-xs">This Month</Text>
-          </View>
-
-          <View className="items-center">
-            <Text className="text-black text-2xl font-bold">4.8</Text>
-            <Text className="text-black text-xs">Rating</Text>
+        {/* Stats Banner */}
+        <View className="bg-[#FEFA17] rounded-2xl p-4 shadow-lg">
+          <View className="flex-row justify-between">
+            <View className="items-center flex-1">
+              <Text className="text-gray-900 text-2xl font-black">8</Text>
+              <Text className="text-gray-700 text-xs font-semibold mt-1">Bookings</Text>
+            </View>
+            <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
+            <View className="items-center flex-1">
+              <Text className="text-gray-900 text-2xl font-black">₹185K</Text>
+              <Text className="text-gray-700 text-xs font-semibold mt-1">Earnings</Text>
+            </View>
+            <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
+            <View className="items-center flex-1">
+              <View className="flex-row items-center justify-center">
+                <Text className="text-gray-900 text-2xl font-black">4.8</Text>
+                <Text className="text-yellow-600 text-base ml-0.5">★</Text>
+              </View>
+              <Text className="text-gray-700 text-xs font-semibold mt-1">Rating</Text>
+            </View>
           </View>
         </View>
       </View>
 
       {/* Quick Actions */}
-      <View className="flex-row justify-between mx-4 mt-6 mb-6">
-        <TouchableOpacity onPress={() => router.push('/(vehicle)/vehicleBookings')} className="bg-white p-4 rounded-2xl flex-1 mr-2 items-center shadow-sm">
-          <View className="bg-green-100 p-3 rounded-full mb-2">
-            <Ionicons name="calendar" size={24} color="#22c55e" />
-          </View>
-          <Text className="text-gray-800 text-sm font-medium">Manage Bookings</Text>
-          <Text className="text-gray-500 text-xs">3 bookings</Text>
-        </TouchableOpacity>
+      <View className="mx-4 mt-5 mb-5">
+        <Text className="text-gray-900 text-lg font-black mb-3">Quick Actions</Text>
+        <View className="flex-row justify-between gap-2">
+          <TouchableOpacity 
+            onPress={() => router.push('/(vehicle)/vehicleBookings')} 
+            className="bg-white rounded-2xl p-4 flex-1 shadow-md border-b-4 border-[#FEFA17] active:bg-gray-50"
+          >
+            <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEFA17] p-3 rounded-xl mb-2 self-center w-12 h-12 items-center justify-center">
+              <Ionicons name="calendar" size={24} color="#B8860B" />
+            </View>
+            <Text className="text-gray-900 text-sm font-bold text-center">Bookings</Text>
+            <Text className="text-[#FEFA17] text-xs font-bold text-center mt-1">3 pending</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/(vehicle)/myVehicles')} className="bg-white p-4 rounded-2xl flex-1 ml-2 items-center shadow-sm">
-          <View className="bg-blue-100 p-3 rounded-full mb-2">
-            <Ionicons name="car" size={24} color="#3b82f6" />
-          </View>
-          <Text className="text-gray-800 text-sm font-medium">My Vehicles</Text>
-          <Text className="text-gray-500 text-xs">2 vehicles</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Recent Activity */}
-      <View className="mx-4 mb-4">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-gray-800 text-lg font-semibold">Recent Activity</Text>
-          <TouchableOpacity>
-            <Text className="text-orange-500 text-sm">View All</Text>
+          <TouchableOpacity 
+            onPress={() => router.push('/(vehicle)/myVehicles')} 
+            className="bg-white rounded-2xl p-4 flex-1 shadow-md border-b-4 border-[#FEFA17] active:bg-gray-50"
+          >
+            <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEFA17] p-3 rounded-xl mb-2 self-center w-12 h-12 items-center justify-center">
+              <Ionicons name="car" size={24} color="#B8860B" />
+            </View>
+            <Text className="text-gray-900 text-sm font-bold text-center">My Vehicles</Text>
+            <Text className="text-[#FEFA17] text-xs font-bold text-center mt-1">{vehicleCount} vehicles</Text>
           </TouchableOpacity>
         </View>
-
-        <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="flex-1">
-              <Text className="text-gray-800 font-medium">Nimal Gamage</Text>
-              <Text className="text-gray-500 text-sm">Toyota Prius</Text>
-            </View>
-            <View className="bg-yellow-100 px-3 py-1 rounded-full">
-              <Text className="text-yellow-800 text-xs font-medium">pending</Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="flex-1">
-              <Text className="text-gray-800 font-medium">Group Tour - 12 People</Text>
-              <Text className="text-gray-500 text-sm">Toyota Hiace</Text>
-            </View>
-            <View className="bg-yellow-100 px-3 py-1 rounded-full">
-              <Text className="text-yellow-800 text-xs font-medium">pending</Text>
-            </View>
-          </View>
-        </View>
       </View>
 
-      {/* Confirmed Bookings */}
+      {/* Your Fleet Section */}
       <View className="mx-4 mb-6">
         <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-gray-800 text-lg font-semibold">Confirmed Bookings</Text>
-          <TouchableOpacity>
-            <Text className="text-orange-500 text-sm">View All</Text>
+          <Text className="text-gray-900 text-lg font-black">Your Fleet</Text>
+          <TouchableOpacity onPress={() => router.push('/(vehicle)/myVehicles')}>
+            <Text className="text-[#FEFA17] text-xs font-bold">View All →</Text>
           </TouchableOpacity>
         </View>
 
-        <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="flex-1">
-              <Text className="text-gray-800 font-medium">Group Tour - 7 People</Text>
-              <Text className="text-gray-500 text-sm">Toyota Hiace</Text>
-            </View>
-            <View className="bg-green-100 px-3 py-1 rounded-full">
-              <Text className="text-green-700 text-xs font-medium">confirmed</Text>
-            </View>
+        {loadingVehicles ? (
+          <View className="bg-white rounded-2xl p-6 shadow-md">
+            <Text className="text-gray-500 text-center text-sm font-semibold">Loading vehicles...</Text>
           </View>
-        </View>
+        ) : vehicles.length > 0 ? (
+          vehicles.map((vehicle, index) => {
+            return (
+              <View key={vehicle._id || index} className="bg-white rounded-2xl mb-3 shadow-md overflow-hidden border border-gray-100">
+                {/* Vehicle Header */}
+                <View className="bg-gradient-to-r from-[#FEF3C7] to-[#FEF08A] px-4 py-3 flex-row items-center">
+                  <View className="flex-1">
+                    <Text className="text-gray-900 font-black text-base">{vehicle.vehicleModel}</Text>
+                    <Text className="text-gray-600 text-xs font-semibold mt-0.5">{vehicle.vehicleNumber}</Text>
+                  </View>
+                </View>
 
-        <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-          <View className="flex-row items-center">
-            <View className="flex-1">
-              <Text className="text-gray-800 font-medium">Kasun Gonigoda</Text>
-              <Text className="text-gray-500 text-sm">Toyota Prius</Text>
-            </View>
-            <View className="bg-green-100 px-3 py-1 rounded-full">
-              <Text className="text-green-700 text-xs font-medium">confirmed</Text>
+                {/* Vehicle Info */}
+                <View className="p-4">
+                  {/* Specs Grid */}
+                  <View className="bg-gradient-to-br from-[#FAFAFA] to-[#F5F5F5] rounded-xl p-3 mb-3 border border-gray-100">
+                    <View className="flex-row justify-between">
+                      <View className="items-center flex-1">
+                        <Ionicons name="people" size={24} color="#6B7280" />
+                        <Text className="text-gray-600 text-xs font-bold mt-1">Seats</Text>
+                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.seats}</Text>
+                      </View>
+                      <View className="items-center flex-1">
+                        <Ionicons name="water" size={24} color="#6B7280" />
+                        <Text className="text-gray-600 text-xs font-bold mt-1">Fuel</Text>
+                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.fuelType}</Text>
+                      </View>
+                      <View className="items-center flex-1">
+                        <Ionicons name="settings" size={24} color="#6B7280" />
+                        <Text className="text-gray-600 text-xs font-bold mt-1">Gear</Text>
+                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.gearType ? 'Auto' : 'Manual'}</Text>
+                      </View>
+                      <View className="items-center flex-1">
+                        <Ionicons name="snow" size={24} color="#6B7280" />
+                        <Text className="text-gray-600 text-xs font-bold mt-1">AC</Text>
+                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.ac ? 'Yes' : 'No'}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Pricing & Action */}
+                  <View className="flex-row items-center justify-between">
+                    {(vehicle.perKmPrice || vehicle.dailyRatePrice) && (
+                      <View>
+                        <Text className="text-[#FEFA17] text-xs font-black mb-0.5">
+                          <Ionicons name="pricetag" size={11} color="#6B7280" /> Pricing
+                        </Text>
+                        <Text className="text-gray-900 font-black text-sm">
+                          {vehicle.perKmPrice ? `₹${vehicle.perKmPrice}/km` : ''}
+                          {vehicle.perKmPrice && vehicle.dailyRatePrice ? ' • ' : ''}
+                          {vehicle.dailyRatePrice ? `₹${vehicle.dailyRatePrice}/day` : ''}
+                        </Text>
+                      </View>
+                    )}
+                    <TouchableOpacity 
+                      onPress={() => router.push('/(vehicle)/myVehicles')}
+                      className="bg-[#FEFA17] px-4 py-2 rounded-lg active:bg-yellow-300 flex-row items-center"
+                    >
+                      <Ionicons name="open" size={14} color="#B8860B" />
+                      <Text className="text-gray-900 font-black text-xs ml-1.5">Manage</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        ) : (
+          <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEF08A] rounded-2xl p-6 shadow-md border-2 border-[#FEFA17]">
+            <View className="items-center">
+              <Ionicons name="car" size={48} color="#B8860B" />
+              <Text className="text-gray-900 text-center font-black text-base mt-3">No Vehicles Yet</Text>
+              <Text className="text-gray-600 text-xs text-center mt-1">Add your first vehicle to start earning</Text>
             </View>
           </View>
-        </View>
+        )}
       </View>
     </ScrollView>
   );

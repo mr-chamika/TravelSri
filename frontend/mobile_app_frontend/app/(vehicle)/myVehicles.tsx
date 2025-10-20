@@ -613,7 +613,12 @@ export default function App() {
       >
         {/* Title & Add Button Row */}
         <View className="flex-row justify-between items-center px-4 py-4">
-          <Text className="text-2xl font-bold text-gray-900">My Vehicles</Text>
+          <View>
+            <Text className="text-2xl font-bold text-gray-900">My Vehicles</Text>
+            <Text className="text-sm text-gray-600 mt-1">
+              🚗 Total: <Text className="font-semibold text-lg text-[#FEFA17]">{vehicleData.length}</Text> vehicle{vehicleData.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
           <Pressable
             className="bg-[#FEFA17] px-4 py-2 rounded-lg"
             onPress={() => router.push(`/views/vehicle/add/[id]`)}
