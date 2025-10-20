@@ -72,6 +72,8 @@
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
+    "sockjs-client": "^1.6.1",
+    "stompjs": "^2.3.3",
     "translate-google": "^1.5.0",
     "uuid": "^11.1.0"
   },
@@ -87,6 +89,7 @@
     "eslint-config-expo": "~9.2.0",
     "metro-react-native-babel-preset": "^0.77.0",
     "postcss": "^8.5.6",
+    "react-native-worklets": "^0.6.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
   },

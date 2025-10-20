@@ -81,6 +81,53 @@ export default function Bookings() {
         }
     };
 
+    const handleDeclineTrip = async () => {
+        console.log('🔍 Decline Trip Clicked');
+        console.log('📌 Current bookingId state:', bookingId);
+
+        if (!bookingId) {
+            Alert.alert('Error', 'Booking ID not found');
+            console.log('❌ Booking ID is still undefined - Route params not received');
+            return;
+        }
+
+        try {
+            const token = await AsyncStorage.getItem('token');
+            console.log('🔐 Token retrieved for decline:', token ? '✅ Token found' : '❌ No token found');
+            if (!token) {
+                Alert.alert('Error', 'Authentication token not found. Please login again.');
+                return;
+            }
+
+            const url = `http://localhost:8080/api/guide/bookings/${bookingId}/decline`;
+            console.log('🌐 API URL (decline):', url);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            console.log('📥 Decline Response Status:', response.status);
+
+            if (response.ok) {
+                console.log('✅ Tour declined successfully');
+                Alert.alert('Declined', 'Tour declined successfully', [
+                    { text: 'OK', onPress: () => router.back() }
+                ]);
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                console.log('❌ Decline API Error Response:', errorData);
+                Alert.alert('Error', errorData.message || `Failed to decline tour (${response.status})`);
+            }
+        } catch (error) {
+            console.error('❌ Error declining tour:', error);
+            Alert.alert('Error', 'Network error. Please try again.');
+        }
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#FFEB3B" />
@@ -101,11 +148,8 @@ export default function Bookings() {
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Trip Header */}
                 <View style={styles.tripHeader}>
-                    <Text style={styles.tripTitle}>Trip Assignment</Text>
-                    <Text style={styles.tripDate}>#TSL-2024-001</Text>
-                    <TouchableOpacity style={styles.shareButton}>
-                        <Text style={styles.shareButtonText}>Download PDF</Text>
-                    </TouchableOpacity>
+                    <Text style={styles.tripTitle}>Guide Booking Details</Text>
+                    <Text style={styles.tripDate}>{bookingId ? `Booking ID: ${bookingId}` : '# —'}</Text>
                 </View>
 
                 {/* Customer Information */}
@@ -130,17 +174,17 @@ export default function Bookings() {
                 {/* Trip Details */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Trip Details</Text>
-                    <View style={styles.tripDetails}>
+                    <View style={styles.tripDetailsCard}>
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>📍 Location:</Text>
+                            <Text style={styles.detailLabel}>📍 Location</Text>
                             <Text style={styles.detailValue}>Kandy</Text>
                         </View>
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>📅 Date:</Text>
+                            <Text style={styles.detailLabel}>📅 Date</Text>
                             <Text style={styles.detailValue}>2024-06-17</Text>
                         </View>
                         <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>🕐 Time:</Text>
+                            <Text style={styles.detailLabel}>🕐 Time</Text>
                             <Text style={styles.detailValue}>08:00 AM</Text>
                         </View>
                     </View>
@@ -177,7 +221,7 @@ export default function Bookings() {
                     </View>
                 </View>
 
-                {/* Location Map */}
+                {/* Location Map (simplified) */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Trip Location</Text>
                     <View style={styles.mapContainer}>
@@ -207,38 +251,37 @@ export default function Bookings() {
                                                 maxZoom: 19
                                             }).addTo(map);
                                             L.marker([7.2906, 80.6337])
-                                                .bindPopup('<b>Kandy</b><br/>Trip Destination')
                                                 .addTo(map)
+                                                .bindPopup('Trip Destination')
                                                 .openPopup();
                                         </script>
                                     </body>
                                     </html>
                                 `,
                             }}
-                            scrollEnabled={true}
-                            scalePageToFit={true}
+                            scrollEnabled={false}
+                            scalesPageToFit={true}
                         />
                     </View>
 
-                    <View style={styles.locationInfo}>
-                        <View style={styles.infoItem}>
-                            <Ionicons name="location" size={18} color="#EAB308" />
-                            <Text style={styles.infoText}>Kandy - Trip destination</Text>
-                        </View>
+                    <View style={styles.locationInfoSimple}>
+                        <Ionicons name="location" size={18} color="#EAB308" />
+                        <Text style={styles.locationName}>Kandy</Text>
+                        <Text style={styles.locationDesc}>Trip destination</Text>
                     </View>
                 </View>
             </ScrollView>
 
             {/* Bottom Actions */}
             <View style={styles.bottomActions}>
-                <TouchableOpacity style={styles.cancelButton}>
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                <TouchableOpacity style={styles.declineButton} onPress={handleDeclineTrip}>
+                    <Text style={styles.declineButtonText}>Decline</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                     style={styles.confirmButton}
                     onPress={handleConfirmTrip}
                 >
-                    <Text style={styles.confirmButtonText}>Confirm Trip</Text>
+                    <Text style={styles.confirmButtonText}>Accept Booking</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -517,58 +560,6 @@ const styles = StyleSheet.create({
         color: '#666',
         fontWeight: '500',
     },
-    routeVisualization: {
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    locationPoint: {
-        alignItems: 'center',
-        marginVertical: 4,
-    },
-    startMarker: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: '#4CAF50',
-        borderWidth: 3,
-        borderColor: '#FFF',
-        shadowColor: '#4CAF50',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    endMarker: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: '#EAB308',
-        borderWidth: 3,
-        borderColor: '#FFF',
-        shadowColor: '#EAB308',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    routeLine: {
-        width: 2,
-        height: 40,
-        backgroundColor: '#EAB308',
-        marginVertical: 4,
-    },
-    startLabel: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#1a1a1a',
-        marginTop: 6,
-    },
-    endLabel: {
-        fontSize: 13,
-        fontWeight: '700',
-        color: '#1a1a1a',
-        marginTop: 6,
-    },
     mapPlaceholder: {
         flex: 1,
         justifyContent: 'center',
@@ -634,5 +625,33 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
         letterSpacing: 0.2,
+    },
+    declineButton: {
+        flex: 1,
+        backgroundColor: '#FEE2E2',
+        paddingVertical: 11,
+        borderRadius: 10,
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#F44336',
+    },
+    declineButtonText: {
+        color: '#DC2626',
+        fontSize: 14,
+        fontWeight: '700',
+        letterSpacing: 0.2,
+    },
+    tripDetailsCard: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#e6e6e6',
+    },
+    locationInfoSimple: {
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
 })

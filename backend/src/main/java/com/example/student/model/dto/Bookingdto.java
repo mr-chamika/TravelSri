@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -72,6 +73,16 @@ public class Bookingdto {
     private String pickupTime;
     private Boolean oneWayTrip;
 
+    // Additional fields from example JSON
+    private String title; // from "title" in example JSON
+    private List<String> subtitle; // from "subtitle"
+    private String location; // from "location"
+    private List<String> bookingDates; // from "bookingDates"
+    private Integer ratings; // from "ratings"
+    private Integer price; // from "price"
+    private String userId; // from "userId"
+    private String mobileNumber; // from "mobileNumber"
+
     // Timestamps
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -90,7 +101,7 @@ public class Bookingdto {
     }
 
     public boolean isPaymentSuccessful() {
-        return "SUCCESS".equals(this.paymentStatus);
+        return "SUCCESS".equals(this.paymentStatus) || Boolean.TRUE.toString().equalsIgnoreCase(this.paymentStatus);
     }
 
     public boolean isConfirmed() {

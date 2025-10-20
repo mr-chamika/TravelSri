@@ -93,8 +93,9 @@ public interface BookingRepo extends MongoRepository<Booking, String> {
     List<Booking> findByTotalAmountBetween(Double minAmount, Double maxAmount);
 
     // Provider and traveler specific queries
-    @Query("{'providerId': ?0, 'status': ?1}")
-    List<Booking> findByProviderIdAndStatus(String providerId, String status);
+    @Query("{'serviceId': ?0, 'status': { $regex: ?1, $options: 'i' }}")
+    List<Booking> findByServiceIdAndStatusIgnoreCase(String serviceId, String status);
+
 
     @Query("{'travelerId': ?0, 'paymentStatus': ?1}")
     List<Booking> findByTravelerIdAndPaymentStatus(String travelerId, String paymentStatus);
@@ -162,8 +163,18 @@ public interface BookingRepo extends MongoRepository<Booking, String> {
     @Query("{'specialRequests': {$regex: ?0, $options: 'i'}}")
     List<Booking> findBySpecialRequestsContaining(String requests);
 
+    @Query(
+            value = "{ 'serviceId' : ?0 }",
+            fields = "{ 'location' : 1, 'bookingDates' : 1, 'price' : 1, 'userId' : 1, '_id' : 1, 'status' : 1, 'mobileNumber' : 1, 'type' : 1, 'paymentStatus' : 1 }"
+    )
+    List<Booking> findBookingsByServiceId(String serviceId);
+
+
     // Custom aggregation method to get recent bookings with limit
     default List<Booking> findRecentBookings(int limit) {
         return findTop10ByOrderByCreatedAtDesc(); // Default to top 10, you can customize this
     }
+
+
+
 }

@@ -1,6 +1,8 @@
 package com.example.student.services;
 
 import com.example.student.model.MoneyFlow;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +40,10 @@ public interface IMoneyFlowService {
      * Find money flows by type
      */
     List<MoneyFlow> findByFlowType(String flowType);
+
+    void recordMoneyFlow(String bookingId, String fromEntity, String toEntity,
+                         String fromEntityId, String toEntityId, BigDecimal amount,
+                         String flowType, String description, String status);
 
     /**
      * Find money flows by status

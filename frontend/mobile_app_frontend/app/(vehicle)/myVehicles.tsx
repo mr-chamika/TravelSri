@@ -5,10 +5,18 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar } from 'react-native-calendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 
 cssInterop(Image, { className: "style" });
+
+// JWT Token Interface
+interface MyToken {
+  sub: string;
+  id: string;
+}
 
 // Updated interface to match the form's FormData structure
 interface Vehicle {
@@ -673,61 +681,332 @@ export default function App() {
 
   const getData = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(`http://localhost:8080/vehicle/all`);
+      console.log('\n\n');
+      console.log('═══════════════════════════════════════════════════════════');
+      console.log('🚀 getData() FUNCTION CALLED AT:', new Date().toLocaleTimeString());
+      console.log('═══════════════════════════════════════════════════════════');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      setLoading(true);
+      console.log('✅ setLoading(true) - Loading state set');
+      console.log('⏱️ Timestamp:', new Date().toISOString());
+      
+      // Extract JWT and userId
+      console.log('\n\n🔑 ===== TOKEN EXTRACTION STARTED =====');
+      console.log('⏳ Retrieving access_token from AsyncStorage...');
+      let token = await AsyncStorage.getItem('access_token');
+      console.log('✔️ access_token retrieval completed');
+      console.log('1️⃣ Checking access_token:', token ? `✅ Found (${token.length} chars)` : '❌ Not found');
+      
+      if (!token) {
+        console.log('⚠️  access_token not found, trying fallback "token" key...');
+        token = await AsyncStorage.getItem('token');
+        console.log('2️⃣ Checking token (fallback):', token ? `✅ Found (${token.length} chars)` : '❌ Not found');
+      } else {
+        console.log('✅ Using access_token from first attempt');
       }
       
-      const data = await response.json();
+      if (!token) {
+        console.error('\n❌ ===== CRITICAL ERROR: NO TOKEN FOUND =====');
+        console.error('❌ Token not found in either access_token or token keys');
+        console.error('📍 This means user is NOT authenticated!');
+        console.error('📍 Cannot proceed with API call without authentication');
+        Alert.alert('Authentication Error', 'No token found. Please login again.');
+        throw new Error('NO_TOKEN_IN_ASYNCSTORAGE');
+      } else {
+        console.log('\n✅ ===== TOKEN FOUND =====');
+        console.log('📊 Token length:', token.length, 'characters');
+        console.log('📄 Token first 50 chars:', token.substring(0, 50));
+        console.log('� Token format check:', token.startsWith('eyJ') ? '✅ Valid JWT (starts with eyJ)' : '⚠️  Might not be JWT');
+      }
+      
+      let userId = '';
+      console.log('\n\n👤 ===== JWT DECODING STARTED =====');
+      console.log('⏳ Decoding JWT token to extract userId...');
+      if (token) {
+        try {
+          console.log('🔓 Calling jwtDecode()...');
+          const decoded = jwtDecode<MyToken>(token);
+          console.log('✅ JWT decoded successfully!');
+          console.log('🔍 Decoded payload:', JSON.stringify(decoded, null, 2));
+          
+          userId = decoded.id || decoded.sub;
+          console.log('\n✅ ===== USER ID EXTRACTED =====');
+          console.log('👤 Extracted userId:', userId);
+          console.log('📍 Source field:', decoded.id ? 'decoded.id' : 'decoded.sub');
+          
+          if (!userId) {
+            console.error('❌ CRITICAL: userId is empty after extraction!');
+            console.error('❌ decoded.id:', decoded.id);
+            console.error('❌ decoded.sub:', decoded.sub);
+            throw new Error('USERID_EXTRACTION_FAILED');
+          }
+        } catch (decodeError) {
+          console.error('\n❌ ===== JWT DECODE ERROR =====');
+          console.error('❌ Failed to decode JWT token');
+          console.error('❌ Error:', decodeError instanceof Error ? decodeError.message : String(decodeError));
+          console.error('❌ Error type:', decodeError instanceof Error ? decodeError.constructor.name : typeof decodeError);
+          throw decodeError;
+        }
+      } else {
+        console.error('⏭️  Skipping JWT decoding - token is null/undefined');
+        throw new Error('TOKEN_IS_NULL');
+      }
+      
+      // Construct API URL with vehicleOwnerId
+      console.log('\n\n🌐 ===== API URL CONSTRUCTION =====');
+      console.log('📍 userId value:', userId || '❌ EMPTY');
+      
+      const apiUrl = userId 
+        ? `http://localhost:8080/vehicle/owner?vehicleOwnerId=${userId}`
+        : `http://localhost:8080/vehicle/owner`;
+      
+      console.log('� Final API URL:', apiUrl);
+      console.log('✅ URL construction complete');
+      
+      console.log('\n\n📤 ===== SENDING API REQUEST =====');
+      console.log('⏳ About to call fetch()...');
+      console.log('📊 Request method: GET');
+      console.log('🌐 Request URL:', apiUrl);
+      console.log('🔐 Authorization header:', token ? `✅ Bearer token (${token.length} chars)` : '❌ No token');
+      console.log('⏱️ Request sent at:', new Date().toLocaleTimeString());
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: token ? {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        } : {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('\n✅ ===== API RESPONSE RECEIVED =====');
+      console.log('⏱️ Response received at:', new Date().toLocaleTimeString());
+      console.log('📊 Status Code:', response.status);
+      console.log('📊 Status Text:', response.statusText);
+      console.log('✅ Response OK:', response.ok ? '✅ YES (200-299)' : '❌ NO (400+)');
+      console.log('📋 Response type:', response.type);
+      console.log('📍 Response URL:', response.url);
+      
+      console.log('\n\n🔍 ===== RESPONSE STATUS CHECK =====');
+      console.log('⏳ Checking if response.ok is true...');
+      
+      if (!response.ok) {
+        console.error('❌ ===== RESPONSE ERROR: NOT OK =====');
+        console.error('❌ Response status:', response.status);
+        console.error('❌ Response OK flag:', response.ok, '(expected: true)');
+        console.error('⏳ Parsing error response body...');
+        
+        try {
+          const errorText = await response.text();
+          console.error('❌ Error response body:', errorText);
+        } catch (textErr) {
+          console.error('❌ Failed to parse error response:', textErr);
+        }
+        
+        console.error('❌ Possible causes:');
+        console.error('   1️⃣ Token expired or invalid');
+        console.error('   2️⃣ Token not recognized by backend');
+        console.error('   3️⃣ User ID mismatch (vehicleOwnerId != userId in token)');
+        console.error('   4️⃣ CORS issue');
+        console.error('   5️⃣ Backend server not responding properly');
+        
+        throw new Error(`HTTP error! status: ${response.status}`);
+      } else {
+        console.log('✅ ===== RESPONSE OK =====');
+        console.log('✅ Status code is in 200-299 range');
+      }
+      
+      console.log('\n\n📥 ===== PARSING RESPONSE JSON =====');
+      console.log('⏳ Calling response.json()...');
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('✅ JSON parsing successful');
+        console.log('📊 Data type:', typeof data);
+        console.log('📊 Is Array:', Array.isArray(data));
+        console.log('📊 Data preview:', JSON.stringify(data).substring(0, 200));
+      } catch (parseErr) {
+        console.error('❌ ===== JSON PARSING ERROR =====');
+        console.error('❌ Failed to parse response as JSON');
+        console.error('❌ Error:', parseErr instanceof Error ? parseErr.message : String(parseErr));
+        throw parseErr;
+      }
+      
+      console.log('\n📦 ===== RESPONSE DATA ANALYSIS =====');
+      console.log('✅ Data received and parsed');
+      console.log('📊 Data type:', typeof data);
+      console.log('📊 Is Array:', Array.isArray(data));
+      if (Array.isArray(data)) {
+        console.log('📊 Array length:', data.length);
+      } else if (data && typeof data === 'object') {
+        console.log('📊 Object keys:', Object.keys(data));
+      }
+      console.log('\n\n🚗 ===== VEHICLE DATA VALIDATION =====');
+      
+      if (!Array.isArray(data)) {
+        console.error('❌ ERROR: Response data is NOT an array!');
+        console.error('❌ Received type:', typeof data);
+        console.error('❌ This may cause rendering issues');
+        console.error('⚠️  Converting data to empty array for safety');
+        data = [];
+      } else if (data.length === 0) {
+        console.warn('⚠️  No vehicles found (empty array)');
+      } else {
+        console.log('✅ Data is an array');
+        console.log('🚗 Total vehicles received:', data.length);
+        
+        // Show first 3 vehicles
+        console.log('\n🔍 ===== VEHICLE PREVIEW =====');
+        data.slice(0, 3).forEach((vehicle: any, index: number) => {
+          console.log(`\n📍 Vehicle ${index + 1}:`);
+          console.log('  _id:', vehicle._id || '❌ MISSING');
+          console.log('  Model:', vehicle.vehicleModel || '❌ MISSING');
+          console.log('  Owner ID:', vehicle.vehicleOwnerId || '❌ MISSING');
+          console.log('  Driver:', (vehicle.firstName || '?') + ' ' + (vehicle.lastName || '?'));
+          console.log('  Seats:', vehicle.seats || '❌ MISSING');
+          console.log('  AC:', vehicle.ac || '❌ MISSING');
+          console.log('  Pricing:', vehicle.perKm ? 'Per km' : '', vehicle.dailyRate ? 'Daily' : '');
+        });
+      }
+      
+      
+      console.log('\n🔄 ===== DATA TRANSFORMATION STARTED =====');
+      console.log('⏳ Transforming', data.length, 'vehicles...');
       
       // Transform the data to match our interface
-      const transformedData = data.map((vehicle: any) => ({
-        ...vehicle,
-        // Ensure boolean fields are properly converted
-        ac: typeof vehicle.ac === 'string' 
-          ? vehicle.ac.toLowerCase() === 'ac' || vehicle.ac.toLowerCase() === 'true'
-          : Boolean(vehicle.ac),
-        gearType: typeof vehicle.gearType === 'string'
-          ? vehicle.gearType.toLowerCase() === 'automatic' || vehicle.gearType.toLowerCase() === 'true'
-          : Boolean(vehicle.gearType),
-        perKm: Boolean(vehicle.perKm),
-        dailyRate: Boolean(vehicle.dailyRate),
-        
-        // Ensure arrays are properly handled
-        languages: Array.isArray(vehicle.languages) ? vehicle.languages : 
-                  (typeof vehicle.languages === 'string' && vehicle.languages.length > 0) 
-                    ? vehicle.languages.split(',').map((lang: string) => lang.trim()) 
-                    : [],
-        whatsIncluded: Array.isArray(vehicle.whatsIncluded) ? vehicle.whatsIncluded : 
-                      (vehicle.whatsIncluded && typeof vehicle.whatsIncluded === 'object') 
-                        ? Object.values(vehicle.whatsIncluded) 
-                        : [],
-        images: Array.isArray(vehicle.images) ? vehicle.images : 
-               (vehicle.images && typeof vehicle.images === 'object') 
-                 ? Object.values(vehicle.images) 
-                 : [],
-        
-        // Ensure numbers are properly converted
-        experience: parseInt(vehicle.experience) || 0,
-        seats: parseInt(vehicle.seats) || 0,
-        doors: parseInt(vehicle.doors) || 0,
-        perKmPrice: parseFloat(vehicle.perKmPrice) || 0,
-        dailyRatePrice: parseFloat(vehicle.dailyRatePrice) || 0,
-      }));
+      let transformedData = [];
+      let transformErrors = 0;
       
-      setVehicleData(transformedData);
+      try {
+        transformedData = data.map((vehicle: any, index: number) => {
+          try {
+            console.log(`\n  [${index + 1}/${data.length}] Transforming vehicle:`, vehicle.vehicleModel || vehicle._id);
+            
+            const transformed = {
+              ...vehicle,
+              ac: typeof vehicle.ac === 'string' 
+                ? vehicle.ac.toLowerCase() === 'ac' || vehicle.ac.toLowerCase() === 'true'
+                : Boolean(vehicle.ac),
+              gearType: typeof vehicle.gearType === 'string'
+                ? vehicle.gearType.toLowerCase() === 'automatic' || vehicle.gearType.toLowerCase() === 'true'
+                : Boolean(vehicle.gearType),
+              perKm: Boolean(vehicle.perKm),
+              dailyRate: Boolean(vehicle.dailyRate),
+              
+              languages: Array.isArray(vehicle.languages) ? vehicle.languages : 
+                        (typeof vehicle.languages === 'string' && vehicle.languages.length > 0) 
+                          ? vehicle.languages.split(',').map((lang: string) => lang.trim()) 
+                          : [],
+              whatsIncluded: Array.isArray(vehicle.whatsIncluded) ? vehicle.whatsIncluded : 
+                            (vehicle.whatsIncluded && typeof vehicle.whatsIncluded === 'object') 
+                              ? Object.values(vehicle.whatsIncluded) 
+                              : [],
+              images: Array.isArray(vehicle.images) ? vehicle.images : 
+                     (vehicle.images && typeof vehicle.images === 'object') 
+                       ? Object.values(vehicle.images) 
+                       : [],
+              
+              experience: parseInt(vehicle.experience) || 0,
+              seats: parseInt(vehicle.seats) || 0,
+              doors: parseInt(vehicle.doors) || 0,
+              perKmPrice: parseFloat(vehicle.perKmPrice) || 0,
+              dailyRatePrice: parseFloat(vehicle.dailyRatePrice) || 0,
+            };
+            
+            if (index === 0) {
+              console.log('    ✅ Sample transformation:');
+              console.log('      ac:', vehicle.ac, '→', transformed.ac);
+              console.log('      languages count:', transformed.languages.length);
+              console.log('      images count:', transformed.images.length);
+              console.log('      experience:', transformed.experience);
+              console.log('      seats:', transformed.seats);
+            }
+            
+            return transformed;
+          } catch (itemErr) {
+            transformErrors++;
+            console.error(`    ❌ Error transforming vehicle ${index + 1}:`, itemErr);
+            return vehicle; // Return original if transformation fails
+          }
+        });
+      } catch (mapErr) {
+        console.error('❌ Error in map function:', mapErr);
+        throw mapErr;
+      }
+      
+      console.log('\n✅ ===== TRANSFORMATION COMPLETE =====');
+      console.log('✅ Successfully transformed:', transformedData.length, 'vehicles');
+      if (transformErrors > 0) {
+        console.warn('⚠️  Transformation errors:', transformErrors);
+      }
+      console.log('\n🔄 ===== STATE UPDATE =====');
+      console.log('⏳ Calling setVehicleData()...');
+      console.log('📊 Setting state with', transformedData.length, 'vehicles');
+      
+      try {
+        setVehicleData(transformedData);
+        console.log('✅ setVehicleData() call successful');
+      } catch (stateErr) {
+        console.error('❌ Error in setVehicleData():', stateErr);
+        throw stateErr;
+      }
+      
+      console.log('\n✅ ==================== getData() COMPLETED SUCCESSFULLY ====================');
+      console.log('✅ All steps executed without errors');
+      console.log('✅ Vehicles loaded:', transformedData.length);
+      console.log('✅ ===========================================================================\n');
     } catch (err) {
-      console.log('Error fetching vehicle data:', err);
+      console.log('\n\n❌ ==================== ERROR IN getData() ====================');
+      console.error('❌ An error occurred during execution');
+      console.error('❌ Error type:', err instanceof Error ? err.constructor.name : typeof err);
+      console.error('❌ Error message:', err instanceof Error ? err.message : String(err));
+      
+      if (err instanceof Error && err.stack) {
+        console.error('❌ Stack trace:');
+        err.stack.split('\n').forEach((line: string) => {
+          console.error('   ' + line);
+        });
+      }
+      
+      // Detailed error diagnostics
+      if (err instanceof Error) {
+        if (err.message.includes('NO_TOKEN')) {
+          console.error('\n🔑 Diagnosis: Token not found in AsyncStorage');
+          console.error('   Action: User needs to login');
+        } else if (err.message.includes('USERID_EXTRACTION')) {
+          console.error('\n👤 Diagnosis: Failed to extract userId from JWT');
+          console.error('   Action: Check JWT structure (should have "id" or "sub" field)');
+        } else if (err.message.includes('HTTP error')) {
+          console.error('\n🌐 Diagnosis: HTTP error from backend');
+          console.error('   Action: Check backend server, token validation, CORS settings');
+        } else if (err.message.includes('JSON parsing')) {
+          console.error('\n📦 Diagnosis: Response is not valid JSON');
+          console.error('   Action: Check if response is actually JSON, not HTML error page');
+        }
+      }
+      
+      console.log('❌ ================================================================\n');
       Alert.alert('Error', 'Failed to load vehicle data. Please try again.');
     } finally {
       setLoading(false);
+      console.log('✅ Loading state set to false');
     }
   };
 
   useEffect(() => {
+    console.log('\n\n═══════════════════════════════════════════════════════════════');
+    console.log('🎯 ===== myVehicles COMPONENT MOUNTED =====');
+    console.log('⏰ Component mounted at:', new Date().toLocaleTimeString());
+    console.log('🎯 Calling getData() from useEffect...');
+    
     getData();
+    
+    return () => {
+      console.log('🎯 ===== myVehicles COMPONENT UNMOUNTING =====');
+      console.log('⏰ Component will unmount at:', new Date().toLocaleTimeString());
+    };
   }, []);
 
   // Refresh data when screen comes into focus (e.g., after registering a new vehicle)
@@ -829,7 +1108,12 @@ export default function App() {
       >
         {/* Title & Add Button Row */}
         <View className="flex-row justify-between items-center px-4 py-4">
-          <Text className="text-2xl font-bold text-gray-900">My Vehicles</Text>
+          <View>
+            <Text className="text-2xl font-bold text-gray-900">My Vehicles</Text>
+            <Text className="text-sm text-gray-600 mt-1">
+              🚗 Total: <Text className="font-semibold text-lg text-[#FEFA17]">{vehicleData.length}</Text> vehicle{vehicleData.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
           <Pressable
             className="bg-[#FEFA17] px-4 py-2 rounded-lg"
             onPress={() => router.push(`/views/vehicle/add/[id]`)}

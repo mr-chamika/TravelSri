@@ -244,6 +244,27 @@ public class GuideController {
         }
     }
 
+    @GetMapping("/bookings/{guideId}/confirmed/count")
+    public ResponseEntity<Long> getConfirmedBookingsCount(@PathVariable("guideId") String guideId) {
+        try {
+            if (guideId == null || guideId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> allBookings = bookingService.getBookingsByProvider(guideId);
+            long confirmedCount = allBookings.stream()
+                    .filter(booking -> "CONFIRMED".equals(booking.getStatus()))
+                    .count();
+
+            return new ResponseEntity<>(confirmedCount, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
     // Accept a booking request
     @PutMapping("/bookings/{bookingId}/accept")
     public ResponseEntity<Booking> acceptBookingRequest(

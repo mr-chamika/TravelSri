@@ -2,6 +2,7 @@ package com.example.student.repo;
 
 import com.example.student.model.User;
 import com.example.student.model.dto.GuideViewdto;
+import com.example.student.model.dto.BookingListForVehicleDto;
 import com.example.student.model.dto.Guidedto;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -44,6 +45,18 @@ public interface UserRepo extends MongoRepository<User,String> {
             fields = "{ '_id': 1, 'firstName': 1, 'lastName': 1, 'description': 1, 'location': 1, 'experience': 1, 'stars': 1, 'reviewCount': 1, 'dailyRate': 1, 'pp': 1, 'verified': 1, 'identified': 1, 'specializations': 1, 'responseTime': 1, 'responseRate': 1, 'mobileNumber': 1, 'languages': 1, 'images': 1, 'bio': 1, 'education': 1, 'certifications': 1, 'whyChooseMe': 1, 'tourStyles': 1, 'awards': 1, 'daysPerWeek': 1 }"
     )
     Optional<GuideViewdto> findData(String id);
+
+    @Query(
+            value = "{ 'status': 'active', 'type': 'vehicle' }",
+            fields = "{ '_id': 1, 'serviceId': 1, 'userId': 1, 'type': 1, 'thumbnail': 1, 'title': 1, 'subtitle': 1, 'location': 1, 'bookingDates': 1, 'ratings': 1, 'paymentStatus': 1, 'facilities': 1, 'price': 1, 'status': 1, 'mobileNumber': 1 }"
+    )
+    List<BookingListForVehicleDto> findActiveVehicleBookings();
+
+
+
+
+    @Query(value = "{ '_id' : ?0 }", fields = "{ 'location' : 1, '_id': 0 }")
+    Optional<User> findUserLocationById(String userId);
 
 }
 

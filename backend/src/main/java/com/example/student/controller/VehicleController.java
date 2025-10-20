@@ -2,19 +2,29 @@ package com.example.student.controller;
 
 import com.example.student.model.Vehicle;
 import com.example.student.model.Booking;
+import com.example.student.model.User;
+import com.example.student.model.dto.BookingListForGuideDto;
+import com.example.student.model.dto.BookingListForVehicleDto;
 import com.example.student.model.dto.BookingRequest;
+import com.example.student.model.dto.Bookingdto;
+import com.example.student.repo.TravelerBookingRepo;
 import com.example.student.repo.VehicleRepo;
+import com.example.student.repo.UserRepo;
 import com.example.student.services.IBookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin
@@ -27,10 +37,19 @@ public class VehicleController {
     @Autowired
     private IBookingService bookingService;
 
+    @Autowired
+    private TravelerBookingRepo newrepo;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    private static final Logger logger = LoggerFactory.getLogger(VehicleController.class);
+
+
     @PostMapping("/addVehicle")
-    public ResponseEntity<String> AddVehicle(@RequestBody Vehicle vehicle){
+    public ResponseEntity<String> AddVehicle(@RequestBody Vehicle vehicle) {
         Vehicle x = vehicleRepo.save(vehicle);
-        if(x != null){
+        if (x != null) {
             return ResponseEntity.ok("Successfully added.");
         }
         return ResponseEntity.badRequest().body("Failed");
@@ -42,13 +61,170 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
+    @GetMapping("/owner")
+    public ResponseEntity<List<Vehicle>> getVehiclesByOwner(@RequestParam String vehicleOwnerId) {
+        List<Vehicle> vehicles = vehicleRepo.findByVehicleOwnerId(vehicleOwnerId);
+        return ResponseEntity.ok(vehicles);
+    }
+
     @GetMapping("/edit")
     public ResponseEntity<Vehicle> getVehicleById(@RequestParam String id) {
         Optional<Vehicle> vehicle = vehicleRepo.findById(id);
         return vehicle.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // NEW: Create vehicle booking endpoint
+    // Booking related endpoints merged here
+
+    @GetMapping("/bookings/provider/{providerId}")
+    public ResponseEntity<?> getBookingsByServiceId(@PathVariable("providerId") String serviceId) {
+        try {
+            System.out.println("getBookingsByServiceId called with serviceId: " + serviceId);
+            if (serviceId == null || serviceId.trim().isEmpty()) {
+                return new ResponseEntity<>("Service ID cannot be null or empty", HttpStatus.BAD_REQUEST);
+            }
+
+            List<BookingListForVehicleDto> bookings = newrepo.findActiveVehicleBookingsByServiceId(serviceId);
+            System.out.println("Bookings fetched: " + bookings.size());
+
+            List<Map<String, Object>> response = new java.util.ArrayList<>();
+
+            for (BookingListForVehicleDto booking : bookings) {
+                // Fetch user info safely
+                Optional<User> userOpt = userRepo.findById(booking.getUserId());
+                String username = userOpt.map(User::getUsername).orElse("Unknown");
+                String mobileNumber = userOpt.map(User::getMobileNumber).orElse("");
+
+                Map<String, Object> bookingInfo = new java.util.HashMap<>();
+                bookingInfo.put("bookingId", booking.get_id());
+                bookingInfo.put("serviceId", booking.getServiceId());
+                bookingInfo.put("userId", booking.getUserId());
+                bookingInfo.put("title", booking.getTitle());
+                bookingInfo.put("subtitle", booking.getSubtitle());
+                bookingInfo.put("location", booking.getLocation());
+                bookingInfo.put("bookingDates", booking.getBookingDates());
+                bookingInfo.put("ratings", booking.getRatings());
+                bookingInfo.put("paymentStatus", booking.getPaymentStatus());
+                bookingInfo.put("facilities", booking.getFacilities());
+                bookingInfo.put("price", booking.getPrice());
+                bookingInfo.put("status", booking.getStatus());
+                bookingInfo.put("username", username);
+                bookingInfo.put("mobileNumber", mobileNumber);
+                bookingInfo.put("thumbnail", booking.getThumbnail());
+
+                response.add(bookingInfo);
+            }
+
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>("Invalid service ID: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error retrieving bookings: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+
+    @GetMapping("/bookings/provider/{providerId}/pending")
+    public ResponseEntity<List<Bookingdto>> getPendingVehicleBookingRequests(@PathVariable("providerId") String providerId) {
+        try {
+            if (providerId == null || providerId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> pendingBookings = bookingService.getBookingsByProvider(providerId).stream()
+                    .filter(booking -> "vehicle".equals(booking.getProviderType()))
+                    .filter(booking -> "PENDING_PROVIDER_ACCEPTANCE".equals(booking.getStatus()) &&
+                            "SUCCESS".equals(booking.getPaymentStatus()))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(pendingBookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/bookings/provider/{providerId}/confirmed")
+    public ResponseEntity<List<Bookingdto>> getConfirmedVehicleBookings(@PathVariable("providerId") String providerId) {
+        try {
+            if (providerId == null || providerId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            List<Bookingdto> confirmedBookings = bookingService.getBookingsByProvider(providerId).stream()
+                    .filter(booking -> "vehicle".equals(booking.getProviderType()))
+                    .filter(booking -> "CONFIRMED".equals(booking.getStatus()))
+                    .collect(Collectors.toList());
+
+            return new ResponseEntity<>(confirmedBookings, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/bookings/{bookingId}/accept")
+    public ResponseEntity<Booking> acceptVehicleBookingRequest(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam("providerId") String providerId) {
+        try {
+            if (bookingId == null || bookingId.trim().isEmpty() ||
+                    providerId == null || providerId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            Booking acceptedBooking = bookingService.acceptBooking(bookingId, providerId);
+            return new ResponseEntity<>(acceptedBooking, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            } else if (e.getMessage().contains("not authorized")) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/bookings/{bookingId}/reject")
+    public ResponseEntity<Booking> rejectVehicleBookingRequest(
+            @PathVariable("bookingId") String bookingId,
+            @RequestParam("providerId") String providerId,
+            @RequestParam(value = "reason", required = false) String reason) {
+        try {
+            if (bookingId == null || bookingId.trim().isEmpty() ||
+                    providerId == null || providerId.trim().isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            Booking rejectedBooking = bookingService.rejectBooking(bookingId, providerId);
+
+            if (reason != null && !reason.trim().isEmpty()) {
+                rejectedBooking.setRejectionReason(reason);
+                bookingService.updateBooking(rejectedBooking);
+            }
+
+            return new ResponseEntity<>(rejectedBooking, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            } else if (e.getMessage().contains("not authorized")) {
+                return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            }
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PostMapping("/book")
     public ResponseEntity<?> createVehicleBooking(@RequestBody VehicleBookingRequest request) {
         try {
@@ -65,7 +241,6 @@ public class VehicleController {
                 return new ResponseEntity<>("Traveler ID is required", HttpStatus.BAD_REQUEST);
             }
 
-            // Check if vehicle exists
             Optional<Vehicle> vehicleOpt = vehicleRepo.findById(request.getVehicleId());
             if (vehicleOpt.isEmpty()) {
                 return new ResponseEntity<>("Vehicle not found", HttpStatus.NOT_FOUND);
@@ -73,15 +248,13 @@ public class VehicleController {
 
             Vehicle vehicle = vehicleOpt.get();
 
-            // Create booking request
             BookingRequest bookingRequest = new BookingRequest();
             bookingRequest.setTravelerId(request.getTravelerId());
-            bookingRequest.setProviderId(vehicle.getVehicleOwnerId()); // Vehicle owner is the provider
+            bookingRequest.setProviderId(vehicle.getVehicleOwnerId());
             bookingRequest.setProviderType("vehicle");
             bookingRequest.setServiceName("Vehicle Rental - " + vehicle.getVehicleModel());
             bookingRequest.setServiceDescription(buildServiceDescription(request, vehicle));
 
-            // Parse dates
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             LocalDateTime startDate = LocalDateTime.parse(request.getStartDate() + "T" +
                     (request.getPickupTime() != null ? convertTo24Hour(request.getPickupTime()) : "09:00"));
@@ -91,36 +264,31 @@ public class VehicleController {
             bookingRequest.setServiceStartDate(startDate);
             bookingRequest.setServiceEndDate(endDate);
 
-            // Calculate total amount
             BigDecimal totalAmount = calculateVehicleBookingAmount(request, vehicle);
             bookingRequest.setTotalAmount(totalAmount);
             bookingRequest.setCurrency("LKR");
 
-            // Set additional vehicle-specific details
             bookingRequest.setSpecialRequests(request.getSpecialRequests());
             bookingRequest.setNumberOfGuests(request.getNumberOfPassengers());
             bookingRequest.setLanguagePreference(request.getLanguagePreference());
             bookingRequest.setContactInformation(request.getContactInformation());
 
-            // Create the booking
             Booking booking = bookingService.createBooking(bookingRequest);
 
             return new ResponseEntity<>(booking, HttpStatus.CREATED);
 
         } catch (Exception e) {
-            return new ResponseEntity<>("Error creating vehicle booking: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Error creating vehicle booking: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // NEW: Get vehicle bookings for a traveler
     @GetMapping("/bookings/traveler/{travelerId}")
     public ResponseEntity<?> getVehicleBookingsForTraveler(@PathVariable String travelerId) {
         try {
             return new ResponseEntity<>(
                     bookingService.getBookingsByTraveler(travelerId).stream()
                             .filter(booking -> "vehicle".equals(booking.getProviderType()))
-                            .collect(java.util.stream.Collectors.toList()),
+                            .collect(Collectors.toList()),
                     HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>("Error retrieving vehicle bookings: " + e.getMessage(),
@@ -128,35 +296,6 @@ public class VehicleController {
         }
     }
 
-    // NEW: Get vehicle bookings for a provider (vehicle owner)
-    @GetMapping("/bookings/provider/{providerId}")
-    public ResponseEntity<?> getVehicleBookingsForProvider(@PathVariable String providerId) {
-        try {
-            return new ResponseEntity<>(
-                    bookingService.getBookingsByProvider(providerId).stream()
-                            .filter(booking -> "vehicle".equals(booking.getProviderType()))
-                            .collect(java.util.stream.Collectors.toList()),
-                    HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error retrieving vehicle bookings: " + e.getMessage(),
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // NEW: Accept vehicle booking
-    @PostMapping("/bookings/{bookingId}/accept")
-    public ResponseEntity<?> acceptVehicleBooking(@PathVariable String bookingId,
-                                                  @RequestParam String providerId) {
-        try {
-            Booking booking = bookingService.acceptBooking(bookingId, providerId);
-            return new ResponseEntity<>(booking, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Error accepting vehicle booking: " + e.getMessage(),
-                    HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    // NEW: Reject vehicle booking
     @PostMapping("/bookings/{bookingId}/reject")
     public ResponseEntity<?> rejectVehicleBooking(@PathVariable String bookingId,
                                                   @RequestParam String providerId,
@@ -174,7 +313,8 @@ public class VehicleController {
         }
     }
 
-    // Helper method to build service description
+    // Helper methods...
+
     private String buildServiceDescription(VehicleBookingRequest request, Vehicle vehicle) {
         StringBuilder description = new StringBuilder();
         description.append("Vehicle Rental: ").append(vehicle.getVehicleModel());
@@ -194,26 +334,20 @@ public class VehicleController {
         return description.toString();
     }
 
-    // Helper method to calculate booking amount
     private BigDecimal calculateVehicleBookingAmount(VehicleBookingRequest request, Vehicle vehicle) {
         BigDecimal baseAmount = BigDecimal.ZERO;
 
-        // Calculate based on vehicle pricing model
         if (vehicle.isDailyRate()) {
-            // Daily rate calculation
             long days = calculateDaysBetween(request.getStartDate(), request.getEndDate());
-            if (days == 0) days = 1; // Minimum 1 day
+            if (days == 0) days = 1;
             baseAmount = BigDecimal.valueOf(vehicle.getDailyRatePrice()).multiply(BigDecimal.valueOf(days));
         } else if (vehicle.isPerKm()) {
-            // Per km calculation - this would need distance calculation
-            // For now, using a base rate
-            baseAmount = BigDecimal.valueOf(vehicle.getPerKmPrice() * 100); // Assuming 100km average
+            baseAmount = BigDecimal.valueOf(vehicle.getPerKmPrice() * 100);
         }
 
         return baseAmount;
     }
 
-    // Helper method to calculate days between dates
     private long calculateDaysBetween(String startDate, String endDate) {
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -221,11 +355,10 @@ public class VehicleController {
             java.time.LocalDate end = java.time.LocalDate.parse(endDate, formatter);
             return java.time.temporal.ChronoUnit.DAYS.between(start, end);
         } catch (Exception e) {
-            return 1; // Default to 1 day if parsing fails
+            return 1;
         }
     }
 
-    // Helper method to convert 12-hour time to 24-hour format
     private String convertTo24Hour(String time12Hour) {
         try {
             DateTimeFormatter formatter12 = DateTimeFormatter.ofPattern("hh:mm a");
@@ -233,11 +366,11 @@ public class VehicleController {
             java.time.LocalTime time = java.time.LocalTime.parse(time12Hour, formatter12);
             return time.format(formatter24);
         } catch (Exception e) {
-            return "09:00"; // Default time
+            return "09:00";
         }
     }
 
-    // Inner class for vehicle booking request
+    // Inner DTO class for vehicle booking request
     public static class VehicleBookingRequest {
         private String vehicleId;
         private String travelerId;
@@ -252,10 +385,11 @@ public class VehicleController {
         private String specialRequests;
         private String contactInformation;
 
-        // Default constructor
         public VehicleBookingRequest() {}
 
-        // Getters and setters
+        // Getters and setters for all fields omitted for brevity, add them as needed
+        // ...
+
         public String getVehicleId() { return vehicleId; }
         public void setVehicleId(String vehicleId) { this.vehicleId = vehicleId; }
 

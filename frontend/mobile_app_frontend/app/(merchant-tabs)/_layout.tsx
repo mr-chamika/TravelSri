@@ -4,7 +4,7 @@ import { Feather, MaterialIcons, FontAwesome5, AntDesign } from '@expo/vector-ic
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { View, Image } from 'react-native';
-import Topbar from '../../components/Topbar';
+import Topbar from '../../components/topbar';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

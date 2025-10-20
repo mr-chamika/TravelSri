@@ -3,6 +3,7 @@ package com.example.student.services;
 import com.example.student.model.Booking;
 import com.example.student.model.dto.BookingRequest;
 import com.example.student.model.dto.Bookingdto;
+import com.example.student.services.PayoutService;
 import com.example.student.repo.BookingRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,9 @@ public class BookingServiceImpl implements IBookingService {
 
     @Autowired
     private BookingRepo bookingRepo;
+
+    @Autowired
+    private PayoutService payoutService;
 
     // Helper method to convert Booking to Bookingdto
     private Bookingdto convertToDto(Booking booking) {
@@ -192,6 +196,114 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
+    public Booking acceptGuideBooking(String bookingId, String providerId) {
+        Booking booking = getBookingByIdOrThrow(bookingId);
+
+        if (!"pending".equalsIgnoreCase(booking.getStatus())) {
+            throw new RuntimeException("Booking cannot be accepted in current status: " + booking.getStatus());
+        }
+
+        if (booking.getProviderId() != null && !booking.getProviderId().equals(providerId)) {
+            throw new RuntimeException("Booking already assigned to a different provider");
+        }
+
+        if (!"guide".equalsIgnoreCase(booking.getProviderType())) {
+            throw new RuntimeException("Booking is not a guide booking");
+        }
+
+        booking.setProviderId(providerId);
+        booking.setStatus("accepted");
+        booking.setUpdatedAt(LocalDateTime.now());
+
+        booking = bookingRepo.save(booking);
+
+        // Trigger payout to guide using payout service here
+        payoutService.recordProviderPayout(booking);
+
+        return booking;
+    }
+
+    public Booking acceptVehicleBooking(String bookingId, String providerId) {
+        Booking booking = getBookingByIdOrThrow(bookingId);
+
+        if (!"pending".equalsIgnoreCase(booking.getStatus())) {
+            throw new RuntimeException("Booking cannot be accepted in current status: " + booking.getStatus());
+        }
+
+        if (booking.getProviderId() != null && !booking.getProviderId().equals(providerId)) {
+            throw new RuntimeException("Booking already assigned to a different provider");
+        }
+
+        if (!"vehicle".equalsIgnoreCase(booking.getProviderType())) {
+            throw new RuntimeException("Booking is not a vehicle booking");
+        }
+
+        booking.setProviderId(providerId);
+        booking.setStatus("accepted");
+        booking.setUpdatedAt(LocalDateTime.now());
+
+        booking = bookingRepo.save(booking);
+
+        // Trigger payout to vehicle provider using payout service here
+        payoutService.recordProviderPayout(booking);
+
+        return booking;
+    }
+
+    private Booking getBookingByIdOrThrow(String bookingId) {
+        return bookingRepo.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+    }
+
+
+    @Override
+    public Booking createGuideBooking(BookingRequest request) {
+        try {
+            logger.info("Creating guide booking for traveler: {}", request.getTravelerId());
+
+            // Validate the request
+            request.validate();
+
+            Booking booking = new Booking();
+
+            // Populate common fields
+            booking.setTravelerId(request.getTravelerId());
+            booking.setProviderId(request.getProviderId());
+            booking.setProviderType(request.getProviderType());
+            booking.setServiceName(request.getServiceName());
+            booking.setServiceDescription(request.getServiceDescription());
+            booking.setServiceStartDate(request.getServiceStartDate());
+            booking.setServiceEndDate(request.getServiceEndDate());
+            booking.setTotalAmount(request.getTotalAmount());
+            booking.setCurrency("LKR"); // fixed currency
+            booking.setSpecialRequests(request.getSpecialRequests());
+            booking.setNumberOfGuests(request.getNumberOfGuests());
+            booking.setLanguagePreference(request.getLanguagePreference());
+            booking.setContactInformation(request.getContactInformation());
+
+            // Initialize booking status
+            booking.setStatus("PENDING_PAYMENT");
+            booking.setPaymentStatus("PENDING");
+
+            // Guide-specific fields
+            booking.setGuideType(request.getGuideType());
+            // You could also add guide language preferences or additional guide details
+
+            // Set timestamps
+            booking.onCreate();
+
+            // Save booking
+            Booking savedBooking = bookingRepo.save(booking);
+            logger.info("Guide booking created successfully with ID: {}", savedBooking.getId());
+
+            return savedBooking;
+        } catch (Exception e) {
+            logger.error("Error creating guide booking", e);
+            throw new RuntimeException("Failed to create guide booking", e);
+        }
+    }
+
+
     @Override
     public Optional<Booking> getBookingById(String bookingId) {
         try {
@@ -232,37 +344,30 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
+
     @Override
     public Booking acceptBooking(String bookingId, String providerId) {
-        try {
-            Optional<Booking> optBooking = bookingRepo.findById(bookingId);
-            if (optBooking.isPresent()) {
-                Booking booking = optBooking.get();
-
-                if (!booking.getProviderId().equals(providerId)) {
-                    throw new RuntimeException("Provider not authorized for this booking");
-                }
-
-                if (!"PENDING_PROVIDER_ACCEPTANCE".equals(booking.getStatus())) {
-                    throw new RuntimeException("Booking cannot be accepted in current status: " + booking.getStatus());
-                }
-
-                booking.setStatus("CONFIRMED");
-                booking.setProviderAcceptedAt(LocalDateTime.now());
-                booking.onUpdate();
-
-                logger.info("{} booking {} accepted by provider {}",
-                        booking.getProviderType(), bookingId, providerId);
-
-                return bookingRepo.save(booking);
-            }
-
-            throw new RuntimeException("Booking not found: " + bookingId);
-        } catch (Exception e) {
-            logger.error("Error accepting booking", e);
-            throw new RuntimeException("Failed to accept booking", e);
+        Optional<Booking> optionalBooking = bookingRepo.findById(bookingId);
+        if (optionalBooking.isEmpty()) {
+            throw new RuntimeException("Booking not found");
         }
+        Booking booking = optionalBooking.get();
+
+        if (!"pending".equalsIgnoreCase(booking.getStatus())) {
+            throw new RuntimeException("Booking cannot be accepted in its current status: " + booking.getStatus());
+        }
+
+        if (booking.getProviderId() != null && !booking.getProviderId().equals(providerId)) {
+            throw new RuntimeException("Booking already has a different provider assigned");
+        }
+
+        booking.setProviderId(providerId);
+        booking.setStatus("accepted");
+        booking.setUpdatedAt(LocalDateTime.now());
+
+        return bookingRepo.save(booking);
     }
+
 
     @Override
     public Booking rejectBooking(String bookingId, String providerId) {
@@ -535,4 +640,6 @@ public class BookingServiceImpl implements IBookingService {
             return List.of();
         }
     }
+
+
 }

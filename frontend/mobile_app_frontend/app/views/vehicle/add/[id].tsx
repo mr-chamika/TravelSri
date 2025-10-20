@@ -19,6 +19,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import * as FileSystem from 'expo-file-system';
 import { ImagePickerAsset } from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+
+// Interface for JWT token
+interface MyToken {
+  sub: string;
+  id: string;
+}
 
 // Combined FormData Interface for all steps
 interface FormData {
@@ -194,6 +202,9 @@ export default function MultiStepForm() {
   // State for current step in the form
   const [step, setStep] = useState(1);
 
+  // State for JWT user ID
+  const [userId, setUserId] = useState<string | null>(null);
+
   // Language input state - moved to top level to avoid conditional hook usage
   const [languageInput, setLanguageInput] = useState('');
 
@@ -248,6 +259,87 @@ export default function MultiStepForm() {
   const [showYearPicker, setShowYearPicker] = useState(false);
   const [showGearTypePicker, setShowGearTypePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  // Extract JWT token on component mount
+  const extractUserIdFromJWT = async () => {
+    console.log('🔑 extractUserIdFromJWT() called');
+    try {
+      console.log('⏳ Attempting to retrieve token from AsyncStorage...');
+      
+      // Debug: List all AsyncStorage keys
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log('📚 All AsyncStorage keys:', allKeys);
+      } catch (debugError) {
+        console.error('❌ Error listing AsyncStorage keys:', debugError);
+      }
+      
+      // Try primary key first
+      let token = await AsyncStorage.getItem('access_token');
+      console.log('� Token with access_token:', !!token);
+      
+      // Try alternative key if primary not found
+      if (!token) {
+        console.log('⚠️ access_token not found, trying alternative key: token');
+        token = await AsyncStorage.getItem('token');
+        console.log('🔍 Token with token key:', !!token);
+      }
+      
+      if (token) {
+        console.log('📦 Token found in AsyncStorage');
+        console.log('🔓 Token length:', token.length, 'characters');
+        console.log('📄 Token preview:', token.substring(0, 50) + '...');
+        
+        try {
+          const decoded = jwtDecode<MyToken>(token);
+          console.log('✅ Token decoded successfully');
+          console.log('🔍 Decoded token:', decoded);
+          
+          const extractedId = decoded.id || decoded.sub;
+          console.log('👤 Extracted ID:', extractedId, '(from:', decoded.id ? 'id' : 'sub', ')');
+          
+          setUserId(extractedId);
+          console.log('💾 User ID set in state via setUserId():', extractedId);
+        } catch (decodeError) {
+          console.error('❌ JWT decode failed:', decodeError);
+          throw decodeError;
+        }
+      } else {
+        console.error('❌ No token found in AsyncStorage - user not authenticated');
+        console.error('⚠️ Token not found with keys: access_token, token');
+        Alert.alert('Login Required', 'Please log in to add a vehicle.', [
+          {
+            text: 'OK',
+            onPress: () => {
+              router.replace('/');
+            }
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('❌ Error extracting JWT:', error);
+      console.error('📍 Error type:', error instanceof Error ? error.message : String(error));
+      Alert.alert('Authentication Error', 'Session expired. Please log in again.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.replace('/');
+          }
+        }
+      ]);
+    }
+  };
+
+  // Call extractUserIdFromJWT on component mount
+  React.useEffect(() => {
+    console.log('🎯 Component Mounted - Extracting JWT');
+    extractUserIdFromJWT();
+  }, []);
+
+  // Debug userId changes
+  React.useEffect(() => {
+    console.log('👤 userId state changed to:', userId);
+  }, [userId]);
 
   // Enhanced image upload handler to support driver photo and multiple vehicle images
   const handleImageUpload = async (field: keyof FormData) => {
@@ -630,11 +722,31 @@ export default function MultiStepForm() {
 
   const submitForm = async () => {
     setIsSubmitting(true);
+    console.log('📝 submitForm() called');
     console.log('Form Data before submission:', formData);
+    console.log('👤 User ID to be submitted:', userId);
+
+    // Check if userId was successfully extracted
+    if (!userId) {
+      console.error('❌ CRITICAL: No userId found in state');
+      Alert.alert(
+        'Authentication Error',
+        'Failed to retrieve user information. Please log in again.',
+        [{
+          text: 'OK',
+          onPress: () => {
+            router.replace('/');
+          }
+        }]
+      );
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       // Build payload matching backend Vehicle.java with correct field mapping
       const payload = {
+        vehicleOwnerId: userId, // 👈 ADD userId as vehicleOwnerId
         firstName: formData.firstName,
         lastName: formData.lastName,
         nicNumber: formData.nicNumber,
@@ -678,7 +790,10 @@ export default function MultiStepForm() {
         images: formData.images.map(img => img?.base64 || '').filter(str => str !== ''),
       };
 
+      console.log('📤 Sending payload to API...');
       console.log('Payload being sent:', payload);
+      const payloadSize = JSON.stringify(payload).length;
+      console.log('📊 Payload size:', payloadSize, 'bytes');
 
       const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
         method: "POST",
@@ -689,6 +804,7 @@ export default function MultiStepForm() {
         body: JSON.stringify(payload),
       });
 
+      console.log('📥 Response received');
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
 
@@ -1293,7 +1409,7 @@ export default function MultiStepForm() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </View> 
     </View>
   );
 }

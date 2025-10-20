@@ -4,11 +4,8 @@ import com.example.student.model.Booking;
 import com.example.student.model.PaymentTransaction;
 import com.example.student.model.MoneyFlow;
 import com.example.student.model.TravelerWallet;
-import com.example.student.model.RefundHistory;
-import com.example.student.services.IBookingService;
-import com.example.student.services.PayHerePaymentServiceImpl;
-import com.example.student.services.IMoneyFlowService;
-import com.example.student.services.ITravelerWalletService;
+import com.example.student.repo.MoneyFlowRepo;
+import com.example.student.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -17,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,6 +38,9 @@ public class PayHereController {
 
     // ✅ FIXED: Only support LKR currency
     private static final String SUPPORTED_CURRENCY = "LKR";
+
+    @Autowired
+    private MoneyFlowRepo moneyFlowRepo;
 
     @Value("${payhere.merchant.id}")
     private String merchantId;
@@ -159,6 +160,8 @@ public class PayHereController {
     /**
      * ✅ EXISTING MAPPING: Create PayHere checkout - only supports LKR currency
      */
+
+    //step 2
     @PostMapping("/create-checkout")
     public ResponseEntity<Map<String, Object>> createPayHereCheckout(@RequestBody CheckoutRequest request) {
         try {
@@ -168,10 +171,9 @@ public class PayHereController {
             logger.info("Supported Currency: {}", SUPPORTED_CURRENCY);
             logger.info("Creating PayHere payment for booking: {}", request.getBookingId());
 
-            // Always use LKR currency
             String currency = SUPPORTED_CURRENCY;
-            BigDecimal totalAmount = new BigDecimal("1000.00"); // Default amount
-            String bookingType = "unknown"; // Track booking type
+            BigDecimal totalAmount = new BigDecimal("1000.00");
+            String bookingType = "unknown";
 
             if (request.getBookingId() != null && !request.getBookingId().trim().isEmpty()) {
                 Optional<Booking> optBooking = bookingService.getBookingById(request.getBookingId());
@@ -190,10 +192,8 @@ public class PayHereController {
                 logger.info("Found {} booking: ID={}, Amount={}", bookingType, booking.getId(), totalAmount);
                 logger.info("Enforcing LKR currency for all payments");
 
-                // Update the booking to ensure it uses LKR currency
                 if (booking.getCurrency() == null || !SUPPORTED_CURRENCY.equals(booking.getCurrency())) {
-                    logger.info("Updating booking currency from {} to {}",
-                            booking.getCurrency(), SUPPORTED_CURRENCY);
+                    logger.info("Updating booking currency from {} to {}", booking.getCurrency(), SUPPORTED_CURRENCY);
                     booking.setCurrency(SUPPORTED_CURRENCY);
                     booking.onUpdate();
                     bookingService.updateBooking(booking);
@@ -203,20 +203,17 @@ public class PayHereController {
                         booking.getId(), bookingType, totalAmount, SUPPORTED_CURRENCY);
             }
 
-            // Override with request amount if provided
             if (request.getAmount() != null && request.getAmount() > 0) {
                 totalAmount = new BigDecimal(request.getAmount());
                 logger.info("Amount overridden from request: {}", totalAmount);
             }
 
-            // Generate order ID
             String orderId = generateOrderId();
             logger.info("Generated order ID: {}", orderId);
 
             double amount = totalAmount.doubleValue();
             logger.info("Final Amount: {} {}", amount, currency);
 
-            // Customer details with booking-type-specific defaults
             String firstName = getCustomerFirstName(request, bookingType);
             String lastName = getCustomerLastName(request, bookingType);
             String email = getCustomerEmail(request, bookingType);
@@ -226,14 +223,11 @@ public class PayHereController {
             String country = getCustomerCountry(request, bookingType);
             String items = getItemsDescription(request, bookingType);
 
-            logger.info("Customer details processed for {} booking: {} {}, {}, {}",
-                    bookingType, firstName, lastName, email, phone);
+            logger.info("Customer details processed for {} booking: {} {}, {}, {}", bookingType, firstName, lastName, email, phone);
 
-            // Generate hash using LKR currency only
             String hash = generatecode(orderId, amount, merchantSecret, merchantId);
             logger.info("Generated Hash: {}", hash);
 
-            // Create booking-type-aware redirect URLs
             String bookingIdForUrl = request.getBookingId() != null ? request.getBookingId() : orderId;
             String returnUrl = String.format("%s/api/payments/payhere/return/payment-success?orderId=%s&bookingId=%s&amount=%.2f&currency=%s&type=%s",
                     appBaseUrl, orderId, bookingIdForUrl, amount, currency, bookingType);
@@ -244,13 +238,11 @@ public class PayHereController {
             logger.info("Return URL: {}", returnUrl);
             logger.info("Cancel URL: {}", cancelUrl);
 
-            // Create payment object
             Map<String, Object> paymentObject = createPaymentObject(
                     merchantId, returnUrl, cancelUrl, firstName, lastName, email, phone,
                     address, city, country, orderId, items, currency, amount, hash, request.getBookingId()
             );
 
-            // Validate required fields
             if (!validatePaymentObject(paymentObject)) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
@@ -258,11 +250,9 @@ public class PayHereController {
                 return ResponseEntity.badRequest().body(errorResponse);
             }
 
-            // Verify hash generation
             String testHash = generatecode(orderId, amount, merchantSecret, merchantId);
             boolean hashMatches = testHash.equals(hash);
-            logger.info("Hash verification - Generated: {}, Expected: {}, Match: {}",
-                    testHash, hash, hashMatches);
+            logger.info("Hash verification - Generated: {}, Expected: {}, Match: {}", testHash, hash, hashMatches);
 
             if (!hashMatches) {
                 logger.error("HASH MISMATCH!");
@@ -272,12 +262,13 @@ public class PayHereController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
             }
 
-            // Save payment transaction if booking exists
             if (request.getBookingId() != null && !request.getBookingId().trim().isEmpty()) {
                 saveInitialPaymentTransaction(request.getBookingId(), orderId, totalAmount, currency);
+
+                // Process and save money flow
+                processMoneyFlowAfterPayment(request.getBookingId(), totalAmount, orderId);
             }
 
-            // Create response
             String checkoutUrl = sandboxMode ?
                     "https://sandbox.payhere.lk/pay/checkout" :
                     "https://www.payhere.lk/pay/checkout";
@@ -287,7 +278,6 @@ public class PayHereController {
                     checkoutUrl, returnUrl, cancelUrl, hashMatches
             );
 
-            // Add booking type to response for frontend use
             response.put("bookingType", bookingType);
 
             logger.info("PayHere {} payment created successfully", bookingType);
@@ -305,6 +295,43 @@ public class PayHereController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+
+
+//money divider between system and provider
+    //step 3
+
+        public void processMoneyFlowAfterPayment(String bookingId, BigDecimal totalAmount, String transactionReference) {
+            logger.info("processMoneyFlowAfterPayment called with bookingId={}, totalAmount={}, transactionReference={}",
+                    bookingId, totalAmount, transactionReference);
+
+            BigDecimal commissionRate = new BigDecimal("0.10");
+            BigDecimal providerRate = new BigDecimal("0.90");
+
+            BigDecimal commissionAmount = totalAmount.multiply(commissionRate);
+            BigDecimal providerAmount = totalAmount.multiply(providerRate);
+
+            MoneyFlow moneyFlow = new MoneyFlow();
+            moneyFlow.setBookingId(bookingId);
+            moneyFlow.setFromEntity("TRAVELER");
+            moneyFlow.setToEntity("PLATFORM");
+            moneyFlow.setFlowType("COMMISSION");
+            moneyFlow.setAmount(totalAmount);
+            moneyFlow.setComission(commissionAmount);
+            moneyFlow.setProviderAmount(providerAmount);
+            moneyFlow.setDescription("Payment commission and provider charge split");
+            moneyFlow.setStatus("COMPLETED");
+            moneyFlow.setTransactionReference(transactionReference);
+            moneyFlow.setCreatedAt(LocalDateTime.now());
+
+            logger.info("Saving MoneyFlow with commission={}, providerAmount={}", commissionAmount, providerAmount);
+
+            moneyFlowService.save(moneyFlow);
+
+            logger.info("MoneyFlow saved successfully for bookingId={}", bookingId);
+        }
+
+
+
 
     // Helper methods for booking-type-specific customer defaults
     private String getCustomerFirstName(CheckoutRequest request, String bookingType) {

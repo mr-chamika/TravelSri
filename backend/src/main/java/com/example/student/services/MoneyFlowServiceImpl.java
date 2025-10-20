@@ -87,6 +87,33 @@ public class MoneyFlowServiceImpl implements IMoneyFlowService {
     }
 
     @Override
+    public void recordMoneyFlow(String bookingId, String fromEntity, String toEntity,
+                                String fromEntityId, String toEntityId, BigDecimal amount,
+                                String flowType, String description, String status) {
+        try {
+            MoneyFlow flow = new MoneyFlow();
+            flow.setBookingId(bookingId);
+            flow.setFromEntity(fromEntity);
+            flow.setToEntity(toEntity);
+            flow.setFromEntityId(fromEntityId);
+            flow.setToEntityId(toEntityId);
+            flow.setAmount(amount);
+            flow.setFlowType(flowType);
+            flow.setDescription(description);
+            flow.setStatus(status);
+            flow.setCreatedAt(java.time.LocalDateTime.now());
+
+            moneyFlowRepo.save(flow);
+
+            logger.info("Recorded money flow: {} -> {} | Amount: {} | Type: {} | Status: {}",
+                    fromEntity, toEntity, amount, flowType, status);
+        } catch (Exception e) {
+            logger.error("Failed to record money flow", e);
+            throw new RuntimeException("Failed to record money flow: " + e.getMessage());
+        }
+    }
+
+    @Override
     public List<MoneyFlow> findByStatus(String status) {
         try {
             return moneyFlowRepo.findByStatus(status);

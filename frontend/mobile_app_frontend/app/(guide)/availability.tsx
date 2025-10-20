@@ -32,6 +32,15 @@ interface MarkingProps {
   selected?: boolean;
   selectedColor?: string;
   dotColor?: string;
+  textColor?: string;
+  selectedTextColor?: string;
+  startingDay?: boolean;
+  endingDay?: boolean;
+  color?: string;
+  recurring?: boolean;
+  recurrencePattern?: string;
+  booking?: any;
+  disableTouchEvent?: boolean;
 }
 
 interface UnavailabilityItem {
@@ -65,6 +74,10 @@ export default function AvailabilityScreen() {
   const opacity = useSharedValue(0);
   const [notify, setNotify] = useState(false);
 
+  // State for warning/error messages
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
+
   // State for add unavailability modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -91,27 +104,71 @@ export default function AvailabilityScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [userToken, setUserToken] = useState<MyToken | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0); // Force calendar re-render
 
   // Load JWT token on component mount
   useEffect(() => {
     const loadToken = async () => {
       try {
+        console.log('🔐 [INIT] Starting token load');
         const token = await AsyncStorage.getItem('token');
+        console.log('🔐 [INIT] Token retrieved:', token ? `Yes (${token.length} chars)` : 'No');
+        
         if (token) {
-          const decoded = jwtDecode<MyToken>(token);
-          setUserToken(decoded);
-          fetchUnavailability(decoded.id);
+          try {
+            const decoded = jwtDecode<MyToken>(token);
+            console.log('🔐 [INIT] Token decoded successfully');
+            console.log('🔐 [INIT] User ID:', decoded.id);
+            console.log('🔐 [INIT] User email:', decoded.email);
+            
+            setUserToken(decoded);
+            console.log('🔐 [INIT] User token set in state');
+            
+            console.log('🔐 [INIT] Calling fetchUnavailability with userId:', decoded.id);
+            fetchUnavailability(decoded.id);
+            
+            console.log('🔐 [INIT] Calling fetchBookingsFromBackend with userId:', decoded.id);
+            // Fetch bookings from the API
+            fetchBookingsFromBackend(decoded.id);
+          } catch (decodeError) {
+            console.error('❌ [INIT] Error decoding token:', decodeError);
+          }
+        } else {
+          console.warn('⚠️ [INIT] No token found in AsyncStorage');
         }
       } catch (error) {
-        console.error('Error loading token:', error);
+        console.error('❌ [INIT] Error loading token from storage:', error);
       }
     };
+    
+    console.log('🔐 [INIT] useEffect triggered - component mounted');
     loadToken();
   }, []);
 
   // Function to handle date selection with correct types
   const handleDateSelection = (day: DateData) => {
     const dateString = day.dateString;
+    
+    // Check if this date is a pending or accepted booking date
+    const isBookingDate = bookings.some((booking: any) => {
+      if (booking.status === 'PENDING' || booking.status === 'ACCEPTED') {
+        return booking.bookingDates.some((bookingDate: string) => {
+          // Extract just the date part (YYYY-MM-DD format)
+          const datePart = bookingDate.split('T')[0];
+          return datePart === dateString;
+        });
+      }
+      return false;
+    });
+
+    if (isBookingDate) {
+      Alert.alert(
+        'Cannot Select This Date',
+        'You cannot mark pending or accepted booking dates as unavailable. Please cancel or complete the booking first.'
+      );
+      return;
+    }
     
     // Check if this date has an unavailability item
     const dateDetails = currentUnavailability.find((item) => {
@@ -160,8 +217,67 @@ export default function AvailabilityScreen() {
     if (isSelectingStartDate) {
       setStartDate(dateString);
       setIsSelectingStartDate(false);
+      setShowWarning(false); // Clear any previous warnings
+      
+      // Check if this date has any bookings and warn user
+      const hasBookingOnDate = bookings.some((booking: any) => {
+        return booking.bookingDates.some((bookingDate: string) => {
+          const datePart = bookingDate.split('T')[0];
+          return datePart === dateString;
+        });
+      });
+      
+      if (hasBookingOnDate) {
+        setWarningMessage('Warning: This start date has bookings. Please be careful when selecting the end date.');
+        setShowWarning(true);
+      }
     } else {
+      // When selecting end date, check for conflicts in the entire range
+      const rangeStart = startDate;
+      const rangeEnd = dateString;
+      
+      // Check if end date is before start date
+      if (new Date(dateString) < new Date(startDate)) {
+        setWarningMessage('Warning: End date cannot be before start date. Please select a later date.');
+        setShowWarning(true);
+        return;
+      }
+      
       setEndDate(dateString);
+      
+      // Check for bookings in the selected range
+      const conflictingBookings = bookings.filter((booking: any) => {
+        return booking.bookingDates.some((bookingDate: string) => {
+          const datePart = bookingDate.split('T')[0];
+          return datePart >= rangeStart && datePart <= rangeEnd;
+        });
+      });
+      
+      if (conflictingBookings.length > 0) {
+        const bookedDates = new Set<string>();
+        conflictingBookings.forEach((booking: any) => {
+          booking.bookingDates.forEach((bookingDate: string) => {
+            const datePart = bookingDate.split('T')[0];
+            if (datePart >= rangeStart && datePart <= rangeEnd) {
+              bookedDates.add(datePart);
+            }
+          });
+        });
+        
+        const bookedDateArray = Array.from(bookedDates).sort().slice(0, 3);
+        const bookedDateDisplay = bookedDateArray.length === 1 
+          ? bookedDateArray[0]
+          : bookedDateArray.join(', ') + (bookedDates.size > 3 ? `, +${bookedDates.size - 3} more` : '');
+        
+        setWarningMessage(
+          `Warning: Selected range has ${bookedDates.size} booked date(s):\n\n` +
+          `${bookedDateDisplay}\n\n` +
+          `You will not be able to add unavailability for these dates.`
+        );
+        setShowWarning(true);
+      } else {
+        setShowWarning(false); // Clear warning if no conflicts
+      }
     }
   };
 
@@ -239,11 +355,222 @@ export default function AvailabilityScreen() {
     }
   };
 
+  // Fetch bookings from the backend API
+  const fetchBookingsFromBackend = async (userId: string) => {
+    try {
+      const apiUrl = `http://localhost:8080/api/bookings/provider/${userId}?providerId=${userId}`;
+      console.log('🔍 [BOOKINGS] START - Fetching bookings from URL:', apiUrl);
+      console.log('🔍 [BOOKINGS] Using userId:', userId);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+
+      console.log('🔍 [BOOKINGS] Response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('❌ [BOOKINGS] HTTP error! status:', response.status);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 [BOOKINGS] Raw API response:', JSON.stringify(data, null, 2));
+      console.log('📦 [BOOKINGS] Response type:', typeof data);
+      console.log('📦 [BOOKINGS] Is array?', Array.isArray(data));
+      
+      let bookingsArray: any[] = [];
+      
+      if (data && Array.isArray(data)) {
+        console.log('📦 [BOOKINGS] Data is array, length:', data.length);
+        bookingsArray = data;
+      } else if (data && data.content && Array.isArray(data.content)) {
+        console.log('📦 [BOOKINGS] Data has content array, length:', data.content.length);
+        bookingsArray = data.content;
+      } else {
+        console.warn('⚠️ [BOOKINGS] Unexpected data structure');
+      }
+      
+      console.log('📦 [BOOKINGS] Total bookings to process:', bookingsArray.length);
+      
+      // Filter and format bookings
+      const formattedBookings = bookingsArray
+        .map((dto: any, index: number) => {
+          console.log(`📌 [BOOKINGS] Processing booking #${index}`);
+          console.log(`📌 [BOOKINGS] Available fields:`, Object.keys(dto));
+          console.log(`📌 [BOOKINGS] Full booking object:`, JSON.stringify(dto, null, 2));
+          
+          // Extract booking ID from various possible fields
+          let bookingId = dto._id || dto.id || dto.bookingId || 'unknown';
+          console.log(`📌 [BOOKINGS] Booking ID: ${bookingId}`);
+          console.log(`📌 [BOOKINGS] Status: ${dto.status || 'PENDING'}`);
+          console.log(`📌 [BOOKINGS] Booking dates: ${JSON.stringify(dto.bookingDates)}`);
+          
+          return {
+            _id: bookingId,
+            price: dto.price || 0,
+            bookingDates: dto.bookingDates || [],
+            location: dto.location || '',
+            userId: dto.userId || '',
+            mobileNumber: dto.mobileNumber || '',
+            username: dto.username || '',
+            status: (dto.status || 'PENDING').toLowerCase(),
+          };
+        })
+        .filter((booking: any) => {
+          // Show all booking statuses: pending, complete, accepted, confirmed, active
+          const isValid = ['pending', 'complete', 'completed', 'active', 'accepted', 'confirmed'].includes(booking.status.toLowerCase());
+          console.log(`🔍 [BOOKINGS] Filtering ${booking._id}: status=${booking.status}, pass=${isValid}`);
+          return isValid;
+        });
+      
+      console.log('📋 [BOOKINGS] Formatted and filtered bookings count:', formattedBookings.length);
+      console.log('📋 [BOOKINGS] Formatted bookings:', JSON.stringify(formattedBookings, null, 2));
+      
+      setBookings(formattedBookings);
+      
+      if (formattedBookings.length > 0) {
+        console.log('✅ [BOOKINGS] Found bookings, adding to calendar');
+        // Add bookings with confirmed/completed status to calendar
+        addBookingsToCalendar(formattedBookings);
+      } else {
+        console.warn('⚠️ [BOOKINGS] No confirmed/completed bookings found');
+      }
+      
+      // Summary log
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('📊 [BOOKINGS] SUMMARY:');
+      console.log('Total Bookings:', formattedBookings.length);
+      console.log('Bookings Data:', formattedBookings);
+      console.log('═══════════════════════════════════════════════════════');
+    } catch (error) {
+      console.error('❌ [BOOKINGS] Error fetching bookings:', error);
+      console.error('❌ [BOOKINGS] Error stack:', error instanceof Error ? error.stack : 'N/A');
+    }
+  };
+
+  // Add bookings to calendar marking based on status
+  const addBookingsToCalendar = (bookingsData: any[]) => {
+    console.log('📅 [CALENDAR] START - Adding bookings to calendar');
+    console.log('📅 [CALENDAR] Bookings to add:', bookingsData.length);
+    
+    setSelectedDates(prevMarkedDates => {
+      const newMarkedDates = { ...prevMarkedDates };
+      
+      console.log('📅 [CALENDAR] Previous marked dates count:', Object.keys(prevMarkedDates).length);
+      console.log('📅 [CALENDAR] Previous marked dates:', Object.keys(prevMarkedDates).slice(0, 5), '...');
+      
+      bookingsData.forEach((booking: any, bookingIndex: number) => {
+        try {
+          console.log(`📅 [CALENDAR] Processing booking #${bookingIndex}:`, booking._id);
+          console.log(`📅 [CALENDAR] Booking status:`, booking.status);
+          console.log(`📅 [CALENDAR] Booking dates array:`, booking.bookingDates);
+          
+          if (!booking.bookingDates || booking.bookingDates.length === 0) {
+            console.warn(`⚠️ [CALENDAR] No booking dates found for booking:`, booking._id);
+            return;
+          }
+          
+          console.log(`📅 [CALENDAR] Dates to mark: ${booking.bookingDates.length}`);
+          
+          // Process all dates in the bookingDates array
+          booking.bookingDates.forEach((dateEntry: any, dateIndex: number) => {
+            try {
+              console.log(`📅 [CALENDAR] Processing date #${dateIndex} from booking ${booking._id}`);
+              console.log(`📅 [CALENDAR] Raw date entry:`, dateEntry, 'Type:', typeof dateEntry);
+              
+              let dateString = dateEntry;
+              
+              // Handle date object or date string
+              if (typeof dateEntry === 'object' && dateEntry.date) {
+                console.log(`📅 [CALENDAR] Extracting date from object.date`);
+                dateString = dateEntry.date;
+              } else if (typeof dateEntry === 'object') {
+                console.log(`📅 [CALENDAR] Converting object to string`);
+                dateString = dateEntry.toString ? dateEntry.toString().split('T')[0] : '';
+              }
+              
+              if (!dateString) {
+                console.warn(`⚠️ [CALENDAR] Could not extract date string from:`, dateEntry);
+                return;
+              }
+              
+              // Ensure date string is in YYYY-MM-DD format
+              if (dateString.length > 10) {
+                dateString = dateString.split('T')[0];
+              }
+              
+              console.log(`📅 [CALENDAR] Final date string: ${dateString}, Status: ${booking.status}`);
+              
+              // Determine color based on status - Handle different case formats
+              let displayColor = '#ffd207ff';   // Yellow for PENDING (default)
+              let dotColor = '#ffd207ff';
+              let disableTouchEvent = false;  // By default allow selection
+              const statusLower = booking.status.toLowerCase();
+              
+              if (statusLower === 'complete' || statusLower === 'completed') {
+                displayColor = '#1565C0';     // Blue for COMPLETED
+                dotColor = '#1565C0';
+                disableTouchEvent = false;    // Allow selection for completed bookings
+                console.log(`📅 [CALENDAR] Using COMPLETED color: Blue #1565C0`);
+              } else if (statusLower === 'accepted' || statusLower === 'confirmed' || statusLower === 'active') {
+                displayColor = '#4CAF50';     // Bright Green for ACCEPTED/CONFIRMED
+                dotColor = '#4CAF50';
+                disableTouchEvent = true;     // Disable selection for ACCEPTED bookings
+                console.log(`📅 [CALENDAR] Using ACCEPTED color: Bright Green #4CAF50`);
+              } else if (statusLower === 'pending' || statusLower === 'pending') {
+                displayColor = '#ffd207ff';     // Orange for PENDING
+                dotColor = '#ffd207ff';
+                disableTouchEvent = false;    // Allow selection for pending bookings
+                console.log(`📅 [CALENDAR] Using PENDING color: Orange #FF9800`);
+              }
+              
+              newMarkedDates[dateString] = {
+                marked: true,
+                selected: true,
+                selectedColor: displayColor,
+                dotColor: dotColor,
+                textColor: '#ffffff',
+                disableTouchEvent: disableTouchEvent,
+                booking: booking, // Store booking reference
+              };
+              
+              console.log(`✅ [CALENDAR] Marked date: ${dateString} with color: ${displayColor}`);
+            } catch (dateError) {
+              console.error(`❌ [CALENDAR] Error processing date entry:`, dateEntry, dateError);
+            }
+          });
+        } catch (error) {
+          console.error(`❌ [CALENDAR] Error processing booking:`, booking, error);
+        }
+      });
+      
+      console.log('📅 [CALENDAR] Final marked dates count:', Object.keys(newMarkedDates).length);
+      console.log('📅 [CALENDAR] New marked dates (first 10):', Object.keys(newMarkedDates).slice(0, 10));
+      console.log('📅 [CALENDAR] Complete marked dates object:', JSON.stringify(newMarkedDates, null, 2).substring(0, 500) + '...');
+      
+      return newMarkedDates;
+    });
+  };
+
   // Update calendar with unavailable dates
   const updateCalendarMarking = (unavailabilityList: UnavailabilityItem[]) => {
-    const marked: { [key: string]: any } = {};
-    
-    console.log('🔍 updateCalendarMarking called with:', unavailabilityList);
+    setSelectedDates(prevMarkedDates => {
+      // START FRESH: Only keep booking marks, clear old unavailability marks
+      const marked: { [key: string]: any } = {};
+      
+      // First, re-add all booking dates (from prevMarkedDates that have booking property)
+      Object.entries(prevMarkedDates).forEach(([date, markData]: [string, any]) => {
+        if (markData.booking) {
+          marked[date] = markData;
+        }
+      });
+      
+      console.log('🔍 updateCalendarMarking called with:', unavailabilityList);
+      console.log('🔍 Cleared old unavailability marks, keeping bookings only. Booking marks count:', Object.keys(marked).length);
     
     // Helper function to get all dates between two dates
     const getDatesBetween = (startStr: string, endStr: string): string[] => {
@@ -386,27 +713,27 @@ export default function AvailabilityScreen() {
         datesInRange = getDatesBetween(startDate, endDate);
       }
       
-      // Determine color based on recurrence
+      // Determine color based on recurrence - All unavailability uses red color
       console.log('🎨 [COLOR] Item:', item);
       console.log('🎨 [COLOR] isRecurring:', item.isRecurring, 'Type:', typeof item.isRecurring);
       console.log('🎨 [COLOR] recurrencePattern:', item.recurrencePattern, 'Type:', typeof item.recurrencePattern);
       
-      let displayColor = '#FFC107'; // Default yellow for normal schedules
-      let displayDotColor = '#FFC107';
+      let displayColor = '#ff0f07ff'; // Red for all unavailability
+      let displayDotColor = '#ff0f07ff';
       
       console.log('🎨 [COLOR] Checking: item.isRecurring =', item.isRecurring);
       console.log('🎨 [COLOR] Checking: item.recurrencePattern =', item.recurrencePattern);
       
       if (item.isRecurring && item.recurrencePattern === 'weekly') {
-        console.log('🎨 [COLOR] Setting to WEEKLY (Amber/Orange)');
-        displayColor = '#FF9800'; // Amber/Orange for weekly recurring
-        displayDotColor = '#FF9800';
+        console.log('🎨 [COLOR] Setting to WEEKLY (Red)');
+        displayColor = '#ff0f07ff'; // Red for weekly recurring unavailability
+        displayDotColor = '#ff0f07ff';
       } else if (item.isRecurring && item.recurrencePattern === 'monthly') {
-        console.log('🎨 [COLOR] Setting to MONTHLY (Deep Orange)');
-        displayColor = '#FF6F00'; // Deep orange for monthly recurring
-        displayDotColor = '#FF6F00';
+        console.log('🎨 [COLOR] Setting to MONTHLY (Red)');
+        displayColor = '#ff0f07ff'; // Red for monthly recurring unavailability
+        displayDotColor = '#ff0f07ff';
       } else {
-        console.log('🎨 [COLOR] Setting to DEFAULT (Yellow)');
+        console.log('🎨 [COLOR] Setting to DEFAULT (Red)');
       }
       
       // Mark each date with filled circle styling and connecting line
@@ -431,7 +758,8 @@ export default function AvailabilityScreen() {
     });
     
     console.log('✨ Final marked dates:', marked);
-    setSelectedDates(marked);
+    return marked;
+    });
   };
 
   // Function to format date range
@@ -456,7 +784,8 @@ export default function AvailabilityScreen() {
   // Function to add new unavailability
   const handleAddUnavailability = () => {
     if (!startDate || !userToken) {
-      Alert.alert('Error', 'Please select a start date');
+      setWarningMessage('Please select a start date');
+      setShowWarning(true);
       return;
     }
 
@@ -467,7 +796,8 @@ export default function AvailabilityScreen() {
     selectedStartDate.setHours(0, 0, 0, 0);
 
     if (selectedStartDate < today) {
-      Alert.alert('Error', 'You cannot create schedules for past dates. Please select a date from today onwards.');
+      setWarningMessage('Error: You cannot create schedules for past dates. Please select a date from today onwards.');
+      setShowWarning(true);
       return;
     }
 
@@ -476,9 +806,53 @@ export default function AvailabilityScreen() {
       const selectedEndDate = new Date(endDate);
       selectedEndDate.setHours(0, 0, 0, 0);
       if (selectedEndDate < selectedStartDate) {
-        Alert.alert('Error', 'End date cannot be before start date');
+        setWarningMessage('Error: End date cannot be before start date');
+        setShowWarning(true);
         return;
       }
+    }
+
+    // Check for ANY bookings (pending, accepted, confirmed, active) in the selected date range
+    const actualEndDate = endDate || startDate;
+    const conflictingBookings = bookings.filter((booking: any) => {
+      // Check if any booking date falls within the selected range
+      return booking.bookingDates.some((bookingDate: string) => {
+        const datePart = bookingDate.split('T')[0];
+        return datePart >= startDate && datePart <= actualEndDate;
+      });
+    });
+
+    if (conflictingBookings.length > 0) {
+      // Build a detailed message showing which dates have bookings
+      const bookedDates = new Set<string>();
+      const bookedStatusSet = new Set<string>();
+      
+      conflictingBookings.forEach((booking: any) => {
+        const statusLower = booking.status.toLowerCase();
+        bookedStatusSet.add(statusLower);
+        
+        booking.bookingDates.forEach((bookingDate: string) => {
+          const datePart = bookingDate.split('T')[0];
+          if (datePart >= startDate && datePart <= actualEndDate) {
+            bookedDates.add(datePart);
+          }
+        });
+      });
+
+      const bookedStatusArray = Array.from(bookedStatusSet);
+      const bookedDateArray = Array.from(bookedDates).sort().slice(0, 3); // Show first 3 dates
+      const bokedDateDisplay = bookedDateArray.length === 1 
+        ? bookedDateArray[0]
+        : bookedDateArray.join(', ') + (bookedDates.size > 3 ? `, +${bookedDates.size - 3} more` : '');
+      
+      setWarningMessage(
+        `Error: Cannot add unavailability\n\n` +
+        `You have ${bookedStatusArray.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('/')} bookings on these dates:\n\n` +
+        `${bokedDateDisplay}\n\n` +
+        `Please cancel or complete these bookings first.`
+      );
+      setShowWarning(true);
+      return;
     }
 
     // Show confirmation dialog
@@ -619,10 +993,16 @@ export default function AvailabilityScreen() {
       
       if (response.ok) {
         console.warn('✅ [DELETE] Success!');
-        Alert.alert('Success', 'Unavailability removed successfully');
         setShowDeleteConfirm(false);
         setItemToDelete(null);
-        fetchUnavailability(userId);
+        // Refresh both unavailability and bookings data
+        // Wait for unavailability to be fetched first, then refresh bookings
+        await fetchUnavailability(userId);
+        await fetchBookingsFromBackend(userId);
+        // Force calendar re-render by incrementing refresh key
+        setRefreshKey(prev => prev + 1);
+        // Show success alert AFTER data is loaded
+        Alert.alert('Success', 'Unavailability removed successfully');
       } else {
         console.warn('❌ [DELETE] Error status:', response.status);
         const errorText = await response.text();
@@ -653,6 +1033,7 @@ export default function AvailabilityScreen() {
     setIsRecurring(false);
     setRecurrencePattern('');
     setIsSelectingStartDate(true);
+    setShowWarning(false); // Clear warning when resetting
   };
 
 
@@ -757,20 +1138,20 @@ export default function AvailabilityScreen() {
       itemEndDate = parseDate(itemEndDate);
       
       let datesInRange: string[] = [];
-      let displayColor = '#FFC107'; // Default yellow for normal schedules
+      let displayColor = '#ff0f07ff'; // Default red for all unavailability
       
       // Determine color and dates based on recurrence
       if (item.isRecurring && item.recurrencePattern) {
         if (item.recurrencePattern === 'weekly') {
-          displayColor = '#FF9800'; // Amber/Orange for weekly recurring
+          displayColor = '#ff0f07ff'; // Red for weekly recurring
           datesInRange = getRecurringDates(itemStartDate, itemEndDate, item.recurrencePattern, item.dayOfWeek);
         } else if (item.recurrencePattern === 'monthly') {
-          displayColor = '#FF6F00'; // Deep orange for monthly recurring
+          displayColor = '#ff0f07ff'; // Red for monthly recurring
           datesInRange = getRecurringDates(itemStartDate, itemEndDate, item.recurrencePattern, item.dayOfWeek);
         }
       } else {
-        // Normal schedule - yellow color
-        displayColor = '#FFC107';
+        // Normal schedule - red color
+        displayColor = '#ff0f07ff';
         datesInRange = getDatesBetween(itemStartDate, itemEndDate);
       }
       
@@ -788,6 +1169,66 @@ export default function AvailabilityScreen() {
       });
     });
 
+    // Add bookings to the modal calendar
+    bookings.forEach((booking: any) => {
+      try {
+        if (!booking.bookingDates || booking.bookingDates.length === 0) {
+          return;
+        }
+        
+        booking.bookingDates.forEach((dateEntry: any) => {
+          try {
+            let dateString = dateEntry;
+            
+            // Handle date object or date string
+            if (typeof dateEntry === 'object' && dateEntry.date) {
+              dateString = dateEntry.date;
+            } else if (typeof dateEntry === 'object') {
+              dateString = dateEntry.toString ? dateEntry.toString().split('T')[0] : '';
+            }
+            
+            if (!dateString) {
+              return;
+            }
+            
+            // Ensure date string is in YYYY-MM-DD format
+            if (dateString.length > 10) {
+              dateString = dateString.split('T')[0];
+            }
+            
+            // Determine color based on booking status
+            let bookingColor = '#FFC107';   // Yellow for PENDING (default)
+            const statusLower = booking.status.toLowerCase();
+            
+            if (statusLower === 'complete' || statusLower === 'completed') {
+              bookingColor = '#1565C0';     // Blue for COMPLETED
+            } else if (statusLower === 'accepted' || statusLower === 'confirmed' || statusLower === 'active') {
+              bookingColor = '#4CAF50';     // Green for ACCEPTED/CONFIRMED
+            } else if (statusLower === 'pending') {
+              bookingColor = '#FF9800';     // Orange for PENDING
+            }
+            
+            // Only mark if not already marked with higher priority (selected dates)
+            if (!marked[dateString] || marked[dateString].disableTouchEvent) {
+              marked[dateString] = {
+                marked: true,
+                color: bookingColor,
+                textColor: '#ffffff',
+                selected: true,
+                selectedColor: bookingColor,
+                selectedTextColor: '#ffffff',
+                disableTouchEvent: true,
+              };
+            }
+          } catch (error) {
+            console.error('Error processing booking date in modal:', error);
+          }
+        });
+      } catch (error) {
+        console.error('Error processing booking in modal:', error);
+      }
+    });
+
     // Mark selected start date (has priority over existing dates)
     if (startDate && showAddModal) {
       marked[startDate] = {
@@ -801,7 +1242,7 @@ export default function AvailabilityScreen() {
     if (endDate && showAddModal) {
       marked[endDate] = {
         selected: true,
-        selectedColor: '#ff9800',
+        selectedColor: '#9C27B0',
         marked: true
       };
     }
@@ -861,6 +1302,28 @@ export default function AvailabilityScreen() {
               textDisabledColor: '#d9e1e8',
             }}
           />
+        </View>
+
+        {/* Color Legend for Bookings */}
+        <View style={styles.colorLegendSection}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#fbff00ff' }]} />
+              <Text style={styles.legendText}>Pending </Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#4CAF50' }]} />
+              <Text style={styles.legendText}>Accepted</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#1565C0' }]} />
+              <Text style={styles.legendText}>Completed</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.colorDot, { backgroundColor: '#ff0f07ff' }]} />
+              <Text style={styles.legendText}>Unavailable</Text>
+            </View>
+          </View>
         </View>
 
         {/* Current Unavailability Section */}
@@ -954,6 +1417,22 @@ export default function AvailabilityScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Warning Message Inside Modal */}
+            {showWarning && warningMessage && (
+              <Animated.View
+                entering={FadeInDown}
+                style={styles.modalWarningNotification}
+              >
+                <View style={styles.modalWarningContent}>
+                  <Ionicons name="alert-circle" size={20} color="#FFF" style={styles.modalWarningIcon} />
+                  <Text style={styles.modalWarningText}>{warningMessage}</Text>
+                  <TouchableOpacity onPress={() => setShowWarning(false)}>
+                    <Ionicons name="close" size={18} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            )}
+
             <View style={styles.dateSelectionInfo}>
               <Text style={styles.instructionText}>
                 {isSelectingStartDate ? 'Select start date' : 'Select end date'}
@@ -962,13 +1441,13 @@ export default function AvailabilityScreen() {
                 <View style={styles.dateTableRow}>
                   <View style={styles.dateTableCell}>
                     <Text style={styles.dateTableLabel}>Start Date</Text>
-                    <Text style={styles.dateTableValue}>
+                    <Text style={[styles.dateTableValue, { color: '#4CAF50' }]}>
                       {startDate ? new Date(startDate).toLocaleDateString() : '—'}
                     </Text>
                   </View>
                   <View style={styles.dateTableCell}>
                     <Text style={styles.dateTableLabel}>End Date</Text>
-                    <Text style={styles.dateTableValue}>
+                    <Text style={[styles.dateTableValue, { color: '#9C27B0' }]}>
                       {endDate ? new Date(endDate).toLocaleDateString() : '—'}
                     </Text>
                   </View>
@@ -977,12 +1456,13 @@ export default function AvailabilityScreen() {
             </View>
 
             <Calendar
+              key={`modal-calendar-${refreshKey}`}
               current={startDate || new Date().toISOString().split('T')[0]}
               minDate={new Date().toISOString().split('T')[0]}
               onDayPress={handleModalDateSelection}
               markedDates={getModalMarkedDates()}
               theme={{
-                selectedDayBackgroundColor: isSelectingStartDate ? '#4CAF50' : '#ff9800',
+                selectedDayBackgroundColor: isSelectingStartDate ? '#4CAF50' : '#9C27B0',
                 selectedDayTextColor: '#ffffff',
                 todayTextColor: '#ff9800',
                 arrowColor: '#ff9800',
@@ -1060,9 +1540,9 @@ export default function AvailabilityScreen() {
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.saveButton, !startDate && styles.saveButtonDisabled]}
+                style={[styles.saveButton, (!startDate || showWarning) && styles.saveButtonDisabled]}
                 onPress={handleAddUnavailability}
-                disabled={!startDate || updating}
+                disabled={!startDate || updating || showWarning}
               >
                 {updating ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -1937,5 +2417,105 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Color Legend Styles
+  colorLegendSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
+    marginTop: 5,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  colorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: '500',
+  },
+  // Warning Notification Styles
+  warningNotification: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    zIndex: 1000,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E53935',
+  },
+  warningContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  warningIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  warningText: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  // Modal Warning Notification Styles
+  modalWarningNotification: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 16,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#E53935',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modalWarningContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalWarningIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  modalWarningText: {
+    flex: 1,
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    lineHeight: 18,
   },
 });
