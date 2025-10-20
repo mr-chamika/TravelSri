@@ -282,14 +282,33 @@ export default function VehicleQuotationsScreen() {
         // Show detailed info for each quotation
         data.forEach((quotation, index) => {
           console.log(`\n📋 Quotation ${index + 1}:`);
-          console.log('  ID:', quotation._id);
+          console.log('  ID (_id):', quotation._id);
+          console.log('  quotationId:', quotation.quotationId);
           console.log('  Tour ID (tourId):', quotation.tourId);
           console.log('  Pending Trip ID (pendingTripId):', quotation.pendingTripId);
-          console.log('  Tour Details ptId:', quotation.tourDetails?.ptId);
           console.log('  Quoted Amount:', quotation.quotedAmount);
           console.log('  Notes:', quotation.quotationNotes);
           console.log('  Status:', quotation.status);
-          console.log('  Full Data:', JSON.stringify(quotation, null, 2));
+          
+          // Check tourDetails
+          console.log('\n  📍 Tour Details Analysis:');
+          console.log('    Has tourDetails:', !!quotation.tourDetails);
+          if (quotation.tourDetails) {
+            console.log('    tourDetails type:', typeof quotation.tourDetails);
+            console.log('    tourDetails keys:', Object.keys(quotation.tourDetails || {}));
+            console.log('    tourDetails.ptId:', quotation.tourDetails.ptId);
+            console.log('    tourDetails.title:', quotation.tourDetails.title);
+            console.log('    tourDetails.startLocation:', quotation.tourDetails.startLocation);
+            console.log('    tourDetails.endLocation:', quotation.tourDetails.endLocation);
+            console.log('    tourDetails.numberOfSeats:', quotation.tourDetails.numberOfSeats);
+            console.log('    tourDetails.date:', quotation.tourDetails.date);
+            console.log('    tourDetails.pickupTime:', quotation.tourDetails.pickupTime);
+            console.log('    tourDetails full:', JSON.stringify(quotation.tourDetails, null, 2));
+          } else {
+            console.warn('    ⚠️ NO tourDetails field in quotation!');
+          }
+          
+          console.log('\n  Full Quotation Data:', JSON.stringify(quotation, null, 2));
         });
         
         console.log('\n📦 === END SUBMITTED QUOTATIONS DATA ===\n');
@@ -488,8 +507,27 @@ export default function VehicleQuotationsScreen() {
               const tour = isRequest ? (item as GroupTourRequest) : null;
               const quota = !isRequest ? (item as VehicleQuotation) : null;
               
+              // Log rendering data
+              console.log(`\n🎨 === RENDERING ITEM ${idx + 1} ===`);
+              console.log('  isRequest:', isRequest);
+              console.log('  Has quota:', !!quota);
+              console.log('  Has tour:', !!tour);
+              
+              if (quota) {
+                console.log('  quota.tourDetails:', !!quota.tourDetails);
+                console.log('  quota.tourDetails keys:', quota.tourDetails ? Object.keys(quota.tourDetails) : 'N/A');
+              }
+              
               // For submitted quotations, get tour details from tourDetails field
               const quotaTourDetails = quota?.tourDetails;
+              
+              console.log('  quotaTourDetails:', !!quotaTourDetails);
+              if (quotaTourDetails) {
+                console.log('    title:', quotaTourDetails.title);
+                console.log('    startLocation:', quotaTourDetails.startLocation);
+                console.log('    endLocation:', quotaTourDetails.endLocation);
+              }
+              
               const tourTitle = tour?.title || quotaTourDetails?.title || 'Tour';
               const tourStart = tour?.startLocation || quotaTourDetails?.startLocation || 'N/A';
               const tourEnd = tour?.endLocation || quotaTourDetails?.endLocation || 'N/A';
@@ -688,14 +726,79 @@ export default function VehicleQuotationsScreen() {
                   </View>
 
                   <ScrollView style={styles.formScroll}>
-                    <View style={styles.summary}>
-                      <Text style={styles.summaryText}>Tour: {selectedTour.title}</Text>
-                      <Text style={styles.summaryText}>
-                        Route: {selectedTour.startLocation} → {selectedTour.endLocation}
-                      </Text>
-                      <Text style={styles.summaryText}>
-                        Passengers: {selectedTour.numberOfSeats}
-                      </Text>
+                    {/* Enhanced Tour Details Section */}
+                    <View style={styles.tourDetailsSection}>
+                      <Text style={styles.sectionTitle}>Tour Details</Text>
+                      
+                      {/* Tour Title */}
+                      <View style={styles.detailCard}>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>🎫 Tour</Text>
+                          <Text style={[styles.detailValue, { fontWeight: '700' }]}>
+                            {selectedTour.title}
+                          </Text>
+                        </View>
+                        
+                        {/* Route */}
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>📍 Route</Text>
+                          <Text style={styles.detailValue}>
+                            {selectedTour.startLocation} → {selectedTour.endLocation}
+                          </Text>
+                        </View>
+                        
+                        {/* Date */}
+                        {selectedTour.date && (
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>📅 Date</Text>
+                            <Text style={styles.detailValue}>
+                              {new Date(selectedTour.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {/* Number of Days */}
+                        {selectedTour.numberOfDates && (
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>⏱️ Duration</Text>
+                            <Text style={styles.detailValue}>
+                              {selectedTour.numberOfDates} day{selectedTour.numberOfDates > 1 ? 's' : ''}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {/* Pickup Time */}
+                        {selectedTour.pickupTime && (
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>🕐 Pickup Time</Text>
+                            <Text style={styles.detailValue}>
+                              {selectedTour.pickupTime}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {/* Start Location Description */}
+                        {selectedTour.descriptionAboutStartLocation && (
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>📌 Pickup Location</Text>
+                            <Text style={styles.detailValue}>
+                              {selectedTour.descriptionAboutStartLocation}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {/* Passengers */}
+                        <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                          <Text style={styles.detailLabel}>👥 Passengers</Text>
+                          <Text style={styles.detailValue}>
+                            {selectedTour.numberOfSeats} seat{selectedTour.numberOfSeats > 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
 
                     <View style={styles.inputSection}>
@@ -1022,6 +1125,22 @@ const styles = StyleSheet.create({
     paddingLeft: 14,
   },
   input: { flex: 1, paddingVertical: 13, paddingHorizontal: 10, fontSize: 16, color: '#000', fontWeight: '600' },
+  
+  // Tour Details Section in Modal
+  tourDetailsSection: {
+    backgroundColor: '#FFFBF015',
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FEFA17',
+    overflow: 'hidden',
+  },
+  detailCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  
   actions: {
     flexDirection: 'row',
     gap: 12,
