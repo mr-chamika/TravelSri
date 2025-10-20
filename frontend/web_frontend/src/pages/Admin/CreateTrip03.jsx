@@ -253,7 +253,7 @@ const CreateTrip03 = () => {
                         {/* intermediate destinations */}
                         <div className="mb-6">
                             <label className="block text-gray-700 font-medium mb-3 text-lg">
-                                Description about intermediate destinations *
+                                Description about intermediate stops *
                             </label>
                             <textarea
                                 value={intermediatePlaces}
