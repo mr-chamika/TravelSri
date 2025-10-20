@@ -222,7 +222,11 @@ public class Hashingpw {
                                 "/api/availability/update-user-status",
                                 "/api/availability/delete-user-unavailability",
                                 "/api/availability/user-schedules/{userId}",
-                                "/api/bookings/guide/{bookingId}/accept"
+                                "/api/bookings/guide/{bookingId}/accept",
+                                "/VehicleOwnerQuotation/submitQuotation/{tourId}",
+                                "/VehicleOwnerQuotation/vehiclegroupTours",
+                                "/VehicleOwnerQuotation/vehicleOwnerId/{userId}",
+                                "/VehicleOwnerQuotation/**"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints

@@ -16,21 +16,44 @@ interface MyToken {
 export default function Index() {
   const router = useRouter();
   const [userName, setUserName] = useState('Vehicle Owner');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  // Fetch and decode JWT token to get username
+  // Fetch and decode JWT token to get user information
   useEffect(() => {
     const fetchUserName = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
+        console.log('🔍 JWT Token from AsyncStorage:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
+        
         if (token) {
           const decoded = jwtDecode<MyToken>(token);
-          if (decoded.username) {
-            setUserName(decoded.username);
-            console.log('Vehicle Owner Username from token:', decoded.username);
-          }
+          console.log('🔓 Decoded JWT Token:', JSON.stringify(decoded, null, 2));
+          console.log('📋 All token fields:', Object.keys(decoded));
+          
+          // Extract user information from token
+          const username = decoded.username || decoded.sub || 'Vehicle Owner';
+          const id = decoded.id || decoded.sub || '';
+          const email = decoded.email || '';
+          const roles = decoded.roles || [];
+          
+          setUserName(username);
+          setUserId(id);
+          setUserEmail(email);
+          setUserRoles(roles);
+          
+          console.log('✅ Vehicle Owner Info extracted from JWT:');
+          console.log('   👤 Username:', username);
+          console.log('   🆔 User ID:', id);
+          console.log('   📧 Email:', email);
+          console.log('   🔑 Roles:', roles);
+        } else {
+          console.warn('⚠️ No token found in AsyncStorage');
         }
       } catch (error) {
-        console.error('Error decoding token:', error);
+        console.error('❌ Error decoding token:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
       }
     };
     
