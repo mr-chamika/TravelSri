@@ -94,6 +94,7 @@ export interface Booking {
 
 interface Postdata {
 
+    createdId: string,
     dayNumber: string,
     date: string,
     adults: string,
@@ -111,7 +112,18 @@ const back = require('../../../../assets/images/back.png');
 
 export default function Views() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { createdId, id, tripId, dayNumber, date, adults, children, bookingDatas, editMode, viewMode, singleRooms, doubleRooms } = useLocalSearchParams();
+    console.log(singleRooms)
+    console.log(doubleRooms)
+    console.log(viewMode)
+    // console.log("createdId" + createdId)
+    //console.log("id" + id)
+    // console.log("dayNumber" + dayNumber)
+    // console.log("date" + date)
+    // console.log("adults" + adults)
+    // console.log("children" + children)
+    // console.log("bookingDatas" + bookingDatas)
+    // console.log("editMode" + editMode)
 
     const [item, setItem] = useState<{ policies: string[], reviewCount: number, id: string, image: any[], title: string, ratings: number, stars: number, location: string, currentPrice: number, description: string, reviewers: any[], faci: any[], rooms: { _id: string, name: string, capacity: number, maxAvailable: number, nowAvailable: number, pricePerRoom: number }[] }>({ policies: [], reviewCount: 0, id: '1', image: [], title: 'Matara to Colombo', ratings: 0, stars: 0, location: "", currentPrice: 0, description: '', reviewers: [], faci: [], rooms: [] });
     const [selectedRoomCounts, setSelectedRoomCounts] = useState<{ [key: number]: number }>({});
@@ -128,253 +140,203 @@ export default function Views() {
     const [order, setOrder] = useState<Postdata | null>(null)
     const [booking, setBooking] = useState<Booking | null>(null)
 
-
     useEffect(() => {
 
         const gethotel = async () => {
 
-            try {
+            if (bookingDatas) {
 
-                const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+                try {
+                    // Parse the existing booking data
+                    const existingBookingData = bookingDatas ? JSON.parse(bookingDatas as string) : null;
 
-                const params = new URLSearchParams();
-                //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
-                const data1: HotelView = await res1.json()
+                    // Fetch hotel data
+                    const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+                    const data1: HotelView = await res1.json()
+                    setHotelv(data1)
 
-                //console.log(data1)
-                setHotelv(data1)
-                //setHotel(data1)
+                    // Fetch facilities if available
+                    if (data1?.facilities && data1?.facilities.length > 0) {
+                        const params = new URLSearchParams();
+                        data1?.facilities.forEach(facilityId => {
+                            params.append('ids', facilityId);
+                        })
 
-                if (data1?.facilities && data1?.facilities.length > 0) {
-
-                    data1?.facilities.forEach(facilityId => {
-                        params.append('ids', facilityId);
-                    })
-
-
-
-
-                    const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
-                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
-
-                    if (res3) {
-
-                        const data3 = await res3.json()
-                        //console.log(data3)
-                        setFacilities(data3)
-
+                        const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
+                        if (res3) {
+                            const data3 = await res3.json()
+                            setFacilities(data3)
+                        }
                     }
-                }
 
-                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
-                //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
+                    // Fetch reviews
+                    const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                    if (res2.ok) {
+                        const data2 = await res2.json()
+                        setReviews(data2)
+                    } else {
+                        setReviews([])
+                    }
 
-                if (res2.ok) {
+                    // Fetch room types and populate existing selections
+                    if (data1?.roomTypes && data1?.roomTypes.length > 0) {
+                        const params1 = new URLSearchParams();
+                        data1.roomTypes.forEach(roomId => {
+                            params1.append('ids', roomId);
+                        })
 
-                    const data2 = await res2.json()
-                    console.log(data2)
-                    setReviews(data2)
+                        const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
+                        if (res4) {
+                            const data4 = await res4.json()
+                            setRoomTypes(data4)
 
-                } else {
-
-                    setReviews([])
-
-                }
-
-                if (data1?.roomTypes && data1?.roomTypes.length > 0) {
-                    const params1 = new URLSearchParams();
-
-                    data1.roomTypes.forEach(roomId => {
-                        params1.append('ids', roomId);
-                    })
-
-
-                    const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
-                    //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
-
-                    if (res4) {
-
-                        const data4 = await res4.json()
-                        //console.log(data4)
-                        setRoomTypes(data4)
-                        const saved = await AsyncStorage.getItem('selectedHotelBooking');
-                        if (saved && data1?._id) {
-                            const booking = JSON.parse(saved);
-                            if (booking.id === data1._id && data4 && data4.length > 0) {
-                                /// Find the indexes for single and double room types
+                            // Populate existing room selections from bookingDatas
+                            if (existingBookingData && data4 && data4.length > 0) {
                                 let singleIndex = -1;
                                 let doubleIndex = -1;
+
                                 data4.forEach((room: RoomType, idx: number) => {
                                     if (room.name.toLowerCase().includes('single')) singleIndex = idx;
                                     if (room.name.toLowerCase().includes('double')) doubleIndex = idx;
                                 });
-                                // Set initial selected room counts
-                                setSelectedRoomCounts({
-                                    ...(singleIndex !== -1 ? { [singleIndex]: Number(booking.s) } : {}),
-                                    ...(doubleIndex !== -1 ? { [doubleIndex]: Number(booking.d) } : {}),
-                                });
+
+                                // Set the existing room counts
+                                const existingRoomCounts: { [key: number]: number } = {};
+                                if (singleIndex !== -1 && existingBookingData.singleRooms) {
+                                    existingRoomCounts[singleIndex] = Number(existingBookingData.singleRooms);
+                                }
+                                if (doubleIndex !== -1 && existingBookingData.doubleRooms) {
+                                    existingRoomCounts[doubleIndex] = Number(existingBookingData.doubleRooms);
+                                }
+
+                                setSelectedRoomCounts(existingRoomCounts);
                             }
+                        }
+                    }
+
+                    // Set the order data from the passed parameters
+                    setOrder({
+                        createdId: createdId.toString(),
+                        dayNumber: dayNumber as string,
+                        date: date as string,
+                        adults: adults as string,
+                        children: children as string
+                    });
+
+                } catch (err) {
+                    console.log(`Error in edit mode hotel data getting : ${err}`)
+                }
+
+            } else {
+
+                try {
+
+                    const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+
+                    const params = new URLSearchParams();
+                    //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
+                    const data1: HotelView = await res1.json()
+
+                    //console.log(data1)
+                    setHotelv(data1)
+                    //setHotel(data1)
+
+                    if (data1?.facilities && data1?.facilities.length > 0) {
+
+                        data1?.facilities.forEach(facilityId => {
+                            params.append('ids', facilityId);
+                        })
+
+
+
+
+                        const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
+                        //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
+
+                        if (res3) {
+
+                            const data3 = await res3.json()
+                            //console.log(data3)
+                            setFacilities(data3)
 
                         }
                     }
 
+                    const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                    //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
+
+                    if (res2.ok) {
+
+                        const data2 = await res2.json()
+                        console.log(data2)
+                        setReviews(data2)
+
+                    } else {
+
+                        setReviews([])
+
+                    }
+
+                    if (data1?.roomTypes && data1?.roomTypes.length > 0) {
+                        const params1 = new URLSearchParams();
+
+                        data1.roomTypes.forEach(roomId => {
+                            params1.append('ids', roomId);
+                        })
+
+
+                        const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
+                        //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
+
+                        if (res4) {
+
+                            const data4 = await res4.json()
+                            //console.log(data4)
+                            setRoomTypes(data4)
+                            const saved = await AsyncStorage.getItem('selectedHotelBooking');
+                            if (saved && data1?._id) {
+                                const booking = JSON.parse(saved);
+                                if (booking.id === data1._id && data4 && data4.length > 0) {
+                                    /// Find the indexes for single and double room types
+                                    let singleIndex = -1;
+                                    let doubleIndex = -1;
+                                    data4.forEach((room: RoomType, idx: number) => {
+                                        if (room.name.toLowerCase().includes('single')) singleIndex = idx;
+                                        if (room.name.toLowerCase().includes('double')) doubleIndex = idx;
+                                    });
+                                    // Set initial selected room counts
+                                    setSelectedRoomCounts({
+                                        ...(singleIndex !== -1 ? { [singleIndex]: Number(booking.s) } : {}),
+                                        ...(doubleIndex !== -1 ? { [doubleIndex]: Number(booking.d) } : {}),
+                                    });
+                                }
+
+                            }
+                        }
+
+                    }
+                } catch (err) {
+
+                    console.log(`Error in hotel data getting : ${err}`)
+
                 }
-            } catch (err) {
-
-                console.log(`Error in hotel data getting : ${err}`)
-
             }
-
         }
         gethotel()
 
     }, [])
 
 
-    /* const groupCollection = [
-        {
-            id: '1',
-            image: [thumbnail, thumbnail],
-            title: 'Shangri-La',
-            ratings: 600,
-            stars: 4,
-            reviewCount: 269,
-            location: 'Colombo',
-            price: 9000, // Base price for the hotel (can be per night or per stay)
-            description: 'Shangri-La Hotels and Resorts is a Hong Kong-based multinational hospitality company founded in 1971 by Malaysian tycoon Robert Kuok. Named after the mythical utopia from James Hilton’s novel Lost Horizon, it symbolizes serenity and luxury. The brand operates over 100 five-star luxury hotels and resorts across Asia, Europe, the Middle East, North America, and Oceania, with notable properties like Shangri-La Hotel Singapore, its first location, and Shangri-La Colombo in Sri Lanka. Renowned for its "hospitality from the heart," Shangri-La offers world-class service, exquisite dining, and inspirational architecture in premier city addresses and tranquil retreats',
-            policies: [
-                "Check-in from 13:00 until 00:00",
-                "Check-out from 00:00 until 12:00",
-                "WiFi is available in all areas and is free of charge.",
-                "Free public parking is possible on site (reservation is needed).",
-                "No booking or credit card fees"
-            ],
-            reviewers: [
-                {
-                    id: '1',
-                    name: 'Sunny',
-                    from: 'America',
-                    images: pic,
-                    review: 'mmh maru',
-                    ratings: 3
-                },
-                {
-                    id: '2',
-                    name: 'Lena',
-                    from: 'Spain',
-                    images: pic,
-                    review: "set na meka",
-                    ratings: 2
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                },
-                {
-                    id: '3',
-                    name: 'Jhonny',
-                    from: 'Sweedan',
-                    images: pic,
-                    review: "Goooood",
-                    ratings: 0
-                }
-            ],
-            faci: [
-                {
-                    id: '1',
-                    name: 'Swimming pool',
-                    images: pic
-                },
-                {
-                    id: '2',
-                    name: 'Free WiFi',
-                    images: pic
-                },
-                {
-                    id: '3',
-                    name: 'Free breakfast',
-                    images: pic
-                },
-                {
-                    id: '4',
-                    name: '1 bathtub',
-                    images: pic
-                },
-                {
-                    id: '5',
-                    name: 'Room service',
-                    images: pic
-                },
-                {
-                    id: '6',
-                    name: 'Bar',
-                    images: pic
-                }
-            ],
-            roomsType: [
-                {
-                    id:'1',
-                    name: "singleBedroom",
-                    capacity: 5, // Total available single rooms
-                    pricePerRoom: 5000,
-                    persons: 1 // Price per single room per day,
-                    
-                },
-                {
-                    id:'2',
-                    name: "doubleBedroom",
-                    capacity: 2, // Total available double rooms
-                    pricePerRoom: 8000,
-                    persons: 2// Price per double room per day
-                }
-            ]
-        },
-    ];
- */
+
     const rating = hotelv && hotelv?.reviewCount > 0
         ? parseFloat(((hotelv?.ratings / hotelv?.reviewCount) * 2).toFixed(1))
         : 0;
 
-    /*  useEffect(() => {
-         getItem(id);
-     }, [id]); */
 
     useEffect(() => {
         calculateTotalPrice();
     }, [selectedRoomCounts, hotelv?.currentPrice]); // Recalculate when room counts or base item price changes
 
-    /* const getItem = (Id: string | string[]) => {
-        const foundItem = groupCollection.find(collection => collection.id === Id);
-        if (foundItem) {
-            setItem(foundItem);
-            // Initialize selectedRoomCounts based on available room types
-            const initialRoomCounts: { [key: number]: number } = {};
-            foundItem.rooms.forEach((_, index) => {
-                initialRoomCounts[index] = 0; // Start with 0 selected rooms for each type
-                });
-                setSelectedRoomCounts(initialRoomCounts);
-                }
-                }; */
 
     const handleRoomCountChange = (index: number, change: number) => {
         // Calculate total guests once
@@ -433,24 +395,41 @@ export default function Views() {
     };
     useEffect(() => {
         // Create an async function to load the data
-        const loadBookingData = async () => {
-            try {
-                const pack = await AsyncStorage.getItem('order')
 
-                if (pack) {
+        if (editMode != 'true') {
+            const loadBookingData = async () => {
+                try {
+                    const pack = await AsyncStorage.getItem('order')
 
-                    setOrder(JSON.parse(pack))
+                    if (pack) {
 
+                        setOrder(JSON.parse(pack))
+
+                    }
+
+                } catch (e) {
+                    console.error("Failed to load data from AsyncStorage", e);
+                } finally {
+                    setIsLoading(false);
                 }
+            };
 
-            } catch (e) {
-                console.error("Failed to load data from AsyncStorage", e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+            loadBookingData();
+        } else {
 
-        loadBookingData();
+            const existingBookingData = bookingDatas ? JSON.parse(bookingDatas as string) : null;
+
+            if (!existingBookingData) return;
+
+            setOrder({
+                createdId: createdId.toString(),
+                dayNumber: existingBookingData.dayNumber,
+                date: existingBookingData.date,
+                adults: existingBookingData.adults,
+                children: existingBookingData.children
+            });
+
+        }
     }, []); // The empty array [] ensures this runs only once when the screen loads
 
 
@@ -520,14 +499,15 @@ export default function Views() {
             if (!tokenString || !orderx) return;
 
             const token: MyToken = jwtDecode(tokenString);
-
+            console.log('bookingDetails')
+            console.log(order)
             // 4. Navigate back to the previous screen
             //router.back();
             await fetch('http://localhost:8080/traveler/create-trip', {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ obj: bookingDetails, order: order, type: 'hotel', serviceId: id, userId: token.id })
+                body: JSON.stringify({ obj: bookingDetails, order: order, type: 'hotel', serviceId: id, userId: token.id, id: tripId })
 
             })
                 .then(res => res.text())
@@ -679,26 +659,50 @@ export default function Views() {
 
                         <View className=" bg-gray-100 rounded-lg shadow-md m-1">
                             <Text className=" text-2xl font-semibold px-2 py-1">Choose Rooms</Text>
-                            {roomTypes.map((r, i) => (
+
+                            {viewMode === 'true' && (
+                                <View className="flex-row px-2 py-3 gap-12 items-center justify-between">
+
+                                    <View className="space-y-2">
+                                        {singleRooms && parseInt(singleRooms as string) > 0 && (
+
+                                            <View className="flex-row justify-between items-center gap-16 ml-3">
+                                                <Image className="w-10 h-10" source={single} />
+                                                <Text className="text-base text-gray-700">Single Rooms:</Text>
+                                                <Text className="text-base font-bold">{singleRooms}</Text>
+                                            </View>
+                                        )}
+                                        {doubleRooms && parseInt(doubleRooms as string) > 0 && (
+                                            <View className="flex-row justify-between items-center  ml-3">
+                                                <Image className="w-10 h-10" source={double} />
+                                                <Text className="text-base text-gray-700">Double Rooms:</Text>
+                                                <Text className="text-base font-bold">{doubleRooms}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            )}
+
+                            {viewMode != 'true' && roomTypes.map((r, i) => (
                                 <View key={i} className="flex-row px-2 py-3 gap-12 items-center justify-between">
                                     <View className="flex-row items-center gap-14">
                                         <Image className="w-10 h-10" source={r.name == "Standard Single Bedroom" ? single : double} />
                                         <Text>Available Rooms: {r.name == "Standard Single Bedroom" ? hotelv?.availableSingle : hotelv?.availableDouble}</Text>
                                     </View>
-                                    <View className="flex-row items-center gap-3">
-                                        <TouchableOpacity
+                                    <View className="flex-row items-center gap-1">
+                                        {viewMode != 'true' && <TouchableOpacity
                                             className="bg-gray-300 pb-1 rounded-full w-8 h-8 items-center justify-center"
                                             onPress={() => handleRoomCountChange(i, -1)}
                                         >
                                             <Text className="font-bold text-lg">-</Text>
-                                        </TouchableOpacity>
+                                        </TouchableOpacity>}
                                         <Text className="text-lg font-bold">{selectedRoomCounts[i] || 0}</Text>
-                                        <TouchableOpacity
+                                        {viewMode != 'true' && <TouchableOpacity
                                             className="bg-gray-300 pb-1 rounded-full w-8 h-8 items-center justify-center"
                                             onPress={() => handleRoomCountChange(i, 1)}
                                         >
                                             <Text className="font-bold text-lg">+</Text>
-                                        </TouchableOpacity>
+                                        </TouchableOpacity>}
                                     </View>
                                 </View>
                             ))}
@@ -763,7 +767,7 @@ export default function Views() {
 
                 <View className="self-center flex-row items-center bg-[#FEFA17] w-[95%] h-12 rounded-2xl justify-between px-1 shadow-lg">
                     <Text className="px-3 font-extrabold text-xl">{totalPrice}.00 LKR/day</Text>
-                    <TouchableOpacity
+                    {viewMode != 'true' && <TouchableOpacity
                         className=" bg-[#84848460] rounded-xl w-[30%]"
                         // onPress={() => router.push(`/views/payment/${hotelv?._id}`)}
                         onPress={handleBooking}
@@ -772,7 +776,7 @@ export default function Views() {
                             <Text>Choose</Text>
                             <Image className="w-5 h-5" source={back} />
                         </View>
-                    </TouchableOpacity>
+                    </TouchableOpacity>}
                 </View>
             </ScrollView>
         </View>

@@ -361,18 +361,22 @@ const TripPlannerScreen: React.FC = () => {
     const trip = dataSet.find(t => t._id === tripId);
 
     if (trip) {
-      router.push({
-        pathname: '/create',
-        params: {
-          createdId: id || "",
-          tripId: tripId,
-          dayNumber: trip.dayNumber,
-          date: trip.date,
-          adults: tripSettings.adults.toString(),
-          children: tripSettings.children.toString(),
-          editMode: 'true',
-        }
+      const route = trip.type === 'vehicle'
+        ? `/views/car/profile/${trip.serviceId}`
+        : `/views/${trip.type}/group/${trip.serviceId}`;
+      const params = new URLSearchParams({
+        createdId: id?.toString() || "",
+        tripId: trip._id,
+        dayNumber: trip.dayNumber,
+        date: trip.date,
+        adults: tripSettings.adults.toString(),
+        children: tripSettings.children.toString(),
+        bookingDatas: JSON.stringify(trip.bookingData),
+        editMode: 'true',
       });
+
+      router.push(`${route}?${params.toString()}` as any);
+
     }
   };
   const handleDeletePlan = async (tripId: string) => {
@@ -503,7 +507,24 @@ const TripPlannerScreen: React.FC = () => {
                     ? `/views/car/profile/${trip.serviceId}`
                     : `/views/${trip.type}/group/${trip.serviceId}`;
 
-                  router.push(route as any);
+                  router.push({
+
+                    pathname: route as any,
+                    params: {
+
+                      viewMode: 'true',
+                      tripId: trip._id,
+                      dayNumber: trip.dayNumber,
+                      date: trip.date,
+                      adults: tripSettings.adults.toString(),
+                      children: tripSettings.children.toString(),
+                      bookingDatas: JSON.stringify(trip.bookingData),
+                      singleRooms: trip.bookingData.singleRooms,
+                      doubleRooms: trip.bookingData.doubleRooms
+
+                    }
+
+                  });
                 }}
               >
                 <View className="flex-row items-center justify-between mb-2">
@@ -512,13 +533,13 @@ const TripPlannerScreen: React.FC = () => {
                     <Text className="text-lg font-semibold text-gray-800">{trip.type}</Text>
                   </View>
                   <View className="flex-row items-center gap-2">
-                    <TouchableOpacity
+                    {trip.status != 'active' || trip.type == 'hotel' && <TouchableOpacity
                       className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
                       onPress={() => handleEditPlan(trip._id)}
                     >
                       <Icon name="edit" size={16} color="#2563eb" />
                       {/* <Text className="mt-0.5 text-xs font-medium text-blue-600">Edit</Text> */}
-                    </TouchableOpacity>
+                    </TouchableOpacity>}
                     <TouchableOpacity
                       className="flex-row items-center bg-blue-100 px-2 py-1 rounded-md gap-1"
                       onPress={() => handleDeletePlan(trip._id)}
@@ -723,12 +744,7 @@ const TripPlannerScreen: React.FC = () => {
             <Text className="text-lg font-bold text-gray-800">Confirm Delete</Text>
             <Text className="text-base text-gray-600 my-4">Are you sure you want to delete booking ?</Text>
             <View className="flex-row justify-center gap-3">
-              <TouchableOpacity
-                onPress={() => setIsModalVisible(false)}
-                className="px-4 py-2 rounded"
-              >
-                <Text className="font-semibold text-red-500">Cancel</Text>
-              </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={async () => {
 
@@ -756,6 +772,12 @@ const TripPlannerScreen: React.FC = () => {
                 className=" px-4 py-2"
               >
                 <Text className="font-semibold text-blue-500">Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(false)}
+                className="px-4 py-2 rounded"
+              >
+                <Text className="font-semibold text-red-500">Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -235,7 +235,7 @@ export default function Views() {
                 }
 
                 book.ratings = rating;
-                book.paymentStatus = false;
+                book.paymentStatus = true;
                 book.facilities = vehicle?.whatsIncluded;
                 book.price = vehicle?.dailyRatePrice;
                 book.status = 'active';
