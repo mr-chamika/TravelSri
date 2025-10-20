@@ -163,6 +163,8 @@ const quotationService = {
       
       console.log('QuotationService - API Response:', response.data);
       console.log('QuotationService - First quotation from API:', response.data?.[0]);
+      console.log('QuotationService - All fields in first quotation:', response.data?.[0] ? Object.keys(response.data[0]) : 'No data');
+      console.log('QuotationService - createdAt field value:', response.data?.[0]?.createdAt);
       
       return response.data || [];
     } catch (error) {

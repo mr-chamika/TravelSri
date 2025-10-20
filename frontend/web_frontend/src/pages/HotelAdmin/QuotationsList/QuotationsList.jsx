@@ -45,6 +45,8 @@ const RequirementsTooltip = ({ children, requirements }) => {
 };
 
 const QuotationsList = () => {
+  console.log('🔥 QuotationsList Component Loaded - Version 2.0');
+  
   // State
   const [quotations, setQuotations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +82,13 @@ const QuotationsList = () => {
         
         // Debug: Log fetched data
         console.log('QuotationsList - Raw data from API:', data);
-        console.log('QuotationsList - First quotation mealPricePerPerson:', data[0]?.mealPricePerPerson);
+        console.log('QuotationsList - First quotation fields:', {
+          mealPricePerPerson: data[0]?.mealPricePerPerson,
+          createdAt: data[0]?.createdAt,
+          id: data[0]?.id,
+          quotationId: data[0]?.quotationId,
+          allFields: Object.keys(data[0] || {})
+        });
         
         // Filter quotations by current hotel user
         // Assuming quotations have a hotelUsername field that matches the logged-in user
@@ -91,8 +99,16 @@ const QuotationsList = () => {
           (!quotation.hotelUsername && !quotation.createdBy)
         );
         
-        console.log('QuotationsList - Filtered user quotations:', userQuotations);
-        setQuotations(userQuotations);
+        // Sort by createdAt descending (newest first) - same as dashboard Recent Bookings
+        const sortedUserQuotations = userQuotations.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        console.log('QuotationsList - Sorted quotations (newest first)');
+        console.log('First item:', sortedUserQuotations[0]?.quoteNumber, sortedUserQuotations[0]?.createdAt);
+        console.log('Last item:', sortedUserQuotations[sortedUserQuotations.length - 1]?.quoteNumber, sortedUserQuotations[sortedUserQuotations.length - 1]?.createdAt);
+        
+        setQuotations(sortedUserQuotations);
         setError(null);
         
         console.log(`Loaded ${userQuotations.length} quotations for hotel user: ${currentHotelUser}`);
@@ -141,6 +157,11 @@ const QuotationsList = () => {
   const sortedQuotations = [...filteredQuotations].sort((a, b) => {
     let aValue = a[sortField];
     let bValue = b[sortField];
+    
+    // Debug: Check createdAt values
+    if (sortField === 'createdAt') {
+      console.log('Sorting by createdAt:', { aValue, bValue, direction: sortDirection });
+    }
     
     // Handle special cases
     if (sortField === 'checkIn' || sortField === 'checkOut' || sortField === 'createdAt') {
@@ -277,10 +298,10 @@ const QuotationsList = () => {
                   <th 
                     scope="col" 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort('quoteNumber')}
+                    onClick={() => handleSort('createdAt')}
                   >
                     Group Quote # & Date
-                    {sortField === 'quoteNumber' && (
+                    {sortField === 'createdAt' && (
                       <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </th>

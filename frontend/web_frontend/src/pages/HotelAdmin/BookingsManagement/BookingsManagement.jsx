@@ -287,14 +287,12 @@ const BookingsManagement = () => {
     }
   };
 
-  // Computed list after filter
-  const filteredBookings =
+  // Sort bookings by displayId descending, matching recent bookings table
+  const filteredBookings = (
     filterStatus === 'All'
       ? bookings
-      : bookings.filter((b) => b.status === filterStatus);
-      
-  // Sort bookings by displayId (ascending order)
-  filteredBookings.sort((a, b) => a.displayId - b.displayId);
+      : bookings.filter((b) => b.status === filterStatus)
+  ).slice().sort((a, b) => b.displayId - a.displayId);
 
   const calculateAmount = (booking) => {
     if (!booking.checkIn || !booking.checkOut) return 0;
@@ -1043,112 +1041,139 @@ const BookingsManagement = () => {
       </div>
 
       {/* Bookings table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Booking ID
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Guest
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Room
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Check In
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Check Out
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Status
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Payment
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Amount
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredBookings.map((b) => (
-              <tr key={b.id} className={b.source === 'traveler' ? 'bg-blue-50' : ''}>
-                <td className="py-3 px-4">
-                  <div className="flex items-center space-x-2">
-                    <span>#{b.displayId}</span>
-                    {b.source === 'traveler' && (
-                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800" title="Traveler Booking">
-                        👤
-                      </span>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Guest Name
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Room
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Check In
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Check Out
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Payment
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="py-3 px-6 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {filteredBookings.map((b) => (
+                <tr 
+                  key={b.id} 
+                  className={`hover:bg-gray-50 transition-colors ${
+                    b.source === 'traveler' ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-900">#{b.displayId}</span>
+                      {b.source === 'traveler' && (
+                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700" title="Traveler Booking">
+                          👤
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{b.guestName}</div>
+                    {b.guestEmail && (
+                      <div className="text-xs text-gray-500">{b.guestEmail}</div>
                     )}
-                  </div>
-                </td>
-                <td className="py-3 px-4">{b.guestName}</td>
-                <td className="py-3 px-4">
-                  {b.roomType} ({b.roomNumber})
-                </td>
-                <td className="py-3 px-4">{formatDate(b.checkIn)}</td>
-                <td className="py-3 px-4">{formatDate(b.checkOut)}</td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        b.status === 'Confirmed'
-                          ? 'bg-green-100 text-green-800'
-                          : ''
-                      }
-                      ${
-                        b.status === 'Cancelled'
-                          ? 'bg-red-100 text-red-800'
-                          : ''
-                      }`}
-                  >
-                    {b.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        b.paymentStatus === 'Fully Paid'
-                          ? 'bg-green-100 text-green-800'
-                          : ''
-                      }
-                      ${
-                        b.paymentStatus === 'Partially Paid'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : ''
-                      }
-                      ${
-                        b.paymentStatus === 'Refunded'
-                          ? 'bg-gray-100 text-gray-800'
-                          : ''
-                      }`}
-                  >
-                    {b.paymentStatus}
-                  </span>
-                </td>
-                <td className="py-3 px-4">LKR {b.totalAmount}</td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center space-x-2">
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{b.roomType}</div>
+                    <div className="text-xs text-gray-500">Room {b.roomNumber}</div>
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap text-sm text-gray-700">
+                    {formatDate(b.checkIn)}
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap text-sm text-gray-700">
+                    {formatDate(b.checkOut)}
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                        ${
+                          b.status === 'Confirmed'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                    >
+                      {b.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full
+                        ${
+                          b.paymentStatus === 'Fully Paid'
+                            ? 'bg-green-100 text-green-800'
+                            : ''
+                        }
+                        ${
+                          b.paymentStatus === 'Partially Paid'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : ''
+                        }
+                        ${
+                          b.paymentStatus === 'Refunded'
+                            ? 'bg-gray-100 text-gray-800'
+                            : ''
+                        }`}
+                    >
+                      {b.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">LKR {b.totalAmount.toLocaleString()}</div>
+                    <div className="text-xs text-gray-500">
+                      {calculateNights(b.checkIn, b.checkOut)} {calculateNights(b.checkIn, b.checkOut) === 1 ? 'night' : 'nights'}
+                    </div>
+                  </td>
+                  <td className="py-3 px-6 whitespace-nowrap">
                     <button 
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-xs font-medium"
+                      className="px-3 py-1.5 bg-yellow-400 hover:bg-yellow-500 text-black text-xs font-medium rounded transition-colors"
                       onClick={() => handleView(b)}
                     >
                       View Details
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Empty state */}
+        {filteredBookings.length === 0 && (
+          <div className="text-center py-12">
+            <span className="material-icons text-gray-300 text-5xl mb-3">event_busy</span>
+            <p className="text-gray-500 text-sm">
+              {filterStatus === 'All' 
+                ? 'No bookings yet. Create your first booking to get started.' 
+                : `No ${filterStatus.toLowerCase()} bookings found.`}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Add Booking Modal */}

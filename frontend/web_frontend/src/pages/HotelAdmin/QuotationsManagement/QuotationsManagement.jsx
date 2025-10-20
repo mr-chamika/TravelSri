@@ -1247,10 +1247,20 @@ const QuotationsManagement = () => {
           const mappedGroupPackages = pendingTrips.map(trip => 
             pendingTripService.mapPendingTripToGroupPackage(trip)
           );
-          setGroupPackages(mappedGroupPackages);
+          
+          // Sort by packageCode in descending order (newest/highest codes first)
+          const sortedPackages = mappedGroupPackages.sort((a, b) => 
+            b.packageCode.localeCompare(a.packageCode)
+          );
+          
+          setGroupPackages(sortedPackages);
         } else {
           console.log('No pending trips found, using mock data as fallback');
-          setGroupPackages(mockGroupTripPackages);
+          // Sort mock data by packageCode in descending order
+          const sortedMockPackages = [...mockGroupTripPackages].sort((a, b) => 
+            b.packageCode.localeCompare(a.packageCode)
+          );
+          setGroupPackages(sortedMockPackages);
         }
         
         // Fetch actual quotations from API
@@ -1275,7 +1285,11 @@ const QuotationsManagement = () => {
         }
         
         // Fallback to mock data for packages only, but not for quotations
-        setGroupPackages(mockGroupTripPackages);
+        // Sort mock data by packageCode in descending order
+        const sortedMockPackages = [...mockGroupTripPackages].sort((a, b) => 
+          b.packageCode.localeCompare(a.packageCode)
+        );
+        setGroupPackages(sortedMockPackages);
         setQuotations([]);
       } finally {
         setIsLoading(false);
@@ -1296,11 +1310,12 @@ const QuotationsManagement = () => {
     };
   }, []);
   
-  // Filter quotations based on status
-  const filteredQuotations = filterStatus === 'All' 
-    ? quotations 
-    : quotations.filter(q => q.status === filterStatus);
-  
+  // Filter quotations based on status and sort by createdAt descending (newest first)
+  const filteredQuotations = (filterStatus === 'All'
+    ? quotations
+    : quotations.filter(q => q.status === filterStatus))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   // Get current quotations for pagination
   const indexOfLastQuotation = currentPage * itemsPerPage;
   const indexOfFirstQuotation = indexOfLastQuotation - itemsPerPage;

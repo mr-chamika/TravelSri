@@ -36,6 +36,9 @@ apiClient.interceptors.response.use(
 // Bookings API service
 const bookingService = {
   // Get all bookings (combines admin bookings and traveler bookings)
+  // Fetches from two sources:
+  // 1. Admin hotel bookings collection (internal booking system)
+  // 2. Traveler bookings collection where serviceId matches hotel's ObjectId (_id)
   getAllBookings: async () => {
     try {
       // Get the hotel ID from user data
@@ -49,42 +52,75 @@ const bookingService = {
       const userObj = JSON.parse(userData);
       
       // Try to get ID in different formats (with or without underscore)
+      // This ID corresponds to the hotel's ObjectId (_id) in the hotels collection
       const hotelId = userObj.id || userObj._id;
       if (!hotelId) {
         console.error('User data does not contain hotel ID:', userObj);
         return [];
       }
       
+      console.log('🏨 Fetching bookings for hotel ID (ObjectId):', hotelId);
+      
       // Fetch both admin bookings and traveler bookings in parallel
       const [adminBookings, travelerBookings] = await Promise.all([
-        // Admin hotel bookings (existing system)
+        // 1. Admin hotel bookings (existing internal system)
         apiClient.get(`/api/admin-hotel-bookings?hotelId=${hotelId}`)
-          .then(response => response.data)
-          .catch(error => {
-            console.error('Error fetching admin bookings:', error);
-            return [];
-          }),
-        
-        // Traveler bookings from bookings collection
-        apiClient.get(`/api/bookings/hotel/provider/${hotelId}`)
           .then(response => {
-            // The response might be wrapped in a bookings property
-            if (response.data && response.data.bookings) {
-              return response.data.bookings;
-            }
+            console.log('✅ Admin bookings fetched:', response.data.length, 'bookings');
             return response.data;
           })
           .catch(error => {
-            console.error('Error fetching traveler bookings:', error);
+            console.error('❌ Error fetching admin bookings:', error);
+            return [];
+          }),
+        
+        // 2. Traveler bookings from bookings collection
+        // This endpoint fetches bookings where serviceId (from bookings collection) 
+        // matches the hotel's _id (ObjectId from hotels collection)
+        apiClient.get(`/api/bookings/hotel/provider/${hotelId}`)
+          .then(response => {
+            console.log('✅ Traveler bookings API response:', response.data);
+            
+            // The response is wrapped in a bookings property with count
+            // Example: { bookings: [...], count: 5 }
+            if (response.data && response.data.bookings) {
+              console.log('✅ Traveler bookings fetched:', response.data.count, 'bookings');
+              return response.data.bookings;
+            }
+            
+            // Fallback if response structure is different
+            if (Array.isArray(response.data)) {
+              console.log('✅ Traveler bookings fetched (array):', response.data.length, 'bookings');
+              return response.data;
+            }
+            
+            console.warn('⚠️ Unexpected traveler bookings response structure');
+            return [];
+          })
+          .catch(error => {
+            console.error('❌ Error fetching traveler bookings:', error);
+            if (error.response) {
+              console.error('Response status:', error.response.status);
+              console.error('Response data:', error.response.data);
+            }
             return [];
           })
       ]);
       
-      console.log('Admin bookings:', adminBookings);
-      console.log('Traveler bookings:', travelerBookings);
+      console.log('📊 Booking Summary:');
+      console.log('  - Admin bookings:', adminBookings.length);
+      console.log('  - Traveler bookings (serviceId match):', travelerBookings.length);
+      console.log('  - Total bookings:', adminBookings.length + travelerBookings.length);
       
       // Combine both booking sources
-      return [...adminBookings, ...travelerBookings];
+      const allBookings = [...adminBookings, ...travelerBookings];
+      
+      // Log sample bookings for debugging
+      if (travelerBookings.length > 0) {
+        console.log('📝 Sample traveler booking:', travelerBookings[0]);
+      }
+      
+      return allBookings;
     } catch (error) {
       console.error('Error fetching bookings:', error);
       if (error.response) {
