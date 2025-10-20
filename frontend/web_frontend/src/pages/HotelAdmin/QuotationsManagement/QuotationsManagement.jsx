@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import quotationService from '../../../services/quotationService';
+import pendingTripService from '../../../services/pendingTripService';
+import hotelService from '../../../services/hotelService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 import { Link } from 'react-router-dom';
 
 // Input component
@@ -271,11 +274,29 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div className="border-r pr-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Package Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || 'Not specified'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Group Package Name"
+                    name="packageName"
+                    value={editedQuotation.packageName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
+                )}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hotel Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Hotel Name"
+                    name="hotelName"
+                    value={editedQuotation.hotelName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                )}
               </div>
             </div>
             <div>
@@ -283,20 +304,47 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <span className="material-icons text-sm mr-1 align-text-bottom">person</span> Contact Person
                 </label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                {isEditing ? (
+                  <Input
+                    label="Contact Person"
+                    name="contactPersonName"
+                    value={editedQuotation.contactPersonName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                )}
               </div>
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">email</span> Contact Email
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Email"
+                      name="contactEmail"
+                      value={editedQuotation.contactEmail}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">phone</span> Contact Phone
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Phone"
+                      name="contactPhone"
+                      value={editedQuotation.contactPhone}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -314,31 +362,61 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Accommodation Type</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.accommodationType || 'Not specified'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Accommodation Type"
+                    name="accommodationType"
+                    value={editedQuotation.accommodationType}
+                    onChange={handleChange}
+                    options={roomTypes}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.accommodationType || 'Not specified'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Size</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
-                  {editedQuotation.groupSize || '0'} people
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Group Size"
+                    type="number"
+                    name="groupSize"
+                    value={editedQuotation.groupSize}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
+                    {editedQuotation.groupSize || '0'} people
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rooms</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
-                  {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Number of Rooms"
+                    type="number"
+                    name="roomsRequired"
+                    value={editedQuotation.roomsRequired}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
+                    {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Travel Schedule</label>
                 <div className="bg-yellow-50 p-2 rounded border border-yellow-200 text-sm">
-                  <span className="font-medium">Group Trip Package:</span> {editedQuotation.packageName || 'Not specified'}
+                  <span className="font-medium">Group Trip Package:</span> {editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}
                 </div>
               </div>
             </div>
@@ -347,15 +425,35 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkInDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-in Date"
+                      type="date"
+                      name="checkInDate"
+                      value={editedQuotation.checkInDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkInDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-out Date"
+                      type="date"
+                      name="checkOutDate"
+                      value={editedQuotation.checkOutDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -368,32 +466,64 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Meal Plan</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.mealPlan || 'Breakfast Only'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Meal Plan"
+                    name="mealPlan"
+                    value={editedQuotation.mealPlan}
+                    onChange={handleChange}
+                    options={['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive']}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.mealPlan || 'Breakfast Only'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Additional Services</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.airportTransfer ? 
-                    <span className="text-green-600 flex items-center">
-                      <span className="material-icons text-sm mr-1">check_circle</span>  Transportation Included
-                    </span> : 
-                    <span className="text-gray-500 flex items-center">
-                      <span className="material-icons text-sm mr-1">cancel</span> No Transportation
-                    </span>
-                  }
-                </div>
+                {isEditing ? (
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="airportTransfer"
+                      checked={!!editedQuotation.airportTransfer}
+                      onChange={e => setEditedQuotation(prev => ({ ...prev, airportTransfer: e.target.checked }))}
+                      className="rounded text-yellow-500 focus:ring-yellow-400"
+                    />
+                    <span>Include Pool Facilities</span>
+                  </label>
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.airportTransfer ? 
+                      <span className="text-green-600 flex items-center">
+                        <span className="material-icons text-sm mr-1">check_circle</span> Pool Facilities Included
+                      </span> : 
+                      <span className="text-gray-500 flex items-center">
+                        <span className="material-icons text-sm mr-1">cancel</span> No Pool Facilities
+                      </span>
+                    }
+                  </div>
+                )}
               </div>
             </div>
           </div>
           
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Special Accommodation Requirements</label>
-            <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
-              {editedQuotation.specialRequirements || 'None specified'}
-            </div>
+            {isEditing ? (
+              <Textarea
+                label="Special Accommodation Requirements"
+                name="specialRequirements"
+                value={editedQuotation.specialRequirements}
+                onChange={handleChange}
+              />
+            ) : (
+              <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
+                {editedQuotation.specialRequirements || 'None specified'}
+              </div>
+            )}
           </div>
         </section>
 
@@ -416,20 +546,23 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="text-gray-600 border-b pb-2">Accommodation Subtotal:</div>
               <div className="text-right font-medium border-b pb-2">
-                LKR {((roomPrices[quotation.accommodationType] || 0) * 
-                  (quotation.roomsRequired || Math.ceil(quotation.groupSize / 2)) * 
-                  calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                LKR {calculateAccommodationTotal(quotation).toFixed(2)}
               </div>
               
-              {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && (
+              {quotation.mealPlan && (
                 <>
                   <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
                   <div className="text-right font-medium">
-                    LKR {(quotation.groupSize * 
-                      (quotation.mealPlan === 'Half Board' ? 25 : 
-                       quotation.mealPlan === 'Full Board' ? 40 : 
-                       quotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
-                      calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    {(() => {
+                      const total = calculateMealPlanUpgradeTotal(quotation);
+                      console.log('Displaying meal plan in card:', {
+                        mealPlan: quotation.mealPlan,
+                        mealPricePerPerson: quotation.mealPricePerPerson,
+                        groupSize: quotation.groupSize,
+                        calculatedTotal: total
+                      });
+                      return `LKR ${total.toFixed(2)}`;
+                    })()}
                   </div>
                 </>
               )}
@@ -465,19 +598,51 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                   <span className="material-icons text-sm mr-1">local_offer</span>
                   Discount ({quotation.discountOffered}%):
                 </span>
-                <span className="font-medium">-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+                <span className="font-medium">-LKR {(calculateSubtotalBeforeDiscount(quotation) * quotation.discountOffered / 100).toFixed(2)}</span>
               </div>
             )}
             
             <div className="flex justify-between font-bold text-lg border-t border-yellow-300 pt-3 mt-3 bg-yellow-50 p-3 rounded">
               <span className="text-gray-800">Total Quote Amount:</span>
-              <span className="text-xl">LKR {(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
+              <span className="text-xl">LKR {quotation.finalAmount 
+                ? (typeof quotation.finalAmount === 'number' ? quotation.finalAmount.toFixed(2) : parseFloat(quotation.finalAmount).toFixed(2))
+                : calculateFinalTotal(quotation)}</span>
+            </div>
+            
+            {/* Per-Person Breakdown */}
+            <div className="mt-4 bg-blue-50 p-3 border border-blue-200 rounded">
+              <h5 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                Per Person Breakdown (Group Size: {quotation.groupSize})
+              </h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-blue-700">Accommodation per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {quotation.accommodationPricePerPerson 
+                    ? quotation.accommodationPricePerPerson.toFixed(2) 
+                    : (calculateAccommodationTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700">Meal plan per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {(quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0)
+                    ? quotation.mealPricePerPerson.toFixed(2) 
+                    : (calculateMealPlanUpgradeTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700 font-semibold border-t pt-1">Total per person:</div>
+                <div className="text-right font-bold text-blue-900 border-t pt-1">
+                  LKR {quotation.totalPricePerPerson 
+                    ? quotation.totalPricePerPerson.toFixed(2) 
+                    : calculatePerPersonPrice(quotation).toFixed(2)}
+                </div>
+              </div>
             </div>
             
             <div className="mt-4 text-xs text-gray-500 bg-white p-3 border border-gray-100 rounded">
               <div className="flex items-start mb-1">
                 <span className="material-icons text-yellow-600 text-sm mr-2">info</span>
-                <p>Rates are based on group accommodation package.</p>
+                <p>Rates are based on group accommodation package. Per-person prices are calculated and saved automatically.</p>
               </div>
               <div className="flex items-start">
                 <span className="material-icons text-yellow-600 text-sm mr-2">event</span>
@@ -761,6 +926,7 @@ const QuotationsManagement = () => {
   const [quotations, setQuotations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [deleteInProgress, setDeleteInProgress] = useState(null); // Track which quotation is being deleted
   const [filterStatus, setFilterStatus] = useState('All');
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -777,37 +943,37 @@ const QuotationsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(8);
   
-  // Hotel data (normally would come from user context or API)
-  const hotelData = {
-    hotelName: 'Shangri-La Hotel',
-    managerName: 'Sarah Williams',
-    email: 'info@shangrilahotel.com',
-    phone: '+94 11 234 5678',
-    address: '123 Beach Road, Colombo, Sri Lanka',
-    website: 'www.shangrilahotel.com'
-  };
+  // Hotel data state
+  const [hotelData, setHotelData] = useState({
+    hotelName: 'Loading...',
+    managerName: '',
+    email: '',
+    phone: '',
+    address: '',
+    website: ''
+  });
   
   // Form state for new hotel accommodation quotation
   const blankQuotation = {
-    packageName: '',
+    packageName: 'Custom Group Package',
     contactPersonName: hotelData.managerName, // Pre-fill with hotel manager name
     contactEmail: hotelData.email, // Pre-fill with hotel email
     contactPhone: hotelData.phone, // Pre-fill with hotel phone
-    accommodationType: '', // Keep for backward compatibility
+    accommodationType: 'Group Accommodation', // Generic type for group bookings
     checkInDate: '',
     checkOutDate: '',
     groupSize: 10,
-    roomsRequired: 5, // Total rooms, now calculated from roomDistributions
-    mealPlan: 'Breakfast Only',
+    pricePerPersonPerNight: 0, // Price per person per night for accommodation
+    mealPlan: '',
+    mealPlanPricePerPerson: 0, // Price per person per night for meal plan
     specialRequirements: '',
     totalAmount: 0,
     discountOffered: 0,
     hotelName: hotelData.hotelName, // Use the hotel name from hotelData
-    airportTransfer: false,
-    // New field for multiple accommodation types
-    roomDistributions: [
-      { accommodationType: '', quantity: 1, occupants: 2, id: Date.now() }
-    ],
+    airportTransfer: false, // Using existing field name for pool facilities
+    transportationPrice: 2000, // Default pool facilities price (variable name kept for backward compatibility)
+    // Empty array for room distributions (will be determined after approval)
+    roomDistributions: [],
   };
   const [newQuotation, setNewQuotation] = useState(blankQuotation);
   
@@ -1046,20 +1212,71 @@ const QuotationsManagement = () => {
     setIsLoading(true);
     setError(null);
     
-    // Fetch real quotations data from backend
+    // Fetch real data from backend
     const fetchData = async () => {
       try {
-        // For group packages we can still use mock data for now
-        setGroupPackages(mockGroupTripPackages);
+        // Check authentication first
+        const authToken = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+        if (!authToken) {
+          console.warn('No authentication token found');
+          setError('You are not logged in. Please login to access quotation management.');
+          setIsLoading(false);
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+          return;
+        }
+        
+        // Fetch hotel data
+        const hotel = await hotelService.getCurrentHotel();
+        if (hotel) {
+          setHotelData({
+            id: hotel.id || '',
+            hotelName: hotel.hotelName || hotel.name || 'Hotel',
+            managerName: hotel.managerName || hotel.contactPersonName || '',
+            email: hotel.email || '',
+            phone: hotel.phone || hotel.contactPhone || '',
+            address: hotel.address || '',
+            website: hotel.website || ''
+          });
+        }
+        
+        // Fetch pending trips and convert them to group packages format
+        const pendingTrips = await pendingTripService.getAllPendingTrips();
+        if (pendingTrips && pendingTrips.length > 0) {
+          // Map backend data to the frontend group packages format
+          const mappedGroupPackages = pendingTrips.map(trip => 
+            pendingTripService.mapPendingTripToGroupPackage(trip)
+          );
+          setGroupPackages(mappedGroupPackages);
+        } else {
+          console.log('No pending trips found, using mock data as fallback');
+          setGroupPackages(mockGroupTripPackages);
+        }
         
         // Fetch actual quotations from API
         const fetchedQuotations = await quotationService.getAllQuotations();
-        setQuotations(fetchedQuotations);
+        if (fetchedQuotations && fetchedQuotations.length > 0) {
+          setQuotations(fetchedQuotations);
+        } else {
+          console.log('No quotations found or API returned empty array, using mock data as fallback');
+          // Use empty array instead of mock data to avoid confusion
+          setQuotations([]);
+        }
       } catch (err) {
         console.error('Error loading data:', err);
-        setError('Failed to load data. Please try again.');
-        // Fallback to mock data if API fails
-        setQuotations(mockQuotations);
+        
+        // Handle authentication errors specifically
+        if (err.response && err.response.status === 401) {
+          setError('Your session has expired. Please login again.');
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+        } else {
+          setError('Failed to load data. Please try again.');
+        }
+        
+        // Fallback to mock data for packages only, but not for quotations
+        setGroupPackages(mockGroupTripPackages);
+        setQuotations([]);
       } finally {
         setIsLoading(false);
       }
@@ -1172,61 +1389,176 @@ const QuotationsManagement = () => {
     }
   };
   
-  // Calculate accommodation total before discount
+  // Calculate accommodation total (without meal plan and pool facilities)
   const calculateAccommodationTotal = (quotation) => {
     if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.groupSize) return 0;
     
     const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
     
-    // Check if we have room distributions or use the legacy accommodationType
-    let roomCost = 0;
+    // Calculate accommodation cost based on price per person per night
+    let accommodationCost = 0;
     
-    if (quotation.roomDistributions && quotation.roomDistributions.length > 0 && 
-        quotation.roomDistributions.some(dist => dist.accommodationType && dist.quantity > 0)) {
-      // Calculate costs for each room type in the distribution
-      quotation.roomDistributions.forEach(distribution => {
-        if (distribution.accommodationType && distribution.quantity > 0) {
-          roomCost += (roomPrices[distribution.accommodationType] || 0) * distribution.quantity * nights;
-        }
-      });
-    } else if (quotation.accommodationType) {
-      // Fallback to the legacy single accommodation type
-      const roomsNeeded = quotation.roomsRequired || Math.ceil(quotation.groupSize / 2);
-      roomCost = (roomPrices[quotation.accommodationType] || 0) * roomsNeeded * nights;
+    if (quotation.pricePerPersonPerNight) {
+      // Use price per person per night
+      accommodationCost = quotation.pricePerPersonPerNight * quotation.groupSize * nights;
+    } else {
+      // Default to zero if price per person is not set
+      accommodationCost = 0;
     }
     
-    // Calculate meal plan costs if applicable
-    const mealPlanCost = quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' ? 
-      (quotation.groupSize * 
-       (quotation.mealPlan === 'Half Board' ? 25 : 
-        quotation.mealPlan === 'Full Board' ? 40 : 
-        quotation.mealPlan === 'All Inclusive' ? 60 : 0) * nights) : 0;
+    return accommodationCost;
+  };
+  
+  // Calculate meal plan cost (mirroring accommodation calculation pattern)
+  const calculateMealPlanUpgradeTotal = (quotation = newQuotation) => {
+    if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.groupSize) return 0;
     
-    // Add airport transfer cost if selected
-    const transferCost = quotation.airportTransfer ? 2000 : 0;
+    const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
     
-    return roomCost + mealPlanCost + transferCost;
+    console.log('calculateMealPlanUpgradeTotal called:', {
+      mealPlan: quotation.mealPlan,
+      mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+      mealPricePerPerson: quotation.mealPricePerPerson,
+      groupSize: quotation.groupSize,
+      nights: nights
+    });
+    
+    // Calculate meal plan cost based on price per person per night
+    let mealPlanCost = 0;
+    
+    if (quotation.mealPlan && quotation.mealPlanPricePerPerson) {
+      // Use meal plan price per person per night (same pattern as accommodation)
+      mealPlanCost = quotation.mealPlanPricePerPerson * quotation.groupSize * nights;
+      console.log('Using mealPlanPricePerPerson:', mealPlanCost);
+    } else if (quotation.mealPlan && quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0) {
+      // FALLBACK: If mealPlanPricePerPerson is undefined, fetch mealPricePerPerson and multiply by groupSize
+      // mealPricePerPerson is the total per person for entire stay
+      // So total for group = mealPricePerPerson * groupSize
+      mealPlanCost = quotation.mealPricePerPerson * quotation.groupSize;
+      console.log('Using mealPricePerPerson (fallback) - mealPricePerPerson:', quotation.mealPricePerPerson, '× groupSize:', quotation.groupSize, '=', mealPlanCost);
+    } else if (quotation.mealPlan) {
+      // Fall back to default pricing if not set
+      const defaultPrice = quotation.mealPlan === 'Breakfast Only' ? 1000 :
+         quotation.mealPlan === 'Half Board' ? 1500 : 
+         quotation.mealPlan === 'Full Board' ? 2000 : 
+         quotation.mealPlan === 'All Inclusive' ? 2500 : 0;
+      mealPlanCost = defaultPrice * quotation.groupSize * nights;
+      console.log('Using default price:', mealPlanCost);
+    }
+    
+    console.log('Final mealPlanCost:', mealPlanCost);
+    return mealPlanCost;
+  };
+  
+  // Calculate pool facilities cost (function name kept for backward compatibility)
+  const calculateTransportationTotal = (quotation = newQuotation) => {
+    // Add pool access cost if selected
+    if (quotation.airportTransfer) {
+      return quotation.transportationPrice || 2000;
+    }
+    return 0;
+  };
+  
+  // Calculate total before discount
+  const calculateSubtotalBeforeDiscount = (quotation = newQuotation) => {
+    return calculateAccommodationTotal(quotation) + 
+           calculateMealPlanUpgradeTotal(quotation) + 
+           calculateTransportationTotal(quotation);
   };
   
   // Calculate final total amount with discount applied
   const calculateFinalTotal = (quotation) => {
-    const total = calculateAccommodationTotal(quotation);
-    const discount = quotation.discountOffered > 0 ? (total * quotation.discountOffered / 100) : 0;
-    return (total - discount).toFixed(2);
+    const subtotal = calculateSubtotalBeforeDiscount(quotation);
+    const discount = quotation.discountOffered > 0 ? (subtotal * quotation.discountOffered / 100) : 0;
+    return (subtotal - discount).toFixed(2);
   };
   
-  // Format date for display
+  // Calculate price per person
+  const calculatePerPersonPrice = (quotation = newQuotation) => {
+    if (!quotation.groupSize || quotation.groupSize <= 0) return 0;
+    return parseFloat(calculateFinalTotal(quotation)) / quotation.groupSize;
+  };
+  
+  // Format date for display with improved handling of different date formats
   const formatDate = (iso) => {
     if (!iso) return '';
     try {
-      return new Date(iso).toLocaleDateString('en-US', {
+      // Handle Date objects, ISO strings, and LocalDate objects from Java backend
+      let dateObj;
+      
+      if (iso instanceof Date) {
+        // Already a Date object
+        dateObj = iso;
+      } else if (typeof iso === 'string') {
+        // ISO string format
+        dateObj = new Date(iso);
+      } else if (iso && iso.year && iso.month && iso.day) {
+        // Java LocalDate format with year, month, day properties
+        // Note: JavaScript months are 0-indexed, so we subtract 1 from the month
+        dateObj = new Date(iso.year, iso.month - 1, iso.day);
+      } else {
+        // Try to convert whatever format we have
+        dateObj = new Date(iso);
+      }
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        console.warn('Invalid date:', iso);
+        return 'Invalid date';
+      }
+      
+      return dateObj.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       });
     } catch (err) {
-      console.error('Date formatting error:', err);
-      return iso;
+      console.error('Date formatting error:', err, iso);
+      return String(iso);
+    }
+  };
+  
+  // Calculate duration between two dates
+  const calculateDuration = (startDate, endDate) => {
+    if (!startDate || !endDate) return 0;
+    
+    try {
+      let start, end;
+      
+      // Handle different date formats (similar to formatDate function)
+      if (startDate instanceof Date) {
+        start = startDate;
+      } else if (typeof startDate === 'string') {
+        start = new Date(startDate);
+      } else if (startDate && startDate.year && startDate.month && startDate.day) {
+        start = new Date(startDate.year, startDate.month - 1, startDate.day);
+      } else {
+        start = new Date(startDate);
+      }
+      
+      if (endDate instanceof Date) {
+        end = endDate;
+      } else if (typeof endDate === 'string') {
+        end = new Date(endDate);
+      } else if (endDate && endDate.year && endDate.month && endDate.day) {
+        end = new Date(endDate.year, endDate.month - 1, endDate.day);
+      } else {
+        end = new Date(endDate);
+      }
+      
+      // Check if dates are valid
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return 0;
+      }
+      
+      // Calculate difference in days
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays;
+    } catch (err) {
+      console.error('Duration calculation error:', err);
+      return 0;
     }
   };
   
@@ -1243,20 +1575,50 @@ const QuotationsManagement = () => {
   
   // Handle creating quotation from group package
   const handleCreateQuotation = (tripPackage) => {
-    // Pre-fill the quotation form with group package details and hotel contact info
-    const roomCount = Math.ceil(tripPackage.maxGroupSize / 2);
+    // Ensure dates are in the correct format for the form
+    let checkInDate = tripPackage.travelStartDate;
+    let checkOutDate = tripPackage.travelEndDate;
+    
+    // If the dates are LocalDate objects from Java, convert them to ISO strings
+    if (tripPackage.travelStartDate && typeof tripPackage.travelStartDate === 'object' && 
+        tripPackage.travelStartDate.year && tripPackage.travelStartDate.month && tripPackage.travelStartDate.day) {
+      // Convert Java LocalDate to ISO string
+      const year = tripPackage.travelStartDate.year;
+      const month = String(tripPackage.travelStartDate.month).padStart(2, '0'); // Ensure 2 digits
+      const day = String(tripPackage.travelStartDate.day).padStart(2, '0'); // Ensure 2 digits
+      checkInDate = `${year}-${month}-${day}`;
+    }
+    
+    if (tripPackage.travelEndDate && typeof tripPackage.travelEndDate === 'object' && 
+        tripPackage.travelEndDate.year && tripPackage.travelEndDate.month && tripPackage.travelEndDate.day) {
+      // Convert Java LocalDate to ISO string
+      const year = tripPackage.travelEndDate.year;
+      const month = String(tripPackage.travelEndDate.month).padStart(2, '0'); // Ensure 2 digits
+      const day = String(tripPackage.travelEndDate.day).padStart(2, '0'); // Ensure 2 digits
+      checkOutDate = `${year}-${month}-${day}`;
+    }
+    
+    // Pre-fill the quotation form with group package details and real hotel contact info
     setNewQuotation({
       ...blankQuotation,
-      packageName: tripPackage.packageName,
-      checkInDate: tripPackage.travelStartDate,
-      checkOutDate: tripPackage.travelEndDate,
+      packageName: tripPackage.packageName || tripPackage.title,
+      title: tripPackage.packageName || tripPackage.title, // Store trip title explicitly
+      checkInDate: checkInDate,
+      checkOutDate: checkOutDate,
       groupSize: tripPackage.maxGroupSize,
-      roomsRequired: roomCount,
-      // Set default room distribution with Standard Rooms
-      roomDistributions: [
-        { accommodationType: 'Standard Rooms', quantity: roomCount, occupants: tripPackage.maxGroupSize, id: Date.now() }
-      ],
-      // Contact details are already pre-filled from blankQuotation which uses hotelData
+      pricePerPersonPerNight: 5000, // Default starting price per person per night in LKR
+      mealPlan: 'Breakfast Only',
+      mealPlanPricePerPerson: 1000, // Default meal plan price in LKR
+      // Add reference to the original trip
+      originalTripId: tripPackage.id,
+      // Use real hotel data from API
+      hotelName: hotelData.hotelName,
+      managerName: hotelData.managerName,
+      contactPersonName: hotelData.managerName, 
+      contactEmail: hotelData.email,
+      contactPhone: hotelData.phone,
+      hotelAddress: hotelData.address,
+      hotelWebsite: hotelData.website,
     });
     
     // Close the group package modal and show the quotation form
@@ -1269,31 +1631,144 @@ const QuotationsManagement = () => {
     e.preventDefault();
     
     try {
-      // Calculate total amount
+      // First check if user is authenticated
+      const authToken = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!authToken) {
+        console.error('Authentication token not found');
+        showFlashMessage('You are not logged in. Please login to create quotations.', 'error');
+        // Optionally redirect to login page
+        // window.location.href = '/hotel/login';
+        return;
+      }
+
+      // Get current user info and fetch hotel details
+      const currentUser = HotelAuthService.getCurrentUser();
+      const currentUsername = currentUser?.username;
+      
+      if (!currentUsername) {
+        console.error('Username not found in authentication data');
+        showFlashMessage('Unable to identify hotel user. Please login again.', 'error');
+        return;
+      }
+
+      console.log('Fetching hotel details for username:', currentUsername);
+      
+      // Fetch hotel details by username to get hotel ID
+      let hotelDetails = null;
+      try {
+        hotelDetails = await hotelService.getHotelByUsername(currentUsername);
+        console.log('Hotel details fetched:', hotelDetails);
+      } catch (error) {
+        console.error('Failed to fetch hotel details:', error);
+        showFlashMessage('Unable to fetch hotel information. Please contact support.', 'error');
+        return;
+      }
+      
+      // Validate package name - ensure it's not empty
+      if (!newQuotation.packageName || newQuotation.packageName.trim() === '') {
+        showFlashMessage('Please provide a Group Package Name', 'error');
+        return;
+      }
+      
+      // Calculate total amount and per-person prices
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
+      const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+      const transportationTotal = calculateTransportationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
       
-      // Ensure we have accommodationType set for backward compatibility
-      const mainAccommodationType = newQuotation.roomDistributions && 
-        newQuotation.roomDistributions.length > 0 && 
-        newQuotation.roomDistributions[0].accommodationType || '';
+      // Calculate per-person prices (mirroring accommodation calculation pattern)
+      const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+      const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
+      const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
       
+      // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
         ...newQuotation,
-        accommodationType: newQuotation.accommodationType || mainAccommodationType,
+        packageName: newQuotation.packageName.trim() || newQuotation.title?.trim() || 'Custom Group Package', // Keep for frontend consistency
+        pendingTripName: newQuotation.packageName.trim() || newQuotation.title?.trim() || 'Custom Group Package', // Backend field name - trip title
+        title: newQuotation.title || newQuotation.packageName, // Explicit trip title field
+        pendingTripId: newQuotation.originalTripId || '', // Map original trip ID to backend field
+        accommodationType: "Group Accommodation", // Generic accommodation type
+        roomDistributions: [], // Empty array as room distribution will be decided later
         totalAmount: accommodationTotal,
         finalAmount: finalTotal,
         quoteNumber: `HQ-${Date.now().toString().substr(-6)}`, // Generate a unique quote number
+        
+        // Add hotel user information for filtering quotations by hotel
+        hotelUsername: currentUsername,
+        createdBy: currentUsername,
+        
+        // Add hotel ID and details from fetched hotel information
+        hotelId: hotelDetails?._id || hotelDetails?.id || '',
+        hotelName: hotelDetails?.hotelName || hotelDetails?.name || '',
+        hotelAddress: hotelDetails?.hotelAddress || hotelDetails?.address || '',
+        hotelWebsite: hotelDetails?.website || '',
+        hotelPhone: hotelDetails?.phoneNumber || hotelDetails?.phone || '',
+        hotelEmail: hotelDetails?.email || hotelDetails?.contactEmail || '',
+        hotelCity: hotelDetails?.city || '',
+        hotelDistrict: hotelDetails?.district || '',
+        
+        // Add calculated per-person prices to be saved in database
+        accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+        mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+        totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
+        
+        // Ensure meal plan data is included
+        mealPlan: newQuotation.mealPlan || '',
+        mealPlanPricePerPerson: newQuotation.mealPlanPricePerPerson || 0,
+        
+        // Ensure consistent field names for contact details
+        contactPersonName: newQuotation.contactPersonName || hotelDetails?.contactPerson || hotelDetails?.managerName || '',
+        contactEmail: newQuotation.contactEmail || hotelDetails?.contactEmail || hotelDetails?.email || '',
+        contactPhone: newQuotation.contactPhone || hotelDetails?.phoneNumber || hotelDetails?.phone || '',
+        
+        // Ensure both new and old field names are sent for pool facilities
+        poolFacilities: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
+        airportTransfer: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
+        poolAccessPrice: newQuotation.poolAccessPrice || newQuotation.transportationPrice || 0,
+        transportationPrice: newQuotation.poolAccessPrice || newQuotation.transportationPrice || 0,
       };
       
       // Call the API to create quotation
       console.log('Sending quotation data:', quotationToAdd);
+      console.log('Package name being sent to database:', quotationToAdd.packageName);
+      console.log('Hotel ID being sent to database:', quotationToAdd.hotelId);
+      console.log('Meal plan data being sent:', {
+        mealPlan: quotationToAdd.mealPlan,
+        mealPlanPricePerPerson: quotationToAdd.mealPlanPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson
+      });
+      console.log('Per-person prices being sent to database:', {
+        accommodationPricePerPerson: quotationToAdd.accommodationPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson,
+        totalPricePerPerson: quotationToAdd.totalPricePerPerson
+      });
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       console.log('Created quotation response:', createdQuotation);
+      console.log('Package name in response:', createdQuotation.packageName || createdQuotation.pendingTripName);
+      console.log('Hotel ID in response:', createdQuotation.hotelId);
+      console.log('Meal plan data in response:', {
+        mealPlan: createdQuotation.mealPlan,
+        mealPlanPricePerPerson: createdQuotation.mealPlanPricePerPerson,
+        mealPricePerPerson: createdQuotation.mealPricePerPerson
+      });
       
-      // Get fresh data from the server to ensure we have the latest list
-      const updatedQuotations = await quotationService.getAllQuotations();
-      setQuotations(updatedQuotations);
+      // Even if the API call fails with 401 but returns a mock object, we proceed
+      // to give the user a better experience, but we won't refetch the list from API
+      
+      try {
+        // Try to get fresh data from the server
+        const updatedQuotations = await quotationService.getAllQuotations();
+        if (updatedQuotations && updatedQuotations.length > 0) {
+          setQuotations(updatedQuotations);
+        } else {
+          // If we get an empty array, add our local object to the list
+          setQuotations(prev => [...prev, createdQuotation]);
+        }
+      } catch (fetchError) {
+        // If fetching fails, just add the created quotation to the list
+        setQuotations(prev => [...prev, createdQuotation]);
+      }
       
       // Reset form and close modal
       setShowQuotationModal(false);
@@ -1303,7 +1778,46 @@ const QuotationsManagement = () => {
       showFlashMessage('Accommodation quotation sent successfully!', 'success');
     } catch (error) {
       console.error('Error creating quotation:', error);
-      // Show more detailed error message
+      
+      // Handle authentication errors specifically
+      if (error.response && error.response.status === 401) {
+        showFlashMessage('Your session has expired. Please login again.', 'error');
+        
+        // This is a workaround: create a local quotation object to give better UX
+        const accommodationTotal = calculateAccommodationTotal(newQuotation);
+        const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+        const transportationTotal = calculateTransportationTotal(newQuotation);
+        const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+        
+        // Calculate per-person prices (mirroring accommodation calculation pattern)
+        const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+        const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
+        const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
+        
+        const mockQuotation = {
+          ...newQuotation,
+          id: `local-${Date.now()}`,
+          quoteNumber: `HQ-${Date.now().toString().substr(-6)}`,
+          createdAt: new Date().toISOString(),
+          status: 'Pending',
+          totalAmount: accommodationTotal,
+          finalAmount: finalTotal,
+          accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+          mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+          totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
+        };
+        
+        // Add to state and close modal
+        setQuotations(prev => [...prev, mockQuotation]);
+        setShowQuotationModal(false);
+        setNewQuotation(blankQuotation);
+        
+        // Show a warning message
+        showFlashMessage('Created quotation locally due to authentication issue. Please login again for full functionality.', 'warning');
+        return;
+      }
+      
+      // Show more detailed error message for other errors
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create quotation';
       showFlashMessage(`Failed to create quotation: ${errorMessage}. Please try again.`, 'error');
     }
@@ -1311,6 +1825,15 @@ const QuotationsManagement = () => {
   
   // Handle view quotation details
   const handleViewDetails = (quotation) => {
+    console.log('=== VIEW DETAILS DEBUG ===');
+    console.log('Full quotation object:', quotation);
+    console.log('Meal Plan:', quotation.mealPlan);
+    console.log('Meal Plan Price Per Person (nightly):', quotation.mealPlanPricePerPerson);
+    console.log('Meal Price Per Person (total):', quotation.mealPricePerPerson);
+    console.log('Group Size:', quotation.groupSize);
+    console.log('Check-in:', quotation.checkInDate);
+    console.log('Check-out:', quotation.checkOutDate);
+    console.log('========================');
     setSelectedQuotation(quotation);
     setShowDetailModal(true);
   };
@@ -1439,34 +1962,144 @@ const QuotationsManagement = () => {
   };
   
   // Show delete confirmation
-  const handleDeleteClick = (id) => {
+  const handleDeleteClick = (id, quoteNumber) => {
+    // Handle case when id comes directly or from the quotation object
+    if (typeof id === 'object' && id !== null) {
+      quoteNumber = id.quoteNumber;
+      id = id.id;
+    }
+    
     // Find the quotation to show in confirmation message
-    const quotation = quotations.find(q => q.id === id);
-    if (!quotation) return;
+    const quotation = id ? quotations.find(q => q.id === id) : quotations.find(q => q.quoteNumber === quoteNumber);
+    
+    // If no quotation is found with the ID, try finding by quote number
+    if (!quotation && quoteNumber) {
+      const quotationByNumber = quotations.find(q => q.quoteNumber === quoteNumber);
+      if (quotationByNumber) {
+        console.log("Found quotation by quote number instead of ID:", quotationByNumber);
+        setConfirmDialog({
+          isOpen: true,
+          title: 'Delete Quotation',
+          message: `Are you sure you want to delete quotation ${quotationByNumber.quoteNumber} for "${quotationByNumber.packageName || quotationByNumber.pendingTripName || quotationByNumber.title || 'Custom Trip'}"? This action cannot be undone.`,
+          onConfirm: () => confirmDelete(quotationByNumber.id, quotationByNumber.quoteNumber),
+          onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    }
+    
+    if (!quotation) {
+      console.error("Cannot find quotation with ID or quote number:", { id, quoteNumber });
+      showFlashMessage('Cannot find quotation to delete', 'error');
+      return;
+    }
+    
+    console.log("Preparing to delete quotation:", {
+      id: quotation.id,
+      quoteNumber: quotation.quoteNumber
+    });
     
     setConfirmDialog({
       isOpen: true,
       title: 'Delete Quotation',
-      message: `Are you sure you want to delete quotation ${quotation.quoteNumber}? This action cannot be undone.`,
-      onConfirm: () => confirmDelete(id),
+      message: `Are you sure you want to delete quotation ${quotation.quoteNumber} for "${quotation.packageName || quotation.pendingTripName || quotation.title || 'Custom Trip'}"? This action cannot be undone.`,
+      onConfirm: () => confirmDelete(quotation.id, quotation.quoteNumber),
       onCancel: () => setConfirmDialog(prev => ({ ...prev, isOpen: false })),
     });
   };
   
   // Confirm delete
-  const confirmDelete = async (id) => {
+  const confirmDelete = async (id, quoteNumber) => {
     try {
-      await quotationService.deleteQuotation(id);
+      setIsLoading(true); // Show loading indicator while deleting
+      setConfirmDialog(prev => ({ ...prev, isOpen: false })); // Close dialog first for better UX
       
-      // Remove from state
-      setQuotations(prev => prev.filter(q => q.id !== id));
+      // Determine whether we're deleting by ID or quote number
+      const useQuoteNumber = (!id || id === undefined || id === null || id === '') && quoteNumber;
       
-      // Close dialog and show success message
-      setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-      showFlashMessage('Quotation deleted successfully!', 'success');
+      // Log the deletion attempt for debugging
+      console.log(`Attempting to delete quotation:`, { id, quoteNumber, useQuoteNumber });
+      
+      let result;
+      
+      if (useQuoteNumber) {
+        // Use quote number for deletion
+        showFlashMessage(`Deleting quotation #${quoteNumber}...`, 'info');
+        result = await quotationService.deleteQuotationByQuoteNumber(quoteNumber);
+        console.log(`Delete by quote number ${quoteNumber} result:`, result);
+      } else {
+        // Use ID for deletion
+        const quotationToDelete = quotations.find(q => q.id === id);
+        const displayNumber = quotationToDelete?.quoteNumber || 'unknown';
+        showFlashMessage(`Deleting quotation #${displayNumber}...`, 'info');
+        result = await quotationService.deleteQuotation(id);
+        console.log(`Delete by ID ${id} result:`, result);
+      }
+      
+      if (result.success) {
+        // If API call was successful, update the state to remove the deleted quotation
+        if (useQuoteNumber) {
+          setQuotations(prev => prev.filter(q => q.quoteNumber !== quoteNumber));
+        } else {
+          setQuotations(prev => prev.filter(q => q.id !== id));
+        }
+        
+        // Show success message
+        const successMessage = useQuoteNumber
+          ? `Quotation #${quoteNumber} deleted successfully!`
+          : 'Quotation deleted successfully!';
+        
+        showFlashMessage(successMessage, 'success');
+        
+        // Refresh the list after a short delay to ensure UI consistency
+        setTimeout(() => {
+          refreshQuotationList();
+        }, 500);
+      } else {
+        // If API call failed
+        if (result.authError) {
+          // If authentication error, show appropriate message
+          showFlashMessage(`Authentication error: ${result.error}`, 'error');
+          // Optionally redirect to login
+          // window.location.href = '/hotel/login';
+        } else {
+          // For other errors, show generic message
+          const errorMessage = useQuoteNumber
+            ? `Failed to delete quotation #${quoteNumber}: ${result.error}`
+            : `Failed to delete quotation: ${result.error}`;
+          
+          showFlashMessage(errorMessage, 'error');
+        }
+      }
     } catch (error) {
-      console.error('Error deleting quotation:', error);
-      showFlashMessage('Failed to delete quotation. Please try again.', 'error');
+      console.error('Error in delete operation:', error);
+      showFlashMessage('An unexpected error occurred. Please try again.', 'error');
+      // Close dialog
+      setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+    } finally {
+      setIsLoading(false); // Hide loading indicator
+    }
+  };
+  
+  // Function to refresh the quotation list
+  const refreshQuotationList = async () => {
+    try {
+      setIsLoading(true);
+      // showFlashMessage('Refreshing quotation list...', 'info');
+      
+      // Fetch fresh data from API
+      const updatedQuotations = await quotationService.getAllQuotations();
+      if (updatedQuotations && Array.isArray(updatedQuotations)) {
+        setQuotations(updatedQuotations);
+        // showFlashMessage('Quotation list refreshed successfully!', 'success');
+      } else {
+        showFlashMessage('No quotations found.', 'info');
+      }
+    } catch (error) {
+      console.error('Error refreshing quotation list:', error);
+      showFlashMessage('Failed to refresh quotation list. Please try again.', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -1505,30 +2138,74 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <p className="text-gray-700 mb-4">{tripPackage.description}</p>
+              {/* <p className="text-gray-700 mb-4">{tripPackage.description}</p> */}
               
               <div className="mb-4">
-                <h5 className="font-medium text-gray-800 mb-2">Destinations:</h5>
-                <div className="flex flex-wrap gap-2">
-                  {tripPackage.destinations.map((destination, index) => (
-                    <span key={index} className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded text-sm flex items-center">
-                      <span className="material-icons text-xs mr-1">place</span>
-                      {destination}
-                    </span>
-                  ))}
+                <h5 className="font-medium text-gray-800 mb-2">Start Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">flight_takeoff</span>
+                    <span className="font-medium">{tripPackage.startLocation || 'Not specified'}</span>
+                  </div>
+                  {tripPackage.startLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.startLocationDescription}</p>
+                  )}
                 </div>
               </div>
               
               <div className="mb-4">
-                <h5 className="font-medium text-gray-800 mb-2">Activities:</h5>
-                <div className="flex flex-wrap gap-2">
-                  {tripPackage.activities.map((activity, index) => (
-                    <span key={index} className="bg-green-50 text-green-700 px-2 py-1 rounded text-sm">
-                      {activity}
-                    </span>
-                  ))}
+                <h5 className="font-medium text-gray-800 mb-2">End Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">flight_land</span>
+                    <span className="font-medium">{tripPackage.endLocation || 'Not specified'}</span>
+                  </div>
+                  {tripPackage.endLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.endLocationDescription}</p>
+                  )}
                 </div>
               </div>
+              
+              {/* <div className="mb-4">
+                <h5 className="font-medium text-gray-800 mb-2">Pickup Location:</h5>
+                <div className="bg-yellow-50 text-yellow-700 px-3 py-2 rounded">
+                  <div className="flex items-center">
+                    <span className="material-icons mr-2">location_on</span>
+                    <span className="font-medium">{tripPackage.pickupLocation || 'Same as start location'}</span>
+                    {tripPackage.pickupTime && (
+                      <span className="ml-2 bg-yellow-100 px-2 py-1 rounded text-xs flex items-center">
+                        <span className="material-icons text-xs mr-1">access_time</span>
+                        {tripPackage.pickupTime}
+                      </span>
+                    )}
+                  </div>
+                  {tripPackage.pickupLocationDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7">{tripPackage.pickupLocationDescription}</p>
+                  )}
+                </div>
+              </div> */}
+              
+              {/* <div className="mb-4">
+                <h5 className="font-medium text-gray-800 mb-2">Route Summary:</h5>
+                <div className="bg-gray-50 p-3 rounded border border-gray-200">
+                  <div className="flex items-center">
+                    <span className="material-icons text-yellow-600 mr-2">timeline</span>
+                    <span className="font-medium">
+                      {tripPackage.startLocation || 'Origin'} → {tripPackage.endLocation || 'Destination'}
+                    </span>
+                    {tripPackage.path && (
+                      <span className="ml-2 text-xs text-gray-500">
+                        ({tripPackage.path.split(',').length} stops)
+                      </span>
+                    )}
+                  </div>
+                  {tripPackage.routePathDescription && (
+                    <p className="mt-2 text-sm text-gray-700 pl-7 border-t border-gray-100 pt-2">
+                      {tripPackage.routePathDescription}
+                    </p>
+                  )}
+                </div>
+              </div> */}
             </div>
             
             <div className="border-l pl-6">
@@ -1561,28 +2238,6 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
                   {tripPackage.maxGroupSize} people
                 </div>
               </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Inclusions</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  <div className="flex items-center mb-1">
-                    <span className="material-icons text-green-600 text-sm mr-1">
-                      {tripPackage.travelGuideIncluded ? 'check_circle' : 'cancel'}
-                    </span>
-                    <span className={tripPackage.travelGuideIncluded ? 'text-green-700' : 'text-red-700'}>
-                      Travel Guide
-                    </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="material-icons text-green-600 text-sm mr-1">
-                      {tripPackage.transportIncluded ? 'check_circle' : 'cancel'}
-                    </span>
-                    <span className={tripPackage.transportIncluded ? 'text-green-700' : 'text-red-700'}>
-                      Transportation
-                    </span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -1605,7 +2260,7 @@ const GroupTripDetailView = ({ tripPackage, onClose, onCreateQuotation }) => {
           </div>
           <div className="flex items-center">
             <span className="material-icons text-yellow-500 mr-2">person</span>
-            By: {tripPackage.createdBy}
+            By: Super Admin
           </div>
         </div>
 
@@ -1711,8 +2366,8 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             Package Information
           </h4>
           <div className="bg-yellow-50 p-4 rounded-lg">
-            <h5 className="font-medium text-lg">{quotation.packageName || 'N/A'}</h5>
-            <p className="text-gray-600">Accommodation Type: {quotation.accommodationType || 'Standard'}</p>
+            <h5 className="font-medium text-lg">{quotation.packageName || quotation.pendingTripName || 'Custom Package'}</h5>
+            {/* <p className="text-gray-600">Accommodation Types: {quotation.accommodationType || 'Standard'}</p> */}
           </div>
         </section>
         
@@ -1723,19 +2378,21 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
             Contact Information
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            {/* <div>
               <h5 className="font-medium mb-2">Client Details</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p><strong>Contact Person:</strong> {quotation.contactPersonName}</p>
                 <p><strong>Email:</strong> {quotation.contactEmail}</p>
                 <p><strong>Phone:</strong> {quotation.contactPhone}</p>
               </div>
-            </div>
+            </div> */}
             <div>
               <h5 className="font-medium mb-2">Hotel Details</h5>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p><strong>Contact Person:</strong> {quotation.contactPersonName || 'N/A'}</p>
-                <p><strong>Accommodation Type:</strong> {quotation.accommodationType}</p>
+                <p><strong>Hotel Name:</strong> {quotation.hotelName || hotelData.hotelName}</p>
+                <p><strong>Contact Person:</strong> {quotation.managerName || hotelData.managerName}</p>
+                <p><strong>Contact Email:</strong> {quotation.contactEmail || hotelData.email}</p>
+                <p><strong>Contact Phone:</strong> {quotation.contactPhone || hotelData.phone}</p>
               </div>
             </div>
           </div>
@@ -1789,54 +2446,365 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
               {quotation.airportTransfer ? (
                 <div className="flex items-center text-green-600">
                   <span className="material-icons mr-2">check_circle</span>
-                  Airport Transfer Included
+                  Pool Facilities Included
                 </div>
               ) : (
                 <div className="flex items-center text-gray-500">
                   <span className="material-icons mr-2">cancel</span>
-                  Transportation
+                  No Pool Facilities
                 </div>
               )}
             </div>
           </div>
         </section>
-        
-        {/* Price Details */}
+
+        {/* Final Quotation Summary Card */}
         <section className="mb-6">
           <h4 className="text-lg font-medium mb-3 flex items-center">
-            <span className="material-icons mr-2 text-green-600">payments</span>
-            Price Details
+            <span className="material-icons mr-2 text-yellow-600">attach_money</span>
+            Price Calculation
           </h4>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <div className="text-gray-600">Room Rate:</div>
-              <div className="text-right font-medium">
-                LKR {(quotation.totalAmount / (calculateNights(quotation.checkInDate, quotation.checkOutDate) * quotation.roomsRequired)).toFixed(2)} per room/night
+          
+          <div className="bg-yellow-50 border border-yellow-100 rounded-lg overflow-hidden">
+            <div className="bg-yellow-100 px-4 py-2 border-b border-yellow-200">
+              <h5 className="font-medium flex items-center">
+                <span className="material-icons mr-2 text-sm">calculate</span>
+                Quote Calculation
+              </h5>
+            </div>
+            <div className="p-4">
+              {/* Price Summary at a glance */}
+              <div className="mb-4 bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
+                <div className="flex justify-between items-center mb-2 border-b pb-2">
+                  <span className="font-medium text-lg flex items-center">
+                    <span className="material-icons text-yellow-600 mr-2">summarize</span>
+                    Price Summary
+                  </span>
+                  <span className="font-bold text-lg text-yellow-700">
+                    LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="col-span-2 text-center bg-yellow-50 py-1 mb-1 rounded">
+                    <span className="font-medium">Base Rate: LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} per person/night</span>
+                  </div>
+                  
+                  <div className="text-gray-600">Total Per Person:</div>
+                  <div className="text-right font-medium">LKR {quotation.groupSize ? 
+                    ((quotation.finalAmount || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100))) / quotation.groupSize).toFixed(2) : '0.00'}</div>
+                  
+                  <div className="text-gray-600">Group Size:</div>
+                  <div className="text-right">{quotation.groupSize} people</div>
+                  
+                  <div className="text-gray-600">Duration:</div>
+                  <div className="text-right">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                  
+                  <div className="text-gray-600 border-t pt-1 mt-1">Total Amount:</div>
+                  <div className="text-right font-medium border-t pt-1 mt-1">LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* Accommodation price breakdown */}
+              <div className="mb-3 bg-white rounded-lg p-3 border border-gray-100">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-medium flex items-center">
+                    <span className="material-icons text-yellow-600 text-sm mr-1">hotel</span>
+                    Accommodation
+                  </span>
+                  <span>Group Accommodation</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-gray-600">Price Per Person:</div>
+                  <div className="text-right">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')}/night</div>
+                  
+                  <div className="text-gray-600">Group Size:</div>
+                  <div className="text-right">{quotation.groupSize} people</div>
+                  
+                  <div className="text-gray-600">Nights:</div>
+                  <div className="text-right">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                  
+                  <div className="text-gray-600">Accommodation Formula:</div>
+                  <div className="text-right text-xs">
+                    LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} × {quotation.groupSize} people × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights
+                  </div>
+                  
+                  <div className="text-gray-600 font-medium">Accommodation Subtotal:</div>
+                  <div className="text-right font-medium text-yellow-700">
+                    LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                  </div>
+                </div>
               </div>
               
-              <div className="text-gray-600">Number of Rooms:</div>
-              <div className="text-right font-medium">{quotation.roomsRequired} rooms</div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="text-gray-600 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">nightlife</span>
+                  Stay Duration:
+                </div>
+                <div className="text-right font-medium">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                
+                <div className="text-gray-600 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">groups</span>
+                  Group Size:
+                </div>
+                <div className="text-right font-medium">{quotation.groupSize} people</div>
+                
+                <div className="text-gray-600 border-b pb-2 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">apartment</span>
+                  Accommodation Subtotal:
+                </div>
+                <div className="text-right font-medium border-b pb-2">
+                  LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                </div>
+                
+                {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 && (
+                  <>
+                    <div className="text-gray-600 flex items-center">
+                      <span className="material-icons text-yellow-600 text-sm mr-2">restaurant</span>
+                      Meal Plan ({quotation.mealPlan}):
+                    </div>
+                    <div className="text-right font-medium">
+                      LKR {(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 col-span-2">
+                      <div className="flex justify-between">
+                        <span>LKR {quotation.mealPlanPricePerPerson || 0}/person/day × {quotation.groupSize} people × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} days</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {quotation.airportTransfer && quotation.transportationPrice > 0 && (
+                  <>
+                    <div className="text-gray-600 flex items-center">
+                      <span className="material-icons text-yellow-600 text-sm mr-2">pool</span>
+                      Pool Facilities:
+                    </div>
+                    <div className="text-right font-medium">
+                      LKR {quotation.transportationPrice?.toFixed(2) || '0.00'}
+                    </div>
+                  </>
+                )}
+                
+                <div className="text-gray-700 font-medium border-t border-gray-200 pt-2 mt-2 flex items-center">
+                  <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                  Subtotal:
+                </div>
+                <div className="text-right font-medium border-t border-gray-200 pt-2 mt-2">
+                  LKR {((quotation.totalAmount || 0) + 
+                    (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                    (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                </div>
+                
+                {quotation.discountOffered > 0 && (
+                  <>
+                    <div className="text-green-600 flex items-center">
+                      <span className="material-icons text-green-600 text-sm mr-2">discount</span>
+                      Discount ({quotation.discountOffered}%):
+                    </div>
+                    <div className="text-right text-green-600 font-medium">
+                      -LKR {((quotation.totalAmount || 0) * (quotation.discountOffered || 0) / 100).toFixed(2)}
+                    </div>
+                  </>
+                )}
+              </div>
               
-              <div className="text-gray-600">Stay Duration:</div>
-              <div className="text-right font-medium">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
-              
-              <div className="text-gray-600">Accommodation Subtotal:</div>
-              <div className="text-right font-medium">LKR {quotation.totalAmount.toFixed(2)}</div>
-              
-              {quotation.discountOffered > 0 && (
-                <>
-                  <div className="text-green-600">Discount ({quotation.discountOffered}%):</div>
-                  <div className="text-right text-green-600 font-medium">
-                    -LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}
+              <div className="bg-yellow-100 p-4 rounded-lg border border-yellow-200 shadow-md">
+                <div className="flex justify-between font-bold text-lg">
+                  <span className="flex items-center">
+                    <span className="material-icons mr-2">payments</span>
+                    Final Quotation Total:
+                  </span>
+                  <span className="font-bold text-xl text-yellow-800">
+                    LKR {quotation.finalAmount?.toFixed(2) || ((quotation.totalAmount || 0) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                  </span>
+                </div>
+                
+                {/* Comprehensive price breakdown with visual enhancements */}
+                <div className="mt-3 bg-white p-4 rounded border border-yellow-100 shadow-sm">
+                  <h6 className="font-medium text-yellow-800 flex items-center mb-3 border-b border-yellow-100 pb-1">
+                    <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                    Complete Price Breakdown
+                  </h6>
+                  
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded">
+                      Base Accommodation
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Room Rate:</div>
+                    <div className="text-gray-600">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')} × {quotation.groupSize} people</div>
+                    <div className="text-right font-medium">
+                      LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * quotation.groupSize).toFixed(2)}/night
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Stay Duration:</div>
+                    <div className="text-gray-600">{calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                    <div className="text-right">×{calculateNights(quotation.checkInDate, quotation.checkOutDate)}</div>
+                    
+                    <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1">Accommodation Total:</div>
+                    <div className="border-t border-gray-100 pt-1"></div>
+                    <div className="text-right font-medium border-t border-gray-100 pt-1">
+                      LKR {quotation.totalAmount?.toFixed(2) || '0.00'}
+                    </div>
+                    
+                    <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded mt-2">
+                      Meal Plan
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                      {quotation.mealPlan || 'No Meal Plan'}:
+                    </div>
+                    <div className="text-gray-600">
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? 
+                      `LKR ${quotation.mealPricePerPerson} × ${quotation.groupSize} people` : '-'}
+                    </div>
+                    <div className="text-right">
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? `LKR ${(quotation.mealPricePerPerson * quotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
+                    </div>
+                    
+                    {/* <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">pool</span>
+                      Pool Facilities:
+                    </div>
+                    <div className="text-gray-600">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice || 2000} (flat fee)` : '-'}
+                    </div>
+                    <div className="text-right">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice?.toFixed(2) || '0.00'}` : 'LKR 0.00'}
+                    </div> */}
+                    
+                    <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                      Subtotal (before discount):
+                    </div>
+                    <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                    <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1">
+                      LKR {((quotation.totalAmount || 0) + 
+                        (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
+                        (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                    </div>
+                    
+                    {quotation.discountOffered > 0 && (
+                      <>
+                        <div className="text-green-600 font-medium pl-2 flex items-center">
+                          <span className="material-icons text-green-600 text-xs mr-1">discount</span>
+                          Discount ({quotation.discountOffered}%):
+                        </div>
+                        <div className="text-green-600">
+                          {quotation.discountOffered}% of LKR {((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
+                        </div>
+                        <div className="text-right text-green-600 font-medium">
+                          -LKR {(((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100).toFixed(2)}
+                        </div>
+                        
+                        <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                          Final Amount (after discount):
+                        </div>
+                        <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                        <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1 text-yellow-700">
+                          LKR {(((quotation.totalAmount || 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
+                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
+                        </div>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
-            </div>
-            
-            <div className="border-t border-green-200 pt-2 mt-2">
-              <div className="flex justify-between items-center font-bold text-lg">
-                <span>Final Amount:</span>
-                <span>LKR {quotation.finalAmount?.toFixed(2) || (quotation.totalAmount - (quotation.totalAmount * quotation.discountOffered / 100)).toFixed(2)}</span>
+                </div>
+                
+                <div className="mt-4 bg-blue-50 p-3 rounded border border-blue-100 shadow-sm">
+                  <h6 className="font-medium text-blue-800 flex items-center mb-2 border-b border-blue-100 pb-1">
+                    <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                    Per Person Cost Breakdown
+                  </h6>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-gray-600 pl-2">Accommodation:</div>
+                    <div className="text-gray-600">LKR {quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))).toFixed(0) : '0')}/night × {calculateNights(quotation.checkInDate, quotation.checkOutDate)} nights</div>
+                    <div className="text-right font-medium">
+                      LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                      {quotation.mealPlan || 'None'}:
+                    </div>
+                    <div className="text-gray-600">
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        console.log('Meal Plan Display Check:', {
+                          hasMealPlan: !!quotation.mealPlan,
+                          mealPlan: quotation.mealPlan,
+                          mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+                          mealPricePerPerson: quotation.mealPricePerPerson,
+                          calculatedPricePerNight: pricePerNight,
+                          nights: nights
+                        });
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${pricePerNight.toFixed(2)}/day × ${nights} days` : '-';
+                      })()}
+                    </div>
+                    <div className="text-right font-medium">
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${(pricePerNight * nights).toFixed(2)}` : 'LKR 0.00';
+                      })()}
+                    </div>
+                    
+                    <div className="text-gray-600 pl-2">Pool Facilities:</div>
+                    <div className="text-gray-600">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? 'Included (shared)' : 'Not included'}
+                    </div>
+                    <div className="text-right font-medium">
+                      {quotation.airportTransfer && quotation.transportationPrice > 0 ? 
+                      `LKR ${(quotation.transportationPrice / quotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
+                    </div>
+                    
+                    {quotation.discountOffered > 0 && (
+                      <>
+                        <div className="text-green-600 pl-2">Discount ({quotation.discountOffered}%):</div>
+                        <div className="text-green-600">Applied to total</div>
+                        <div className="text-right text-green-600 font-medium">
+                          -LKR {(calculateSubtotalBeforeDiscount(quotation) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
+                        </div>
+                      </>
+                    )}
+                    
+                    <div className="text-gray-700 font-medium border-t border-blue-100 pt-1 mt-1 pl-2">
+                      Total Per Person:
+                    </div>
+                    <div className="border-t border-blue-100 pt-1 mt-1"></div>
+                    <div className="text-right font-medium border-t border-blue-100 pt-1 mt-1 text-blue-700">
+                      LKR {quotation.totalPricePerPerson 
+                        ? quotation.totalPricePerPerson.toFixed(2)
+                        : calculatePerPersonPrice(quotation).toFixed(2)}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-1 rounded flex items-center justify-center">
+                    <span className="material-icons text-xs mr-1">info</span>
+                    This is what each person will pay for the full accommodation package.
+                  </div>
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-600 flex items-center bg-yellow-50 p-2 rounded">
+                  <span className="material-icons text-yellow-600 mr-2">info</span>
+                  This total amount will be the final quotation price sent to the group trip coordinator.
+                </div>
               </div>
             </div>
           </div>
@@ -1858,16 +2826,24 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
           {quotation.status === 'Pending' && (
-            <button
-              onClick={() => onDelete(quotation.id)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center"
-            >
-              <span className="material-icons text-sm mr-1">delete</span> Delete
-            </button>
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm flex items-center border border-gray-300"
+              >
+                <span className="material-icons text-sm mr-1">edit</span> Edit
+              </button>
+              <button
+                onClick={() => onDelete(quotation.id)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
+              >
+                <span className="material-icons text-sm mr-1">delete</span> Delete
+              </button>
+            </>
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm flex items-center"
+            className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm flex items-center transition-colors duration-200"
           >
             <span className="material-icons text-sm mr-1">close</span> Close
           </button>
@@ -2045,8 +3021,8 @@ const StatusBadge = ({ status }) => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {groupPackages.map((tripPackage) => (
-                  <tr 
-                    key={tripPackage.id} 
+                  <tr
+                    key={tripPackage.id || tripPackage.packageCode}
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleViewGroupPackage(tripPackage)}
                   >
@@ -2071,8 +3047,8 @@ const StatusBadge = ({ status }) => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="text-sm">
-                        <div>{formatDate(tripPackage.travelStartDate)}</div>
-                        <div className="text-xs text-gray-500">to {formatDate(tripPackage.travelEndDate)}</div>
+                        <div>{formatDate(new Date(tripPackage.travelStartDate))}</div>
+                        <div className="text-xs text-gray-500">to {formatDate(new Date(tripPackage.travelEndDate))}</div>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -2197,33 +3173,47 @@ const StatusBadge = ({ status }) => {
         ))}
       </div>
 
-      {/* Quotations table */}
+      {/* Quotations table with refresh button */}
       <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+        <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b">
+          <h3 className="text-lg font-medium text-gray-700">Accommodation Quotations</h3>
+          {/* <button 
+            onClick={refreshQuotationList}
+            className="flex items-center px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+            title="Refresh quotation list"
+          >
+            <span className="material-icons text-sm mr-1">refresh</span>
+            Refresh
+          </button> */}
+        </div>
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Quote #
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Quote Number
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Package Name
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Accommodation Type
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-in Date
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Check-In Date
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-out Date
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Nights
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Group Size
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
-                Quote Amount
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Amount
               </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -2231,50 +3221,72 @@ const StatusBadge = ({ status }) => {
           <tbody className="divide-y divide-gray-200">
             {currentQuotations.length === 0 ? (
               <tr>
-                <td colSpan="8" className="py-6 text-center text-gray-500">
-                  {isLoading ? 'Loading quotations...' : 'No quotations found.'}
+                <td colSpan="9" className="py-6 text-center text-gray-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <span className="material-icons text-3xl text-gray-300 mb-2">inbox</span>
+                    <p>No quotations found.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
               currentQuotations.map((q) => (
-                <tr key={q.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4">{q.quoteNumber}</td>
+                <tr
+                  key={q.id || q.quoteNumber}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleViewDetails(q)}
+                >
                   <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium">{q.packageName || 'Group Package'}</p>
-                      <p className="text-xs text-gray-500">{q.contactPersonName} ({q.contactEmail})</p>
-                    </div>
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md text-xs font-medium">
+                      {q.quoteNumber}
+                    </span>
                   </td>
-                  <td className="py-3 px-4">{q.accommodationType || 'Hotel'}</td>
-                  <td className="py-3 px-4">{formatDate(q.departureDate || q.checkInDate)}</td>
-                  <td className="py-3 px-4">{q.groupSize} people</td>
-                  <td className="py-3 px-4">
-                    <div className="flex flex-col">
-                      <p className="text-sm">{q.status}</p>
-                      {q.reviewDate && (
-                        <span className="text-xs text-gray-500">
-                          {formatDate(q.reviewDate)}
-                        </span>
-                      )}
-                    </div>
+                  <td className="py-3 px-4 font-medium">
+                    {q.packageName || q.pendingTripName || q.title || 'Custom Trip'}
                   </td>
                   <td className="py-3 px-4">
-                    <div>
-                      <p className="font-medium">LKR {q.totalAmount?.toFixed(2)}</p>
-                      {q.discountOffered > 0 && (
-                        <p className="text-xs text-green-600">
-                          {q.discountOffered}% discount
-                        </p>
-                      )}
+                    {formatDate(q.departureDate || q.checkInDate)}
+                  </td>
+                  <td className="py-3 px-4">
+                    {formatDate(q.returnDate || q.checkOutDate)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="material-icons text-yellow-500 text-xs mr-1">nights_stay</span>
+                      {calculateNights(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} nights
                     </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="material-icons text-yellow-500 text-xs mr-1">group</span>
+                      {q.groupSize} people
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                      q.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                      q.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                      q.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {q.status || 'Pending'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 font-medium">
+                    LKR {q.finalAmount 
+                      ? (typeof q.finalAmount === 'number' ? q.finalAmount.toFixed(2) : parseFloat(q.finalAmount).toFixed(2))
+                      : calculateFinalTotal(q)}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
-                      <button 
-                        className="bg-yellow-300 hover:bg-yellow-400 text-black px-3 py-1 rounded-md text-xs font-medium flex items-center"
-                        onClick={() => handleViewDetails(q)}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewDetails(q);
+                        }}
+                        className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded-md text-xs flex items-center"
                       >
-                        <span className="material-icons text-xs mr-1">visibility</span> View
+                        <span className="material-icons text-xs mr-1">visibility</span>
+                        View
                       </button>
                     </div>
                   </td>
@@ -2303,7 +3315,7 @@ const StatusBadge = ({ status }) => {
             
             {Array.from({ length: Math.ceil(filteredQuotations.length / itemsPerPage) }).map((_, index) => (
               <button
-                key={index}
+                key={`page-${index}`}
                 onClick={() => paginate(index + 1)}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === index + 1
@@ -2461,93 +3473,113 @@ const StatusBadge = ({ status }) => {
 
                 <div className="mb-4 mt-2">
                   <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <span className="material-icons text-yellow-600 mr-2 text-sm">bed</span>
-                    Room Allocation
+                    <span className="material-icons text-yellow-600 mr-2 text-sm">payments</span>
+                    Average Accommodation Price Per Person Per Night
                   </h5>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    {newQuotation.roomDistributions.map((distribution, index) => (
-                      <div key={distribution.id || index}>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 pb-3 border-b border-gray-200">
-                          <Select
-                            label={`Room Type ${index + 1}`}
-                            value={distribution.accommodationType}
-                            onChange={(e) => handleRoomDistributionChange(index, 'accommodationType', e.target.value)}
-                            options={accommodationTypes}
-                            required
-                          />
-                          <Input
-                            label="Number of Rooms"
-                            type="number"
-                            value={distribution.quantity || 1}
-                            min="1"
-                            onChange={(e) => handleRoomDistributionChange(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            required
-                          />
-                          <Input
-                            label="Number of Occupants"
-                            type="number"
-                            value={distribution.occupants || 2}
-                            min="1"
-                            onChange={(e) => handleRoomDistributionChange(index, 'occupants', Math.max(1, parseInt(e.target.value) || 1))}
-                            required
-                          />
-                          <div className="flex items-end pb-1">
-                            <button 
-                              type="button"
-                              onClick={() => removeRoomDistribution(index)}
-                              className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100 transition flex items-center justify-center h-10"
-                            >
-                              <span className="material-icons text-sm">delete</span>
-                            </button>
-                          </div>
+                    <div className="grid grid-cols-1 gap-4 mb-3">
+                      <Input
+                        label="Price Per Person Per Night (LKR)*"
+                        type="number"
+                        name="pricePerPersonPerNight"
+                        min="0"
+                        step="100"
+                        value={newQuotation.pricePerPersonPerNight || 0}
+                        onChange={(e) => setNewQuotation({
+                          ...newQuotation,
+                          pricePerPersonPerNight: Math.max(0, parseInt(e.target.value) || 0)
+                        })}
+                        required
+                      />
+                    </div>
+
+                    <div className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-sm font-medium text-yellow-800">Group Size:</div>
+                        <div className="text-sm font-medium">
+                          {newQuotation.groupSize} people
                         </div>
-                        
-                        {/* Show room price info when type is selected */}
-                        {distribution.accommodationType && (
-                          <div className="mb-3 ml-2 text-xs text-gray-600 flex items-center">
-                            <span className="material-icons text-yellow-500 text-xs mr-1">info</span>
-                            Price: LKR {roomPrices[distribution.accommodationType] || 0} per night x {distribution.quantity || 1} rooms = 
-                            LKR {(roomPrices[distribution.accommodationType] || 0) * (distribution.quantity || 1)} per night
-                          </div>
-                        )}
                       </div>
-                    ))}
-                    <div className="flex justify-center mt-2">
-                      <button
-                        type="button"
-                        onClick={addRoomDistribution}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded flex items-center text-sm"
-                      >
-                        <span className="material-icons text-sm mr-1">add</span>
-                        Add Room Type
-                      </button>
+                      <div className="text-xs text-gray-600">
+                        <div className="flex items-center">
+                          <span className="material-icons text-yellow-500 text-xs mr-1">info</span>
+                          Room allocation will be determined after quotation approval
+                        </div>
+                      </div> 
+                      
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="text-sm font-medium text-yellow-800">Total Accommodation Price:</div>
+                        <div className="text-sm font-medium">
+                          LKR {(newQuotation.pricePerPersonPerNight * newQuotation.groupSize * 
+                            calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="md:col-span-3 bg-gray-50 p-3 rounded-md border border-gray-200 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-gray-700">Total Rooms:</div>
-                    <div className="text-sm font-medium">
-                      {newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)} rooms
+                <div className="mb-4">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <span className="material-icons text-yellow-600 mr-2 text-sm">restaurant</span>
+                      Meal Plan Options
+                    </h5>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <Select
+                        label="Meal Plan Type*"
+                        name="mealPlan"
+                        value={newQuotation.mealPlan}
+                        onChange={(e) => {
+                          const selectedMealPlan = e.target.value;
+                          // Set default prices based on meal plan
+                          let mealPlanPrice = 0;
+                          if (selectedMealPlan === 'Breakfast Only') mealPlanPrice = 1000;
+                          else if (selectedMealPlan === 'Half Board') mealPlanPrice = 1500;
+                          else if (selectedMealPlan === 'Full Board') mealPlanPrice = 2000;
+                          else if (selectedMealPlan === 'All Inclusive') mealPlanPrice = 2500;
+                          
+                          setNewQuotation({
+                            ...newQuotation, 
+                            mealPlan: selectedMealPlan,
+                            mealPlanPricePerPerson: mealPlanPrice
+                          });
+                        }}
+                        options={['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive']}
+                        required
+                      />
+                      
+                      <Input
+                        label={`${newQuotation.mealPlan} Price Per Person Per Day (LKR)`}
+                        type="number"
+                        name="mealPlanPricePerPerson"
+                        min="0"
+                        value={newQuotation.mealPlanPricePerPerson || 0}
+                        onChange={(e) => setNewQuotation({
+                          ...newQuotation,
+                          mealPlanPricePerPerson: Math.max(0, parseInt(e.target.value) || 0)
+                        })}
+                        required
+                      />
                     </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Based on room allocation above or calculated from group size
+                    
+                    <div className="mt-2 bg-yellow-50 p-2 rounded-lg border border-yellow-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-yellow-800">
+                          Total {newQuotation.mealPlan} Cost:
+                        </div>
+                        <div className="text-sm font-medium">
+                          LKR {((newQuotation.mealPlanPricePerPerson || 0) * newQuotation.groupSize * 
+                            calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <Select
-                    label="Meal Plan*"
-                    name="mealPlan"
-                    value={newQuotation.mealPlan}
-                    onChange={handleInputChange}
-                    options={['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive']}
-                    required
-                  />
                   <div className="flex items-center h-full">
-                    <label className="flex items-center space-x-2 mt-6">
+                    <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         name="airportTransfer"
@@ -2555,9 +3587,23 @@ const StatusBadge = ({ status }) => {
                         onChange={(e) => setNewQuotation({...newQuotation, airportTransfer: e.target.checked})}
                         className="rounded text-yellow-500 focus:ring-yellow-400"
                       />
-                      <span>Include Transportation</span>
+                      <span>Include Pool Facilities</span>
                     </label>
                   </div>
+                  
+                  {newQuotation.airportTransfer && (
+                    <Input
+                      label="Pool Access Price (LKR)"
+                      type="number"
+                      name="transportationPrice"
+                      min="0"
+                      value={newQuotation.transportationPrice || 2000}
+                      onChange={(e) => setNewQuotation({
+                        ...newQuotation,
+                        transportationPrice: Math.max(0, parseInt(e.target.value) || 0)
+                      })}
+                    />
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -2597,14 +3643,21 @@ const StatusBadge = ({ status }) => {
 
               {/* Price Summary */}
               <section>
-                <h4 className="text-lg font-medium mb-3">Price Calculation</h4>
+                <h4 className="text-lg font-medium mb-3 flex items-center">
+                  <span className="material-icons mr-2 text-yellow-600">attach_money</span>
+                  Price Calculation
+                </h4>
                 
                 {(!newQuotation.checkInDate || !newQuotation.checkOutDate || !newQuotation.groupSize || 
-                  (newQuotation.roomDistributions && newQuotation.roomDistributions.length === 0)) ? (
+                  !newQuotation.pricePerPersonPerNight || 
+                  newQuotation.pricePerPersonPerNight <= 0 || 
+                  newQuotation.groupSize <= 0) ? (
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 flex items-center">
                     <span className="material-icons text-yellow-600 mr-3">info</span>
                     <p className="text-yellow-700">
-                      Please fill in the accommodation details above to see the price calculation.
+                      Please fill in the accommodation details above with valid values to see the price calculation.
+                      <br />
+                      <span className="text-xs mt-1 block">Required: Check-in/Check-out dates, Group size, Price per person per night</span>
                     </p>
                   </div>
                 ) : (
@@ -2616,54 +3669,100 @@ const StatusBadge = ({ status }) => {
                       </h5>
                     </div>
                     <div className="p-4">
-                      {/* Room distributions price breakdown */}
-                      {newQuotation.roomDistributions && newQuotation.roomDistributions.some(dist => dist.accommodationType && dist.quantity > 0) ? (
-                        <>
-                          <h6 className="font-medium mb-2 flex items-center">
-                            <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
-                            Room Breakdown
-                          </h6>
-                          
-                          {newQuotation.roomDistributions.map((dist, index) => (
-                            dist.accommodationType && dist.quantity > 0 ? (
-                              <div key={dist.id || index} className="mb-3 bg-white rounded-lg p-3 border border-gray-100">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="font-medium">{dist.accommodationType}</span>
-                                  <span>{dist.quantity} room{dist.quantity !== 1 ? 's' : ''}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                  <div className="text-gray-600">Rate:</div>
-                                  <div className="text-right">LKR {roomPrices[dist.accommodationType] || 0}/night</div>
-                                  
-                                  <div className="text-gray-600">Occupants:</div>
-                                  <div className="text-right">{dist.occupants} people</div>
-                                  
-                                  <div className="text-gray-600">Subtotal:</div>
-                                  <div className="text-right font-medium">
-                                    LKR {((roomPrices[dist.accommodationType] || 0) * 
-                                      dist.quantity * 
-                                      calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
-                                  </div>
-                                </div>
-                              </div>
-                            ) : null
-                          ))}
-                        </>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="text-gray-600 flex items-center">
-                            <span className="material-icons text-yellow-600 text-sm mr-2">hotel</span>
-                            Room Rate:
-                          </div>
-                          <div className="text-right font-medium">LKR {roomPrices[newQuotation.accommodationType] || 0} per room/night</div>
-                          
-                          <div className="text-gray-600 flex items-center">
-                            <span className="material-icons text-yellow-600 text-sm mr-2">meeting_room</span>
-                            Number of Rooms:
-                          </div>
-                          <div className="text-right font-medium">{newQuotation.roomsRequired || Math.ceil(newQuotation.groupSize / 2)} rooms</div>
+                      {/* Price Summary at a glance */}
+                      <div className="mb-4 bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
+                        <div className="flex justify-between items-center mb-2 border-b pb-2">
+                          <span className="font-medium text-lg flex items-center">
+                            <span className="material-icons text-yellow-600 mr-2">summarize</span>
+                            Price Summary
+                          </span>
+                          <span className="font-bold text-lg text-yellow-700">
+                            LKR {calculateFinalTotal(newQuotation)}
+                          </span>
                         </div>
-                      )}
+                        
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="col-span-2 text-center bg-yellow-50 py-1 mb-1 rounded">
+                            <span className="font-medium">Base Rate: LKR {newQuotation.pricePerPersonPerNight || 0} per person/night</span>
+                          </div>
+                          
+                          <div className="text-gray-600">Total Per Person:</div>
+                          <div className="text-right font-medium">LKR {calculatePerPersonPrice().toFixed(2)}</div>
+                          
+                          <div className="text-gray-600">Group Size:</div>
+                          <div className="text-right">{newQuotation.groupSize} people</div>
+                          
+                          <div className="text-gray-600">Duration:</div>
+                          <div className="text-right">{calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights</div>
+                          
+                          <div className="text-gray-600 border-t pt-1 mt-1">Total Amount:</div>
+                          <div className="text-right font-medium border-t pt-1 mt-1">LKR {calculateFinalTotal(newQuotation)}</div>
+                        </div>
+                      </div>
+
+                      {/* Per-Person Price Breakdown */}
+                      <div className="mb-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium flex items-center text-blue-800">
+                            <span className="material-icons text-blue-600 text-sm mr-1">person</span>
+                            Per Person Breakdown
+                          </span>
+                          <span className="text-sm text-blue-600">Saved to Database</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-blue-700">Accommodation per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateAccommodationTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700">Meal plan per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateMealPlanUpgradeTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700 font-semibold border-t border-blue-300 pt-1">Total per person:</div>
+                          <div className="text-right font-bold text-blue-900 border-t border-blue-300 pt-1">
+                            LKR {calculatePerPersonPrice(newQuotation).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-blue-600">
+                          <span className="material-icons text-xs mr-1">info</span>
+                          These calculated values will be saved to the database when you create the quotation.
+                        </div>
+                      </div>
+
+                      {/* Accommodation price breakdown */}
+                      <div className="mb-3 bg-white rounded-lg p-3 border border-gray-100">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium flex items-center">
+                            <span className="material-icons text-yellow-600 text-sm mr-1">hotel</span>
+                            Accommodation
+                          </span>
+                          <span>Group Accommodation</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-gray-600">Price Per Person:</div>
+                          <div className="text-right">LKR {newQuotation.pricePerPersonPerNight || 0}/night</div>
+                          
+                          <div className="text-gray-600">Group Size:</div>
+                          <div className="text-right">{newQuotation.groupSize} people</div>
+                          
+                          <div className="text-gray-600">Nights:</div>
+                          <div className="text-right">{calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights</div>
+                          
+                          <div className="text-gray-600">Accommodation Formula:</div>
+                          <div className="text-right text-xs">
+                            LKR {newQuotation.pricePerPersonPerNight || 0} × {newQuotation.groupSize} people × {calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights
+                          </div>
+                          
+                          <div className="text-gray-600 font-medium">Accommodation Subtotal:</div>
+                          <div className="text-right font-medium text-yellow-700">
+                            LKR {((newQuotation.pricePerPersonPerNight || 0) * 
+                              newQuotation.groupSize * 
+                              calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
                       
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="text-gray-600 flex items-center">
@@ -2686,18 +3785,20 @@ const StatusBadge = ({ status }) => {
                           LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}
                         </div>
                         
-                        {newQuotation.mealPlan && newQuotation.mealPlan !== 'Breakfast Only' && (
+                        {newQuotation.mealPlan && (
                           <>
                             <div className="text-gray-600 flex items-center">
                               <span className="material-icons text-yellow-600 text-sm mr-2">restaurant</span>
                               Meal Plan ({newQuotation.mealPlan}):
                             </div>
                             <div className="text-right font-medium">
-                              LKR {(newQuotation.groupSize * 
-                                (newQuotation.mealPlan === 'Half Board' ? 25 : 
-                                newQuotation.mealPlan === 'Full Board' ? 40 : 
-                                newQuotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
-                                calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                              LKR {calculateMealPlanUpgradeTotal(newQuotation).toFixed(2)}
+                            </div>
+                            
+                            <div className="text-xs text-gray-500 col-span-2">
+                              <div className="flex justify-between">
+                                <span>LKR {newQuotation.mealPlanPricePerPerson || 0}/person/day × {newQuotation.groupSize} people × {calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} days</span>
+                              </div>
                             </div>
                           </>
                         )}
@@ -2705,12 +3806,22 @@ const StatusBadge = ({ status }) => {
                         {newQuotation.airportTransfer && (
                           <>
                             <div className="text-gray-600 flex items-center">
-                              <span className="material-icons text-yellow-600 text-sm mr-2">airport_shuttle</span>
-                              Transportation Cost:
+                              <span className="material-icons text-yellow-600 text-sm mr-2">pool</span>
+                              Pool Facilities:
                             </div>
-                            <div className="text-right font-medium">LKR 2000.00</div>
+                            <div className="text-right font-medium">
+                              LKR {calculateTransportationTotal(newQuotation).toFixed(2)}
+                            </div>
                           </>
                         )}
+                        
+                        <div className="text-gray-700 font-medium border-t border-gray-200 pt-2 mt-2 flex items-center">
+                          <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                          Subtotal:
+                        </div>
+                        <div className="text-right font-medium border-t border-gray-200 pt-2 mt-2">
+                          LKR {calculateSubtotalBeforeDiscount(newQuotation).toFixed(2)}
+                        </div>
                         
                         {newQuotation.discountOffered > 0 && (
                           <>
@@ -2719,71 +3830,170 @@ const StatusBadge = ({ status }) => {
                               Discount ({newQuotation.discountOffered}%):
                             </div>
                             <div className="text-right text-green-600 font-medium">
-                              -LKR {(calculateAccommodationTotal(newQuotation) * newQuotation.discountOffered / 100).toFixed(2)}
+                              -LKR {(calculateSubtotalBeforeDiscount(newQuotation) * newQuotation.discountOffered / 100).toFixed(2)}
                             </div>
                           </>
                         )}
                       </div>
                       
-                      <div className="bg-yellow-100 p-3 rounded-lg border border-yellow-200">
+                      <div className="bg-yellow-100 p-4 rounded-lg border border-yellow-200 shadow-md">
                         <div className="flex justify-between font-bold text-lg">
                           <span className="flex items-center">
                             <span className="material-icons mr-2">payments</span>
-                            Total Quote Amount:
+                            Final Quotation Total:
                           </span>
-                          <span className="font-bold text-xl">
+                          <span className="font-bold text-xl text-yellow-800">
                             LKR {calculateFinalTotal(newQuotation)}
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 mt-1 flex items-center">
-                          <span className="material-icons text-xs mr-1">info</span>
-                          This amount will be the final quotation price sent to the group trip coordinator.
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
-                          <h6 className="font-medium text-yellow-800 flex items-center mb-2">
-                            <span className="material-icons text-yellow-600 text-sm mr-2">savings</span>
-                            Potential Revenue
+                        
+                        {/* Comprehensive price breakdown with visual enhancements */}
+                        <div className="mt-3 bg-white p-4 rounded border border-yellow-100 shadow-sm">
+                          <h6 className="font-medium text-yellow-800 flex items-center mb-3 border-b border-yellow-100 pb-1">
+                            <span className="material-icons text-yellow-600 text-sm mr-2">receipt</span>
+                            Complete Price Breakdown
                           </h6>
-                          <div className="grid grid-cols-2 gap-1 text-sm">
-                            <div className="text-gray-600">Base Amount:</div>
-                            <div className="text-right">LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}</div>
+                          
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded">
+                              Base Accommodation
+                            </div>
                             
-                            {newQuotation.roomDistributions && newQuotation.roomDistributions.length > 0 && (
+                            <div className="text-gray-600 pl-2">Room Rate:</div>
+                            <div className="text-gray-600">LKR {newQuotation.pricePerPersonPerNight || 0} × {newQuotation.groupSize} people</div>
+                            <div className="text-right font-medium">
+                              LKR {((newQuotation.pricePerPersonPerNight || 0) * newQuotation.groupSize).toFixed(2)}/night
+                            </div>
+                            
+                            <div className="text-gray-600 pl-2">Stay Duration:</div>
+                            <div className="text-gray-600">{calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights</div>
+                            <div className="text-right">×{calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)}</div>
+                            
+                            <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1">Accommodation Total:</div>
+                            <div className="border-t border-gray-100 pt-1"></div>
+                            <div className="text-right font-medium border-t border-gray-100 pt-1">
+                              LKR {calculateAccommodationTotal(newQuotation).toFixed(2)}
+                            </div>
+                            
+                            <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded mt-2">
+                              Add-on Services
+                            </div>
+                            
+                            <div className="text-gray-600 pl-2 flex items-center">
+                              <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                              {newQuotation.mealPlan || 'No Meal Plan'}:
+                            </div>
+                            <div className="text-gray-600">
+                              {newQuotation.mealPlan ? 
+                              `LKR ${newQuotation.mealPlanPricePerPerson || 0} × ${newQuotation.groupSize} people × ${calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} days` : '-'}
+                            </div>
+                            <div className="text-right">
+                              {newQuotation.mealPlan ? `LKR ${calculateMealPlanUpgradeTotal(newQuotation).toFixed(2)}` : 'LKR 0.00'}
+                            </div>
+                            
+                            <div className="text-gray-600 pl-2 flex items-center">
+                              <span className="material-icons text-yellow-600 text-xs mr-1">pool</span>
+                              Pool Facilities:
+                            </div>
+                            <div className="text-gray-600">
+                              {newQuotation.airportTransfer ? `LKR ${newQuotation.transportationPrice || 2000} (flat fee)` : '-'}
+                            </div>
+                            <div className="text-right">
+                              {newQuotation.airportTransfer ? `LKR ${calculateTransportationTotal(newQuotation).toFixed(2)}` : 'LKR 0.00'}
+                            </div>
+                            
+                            <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                              Subtotal (before discount):
+                            </div>
+                            <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                            <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1">
+                              LKR {calculateSubtotalBeforeDiscount(newQuotation).toFixed(2)}
+                            </div>
+                            
+                            {newQuotation.discountOffered > 0 && (
                               <>
-                                <div className="text-gray-600">Total Rooms:</div>
-                                <div className="text-right">
-                                  {newQuotation.roomDistributions.reduce((total, dist) => total + (dist.quantity || 0), 0)} rooms
+                                <div className="text-green-600 font-medium pl-2 flex items-center">
+                                  <span className="material-icons text-green-600 text-xs mr-1">discount</span>
+                                  Discount ({newQuotation.discountOffered}%):
+                                </div>
+                                <div className="text-green-600">
+                                  {newQuotation.discountOffered}% of LKR {calculateSubtotalBeforeDiscount(newQuotation).toFixed(2)}
+                                </div>
+                                <div className="text-right text-green-600 font-medium">
+                                  -LKR {(calculateSubtotalBeforeDiscount(newQuotation) * newQuotation.discountOffered / 100).toFixed(2)}
+                                </div>
+                                
+                                <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
+                                  Final Amount (after discount):
+                                </div>
+                                <div className="border-t border-gray-100 pt-1 mt-1"></div>
+                                <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1 text-yellow-700">
+                                  LKR {calculateFinalTotal(newQuotation)}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 bg-blue-50 p-3 rounded border border-blue-100 shadow-sm">
+                          <h6 className="font-medium text-blue-800 flex items-center mb-2 border-b border-blue-100 pb-1">
+                            <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                            Per Person Cost Breakdown
+                          </h6>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            <div className="text-gray-600 pl-2">Accommodation:</div>
+                            <div className="text-gray-600">LKR {newQuotation.pricePerPersonPerNight || 0}/night × {calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} nights</div>
+                            <div className="text-right font-medium">
+                              LKR {(newQuotation.pricePerPersonPerNight * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}
+                            </div>
+                            
+                            <div className="text-gray-600 pl-2">Meal Plan ({newQuotation.mealPlan || 'None'}):</div>
+                            <div className="text-gray-600">
+                              {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
+                              `LKR ${newQuotation.mealPlanPricePerPerson}/day × ${calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} days` : '-'}
+                            </div>
+                            <div className="text-right font-medium">
+                              LKR {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
+                              (newQuotation.mealPlanPricePerPerson * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2) : '0.00'}
+                            </div>
+                            
+                            <div className="text-gray-600 pl-2">Pool Facilities:</div>
+                            <div className="text-gray-600">
+                              {newQuotation.airportTransfer ? 'Included (shared)' : 'Not included'}
+                            </div>
+                            <div className="text-right font-medium">
+                              {newQuotation.airportTransfer ? 
+                              `LKR ${(calculateTransportationTotal(newQuotation) / newQuotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
+                            </div>
+                            
+                            {newQuotation.discountOffered > 0 && (
+                              <>
+                                <div className="text-green-600 pl-2">Discount ({newQuotation.discountOffered}%):</div>
+                                <div className="text-green-600">Applied to total</div>
+                                <div className="text-right text-green-600 font-medium">
+                                  -LKR {((calculateSubtotalBeforeDiscount(newQuotation) * newQuotation.discountOffered / 100) / newQuotation.groupSize).toFixed(2)}
                                 </div>
                               </>
                             )}
                             
-                            <div className="text-gray-600">After Discount:</div>
-                            <div className="text-right font-medium">LKR {calculateFinalTotal(newQuotation)}</div>
+                            <div className="text-gray-700 font-medium border-t border-blue-100 pt-1 mt-1 pl-2">
+                              Total Per Person:
+                            </div>
+                            <div className="border-t border-blue-100 pt-1 mt-1"></div>
+                            <div className="text-right font-medium border-t border-blue-100 pt-1 mt-1 text-blue-700">
+                              LKR {calculatePerPersonPrice().toFixed(2)}
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-1 rounded flex items-center justify-center">
+                            <span className="material-icons text-xs mr-1">info</span>
+                            This is what each person will pay for the full accommodation package.
                           </div>
                         </div>
                         
-                        <div className="bg-green-50 p-3 rounded-lg border border-green-100">
-                          <h6 className="font-medium text-green-800 flex items-center mb-2">
-                            <span className="material-icons text-green-600 text-sm mr-2">monetization_on</span>
-                            Value Added Services
-                          </h6>
-                          <div className="grid grid-cols-2 gap-1 text-sm">
-                            <div className="text-gray-600">Meal Plan Upgrade:</div>
-                            <div className="text-right">
-                              {newQuotation.mealPlan && newQuotation.mealPlan !== 'Breakfast Only' ? 
-                              `LKR ${(newQuotation.groupSize * 
-                                (newQuotation.mealPlan === 'Half Board' ? 25 : 
-                                newQuotation.mealPlan === 'Full Board' ? 40 : 
-                                newQuotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
-                                calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}` : 'None'}
-                            </div>
-                            
-                            <div className="text-gray-600">Transportation:</div>
-                            <div className="text-right">{newQuotation.airportTransfer ? 'LKR 2000.00' : 'Not included'}</div>
-                          </div>
+                        <div className="mt-3 text-sm text-gray-600 flex items-center bg-yellow-50 p-2 rounded">
+                          <span className="material-icons text-yellow-600 mr-2">info</span>
+                          This total amount will be the final quotation price sent to the group trip coordinator.
                         </div>
                       </div>
                     </div>
@@ -2805,12 +4015,13 @@ const StatusBadge = ({ status }) => {
                   className="px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md text-sm font-medium flex items-center"
                   disabled={!newQuotation.checkInDate || 
                            !newQuotation.checkOutDate || 
-                           !(newQuotation.roomDistributions.some(d => d.accommodationType)) || 
+                           !newQuotation.pricePerPersonPerNight || 
+                           !newQuotation.groupSize ||
                            !newQuotation.contactEmail}
                 >
                   <span className="material-icons text-sm mr-2">send</span>
                   {newQuotation.checkInDate && newQuotation.checkOutDate && 
-                   newQuotation.roomDistributions.some(d => d.accommodationType) && newQuotation.groupSize ? 
+                   newQuotation.pricePerPersonPerNight && newQuotation.groupSize && newQuotation.contactEmail ? 
                     `Send Quotation (LKR ${calculateFinalTotal(newQuotation)})` : 
                     'Send Accommodation Quotation'}
                 </button>
@@ -2828,7 +4039,7 @@ const StatusBadge = ({ status }) => {
             onClose={() => setShowDetailModal(false)}
             onDelete={(id) => {
               setShowDetailModal(false); // First close the modal
-              setTimeout(() => handleDeleteClick(id), 100); // Then trigger delete with slight delay
+              setTimeout(() => handleDeleteClick(selectedQuotation.id, selectedQuotation.quoteNumber), 100); // Then trigger delete with both id and quote number
             }}
           />
         </div>

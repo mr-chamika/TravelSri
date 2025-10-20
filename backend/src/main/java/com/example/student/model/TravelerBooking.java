@@ -30,6 +30,7 @@ public class TravelerBooking {
     private String status; // pending_payment, confirmed, cancelled, etc.
     private String mobileNumber;
 
+
     // NEW: PayHere integration fields
     private String payHereOrderId;
     private String payHerePaymentId;
@@ -71,4 +72,12 @@ public class TravelerBooking {
     public String getId() {
         return _id;
     }
+
+    private Integer singleRooms;
+    private Integer doubleRooms;
+
+//meal 1,2,3//
+    //hotel no
+    //checkin checkout time
 }
+

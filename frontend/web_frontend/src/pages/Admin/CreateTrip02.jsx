@@ -8,9 +8,11 @@ const CreateTrip02 = () => {
     const [numberOfDates, setNumberOfDates] = useState("");
     const [pickupTime, setPickupTime] = useState("");
     const [selectedDate, setSelectedDate] = useState("");
+    
     const [tripStep1Data, setTripStep1Data] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [intermediatePlaces, setIntermediatePlaces] = useState("");
     
     // State for guides
     const [availableGuides, setAvailableGuides] = useState([]);
@@ -46,6 +48,11 @@ const CreateTrip02 = () => {
             try {
                 const parsedData = JSON.parse(step1Data);
                 setTripStep1Data(parsedData);
+
+                if (parsedData.intermediatePlaces) {
+                    setIntermediatePlaces(parsedData.intermediatePlaces);
+                }
+
                 console.log("Loaded step 1 data:", parsedData);
                 
                 // Fetch guides and vehicles when trip data is loaded
@@ -128,7 +135,7 @@ const CreateTrip02 = () => {
         } catch (error) {
             console.error("Error fetching vehicles:", error);
             if (error.response) {
-                setVehiclesError(`Failed to load vehicles: ${error.response.status} ${error.response.statusText}`);
+                // setVehiclesError(`Failed to load vehicles: ${error.response.status} ${error.response.statusText}`);
             } else if (error.request) {
                 setVehiclesError("Unable to connect to server. Please check if the backend is running.");
             } else {
@@ -271,6 +278,7 @@ const CreateTrip02 = () => {
                 date: formatDateForBackend(selectedDate),
                 numberOfDates: parseInt(numberOfDates, 10),
                 descriptionAboutStartLocation: tripStep1Data.descriptionAboutStartLocation,
+                intermediatePlaces: intermediatePlaces.trim(),
                 pickupTime: formatTimeForBackend(pickupTime),
                 path: tripStep1Data.path
             };
@@ -397,6 +405,9 @@ const CreateTrip02 = () => {
                                             <strong>To:</strong> {tripStep1Data.endLocation?.charAt(0).toUpperCase() + tripStep1Data.endLocation?.slice(1)}
                                         </p>
                                         <p>
+                                            <strong>Intermediate Destinations:</strong> {tripStep1Data.intermediatePlaces || "None"}
+                                        </p>
+                                        <p>
                                             <strong>Pickup Details:</strong> {tripStep1Data.descriptionAboutStartLocation}
                                         </p>
                                         <p className="text-sm text-blue-600 mt-2">
@@ -428,6 +439,8 @@ const CreateTrip02 = () => {
                                     {tripTitle.length}/100 characters
                                 </div>
                             </div>
+
+                            
 
                             {/* Number of Slots - Enhanced with filtering */}
                             <div className="mb-6">
@@ -488,6 +501,36 @@ const CreateTrip02 = () => {
                                 </div>
                             </div>
 
+                            
+                            
+                           {/* Date Selection */}
+                                <div className="mb-8">
+                                    <label className="block text-gray-600 font-medium mb-3 text-lg">
+                                        Select the Date: *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={selectedDate}
+                                        onChange={(e) => {
+                                            setSelectedDate(e.target.value);
+                                            setError("");
+                                        }}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        disabled={loading}
+                                        required
+                                    />
+                                    <div className="mt-2 text-sm text-gray-500">
+                                        {selectedDate ? (
+                                            <span className="text-green-600 font-medium">
+                                                ✓ Date selected: {new Date(selectedDate + 'T00:00:00').toLocaleDateString()}
+                                            </span>
+                                        ) : (
+                                            "Please select a trip date"
+                                        )}
+                                    </div>
+                                </div>
+
                             {/* Pickup Time */}
                             <div className="mb-8">
                                 <label className="block text-gray-600 font-medium mb-3 text-lg">
@@ -510,7 +553,7 @@ const CreateTrip02 = () => {
                             </div>
 
                             {/* Available Resources */}
-                            <div className="flex flex-col gap-4 mb-8">
+                            {/* <div className="flex flex-col gap-4 mb-8">
                                 <h3 className="text-lg font-medium text-gray-700">Available Resources:</h3>
                                 {availableResources.map((item, idx) => (
                                     <div key={item.label} className="flex flex-col sm:flex-row sm:items-center bg-gray-100 rounded-2xl px-4 py-3 md:px-6 md:py-4">
@@ -525,10 +568,10 @@ const CreateTrip02 = () => {
                                         </span>
                                     </div>
                                 ))}
-                            </div>
+                            </div> */}
 
                             {/* Available Vehicles Details Section - Enhanced */}
-                            {tripStep1Data && (
+                            {/* {tripStep1Data && (
                                 <div className="mb-8">
                                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
                                         <div className="flex items-center justify-between mb-4">
@@ -552,7 +595,7 @@ const CreateTrip02 = () => {
                                         </div>
 
                                         {/* Filter Summary */}
-                                        {allVehiclesInCity.length > 0 && (
+                                        {/*{allVehiclesInCity.length > 0 && (
                                             <div className="mb-4 p-3 bg-purple-100 rounded-lg">
                                                 <div className="flex flex-wrap items-center gap-4 text-sm">
                                                     <span className="text-purple-700">
@@ -670,10 +713,10 @@ const CreateTrip02 = () => {
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            )} */}
 
                             {/* Available Guides Details Section */}
-                            {tripStep1Data && (
+                            {/*{tripStep1Data && (
                                 <div className="mb-8">
                                     <div className="bg-green-50 border border-green-200 rounded-lg p-6">
                                         <div className="flex items-center justify-between mb-4">
@@ -743,7 +786,7 @@ const CreateTrip02 = () => {
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            )}*/}
 
                             {/* Send Notification Section */}
                             <div className="text-center mb-6">
@@ -776,36 +819,40 @@ const CreateTrip02 = () => {
 
                         {/* Right Side - Date Selection */}
                         <div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-200 pt-6 lg:pt-0 lg:pl-8 flex flex-col">
-                            <div className="font-bold text-lg md:text-xl mb-6 text-center">
+                            {/* <div className="font-bold text-lg md:text-xl mb-6 text-center">
                                 Select the Date: *
-                            </div>
+                            </div> */}
 
                             <div className="bg-gray-100 rounded-xl p-6 w-full mb-8 flex flex-col items-center">
                                 <div className="w-full max-w-sm">
-                                    <input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={(e) => {
-                                            setSelectedDate(e.target.value);
-                                            setError("");
-                                        }}
-                                        min={new Date().toISOString().split('T')[0]}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
-                                        disabled={loading}
-                                        required
-                                    />
-                                    <div className="mt-3 text-sm text-gray-600 text-center">
-                                        {selectedDate ? (
-                                            <span className="text-green-600 font-medium">
-                                                ✓ Date selected: {new Date(selectedDate + 'T00:00:00').toLocaleDateString()}
+                                    <div className="text-center">
+                                        <div className="text-lg font-semibold text-gray-800 mb-2">
+                                            Current Date
+                                        </div>
+                                        <div className="text-2xl font-bold text-blue-600 mb-2">
+                                            {new Date().toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                            {new Date().toLocaleDateString('en-US', {
+                                                timeZone: 'Asia/Colombo',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit'
+                                            })} (Sri Lanka Time)
+                                        </div>
+                                        <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                                            <span className="text-blue-700 text-sm">
+                                                📅 Today is {new Date().toLocaleDateString()}
                                             </span>
-                                        ) : (
-                                            "Please select a trip date"
-                                        )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                             {/* Pending Trip Section */}
                             <div className="bg-gray-100 rounded-xl p-6 w-full flex flex-col items-center">
                                 <div className="flex items-center gap-4 mb-6">

@@ -20,75 +20,92 @@ import * as FileSystem from 'expo-file-system'
 import { ImagePickerAsset } from 'expo-image-picker';
 
 
-// Combined FormData Interface for all steps
+// Combined FormData Interface for all steps - aligned with ADD form
 interface FormData {
-  // Driver Registration (Section 1)
+  // Vehicle.java fields
   firstName: string;
   lastName: string;
   nicNumber: string;
   driverDateOfBirth: string;
-  age: string;
   location: string;
   gender: string;
-  driverMobileNumber: string;
-  emergencyContact: string;
-  driverPhoto: ImagePickerAsset | null;
-
-  // Vehicle Details (Section 2)
-  vehicleOwner: string;
-  vehicleType: string;
-  vehicleModel: string;
-  ac: string;
-  fuelType: string;
-  vehicleYearOfManufacture: string;
-  vehicleSeatingCapacity: string;
-  numberPlate: string;
-  vehicleImage: ImagePickerAsset | null;
-  vehicleLicenseCopy: ImagePickerAsset | null;
-  insuranceDocument: ImagePickerAsset | null;
-  rating: string;
-
-  // License & Experience (Section 3)
+  phone: string;
+  additionalComments: string;
   drivingLicenseNumber: string;
   licenseExpiryDate: string;
-  licenseYearsOfExperience: string;
-  languagesSpoken: string;
-  additionalComments: string;
+  experience: number;
+  languages: string[];
+  image: ImagePickerAsset | null;
+  insuranceDocument: ImagePickerAsset | null;
+  insuranceDocument2: ImagePickerAsset | null;
   licensePhoto: ImagePickerAsset | null;
+  licensePhoto2: ImagePickerAsset | null;
+  vehicleNumber: string;
+  vehicleModel: string;
+  ac: boolean;
+  fuelType: string;
+  seats: number;
+  catId: string;
+  vehicleYearOfManufacture: string;
+  gearType: boolean;
+  perKm: boolean;
+  perKmPrice: number;
+  dailyRate: boolean;
+  dailyRatePrice: number;
+  driverNicpic1: ImagePickerAsset | null;
+  driverNicpic2: ImagePickerAsset | null;
+  vehicleLicenseCopy: ImagePickerAsset | null;
+  images: ImagePickerAsset[];
+  doors: number;
+  mileage: string;
+  whatsIncluded: string[];
+  pricingOption1: string;
+  pricingOption2: string;
+  pricingOption3: string;
 }
 
-// Combined FormErrors Interface for all fields
+// Combined FormErrors Interface for all fields - aligned with ADD form
 interface FormErrors {
+  // Personal information
   firstName?: string;
   lastName?: string;
   nicNumber?: string;
   driverDateOfBirth?: string;
-  age?: string;
   location?: string;
   gender?: string;
-  driverMobileNumber?: string;
-  emergencyContact?: string;
-  driverPhoto?: string;
-
-  vehicleOwner?: string;
-  vehicleType?: string;
+  phone?: string;
+  additionalComments?: string;
+  drivingLicenseNumber?: string;
+  licenseExpiryDate?: string;
+  experience?: string; 
+  languages?: string; 
+  image?: string;
+  insuranceDocument?: string;
+  insuranceDocument2?: string;
+  licensePhoto?: string;
+  licensePhoto2?: string;
+  driverNicpic1?: string;
+  driverNicpic2?: string;
+  vehicleLicenseCopy?: string;
+  images?: string;
+  vehicleNumber?: string;
   vehicleModel?: string;
   ac?: string;
   fuelType?: string;
+  seats?: string; 
+  catId?: string;
   vehicleYearOfManufacture?: string;
-  vehicleSeatingCapacity?: string;
-  numberPlate?: string;
-  vehicleImage?: string;
-  vehicleLicenseCopy?: string;
-  insuranceDocument?: string;
-  rating?: string;
-
-  drivingLicenseNumber?: string;
-  licenseExpiryDate?: string;
-  licenseYearsOfExperience?: string;
-  languagesSpoken?: string;
-  additionalComments?: string;
-  licensePhoto?: string;
+  gearType?: string;
+  perKm?: string;
+  perKmPrice?: string;
+  dailyRate?: string;
+  dailyRatePrice?: string;
+  doors?: string;
+  mileage?: string;
+  whatsIncluded?: string;
+  pricingOption1?: string;
+  pricingOption2?: string;
+  pricingOption3?: string;
 }
 
 // Options for gender dropdown (Section 1)
@@ -96,10 +113,7 @@ const genderOptions = [
   { label: 'Select Gender', value: '' },
   { label: 'Male', value: 'male' },
   { label: 'Female', value: 'female' },
-  { label: 'Other', value: 'other' },
 ];
-
-
 
 // Options for vehicle type dropdown (Section 2)
 const vehicleTypes = [
@@ -114,28 +128,79 @@ const vehicleTypes = [
 
 // Options for seating capacity dropdown (Section 2 & 3)
 const seatingCapacityOptions = [
-  { label: 'Select Seating Capacity', value: '' },
-  { label: '2 Seats', value: '2' },
-  { label: '4 Seats', value: '4' },
-  { label: '5 Seats', value: '5' },
-  { label: '8 Seats', value: '8' },
-  { label: '12 Seats', value: '12' },
-  { label: '35+ Seats', value: '35+' },
-];
-// Options for ac dropdown
-const acOptions = [
-  { label: 'Select AC Type', value: '' },
-  { label: 'AC', value: 'ac' },
-  { label: 'Non-AC', value: 'nonac' },
+  { label: 'Select Seating Capacity', value: 0 },
+  { label: '2 Seats', value: 2 },
+  { label: '4 Seats', value: 4 },
+  { label: '5 Seats', value: 5 },
+  { label: '8 Seats', value: 8 },
+  { label: '12 Seats', value: 12 },
+  { label: '35+ Seats', value: 35 },
 ];
 
-// Options for year dropdown (Section 3, used for vehicle year of manufacture)
+// Options for doors dropdown
+const doorsOptions = [
+  { label: 'Select Number of Doors', value: 0 },
+  { label: '2 Doors', value: 2 },
+  { label: '3 Doors', value: 3 },
+  { label: '4 Doors', value: 4 },
+  { label: '5 Doors', value: 5 },
+];
+
+// Options for fuel type dropdown
+const fuelTypeOptions = [
+  { label: 'Select Fuel Type', value: '' },
+  { label: 'Petrol', value: 'petrol' },
+  { label: 'Diesel', value: 'diesel' },
+  { label: 'Hybrid', value: 'hybrid' },
+  { label: 'Electric', value: 'electric' },
+];
+
+// Options for gear type
+const gearTypeOptions = [
+  { label: 'Select Gear Type', value: '' },
+  { label: 'Manual', value: false },
+  { label: 'Automatic', value: true },
+];
+
+// Options for categories
+const categoryOptions = [
+  { label: 'Select Vehicle Category', value: '' },
+  { label: 'Tuk (Three Wheeler)', value: 'tuk' },
+  { label: 'Car', value: 'car' },
+  { label: 'Van', value: 'van' },
+  { label: 'Minivan', value: 'minivan' },
+  { label: 'Bus', value: 'bus' },
+  { label: 'Bike (Motorcycle)', value: 'bike' },
+];
+
+// Options for AC
+const acOptions = [
+  { label: 'Select AC Availability', value: '' },
+  { label: 'No AC', value: 'false' },
+  { label: 'AC Available', value: 'true' },
+];
+
+// Year options
 const yearOptions = [
   { label: 'Select Year', value: '' },
   ...Array.from({ length: 30 }, (_, i) => {
     const year = new Date().getFullYear() - i;
     return { label: year.toString(), value: year.toString() };
   }),
+];
+
+// What's included options
+const whatsIncludedOptions = [
+  'Air Conditioning',
+  'GPS Navigation',
+  'Bluetooth',
+  'USB Charging',
+  'WiFi Hotspot',
+  'Child Safety Seats',
+  'First Aid Kit',
+  'Spare Tire',
+  'Tool Kit',
+  'Fire Extinguisher'
 ];
 
 export default function MultiStepForm() {
@@ -145,36 +210,47 @@ console.log(id)
   // State for current step in the form
   const [step, setStep] = useState(1);
 
-  // State to hold all form data
+  // State to hold all form data - aligned with ADD form
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     nicNumber: '',
     driverDateOfBirth: '',
-    gender: '',
-    age: '',
     location: '',
-    driverMobileNumber: '',
-    emergencyContact: '',
-    driverPhoto: null,
-    vehicleOwner: '',
-    vehicleType: '',
-    vehicleModel: '',
-    ac: '',
-    fuelType: '',
-    vehicleYearOfManufacture: '',
-    vehicleSeatingCapacity: '',
-    numberPlate: '',
-    vehicleImage: null,
-    vehicleLicenseCopy: null,
-    insuranceDocument: null,
-    rating: '',
+    gender: '',
+    phone: '',
+    additionalComments: '',
     drivingLicenseNumber: '',
     licenseExpiryDate: '',
-    licenseYearsOfExperience: '',
-    languagesSpoken: '',
-    additionalComments: '',
+    experience: 0,
+    languages: [],
+    image: null,
+    insuranceDocument: null,
+    insuranceDocument2: null,
     licensePhoto: null,
+    licensePhoto2: null,
+    vehicleNumber: '',
+    vehicleModel: '',
+    ac: false,
+    fuelType: '',
+    seats: 0,
+    catId: '',
+    vehicleYearOfManufacture: '',
+    gearType: false,
+    perKm: false,
+    perKmPrice: 0,
+    dailyRate: false,
+    dailyRatePrice: 0,
+    driverNicpic1: null,
+    driverNicpic2: null,
+    vehicleLicenseCopy: null,
+    images: [],
+    doors: 0,
+    mileage: '',
+    whatsIncluded: [],
+    pricingOption1: '',
+    pricingOption2: '',
+    pricingOption3: '',
   });
 
   // State to hold form validation errors
@@ -182,10 +258,16 @@ console.log(id)
 
   // States to control visibility of dropdown pickers
   const [showGenderPicker, setShowGenderPicker] = useState(false);
-  const [showAcPicker, setShowAcPicker] = useState(false);
-  const [showVehicleTypePicker, setShowVehicleTypePicker] = useState(false);
+  const [showFuelTypePicker, setShowFuelTypePicker] = useState(false);
   const [showSeatingCapacityPicker, setShowSeatingCapacityPicker] = useState(false);
+  const [showDoorsPicker, setShowDoorsPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showGearTypePicker, setShowGearTypePicker] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showAcPicker, setShowAcPicker] = useState(false);
+
+  // Language input state - moved to top level to avoid conditional hook usage
+  const [languageInput, setLanguageInput] = useState('');
 
   /**
   //  * Requests camera and media library permissions
@@ -292,30 +374,41 @@ console.log(id)
           lastName: data.lastName || '',
           nicNumber: data.nicNumber || '',
           driverDateOfBirth: data.driverDateOfBirth || '',
-          gender: data.gender || '',
-          age: data.age || '',
           location: data.location || '',
-          driverMobileNumber: data.driverMobileNumber || '',
-          emergencyContact: data.emergencyContact || '',
-          driverPhoto: (data.driverPhoto),
-          vehicleOwner: data.vehicleOwner || '',
-          vehicleType: data.vehicleType || '',
-          vehicleModel: data.vehicleModel || '',
-          ac: data.ac || '',
-          fuelType: data.fuelType || '',
-          vehicleYearOfManufacture: data.vehicleYearOfManufacture || '',
-          vehicleSeatingCapacity: data.vehicleSeatingCapacity || '',
-          numberPlate: data.numberPlate || data.memberPlate || '',
-          vehicleImage: (data.vehicleImage),
-          vehicleLicenseCopy: (data.vehicleLicenseCopy),
-          insuranceDocument:(data.insuranceDocument),
-          rating: '',
+          gender: data.gender || '',
+          phone: data.phone || data.driverMobileNumber || '',
+          additionalComments: data.additionalComments || '',
           drivingLicenseNumber: data.drivingLicenseNumber || '',
           licenseExpiryDate: data.licenseExpiryDate || '',
-          licenseYearsOfExperience: data.licenseYearsOfExperience || '',
-          languagesSpoken: data.languagesSpoken || '',
-          additionalComments: data.additionalComments || '',
-          licensePhoto: (data.licensePhoto),
+          experience: data.experience || data.licenseYearsOfExperience || 0,
+          languages: data.languages || (data.languagesSpoken ? data.languagesSpoken.split(',') : []),
+          image: data.image || data.driverPhoto || null,
+          insuranceDocument: data.insuranceDocument || null,
+          insuranceDocument2: data.insuranceDocument2 || null,
+          licensePhoto: data.licensePhoto || null,
+          licensePhoto2: data.licensePhoto2 || null,
+          vehicleNumber: data.vehicleNumber || data.numberPlate || '',
+          vehicleModel: data.vehicleModel || '',
+          ac: data.ac === true || data.ac === 'ac' || false,
+          fuelType: data.fuelType || '',
+          seats: data.seats || data.vehicleSeatingCapacity || 0,
+          catId: data.catId || data.vehicleType || '',
+          vehicleYearOfManufacture: data.vehicleYearOfManufacture || '',
+          gearType: data.gearType || false,
+          perKm: data.perKm || false,
+          perKmPrice: data.perKmPrice || 0,
+          dailyRate: data.dailyRate || false,
+          dailyRatePrice: data.dailyRatePrice || 0,
+          driverNicpic1: data.driverNicpic1 || null,
+          driverNicpic2: data.driverNicpic2 || null,
+          vehicleLicenseCopy: data.vehicleLicenseCopy || null,
+          images: data.images || (data.vehicleImage ? [data.vehicleImage] : []),
+          doors: data.doors || 0,
+          mileage: data.mileage || '',
+          whatsIncluded: data.whatsIncluded || [],
+          pricingOption1: data.pricingOption1 || '',
+          pricingOption2: data.pricingOption2 || '',
+          pricingOption3: data.pricingOption3 || '',
         });
       } catch (error) {
         console.error('Failed to load vehicle data:', error);
@@ -379,164 +472,150 @@ console.log(id)
       const nameRegex = /^[A-Za-z]+$/;
       const oldNICRegex = /^\d{9}[VXvx]$/;      // e.g., 931234567V or 931234567x
       const newNICRegex = /^\d{12}$/;           // e.g., 200012345678
-      const cleanedNumber = formData.driverMobileNumber.replace(/\D/g, ''); // remove non-digits
-      const cleaneddNumber = formData.emergencyContact.replace(/\D/g, '');
 
-  // First Name Validation
-  if (!formData.firstName.trim()) {
-    newErrors.firstName = 'First name is required';
-    isValid = false;
-  } else if (!nameRegex.test(formData.firstName.trim())) {
-    newErrors.firstName = 'First name must contain only letters';
-    isValid = false;
-  }
-
-  // Last Name Validation
-  if (!formData.lastName.trim()) {
-    newErrors.lastName = 'Last name is required';
-    isValid = false;
-  } else if (!nameRegex.test(formData.lastName.trim())) {
-    newErrors.lastName = 'Last name must contain only letters';
-    isValid = false;
-  }
-      if (!formData.nicNumber.trim()) {
-  newErrors.nicNumber = 'NIC number is required';
-  isValid = false;
-} else if (
-  !oldNICRegex.test(formData.nicNumber.trim()) &&
-  !newNICRegex.test(formData.nicNumber.trim())
-) {
-  newErrors.nicNumber = 'Enter a valid  NIC number';
-  isValid = false;
-}
-      if (!formData.driverDateOfBirth.trim()) {
-  newErrors.driverDateOfBirth = 'Date of birth is required';
-  isValid = false;
-} else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.driverDateOfBirth)) {
-  newErrors.driverDateOfBirth = 'Please enter date in DD/MM/YYYY format';
-  isValid = false;
-} else {
-  // Split the date into components
-  const [day, month, year] = formData.driverDateOfBirth.split('/').map(Number);
-  const currentYear = new Date().getFullYear();
-  const currentDate = new Date();
-  
-  // Validate year
-  if (year < 1900 || year > currentYear) {
-    newErrors.driverDateOfBirth = 'Please enter a valid year between 1900 and ' + currentYear;
-    isValid = false;
-  }
-  // Validate month
-  else if (month < 1 || month > 12) {
-    newErrors.driverDateOfBirth = 'Please enter a valid month (01-12)';
-    isValid = false;
-  }
-  // Validate day
-  else if (day < 1 || day > 31) {
-    newErrors.driverDateOfBirth = 'Please enter a valid day (01-31)';
-    isValid = false;
-  }
-  // Validate days in specific months
-  else if ((month === 4 || month === 6 || month === 9 || month === 11) && day > 30) {
-    newErrors.driverDateOfBirth = 'This month only has 30 days';
-    isValid = false;
-  }
-  // Validate February
-  else if (month === 2) {
-    const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-    const maxDaysInFeb = isLeapYear ? 29 : 28;
-    if (day > maxDaysInFeb) {
-      newErrors.driverDateOfBirth = `February ${year} only has ${maxDaysInFeb} days`;
-      isValid = false;
-    }
-  }
-  // Check if date is not in the future
-  else {
-    const inputDate = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
-    if (inputDate > currentDate) {
-      newErrors.driverDateOfBirth = 'Date of birth cannot be in the future';
-      isValid = false;
-    }
-    // Optional: Check if person is at least a certain age (e.g., 16 for driving)
-    else {
-      const age = currentYear - year;
-      const hasHadBirthdayThisYear = new Date(currentYear, month - 1, day) <= currentDate;
-      const actualAge = hasHadBirthdayThisYear ? age : age - 1;
-
-      
-      if (actualAge < 16) {
-        newErrors.driverDateOfBirth = 'Driver must be at least 16 years old';
+      // First Name Validation
+      if (!formData.firstName.trim()) {
+        newErrors.firstName = 'First name is required';
+        isValid = false;
+      } else if (!nameRegex.test(formData.firstName.trim())) {
+        newErrors.firstName = 'First name must contain only letters';
         isValid = false;
       }
-    }
-  }
-}
+
+      // Last Name Validation
+      if (!formData.lastName.trim()) {
+        newErrors.lastName = 'Last name is required';
+        isValid = false;
+      } else if (!nameRegex.test(formData.lastName.trim())) {
+        newErrors.lastName = 'Last name must contain only letters';
+        isValid = false;
+      }
+
+      // NIC Number Validation
+      if (!formData.nicNumber.trim()) {
+        newErrors.nicNumber = 'NIC number is required';
+        isValid = false;
+      } else if (
+        !oldNICRegex.test(formData.nicNumber.trim()) &&
+        !newNICRegex.test(formData.nicNumber.trim())
+      ) {
+        newErrors.nicNumber = 'Enter a valid NIC number';
+        isValid = false;
+      }
+
+      // Date of Birth Validation
+      if (!formData.driverDateOfBirth.trim()) {
+        newErrors.driverDateOfBirth = 'Date of birth is required';
+        isValid = false;
+      } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(formData.driverDateOfBirth)) {
+        newErrors.driverDateOfBirth = 'Please enter date in DD/MM/YYYY format';
+        isValid = false;
+      } else {
+        // Split the date into components
+        const [day, month, year] = formData.driverDateOfBirth.split('/').map(Number);
+        const currentYear = new Date().getFullYear();
+        const currentDate = new Date();
+
+        // Validate year
+        if (year < 1900 || year > currentYear) {
+          newErrors.driverDateOfBirth = 'Please enter a valid year between 1900 and ' + currentYear;
+          isValid = false;
+        }
+        // Validate month
+        else if (month < 1 || month > 12) {
+          newErrors.driverDateOfBirth = 'Please enter a valid month (01-12)';
+          isValid = false;
+        }
+        // Validate day
+        else if (day < 1 || day > 31) {
+          newErrors.driverDateOfBirth = 'Please enter a valid day (01-31)';
+          isValid = false;
+        }
+        // Validate days in specific months
+        else if ((month === 4 || month === 6 || month === 9 || month === 11) && day > 30) {
+          newErrors.driverDateOfBirth = 'This month only has 30 days';
+          isValid = false;
+        }
+        // Validate February
+        else if (month === 2) {
+          const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+          const maxDaysInFeb = isLeapYear ? 29 : 28;
+          if (day > maxDaysInFeb) {
+            newErrors.driverDateOfBirth = `February ${year} only has ${maxDaysInFeb} days`;
+            isValid = false;
+          }
+        }
+        // Check if date is not in the future
+        else {
+          const inputDate = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
+          if (inputDate > currentDate) {
+            newErrors.driverDateOfBirth = 'Date of birth cannot be in the future';
+            isValid = false;
+          }
+          // Optional: Check if person is at least a certain age (e.g., 16 for driving)
+          else {
+            const age = currentYear - year;
+            const hasHadBirthdayThisYear = new Date(currentYear, month - 1, day) <= currentDate;
+            const actualAge = hasHadBirthdayThisYear ? age : age - 1;
+
+            if (actualAge < 16) {
+              newErrors.driverDateOfBirth = 'Driver must be at least 16 years old';
+              isValid = false;
+            }
+          }
+        }
+      }
+
       if (!formData.gender) {
         newErrors.gender = 'Gender is required';
-        isValid = false;
-      }
-      if (!formData.age) {
-        newErrors.age = 'Age is required';
         isValid = false;
       }
       if (!formData.location) {
         newErrors.location = 'Location is required';
         isValid = false;
       }
-      if (!formData.driverMobileNumber.trim()) {
-  newErrors.driverMobileNumber = 'Mobile number is required';
-  isValid = false;
-} else if (
-  !(
-    // 07xxxxxxxx
-    /^07\d{8}$/.test(cleanedNumber) ||
-    // 947xxxxxxxx (country code without +)
-    /^947\d{8}$/.test(cleanedNumber) ||
-    // +947xxxxxxxx (country code with +) - optional if you want to allow +
-    formData.driverMobileNumber.startsWith('+') && /^947\d{8}$/.test(cleanedNumber)
-  )
-) {
-  newErrors.driverMobileNumber = 'Please enter a valid Sri Lankan mobile number';
-  isValid = false;
-}
-      if (formData.emergencyContact.trim()) {
-  // Only validate if something is entered
-  if (
-    !(
-      /^07\d{8}$/.test(cleaneddNumber) ||
-      /^947\d{8}$/.test(cleaneddNumber) ||
-      (formData.emergencyContact.startsWith('+') && /^947\d{8}$/.test(cleaneddNumber))
-    )
-  ) {
-    newErrors.emergencyContact = 'Please enter a valid Sri Lankan mobile number';
-    isValid = false;
-  }
-}
-      if (!formData.driverPhoto) {
-        newErrors.driverPhoto = 'Driver photo is required';
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Mobile number is required';
+        isValid = false;
+      } else if (
+        !(
+          // 07xxxxxxxx
+          /^07\d{8}$/.test(formData.phone.replace(/\D/g, '')) ||
+          // 947xxxxxxxx (country code without +)
+          /^947\d{8}$/.test(formData.phone.replace(/\D/g, '')) ||
+          // +947xxxxxxxx (country code with +) - optional if you want to allow +
+          formData.phone.startsWith('+') && /^947\d{8}$/.test(formData.phone.replace(/\D/g, ''))
+        )
+      ) {
+        newErrors.phone = 'Please enter a valid Sri Lankan mobile number';
+        isValid = false;
+      }
+      if (!formData.image) {
+        newErrors.image = 'Driver photo is required';
+        isValid = false;
+      }
+      if (!formData.driverNicpic1) {
+        newErrors.driverNicpic1 = 'Driver NIC front photo is required';
+        isValid = false;
+      }
+      if (!formData.driverNicpic2) {
+        newErrors.driverNicpic2 = 'Driver NIC back photo is required';
         isValid = false;
       }
     }
+
     // Validation for Section 2 (Vehicle Details)
     if (step === 2) {
-      if (!formData.vehicleOwner.trim()) {
-        newErrors.vehicleOwner = 'Vehicle owner is required';
-        isValid = false;
-      }
-      if (!formData.vehicleType) {
-        newErrors.vehicleType = 'Vehicle type is required';
+      if (!formData.vehicleNumber.trim()) {
+        newErrors.vehicleNumber = 'Vehicle number is required';
         isValid = false;
       }
       if (!formData.vehicleModel.trim()) {
         newErrors.vehicleModel = 'Vehicle model is required';
         isValid = false;
       }
-      if (!formData.ac.trim()) {
-        newErrors.ac = 'AC or nonAc is required';
-        isValid = false;
-      }
       if (!formData.fuelType.trim()) {
-        newErrors.ac = 'Fuel Type is required';
+        newErrors.fuelType = 'Fuel Type is required';
         isValid = false;
       }
       if (!formData.vehicleYearOfManufacture.trim()) {
@@ -550,16 +629,20 @@ console.log(id)
           isValid = false;
         }
       }
-      if (!formData.vehicleSeatingCapacity) {
-        newErrors.vehicleSeatingCapacity = 'Seating capacity is required';
+      if (!formData.seats || formData.seats === 0) {
+        newErrors.seats = 'Seating capacity is required';
         isValid = false;
       }
-      if (!formData.numberPlate.trim()) {
-        newErrors.numberPlate = 'Number plate is required';
+      if (!formData.doors || formData.doors === 0) {
+        newErrors.doors = 'Number of doors is required';
         isValid = false;
       }
-      if (!formData.vehicleImage) {
-        newErrors.vehicleImage = 'Vehicle image is required';
+      if (!formData.catId.trim()) {
+        newErrors.catId = 'Vehicle category is required';
+        isValid = false;
+      }
+      if (!formData.mileage.trim()) {
+        newErrors.mileage = 'Vehicle mileage is required';
         isValid = false;
       }
       if (!formData.vehicleLicenseCopy) {
@@ -568,6 +651,10 @@ console.log(id)
       }
       if (!formData.insuranceDocument) {
         newErrors.insuranceDocument = 'Insurance document is required';
+        isValid = false;
+      }
+      if (formData.images.length === 0) {
+        newErrors.images = 'At least one vehicle image is required';
         isValid = false;
       }
     }
@@ -599,18 +686,28 @@ console.log(id)
         newErrors.licensePhoto = 'License photo is required';
         isValid = false;
       }
-      if (!formData.licenseYearsOfExperience.trim()) {
-        newErrors.licenseYearsOfExperience = 'Years of experience is required';
+      if (!formData.experience || formData.experience === 0) {
+        newErrors.experience = 'Years of experience is required';
         isValid = false;
-      } else {
-        const experience = parseInt(formData.licenseYearsOfExperience);
-        if (isNaN(experience) || experience < 0 || experience > 50) {
-          newErrors.licenseYearsOfExperience = 'Please enter a valid number of years (0-50)';
-          isValid = false;
-        }
+      } else if (formData.experience < 0 || formData.experience > 50) {
+        newErrors.experience = 'Please enter a valid number of years (0-50)';
+        isValid = false;
       }
-      if (!formData.languagesSpoken.trim()) {
-        newErrors.languagesSpoken = 'Languages spoken is required';
+      if (formData.languages.length === 0) {
+        newErrors.languages = 'At least one language is required';
+        isValid = false;
+      }
+      // Pricing validation
+      if (!formData.perKm && !formData.dailyRate) {
+        newErrors.perKm = 'At least one pricing option must be selected';
+        isValid = false;
+      }
+      if (formData.perKm && (!formData.perKmPrice || formData.perKmPrice <= 0)) {
+        newErrors.perKmPrice = 'Per km price is required and must be greater than 0';
+        isValid = false;
+      }
+      if (formData.dailyRate && (!formData.dailyRatePrice || formData.dailyRatePrice <= 0)) {
+        newErrors.dailyRatePrice = 'Daily rate price is required and must be greater than 0';
         isValid = false;
       }
     }
@@ -623,7 +720,18 @@ console.log(id)
    * Handles input changes for any form field.
    */
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: field === 'seats' || field === 'doors' || field === 'experience' || field === 'perKmPrice' || field === 'dailyRatePrice'
+        ? Number(value) || 0
+        : field === 'ac' || field === 'gearType' || field === 'perKm' || field === 'dailyRate'
+        ? value === 'true'
+        : field === 'languages'
+        ? prev.languages // Don't change languages through this function
+        : field === 'whatsIncluded'
+        ? value.split(',').map(item => item.trim()).filter(item => item)
+        : value
+    }));
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -692,6 +800,20 @@ const handleNext = async () => {
   };
 
   /**
+   * Toggles language selection
+   */
+  const toggleLanguage = (language: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.includes(language)
+        ? prev.languages.filter(lang => lang !== language)
+        : [...prev.languages, language]
+    }));
+  };
+
+
+
+  /**
    * Simulates the final form submission.
    */
   const submitForm = async () => {
@@ -699,20 +821,59 @@ const handleNext = async () => {
 
     try {
 
-const x ={
-...formData,
-vehicleImage:formData.vehicleImage?.base64,
-driverPhoto:formData.driverPhoto?.base64,
-vehicleLicenseCopy:formData.vehicleLicenseCopy?.base64,
-insuranceDocument:formData.insuranceDocument?.base64,
-licensePhoto:formData.licensePhoto?.base64,
-}
+// Build payload matching backend Vehicle.java with correct field mapping
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        nicNumber: formData.nicNumber,
+        driverDateOfBirth: formData.driverDateOfBirth,
+        location: formData.location,
+        gender: formData.gender,
+        phone: formData.phone,
+        additionalComments: formData.additionalComments,
+        drivingLicenseNumber: formData.drivingLicenseNumber,
+        licenseExpiryDate: formData.licenseExpiryDate,
+        experience: formData.experience,
+        languages: formData.languages,
+        
+        // Send image (driver photo) as base64 string
+        image: formData.image?.base64 || '',
+        insuranceDocument: formData.insuranceDocument?.base64 || '',
+        insuranceDocument2: formData.insuranceDocument2?.base64 || '',
+        licensePhoto: formData.licensePhoto?.base64 || '',
+        licensePhoto2: formData.licensePhoto2?.base64 || '',
+        
+        vehicleNumber: formData.vehicleNumber,
+        vehicleModel: formData.vehicleModel,
+        ac: formData.ac,
+        fuelType: formData.fuelType,
+        seats: formData.seats,
+        catId: formData.catId,
+        vehicleYearOfManufacture: formData.vehicleYearOfManufacture,
+        gearType: formData.gearType,
+        perKm: formData.perKm,
+        perKmPrice: formData.perKmPrice,
+        dailyRate: formData.dailyRate,
+        dailyRatePrice: formData.dailyRatePrice,
+        driverNicpic1: formData.driverNicpic1?.base64 || '',
+        driverNicpic2: formData.driverNicpic2?.base64 || '',
+        vehicleLicenseCopy: formData.vehicleLicenseCopy?.base64 || '',
+        doors: formData.doors,
+        mileage: formData.mileage,
+        whatsIncluded: formData.whatsIncluded,
+        
+        // Send images array as array of base64 strings
+        images: formData.images.map(img => img?.base64 || '').filter(str => str !== ''),
+      }
       
 
       const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
         method: "POST",
-        headers: { 'Content-Type': "application/json" },
-        body: JSON.stringify(x),
+        headers: { 
+          'Content-Type': "application/json",
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload),
       });
       
       const data = await response.text();
@@ -777,7 +938,7 @@ licensePhoto:formData.licensePhoto?.base64,
   const renderDropdown = (
     field: keyof FormData,
     placeholder: string,
-    options: { label: string; value: string }[],
+    options: { label: string; value: string | number }[],
     showPicker: boolean,
     setShowPicker: (show: boolean) => void
   ) => (
@@ -807,7 +968,7 @@ licensePhoto:formData.licensePhoto?.base64,
                 key={option.value}
                 className="px-4 py-3 border-b border-gray-100 last:border-b-0"
                 onPress={() => {
-                  handleInputChange(field, option.value);
+                  handleInputChange(field, String(option.value));
                   setShowPicker(false);
                 }}
               >
@@ -829,7 +990,7 @@ licensePhoto:formData.licensePhoto?.base64,
    * Renders an image upload area.
    */
   const renderImageUpload = (
-    type: 'vehicleImage' | 'vehicleLicenseCopy' | 'insuranceDocument' | 'licensePhoto' | 'driverPhoto',
+    type: 'image' | 'insuranceDocument' | 'insuranceDocument2' | 'licensePhoto' | 'licensePhoto2' | 'vehicleLicenseCopy' | 'driverNicpic1' | 'driverNicpic2' | 'images',
     title: string,
     subtitle: string
   ) => (
@@ -844,7 +1005,11 @@ licensePhoto:formData.licensePhoto?.base64,
       >
         {formData[type] ? (
           <Image 
-            source={{ uri: `data:image/jpeg;base64,${formData.vehicleImage}` }} 
+            source={{ 
+              uri: Array.isArray(formData[type]) 
+                ? (formData[type] as ImagePickerAsset[])[0]?.uri 
+                : (formData[type] as ImagePickerAsset)?.uri || `data:image/jpeg;base64,${formData[type]}` 
+            }} 
             className="w-full h-[100px] rounded-sm"
             style={{ resizeMode: 'cover' }}
           />
@@ -914,8 +1079,6 @@ licensePhoto:formData.licensePhoto?.base64,
 
                   {renderInput('nicNumber', 'NIC Number', true)}
                   {renderInput('driverDateOfBirth', 'Date of Birth (DD/MM/YYYY)', true)}
-
-                  {renderInput('age', 'Age', true)}
                   {renderInput('location', 'Location', true)}
 
                   <View className="mb-5">
@@ -957,10 +1120,10 @@ licensePhoto:formData.licensePhoto?.base64,
                     )}
                   </View>
 
-                  {renderInput('driverMobileNumber', 'Mobile Number', true, 'phone-pad')}
-                  {renderInput('emergencyContact', 'Emergency Contact Number', false, 'phone-pad')}
+                  {renderInput('phone', 'Mobile Number', true, 'phone-pad')}
                   
-                  {renderImageUpload('driverPhoto', "Driver's Photo", 'Tap to upload driver photo')}
+                  {renderImageUpload('driverNicpic1', "Driver's NIC Front", 'Tap to upload NIC front photo')}
+                  {renderImageUpload('driverNicpic2', "Driver's NIC Back", 'Tap to upload NIC back photo')}
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
@@ -989,14 +1152,12 @@ licensePhoto:formData.licensePhoto?.base64,
                 </View>
 
                 <View className="px-6 pb-5">
-                  {renderInput('vehicleOwner', 'Vehicle Owner', true)}
-
                   {renderDropdown(
-                    'vehicleType',
-                    'Vehicle Type',
-                    vehicleTypes,
-                    showVehicleTypePicker,
-                    setShowVehicleTypePicker
+                    'catId',
+                    'Vehicle Category',
+                    categoryOptions,
+                    showCategoryPicker,
+                    setShowCategoryPicker
                   )}
 
                   {renderInput('vehicleModel', 'Vehicle Model', true)}
@@ -1014,18 +1175,19 @@ licensePhoto:formData.licensePhoto?.base64,
                   {renderInput('vehicleYearOfManufacture', 'Year of Manufacture', true, 'numeric')}
 
                   {renderDropdown(
-                    'vehicleSeatingCapacity',
+                    'seats',
                     'Seating Capacity',
                     seatingCapacityOptions,
                     showSeatingCapacityPicker,
                     setShowSeatingCapacityPicker
                   )}
 
-                  {renderInput('numberPlate', 'Number Plate', true)}
+                  {renderInput('vehicleNumber', 'Number Plate', true)}
 
-                  {renderImageUpload('vehicleImage', 'Vehicle Image', 'Tap to upload vehicle photo')}
+                  {renderImageUpload('image', 'Vehicle Image', 'Tap to upload vehicle photo')}
                   {renderImageUpload('vehicleLicenseCopy', 'Vehicle License Copy', 'Tap to upload license document')}
                   {renderImageUpload('insuranceDocument', 'Insurance Document', 'Tap to upload insurance document')}
+                  {renderImageUpload('insuranceDocument2', 'Insurance Document 2', 'Tap to upload second insurance document')}
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
@@ -1056,14 +1218,39 @@ licensePhoto:formData.licensePhoto?.base64,
                 <View className="px-6 pb-5">
                   {renderInput('drivingLicenseNumber', 'Driving License Number', true)}
                   {renderInput('licenseExpiryDate', 'License Expiry Date (DD/MM/YYYY)', true)}
-
+                  {renderInput('experience', 'Years of Experience', true, 'numeric')}
                   
+                  {renderImageUpload('licensePhoto', 'License Photo Front', 'Upload the driving license front photo')}
+                  {renderImageUpload('licensePhoto2', 'License Photo Back', 'Upload the driving license back photo')}
 
-                  {renderImageUpload('licensePhoto', 'License Photo', 'Upload the driving license photo')}
-
-                  {renderInput('licenseYearsOfExperience', 'Years of Experience', true, 'numeric')}
-                  {renderInput('languagesSpoken', 'Languages Spoken', true)}
-                  {renderInput('additionalComments', 'Additional Comments or Special Notes', false, 'default', true)}
+                  <Text className="text-gray-700 text-lg font-medium mb-3 mt-6">Language Preferences</Text>
+                  <View className="bg-white rounded-lg p-4 shadow-sm mb-4">
+                    <Text className="text-gray-600 text-sm mb-2">Languages you can communicate in</Text>
+                    <View className="flex-row flex-wrap">
+                      {['English', 'Sinhala', 'Tamil', 'German', 'French', 'Chinese', 'Japanese'].map((lang) => (
+                        <TouchableOpacity
+                          key={lang}
+                          onPress={() => toggleLanguage(lang)}
+                          className={`mr-2 mb-2 px-3 py-2 rounded-full border ${
+                            formData.languages.includes(lang) 
+                              ? 'bg-yellow-500 border-yellow-500' 
+                              : 'bg-gray-100 border-gray-300'
+                          }`}
+                        >
+                          <Text className={`text-sm ${formData.languages.includes(lang) ? 'text-white' : 'text-gray-700'}`}>
+                            {lang}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                  
+                  <Text className="text-gray-700 text-lg font-medium mb-3">Pricing Options</Text>
+                  <View className="space-y-4 mb-4">
+                    {renderInput('pricingOption1', 'Pricing Option 1 (e.g., Per Day)', false)}
+                    {renderInput('pricingOption2', 'Pricing Option 2 (e.g., Per Hour)', false)}
+                    {renderInput('pricingOption3', 'Pricing Option 3 (e.g., Per KM)', false)}
+                  </View>
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>

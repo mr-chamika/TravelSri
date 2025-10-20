@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
+
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,12 @@ public interface UserRepo extends MongoRepository<User,String> {
             fields = "{ '_id': 1,'firstName': 1,'lastName': 1,'experience': 1,'pp': 1,'username': 1,'stars': 1,'reviewCount': 1,'dailyRate': 1,'verified': 1,'identified': 1,'specializations': 1,'location': 1,'bio': 1,'mobileNumber': 1,'responseTime': 1,'responseRate': 1,'description': 1}"
     )
     List<Guidedto> findAllGuidedtos(String location, String language);
+
+    @Query(
+            value = "{ $and: [ { 'languages': { $regex: ?0, $options: 'i' } }, { 'role': 'guide' },{'status': 'active'} ] }",
+            fields = "{ '_id': 1,'firstName': 1,'lastName': 1,'experience': 1,'pp': 1,'username': 1,'stars': 1,'reviewCount': 1,'dailyRate': 1,'verified': 1,'identified': 1,'specializations': 1,'location': 1,'bio': 1,'mobileNumber': 1,'responseTime': 1,'responseRate': 1,'description': 1}"
+    )
+    List<Guidedto> findAllGuidedtoss(String language);
 
     @Query(
             value = "{ 'role': 'guide','status': 'active' } ",

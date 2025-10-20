@@ -7,7 +7,7 @@ const CreateTrip01 = () => {
     const [error, setError] = useState("");
     const [startingDescription, setStartingDescription] = useState("");
 
-    // Generate default path based on locations
+    // Generate default path based on location
     const generateDefaultPath = (start, end) => {
         if (!start || !end) return "";
         return `Route from ${start.charAt(0).toUpperCase() + start.slice(1)} to ${end.charAt(0).toUpperCase() + end.slice(1)} via highway`;

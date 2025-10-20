@@ -1,16 +1,34 @@
 package com.example.student.services;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
+import com.example.student.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
+@EnableWebSecurity
 public class Hashingpw {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -18,14 +36,37 @@ public class Hashingpw {
     }
 
     @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Allow your React app's origin
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081")); // Use your React app's port
+        // Allow all standard methods (GET, POST, etc.)
+        configuration.setAllowedMethods(Arrays.asList("*"));
+        // Allow all standard headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // Allow credentials
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply this config to all routes
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(withDefaults()) // Apply the global CORS configuration
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Make the security context stateless
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/user/signup",
                                 "/user/login",
+                                "/web/login",
+                                "/ws/**",
+                                "/ws",
+                                "/system/**",
+                                "/user/signup",
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
@@ -117,8 +158,9 @@ public class Hashingpw {
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
+                                "/api/admin-hotel-bookings",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}",
+                                "/api/admin-hotel-bookings/test-auth",
                                 "/auth/**",
                                 "/shopitems/all",
                                 "/shopitems/view",
@@ -165,6 +207,9 @@ public class Hashingpw {
                                 "/reviews//stats",
                                 "/reviews/service-search",
                                 "/reviews/by-rating",
+                                "/api/translate/**",
+                                "/api/test/public",
+                                "/hotel-rooms/**",
                                 "/api/guide/search",
                                 "/api/payments/payhere/simple-health",
                                 "/api/payments/payhere/create-checkout",
@@ -232,13 +277,27 @@ public class Hashingpw {
                                 "/VehicleOwnerQuotation/submitQuotation/{tourId}",
                                 "/VehicleOwnerQuotation/vehiclegroupTours",
                                 "/VehicleOwnerQuotation/vehicleOwnerId/{userId}",
-                                "/VehicleOwnerQuotation/**"
+                                "/VehicleOwnerQuotation/**",
+                                "/notification/**"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
+
                 )
-                .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
+                .formLogin(form -> form
+                        .loginPage("/user/login") // Specify a custom login page
+                        .usernameParameter("email")
+                        .permitAll()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(withDefaults()) // Apply the global CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .formLogin(form -> form.disable())
+                .httpBasic(basic->basic.disable()) ;// Use Basic Auth for the secured endpoints
+        //.formLogin(form -> form.disable());
+
 
         return http.build();
     }
+
 }

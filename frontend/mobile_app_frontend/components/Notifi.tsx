@@ -1,121 +1,310 @@
 import { View, Modal, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell, CreditCard, Users, Clock, X } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { Client } from '@stomp/stompjs';
 
 interface NotifyModalProps {
   isVisible: boolean;
   onClose: () => void;
 }
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
+
 interface Notification {
-  id: string;
-  type: string;
-  title: string;
+  _id: string;
+  recipientId: string;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
-  priority: string;
+  type: string;//"public" || "private"
+  link: string;
+
 }
 
 export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
+
   const [notifications, setNotifications] = useState<Notification[]>([
     {
-      id: '1',
-      type: 'booking',
-      title: 'New booking request from Nisal Gamage',
+      _id: '1',
+      recipientId: '68a4ec4065c9df5a144ada34',
+      type: "public",//"public" || "private"
+      link: 'link1',
       message: 'You have received a new booking request for your photography service.',
-      timestamp: '2 mins ago',
+      createdAt: '2025-08-19T21:27:28.450+00:00',
       isRead: false,
-      priority: 'high',
-    },
+
+    }
+
+    /*,
     {
-      id: '2',
-      type: 'payment',
-      title: 'Payment confirmed for booking #1234',
+      _id: '2',
+
+
       message: 'Your payment of $150 has been successfully processed.',
       timestamp: '1 hour ago',
       isRead: false,
-      priority: 'medium',
+
     },
     {
-      id: '3',
-      type: 'group',
-      title: 'New group tour request for 7 people',
+      _id: '3',
+
+
       message: 'A group tour has been requested for next weekend.',
       timestamp: '3 hours ago',
       isRead: true,
-      priority: 'medium',
+
     },
     {
-      id: '4',
-      type: 'booking',
-      title: 'New booking request from Nisal Gamage',
+      _id: '4',
+
+
       message: 'You have received a new booking request for your photography service.',
       timestamp: '2 mins ago',
       isRead: false,
-      priority: 'high',
+
     },
     {
-      id: '5',
-      type: 'payment',
-      title: 'Payment confirmed for booking #1234',
+      _id: '5',
+
+
       message: 'Your payment of $150 has been successfully processed.',
       timestamp: '1 hour ago',
       isRead: false,
-      priority: 'medium',
+
     },
     {
-      id: '6',
-      type: 'group',
-      title: 'New group tour request for 7 people',
+      _id: '6',
+
+
       message: 'A group tour has been requested for next weekend.',
       timestamp: '3 hours ago',
       isRead: true,
-      priority: 'medium',
+
     },
-    // ... other notifications
+    // ... other notifications*/
   ]);
 
-  // **Correction**: Helper functions now return NativeWind class names.
-  const getBackgroundColorClass = (notification: Notification): string => {
-    if (notification.isRead) {
-      return 'bg-gray-50';
-    }
-    switch (notification.priority) {
-      case 'high':
-        return 'bg-orange-100';
-      case 'medium':
-        return 'bg-purple-100';
-      default:
-        return 'bg-green-100';
-    }
-  };
+  const getNotifi = async () => {
 
-  const getBorderColorClass = (notification: Notification): string => {
-    switch (notification.type) {
-      case 'booking':
-        return 'border-orange-500';
-      case 'payment':
-        return 'border-green-500';
-      case 'group':
-        return 'border-blue-500';
-      default:
-        return 'border-gray-300';
-    }
-  };
+    try {
 
-  const getIcon = (notification: Notification) => {
-    switch (notification.type) {
-      case 'booking':
-        return <Bell size={20} color="#FF6B35" />;
-      case 'payment':
-        return <CreditCard size={20} color="#4CAF50" />;
-      case 'group':
-        return <Users size={20} color="#2196F3" />;
-      default:
-        return <Bell size={20} color="#757575" />;
+      const keys = await AsyncStorage.getItem("token")
+
+      if (keys) {
+
+        const token: MyToken = jwtDecode(keys)
+
+        const res = await fetch(`http://localhost:8080/notification/get?id=${token.id}&role=${token.roles[0]}`)
+
+        if (res) {
+
+          const data = await res.json()
+          //console.log(data)
+
+          if (data.length > 0) {
+
+            setNotifications(data)
+
+          } else {
+
+            setNotifications([])
+
+          }
+
+
+        } else {
+
+          console.log("Check your connections...")
+
+        }
+
+      }
+
+
+    } catch (err) {
+
+      console.log('Error from notifications getting : ', err);
+      setNotifications([])
+
     }
-  };
+
+  }
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to public STOMP server');
+        client.subscribe('/topic/messages', (message) => {
+
+          const handle = async () => {
+
+            const messageData = JSON.parse(message.body);
+
+            const keys = await AsyncStorage.getItem("token")
+
+            if (keys) {
+
+              const x: MyToken = jwtDecode(keys)
+              //console.log(x.id)
+
+              if (x.id != messageData.to) {
+                getNotifi();
+              }
+            }
+          }
+          handle();
+
+        })
+      }
+
+    })
+
+    client.activate();
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+
+        console.log('Connected to merchant STOMP server');
+
+        client.subscribe('/topicShops/messages', (message) => {
+          const handle = async () => {
+            const keys = await AsyncStorage.getItem("token")
+
+            if (keys) {
+
+              const x: MyToken = jwtDecode(keys)
+              //console.log(x.roles[0])
+              if (x.roles[0] == "merchant") {
+
+                getNotifi()
+
+              }
+            }
+          }
+          handle();
+        })
+      }
+
+    })
+
+    client.activate();
+
+    return () => {
+
+      client.deactivate();
+    };
+
+  }, [])
+
+
+  useEffect(() => {
+
+    const client = new Client({
+
+      brokerURL: 'ws://localhost:8080/ws/websocket',
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('Connected to private STOMP server');
+
+        client.subscribe(`/user/queue/notifications`, () => {
+          getNotifi();
+        });
+      },
+      onStompError: (frame) => {
+
+        console.error('Additional details: ' + frame.body)
+
+      }
+
+    })
+
+    const connectAndSubscribePrivate = async () => {
+      const keys = await AsyncStorage.getItem("token");
+      if (keys) {
+
+        client.connectHeaders = {
+          Authorization: `Bearer ${keys}`,
+        };
+
+        client.activate();
+
+        console.log("Client is attempting to connect with these headers:", client.connectHeaders);
+
+      }
+
+    };
+    connectAndSubscribePrivate();
+
+    // Cleanup function
+    return () => {
+      // This part is fine and will handle cleanup when the component unmounts
+      if (client) {
+
+        client.deactivate();
+        console.log("Private STOMP client disconnected.");
+
+      }
+
+    };
+  }, []);
+
+
+  useEffect(() => {
+
+    getNotifi();
+
+  }, [isVisible])
+
+  function formatTimestampPlainJS(isoString: string) {
+    const date = new Date(isoString);
+    const today = new Date();
+
+    // Manually check if the year, month, and day are the same
+    const isSameDay = date.getFullYear() === today.getFullYear() &&
+      date.getMonth() === today.getMonth() &&
+      date.getDate() === today.getDate();
+
+    if (isSameDay) {
+      // If it's today, format as time
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }); // Example: "3:45 PM"
+    } else {
+      // Otherwise, format as date
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      }); // Example: "Aug 19"
+    }
+  }
 
   return (
     <Modal
@@ -138,34 +327,32 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
             ) : (
               notifications.map((notification) => (
                 <TouchableOpacity
-                  key={notification.id}
+                  key={notification._id}
                   className={`
-                    my-1.5 mx-2 rounded-xl border-l-4 shadow-md
-                    ${getBackgroundColorClass(notification)}
-                    ${getBorderColorClass(notification)}
+                    my-1.5 mx-2 rounded-xl border-l-4 shadow-md bg-gray-50
                   `}
                   activeOpacity={0.7}
                 >
                   <View className="relative p-4">
                     <View className="flex-row justify-between items-center mb-2">
                       <View className="w-8 h-8 rounded-full bg-white justify-center items-center shadow">
-                        {getIcon(notification)}
+                        <Bell size={20} color="#757575" />
                       </View>
                       <View className="flex-row items-center h-5">
                         <Clock size={12} color="#9E9E9E" />
                         <Text className="text-xs text-gray-500 font-medium ml-1">
-                          {notification.timestamp}
+                          {formatTimestampPlainJS(notification.createdAt)}
                         </Text>
                       </View>
                     </View>
 
                     <View>
-                      <Text className={`
+                      {/* <Text className={`
                         text-base font-semibold text-gray-800 mb-1 leading-5
                         ${!notification.isRead && 'font-bold text-black'}
                       `}>
                         {notification.title}
-                      </Text>
+                      </Text> */}
                       <Text className="text-sm text-gray-600 leading-5">
                         {notification.message}
                       </Text>
