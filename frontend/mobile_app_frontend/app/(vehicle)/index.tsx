@@ -148,25 +148,21 @@ export default function Index() {
       <View className="bg-gradient-to-br from-[#FEFA17] to-[#FEF08A] px-4 pt-6 pb-4">
         <View className="flex-row justify-between items-start mb-4">
           <View className="flex-1">
-            <Text className="text-gray-700 text-xs font-semibold opacity-80">Welcome Back 👋</Text>
             <Text className="text-gray-900 text-2xl font-black mt-1">{userName}</Text>
           </View>
-          <TouchableOpacity className="bg-white rounded-full p-2.5 shadow-lg">
-            <Ionicons name="notifications" size={20} color="#FEFA17" />
-          </TouchableOpacity>
         </View>
 
         {/* Stats Banner */}
         <View className="bg-[#FEFA17] rounded-2xl p-4 shadow-lg">
           <View className="flex-row justify-between">
             <View className="items-center flex-1">
-              <Text className="text-gray-900 text-2xl font-black">8</Text>
-              <Text className="text-gray-700 text-xs font-semibold mt-1">Bookings</Text>
+              <Text className="text-gray-900 text-2xl font-black">4</Text>
+              <Text className="text-gray-700 text-xs font-medium mt-1">Bookings</Text>
             </View>
             <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
             <View className="items-center flex-1">
-              <Text className="text-gray-900 text-2xl font-black">₹185K</Text>
-              <Text className="text-gray-700 text-xs font-semibold mt-1">Earnings</Text>
+              <Text className="text-gray-900 text-2xl font-black">LKR17.3K</Text>
+              <Text className="text-gray-700 text-xs font-medium mt-1">Earnings</Text>
             </View>
             <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
             <View className="items-center flex-1">
@@ -174,7 +170,7 @@ export default function Index() {
                 <Text className="text-gray-900 text-2xl font-black">4.8</Text>
                 <Text className="text-yellow-600 text-base ml-0.5">★</Text>
               </View>
-              <Text className="text-gray-700 text-xs font-semibold mt-1">Rating</Text>
+              <Text className="text-gray-700 text-xs font-medium mt-1">Rating</Text>
             </View>
           </View>
         </View>
@@ -182,7 +178,7 @@ export default function Index() {
 
       {/* Quick Actions */}
       <View className="mx-4 mt-5 mb-5">
-        <Text className="text-gray-900 text-lg font-black mb-3">Quick Actions</Text>
+        <Text className="text-gray-900 text-lg font-bold mb-3">Quick Actions</Text>
         <View className="flex-row justify-between gap-2">
           <TouchableOpacity 
             onPress={() => router.push('/(vehicle)/vehicleBookings')} 
@@ -191,8 +187,8 @@ export default function Index() {
             <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEFA17] p-3 rounded-xl mb-2 self-center w-12 h-12 items-center justify-center">
               <Ionicons name="calendar" size={24} color="#B8860B" />
             </View>
-            <Text className="text-gray-900 text-sm font-bold text-center">Bookings</Text>
-            <Text className="text-[#FEFA17] text-xs font-bold text-center mt-1">3 pending</Text>
+            <Text className="text-gray-900 text-sm font-semibold text-center">Bookings</Text>
+            <Text className="text-[#FEFA17] text-xs font-medium text-center mt-1">3 pending</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -202,8 +198,8 @@ export default function Index() {
             <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEFA17] p-3 rounded-xl mb-2 self-center w-12 h-12 items-center justify-center">
               <Ionicons name="car" size={24} color="#B8860B" />
             </View>
-            <Text className="text-gray-900 text-sm font-bold text-center">My Vehicles</Text>
-            <Text className="text-[#FEFA17] text-xs font-bold text-center mt-1">{vehicleCount} vehicles</Text>
+            <Text className="text-gray-900 text-sm font-semibold text-center">My Vehicles</Text>
+            <Text className="text-[#FEFA17] text-xs font-medium text-center mt-1">{vehicleCount} vehicles</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -211,9 +207,9 @@ export default function Index() {
       {/* Your Fleet Section */}
       <View className="mx-4 mb-6">
         <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-gray-900 text-lg font-black">Your Fleet</Text>
+          <Text className="text-gray-900 text-lg font-bold">Your Fleet</Text>
           <TouchableOpacity onPress={() => router.push('/(vehicle)/myVehicles')}>
-            <Text className="text-[#FEFA17] text-xs font-bold">View All →</Text>
+            <Text className="text-[#FEFA17] text-xs font-semibold">View All →</Text>
           </TouchableOpacity>
         </View>
 
@@ -228,8 +224,8 @@ export default function Index() {
                 {/* Vehicle Header */}
                 <View className="bg-gradient-to-r from-[#FEF3C7] to-[#FEF08A] px-4 py-3 flex-row items-center">
                   <View className="flex-1">
-                    <Text className="text-gray-900 font-black text-base">{vehicle.vehicleModel}</Text>
-                    <Text className="text-gray-600 text-xs font-semibold mt-0.5">{vehicle.vehicleNumber}</Text>
+                    <Text className="text-gray-900 font-bold text-base">{vehicle.vehicleModel}</Text>
+                    <Text className="text-gray-600 text-xs font-medium mt-0.5">{vehicle.vehicleNumber}</Text>
                   </View>
                 </View>
 
@@ -240,23 +236,23 @@ export default function Index() {
                     <View className="flex-row justify-between">
                       <View className="items-center flex-1">
                         <Ionicons name="people" size={24} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs font-bold mt-1">Seats</Text>
-                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.seats}</Text>
+                        <Text className="text-gray-600 text-xs font-medium mt-1">Seats</Text>
+                        <Text className="text-gray-900 font-bold text-sm mt-0.5">{vehicle.seats}</Text>
                       </View>
                       <View className="items-center flex-1">
                         <Ionicons name="water" size={24} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs font-bold mt-1">Fuel</Text>
-                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.fuelType}</Text>
+                        <Text className="text-gray-600 text-xs font-medium mt-1">Fuel</Text>
+                        <Text className="text-gray-900 font-bold text-sm mt-0.5">{vehicle.fuelType}</Text>
                       </View>
                       <View className="items-center flex-1">
                         <Ionicons name="settings" size={24} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs font-bold mt-1">Gear</Text>
-                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.gearType ? 'Auto' : 'Manual'}</Text>
+                        <Text className="text-gray-600 text-xs font-medium mt-1">Gear</Text>
+                        <Text className="text-gray-900 font-bold text-sm mt-0.5">{vehicle.gearType ? 'Auto' : 'Manual'}</Text>
                       </View>
                       <View className="items-center flex-1">
                         <Ionicons name="snow" size={24} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs font-bold mt-1">AC</Text>
-                        <Text className="text-gray-900 font-black text-sm mt-0.5">{vehicle.ac ? 'Yes' : 'No'}</Text>
+                        <Text className="text-gray-600 text-xs font-medium mt-1">AC</Text>
+                        <Text className="text-gray-900 font-bold text-sm mt-0.5">{vehicle.ac ? 'Yes' : 'No'}</Text>
                       </View>
                     </View>
                   </View>
@@ -265,13 +261,13 @@ export default function Index() {
                   <View className="flex-row items-center justify-between">
                     {(vehicle.perKmPrice || vehicle.dailyRatePrice) && (
                       <View>
-                        <Text className="text-[#FEFA17] text-xs font-black mb-0.5">
+                        <Text className="text-[#FEFA17] text-xs font-semibold mb-0.5">
                           <Ionicons name="pricetag" size={11} color="#6B7280" /> Pricing
                         </Text>
-                        <Text className="text-gray-900 font-black text-sm">
-                          {vehicle.perKmPrice ? `₹${vehicle.perKmPrice}/km` : ''}
+                        <Text className="text-gray-900 font-semibold text-sm">
+                          {vehicle.perKmPrice ? `LKR${vehicle.perKmPrice}/km` : ''}
                           {vehicle.perKmPrice && vehicle.dailyRatePrice ? ' • ' : ''}
-                          {vehicle.dailyRatePrice ? `₹${vehicle.dailyRatePrice}/day` : ''}
+                          {vehicle.dailyRatePrice ? `LKR${vehicle.dailyRatePrice}/day` : ''}
                         </Text>
                       </View>
                     )}
@@ -280,7 +276,7 @@ export default function Index() {
                       className="bg-[#FEFA17] px-4 py-2 rounded-lg active:bg-yellow-300 flex-row items-center"
                     >
                       <Ionicons name="open" size={14} color="#B8860B" />
-                      <Text className="text-gray-900 font-black text-xs ml-1.5">Manage</Text>
+                      <Text className="text-gray-900 font-semibold text-xs ml-1.5">Manage</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -291,7 +287,7 @@ export default function Index() {
           <View className="bg-gradient-to-br from-[#FEF3C7] to-[#FEF08A] rounded-2xl p-6 shadow-md border-2 border-[#FEFA17]">
             <View className="items-center">
               <Ionicons name="car" size={48} color="#B8860B" />
-              <Text className="text-gray-900 text-center font-black text-base mt-3">No Vehicles Yet</Text>
+              <Text className="text-gray-900 text-center font-bold text-base mt-3">No Vehicles Yet</Text>
               <Text className="text-gray-600 text-xs text-center mt-1">Add your first vehicle to start earning</Text>
             </View>
           </View>

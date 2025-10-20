@@ -253,7 +253,6 @@ export default function Profile() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
             
              <Modal
                 transparent={true}
