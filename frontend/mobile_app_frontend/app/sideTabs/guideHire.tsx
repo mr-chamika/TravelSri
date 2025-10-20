@@ -169,7 +169,7 @@ export default function Guide() {
     const handleSubmit = async () => {
 
         try {
-            if (selectedDates.length === 0 || !destination.trim() || !lan.trim()) {
+            if (selectedDates.length === 0 || (!destination.trim() && !travelDescription) || !lan.trim()) {
                 alert('Please fill in all fields.');
                 return;
             }
@@ -187,7 +187,7 @@ export default function Guide() {
 
             await AsyncStorage.setItem('soloGuideBook', JSON.stringify(book));
 
-            const res = await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`)
+            const res = bookingType == 'visit' ? await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`) : await fetch(`http://localhost:8080/traveler/guides-alls?language=${lan.trim().toLowerCase()}`)
 
             if (res.ok) {
 
@@ -711,8 +711,8 @@ export default function Guide() {
 
                                     {/* Pricing and Actions */}
                                     <View className="flex-row items-end justify-between border-t border-gray-100 pt-3">
-                                        <View className="flex-1">
-                                            <Text className="text-sm text-gray-500 mb-0.5">Starting from</Text>
+                                        <View className="flex-1 flex-row justify-between mx-10">
+                                            <Text className="text-sm text-gray-500  self-center">Starting from</Text>
                                             {/* <Text className="text-sm font-semibold text-red-600">{guide.currency} {formatPrice(guide.hourlyRate)}/hour</Text> */}
                                             <Text className="text-xl font-extrabold text-gray-600">LKR {(guide.dailyRate)}/day</Text>
                                         </View>
@@ -722,10 +722,10 @@ export default function Guide() {
                                                     <Icon name="message" size={16} color="#2563eb" />
                                                     <Text className="text-xs text-blue-600 font-medium">Message</Text>
                                                 </TouchableOpacity> */}
-                                            <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
+                                            {/* <View className="flex-row items-center px-3 py-2 bg-yellow-300 rounded-md gap-4 justify-center">
                                                 <Image source={tele} className='w-6 h-6' />
                                                 <Text className="text-sm text-gray-800 font-semibold">{guide.mobileNumber}</Text>
-                                            </View>
+                                            </View> */}
                                         </View>
                                     </View>
                                 </TouchableOpacity>)

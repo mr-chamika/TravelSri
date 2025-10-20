@@ -79,24 +79,15 @@ export default function Profile() {
 
                 {/* Settings Section */}
                 <View>
-                    <Text className="text-lg font-medium text-gray-800 mb-4">Settings</Text>
-
-                    {/* Dark Mode */}
-                    <View className="flex-row items-center justify-between mb-6">
-                        <Text className="text-gray-800 text-base">Dark Mode</Text>
-                        <ToggleSwitch isEnabled={false} />
-                    </View>
-
-                    {/* Visibility */}
-                    <View className="flex-row items-center justify-between mb-6">
-                        <Text className="text-gray-800 text-base">Visibility</Text>
-                        <ToggleSwitch isEnabled={false} />
-                    </View>
-
-                    {/* Ask credential when login */}
-                    <View className="flex-row items-center justify-between mb-6">
-                        <Text className="text-gray-800 text-base">Ask credential when login</Text>
-                        <ToggleSwitch isEnabled={false} />
+                    
+                    {/* Logout Button */}
+                    <View className="mt-8">
+                        <TouchableOpacity 
+                            className="bg-[#FEFA17] rounded-lg p-4 items-center"
+                            onPress={() => router.push('/')}
+                        >
+                            <Text className="text-black text-base font-medium">Logout</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </View>

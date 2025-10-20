@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import Animated, {
@@ -16,34 +17,47 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
+  FadeInDown,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 import BackButton from '../../components/ui/backButton';
 
 import Topbar from '../../components/ui/guideTopbar';
-
-// A placeholder for your Topbar component to make the code runnable.
 
 // Define types for the data structures
 interface MarkingProps {
   marked?: boolean;
   selected?: boolean;
   selectedColor?: string;
+  dotColor?: string;
 }
 
 interface UnavailabilityItem {
+  _id?: string;
   dateRange: string;
   duration: string;
+  id: string;
+  reason?: string;
+  notes?: string;
+  isRecurring?: boolean;
+  recurrencePattern?: string;
+  dayOfWeek?: number;
+}
+
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
   id: string;
 }
 
 // Main Screen Component for Availability
 export default function AvailabilityScreen() {
   // State to track selected dates with proper typing
-  const [selectedDates, setSelectedDates] = useState<{ [key: string]: MarkingProps }>({
-    '2024-07-06': { marked: true },
-    '2024-07-07': { selected: true, selectedColor: '#ff9800' },
-    '2024-07-08': { marked: true },
-  });
+  const [selectedDates, setSelectedDates] = useState<{ [key: string]: MarkingProps }>({});
 
   // State for the animated menu
   const [show, setShow] = useState(false);
@@ -56,28 +70,93 @@ export default function AvailabilityScreen() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isSelectingStartDate, setIsSelectingStartDate] = useState(true);
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState('');
+
+  // State for delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  // State for add confirmation
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
+
+  // State for date details modal
+  const [showDateDetailsModal, setShowDateDetailsModal] = useState(false);
+  const [selectedDateDetails, setSelectedDateDetails] = useState<UnavailabilityItem | null>(null);
+
+  // State for unavailability items
+  const [currentUnavailability, setCurrentUnavailability] = useState<UnavailabilityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [userToken, setUserToken] = useState<MyToken | null>(null);
+
+  // Load JWT token on component mount
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const decoded = jwtDecode<MyToken>(token);
+          setUserToken(decoded);
+          fetchUnavailability(decoded.id);
+        }
+      } catch (error) {
+        console.error('Error loading token:', error);
+      }
+    };
+    loadToken();
+  }, []);
 
   // Function to handle date selection with correct types
   const handleDateSelection = (day: DateData) => {
     const dateString = day.dateString;
-    const newSelectedDates = { ...selectedDates };
-
-    // Toggle selection: if date is already selected, unselect it. Otherwise, select it.
-    if (newSelectedDates[dateString] && newSelectedDates[dateString].selected) {
-      delete newSelectedDates[dateString];
-    } else {
-      newSelectedDates[dateString] = {
-        selected: true,
-        selectedColor: '#ff9800', // Use your theme color for selection
+    
+    // Check if this date has an unavailability item
+    const dateDetails = currentUnavailability.find((item) => {
+      // Parse the dateRange to get start and end dates in YYYY-MM-DD format
+      const dateRangeParts = item.dateRange.split(' - ');
+      let itemStartDate = dateRangeParts[0];
+      let itemEndDate = dateRangeParts[dateRangeParts.length - 1];
+      
+      // Convert format from "2025 Oct 18" to "2025-10-18"
+      const parseDate = (dateStr: string): string => {
+        const parts = dateStr.trim().split(' ');
+        const year = parts[0];
+        const monthStr = parts[1];
+        const day = parts[2];
+        
+        const months: { [key: string]: string } = {
+          'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+          'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+          'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+        };
+        
+        const month = months[monthStr] || '01';
+        return `${year}-${month}-${day.padStart(2, '0')}`;
       };
+      
+      itemStartDate = parseDate(itemStartDate);
+      itemEndDate = parseDate(itemEndDate);
+      
+      // Check if the selected date falls within this item's range
+      return dateString >= itemStartDate && dateString <= itemEndDate;
+    });
+    
+    if (dateDetails) {
+      // Show the details modal
+      console.log('📅 Date details found:', dateDetails);
+      setSelectedDateDetails(dateDetails);
+      setShowDateDetailsModal(true);
     }
-    setSelectedDates(newSelectedDates);
   };
 
   // Handle date selection in the add modal
   const handleModalDateSelection = (day: DateData) => {
     const dateString = day.dateString;
 
+    // Allow selecting any date - users can mark scheduled or unscheduled dates as unavailable
     if (isSelectingStartDate) {
       setStartDate(dateString);
       setIsSelectingStartDate(false);
@@ -86,15 +165,6 @@ export default function AvailabilityScreen() {
     }
   };
 
-  // Current Unavailability Data with explicit typing
-  const [currentUnavailability, setCurrentUnavailability] = useState<UnavailabilityItem[]>([
-    {
-      id: '1',
-      dateRange: '2024 Jul 10 - Jul 13',
-      duration: '4 Days',
-    },
-  ]);
-
   // Function to calculate duration between two dates
   const calculateDuration = (start: string, end: string): string => {
     const startDate = new Date(start);
@@ -102,6 +172,266 @@ export default function AvailabilityScreen() {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return `${diffDays} Days`;
+  };
+
+  // Fetch unavailability from backend
+  const fetchUnavailability = async (providerId: string) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching unavailability for providerId:', providerId);
+      
+      const response = await fetch(`http://localhost:8080/api/availability/user-schedules/${providerId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log('📡 API Response Status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📋 Raw fetched data:', data);
+        console.log('📋 Data length:', data.length);
+        
+        // Convert backend data to UI format
+        const formattedData = data.map((item: any) => {
+          console.log('🔄 Raw item from backend:', item);
+          console.log('🔄 Item isRecurring:', item.isRecurring, 'Type:', typeof item.isRecurring);
+          console.log('🔄 Item recurrencePattern:', item.recurrencePattern, 'Type:', typeof item.recurrencePattern);
+          
+          // Convert isRecurring to boolean in case it comes as string
+          let isRecurringBoolean = false;
+          if (typeof item.isRecurring === 'string') {
+            isRecurringBoolean = item.isRecurring.toLowerCase() === 'true';
+          } else if (typeof item.isRecurring === 'boolean') {
+            isRecurringBoolean = item.isRecurring;
+          }
+          
+          const formatted = {
+            _id: item._id || item.id,
+            id: item._id || item.id,
+            dateRange: formatDateRange(item.unavailableFromDate, item.unavailableToDate),
+            duration: calculateDuration(item.unavailableFromDate, item.unavailableToDate),
+            reason: item.unavailabilityReason,
+            notes: item.notes,
+            isRecurring: isRecurringBoolean,
+            recurrencePattern: item.recurrencePattern ? item.recurrencePattern.toLowerCase() : '',
+            dayOfWeek: item.dayOfWeek,
+          };
+          console.log('🔄 Formatted item:', formatted);
+          console.log('🔄 isRecurring in formatted:', formatted.isRecurring, 'Type:', typeof formatted.isRecurring);
+          console.log('🔄 recurrencePattern in formatted:', formatted.recurrencePattern, 'Type:', typeof formatted.recurrencePattern);
+          return formatted;
+        });
+        
+        console.log('📦 Final formatted data:', formattedData);
+        setCurrentUnavailability(formattedData);
+        updateCalendarMarking(formattedData);
+      } else {
+        console.error('❌ Failed to fetch unavailability:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching unavailability:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update calendar with unavailable dates
+  const updateCalendarMarking = (unavailabilityList: UnavailabilityItem[]) => {
+    const marked: { [key: string]: any } = {};
+    
+    console.log('🔍 updateCalendarMarking called with:', unavailabilityList);
+    
+    // Helper function to get all dates between two dates
+    const getDatesBetween = (startStr: string, endStr: string): string[] => {
+      const dates: string[] = [];
+      const start = new Date(startStr);
+      const end = new Date(endStr);
+      
+      const current = new Date(start);
+      while (current <= end) {
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, '0');
+        const day = String(current.getDate()).padStart(2, '0');
+        dates.push(`${year}-${month}-${day}`);
+        current.setDate(current.getDate() + 1);
+      }
+      console.log(`📅 Generated dates from ${startStr} to ${endStr}:`, dates);
+      return dates;
+    };
+
+    // Helper function to generate recurring dates
+    const getRecurringDates = (startStr: string, endStr: string, pattern: string, dayOfWeek?: number): string[] => {
+      const dates: string[] = [];
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
+      
+      // Get the duration of one occurrence
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+      
+      console.log(`📅 [RECURRING] Pattern: ${pattern}, Duration: ${durationDays} days, StartDay: ${dayOfWeek}`);
+      
+      // Generate recurring instances for the next 12 months
+      const today = new Date();
+      const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+      
+      let currentStart = new Date(startDate);
+      
+      if (pattern === 'weekly' && dayOfWeek !== undefined) {
+        // Weekly recurrence
+        const startDay = startDate.getDay();
+        console.log(`📅 [WEEKLY] Start day of week: ${startDay}, Target day: ${dayOfWeek}`);
+        
+        // Find first occurrence on the target day
+        while (currentStart.getDay() !== dayOfWeek && currentStart < oneYearLater) {
+          currentStart.setDate(currentStart.getDate() + 1);
+        }
+        
+        // Generate weekly occurrences
+        while (currentStart < oneYearLater) {
+          const currentEnd = new Date(currentStart.getTime() + durationMs);
+          const datesInRange = getDatesBetween(
+            currentStart.toISOString().split('T')[0],
+            currentEnd.toISOString().split('T')[0]
+          );
+          dates.push(...datesInRange);
+          currentStart.setDate(currentStart.getDate() + 7); // Next week
+        }
+      } else if (pattern === 'monthly') {
+        // Monthly recurrence - same day each month
+        const dayOfMonth = startDate.getDate();
+        console.log(`📅 [MONTHLY] Day of month: ${dayOfMonth}`);
+        
+        while (currentStart < oneYearLater) {
+          const currentEnd = new Date(currentStart.getTime() + durationMs);
+          const datesInRange = getDatesBetween(
+            currentStart.toISOString().split('T')[0],
+            currentEnd.toISOString().split('T')[0]
+          );
+          dates.push(...datesInRange);
+          
+          // Move to same day next month
+          currentStart.setMonth(currentStart.getMonth() + 1);
+        }
+      }
+      
+      console.log(`📅 [RECURRING] Generated ${dates.length} dates for pattern ${pattern}`);
+      return dates;
+    };
+    
+    // Mark each unavailability date range on the calendar
+    unavailabilityList.forEach((item) => {
+      console.log('📍 Processing item:', item);
+      
+      // Get dates to display
+      let datesInRange: string[] = [];
+      
+      if (item.isRecurring && item.recurrencePattern) {
+        console.log('📍 Item is recurring:', item.recurrencePattern);
+        // Parse the dateRange to get start and end dates
+        const dateRangeParts = item.dateRange.split(' - ');
+        let startDate = dateRangeParts[0];
+        let endDate = dateRangeParts[dateRangeParts.length - 1];
+        
+        // Convert date format from "2025 Oct 18" to "2025-10-18"
+        const parseDate = (dateStr: string): string => {
+          const parts = dateStr.trim().split(' ');
+          const year = parts[0];
+          const monthStr = parts[1];
+          const day = parts[2];
+          
+          const months: { [key: string]: string } = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+          };
+          
+          const month = months[monthStr] || '01';
+          return `${year}-${month}-${day.padStart(2, '0')}`;
+        };
+        
+        startDate = parseDate(startDate);
+        endDate = parseDate(endDate);
+        
+        datesInRange = getRecurringDates(startDate, endDate, item.recurrencePattern, item.dayOfWeek);
+      } else {
+        // Non-recurring - just get the single range
+        const dateRangeParts = item.dateRange.split(' - ');
+        let startDate = dateRangeParts[0];
+        let endDate = dateRangeParts[dateRangeParts.length - 1];
+        
+        const parseDate = (dateStr: string): string => {
+          const parts = dateStr.trim().split(' ');
+          const year = parts[0];
+          const monthStr = parts[1];
+          const day = parts[2];
+          
+          const months: { [key: string]: string } = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+          };
+          
+          const month = months[monthStr] || '01';
+          return `${year}-${month}-${day.padStart(2, '0')}`;
+        };
+        
+        startDate = parseDate(startDate);
+        endDate = parseDate(endDate);
+        
+        datesInRange = getDatesBetween(startDate, endDate);
+      }
+      
+      // Determine color based on recurrence
+      console.log('🎨 [COLOR] Item:', item);
+      console.log('🎨 [COLOR] isRecurring:', item.isRecurring, 'Type:', typeof item.isRecurring);
+      console.log('🎨 [COLOR] recurrencePattern:', item.recurrencePattern, 'Type:', typeof item.recurrencePattern);
+      
+      let displayColor = '#FFC107'; // Default yellow for normal schedules
+      let displayDotColor = '#FFC107';
+      
+      console.log('🎨 [COLOR] Checking: item.isRecurring =', item.isRecurring);
+      console.log('🎨 [COLOR] Checking: item.recurrencePattern =', item.recurrencePattern);
+      
+      if (item.isRecurring && item.recurrencePattern === 'weekly') {
+        console.log('🎨 [COLOR] Setting to WEEKLY (Amber/Orange)');
+        displayColor = '#FF9800'; // Amber/Orange for weekly recurring
+        displayDotColor = '#FF9800';
+      } else if (item.isRecurring && item.recurrencePattern === 'monthly') {
+        console.log('🎨 [COLOR] Setting to MONTHLY (Deep Orange)');
+        displayColor = '#FF6F00'; // Deep orange for monthly recurring
+        displayDotColor = '#FF6F00';
+      } else {
+        console.log('🎨 [COLOR] Setting to DEFAULT (Yellow)');
+      }
+      
+      // Mark each date with filled circle styling and connecting line
+      datesInRange.forEach((date, index) => {
+        // For recurring, don't use startingDay/endingDay styling
+        const isRecurring = item.isRecurring;
+        
+        marked[date] = {
+          marked: true,
+          startingDay: !isRecurring && index === 0,
+          endingDay: !isRecurring && index === datesInRange.length - 1,
+          color: displayColor,
+          textColor: '#ffffff',
+          selected: true,
+          selectedColor: displayColor,
+          selectedTextColor: '#ffffff',
+          dotColor: displayDotColor,
+          recurring: item.isRecurring,
+          recurrencePattern: item.recurrencePattern,
+        };
+      });
+    });
+    
+    console.log('✨ Final marked dates:', marked);
+    setSelectedDates(marked);
   };
 
   // Function to format date range
@@ -125,35 +455,341 @@ export default function AvailabilityScreen() {
 
   // Function to add new unavailability
   const handleAddUnavailability = () => {
-    if (!startDate) {
+    if (!startDate || !userToken) {
       Alert.alert('Error', 'Please select a start date');
       return;
     }
 
-    const finalEndDate = endDate || startDate;
-    const newUnavailability: UnavailabilityItem = {
-      id: Date.now().toString(),
-      dateRange: formatDateRange(startDate, finalEndDate),
-      duration: calculateDuration(startDate, finalEndDate),
-    };
+    // Validate that start date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedStartDate = new Date(startDate);
+    selectedStartDate.setHours(0, 0, 0, 0);
 
-    setCurrentUnavailability([...currentUnavailability, newUnavailability]);
-    setShowAddModal(false);
+    if (selectedStartDate < today) {
+      Alert.alert('Error', 'You cannot create schedules for past dates. Please select a date from today onwards.');
+      return;
+    }
+
+    // Validate that end date is not before start date
+    if (endDate) {
+      const selectedEndDate = new Date(endDate);
+      selectedEndDate.setHours(0, 0, 0, 0);
+      if (selectedEndDate < selectedStartDate) {
+        Alert.alert('Error', 'End date cannot be before start date');
+        return;
+      }
+    }
+
+    // Show confirmation dialog
+    setShowAddConfirm(true);
+  };
+
+  // Confirm add unavailability
+  const confirmAddUnavailability = async () => {
+    try {
+      // Validate recurring settings
+      if (isRecurring && !recurrencePattern) {
+        Alert.alert('Error', 'Please select a recurrence pattern (Weekly or Monthly)');
+        setShowAddConfirm(false);
+        return;
+      }
+
+      setUpdating(true);
+      console.log('📤 Confirmed - Saving unavailability');
+      
+      // Format dates as yyyy-MM-dd for the API
+      const formatDateForAPI = (dateString: string): string => {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const fromDate = formatDateForAPI(startDate);
+      const toDate = formatDateForAPI(endDate || startDate);
+
+      const params = new URLSearchParams({
+        userId: userToken!.id,
+        providerId: userToken!.id,
+        providerType: 'guide',
+        fromDate: fromDate,
+        toDate: toDate,
+        reason: reason || '',
+        notes: notes || '',
+        isRecurring: isRecurring ? 'true' : 'false',
+        recurrencePattern: recurrencePattern || '',
+      });
+
+      console.log('📤 Saving unavailability with params:', params.toString());
+      
+      const response = await fetch(`http://localhost:8080/api/availability/create-unavailability?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.text();
+        console.log('✅ Response:', data);
+        
+        // Close modals and reset form FIRST
+        setShowAddModal(false);
+        setShowAddConfirm(false);
+        resetAddModal();
+        
+        // THEN fetch the updated unavailability list
+        if (userToken) {
+          await fetchUnavailability(userToken.id);
+        }
+        
+        // Show success alert AFTER data is loaded
+        Alert.alert('Success', 'Unavailability added successfully');
+      } else {
+        try {
+          const errorData = await response.json();
+          Alert.alert('Error', errorData.message || `Failed to add unavailability (${response.status})`);
+        } catch {
+          const errorText = await response.text();
+          Alert.alert('Error', errorText || `Failed to add unavailability (${response.status})`);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding unavailability:', error);
+      Alert.alert('Error', 'Failed to add unavailability');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Cancel add confirmation
+  const cancelAddConfirm = () => {
+    console.log('Cancel add confirmation');
+    setShowAddConfirm(false);
+  };
+
+
+
+  // Function to delete unavailability
+  const handleRemoveUnavailability = (id: string) => {
+    console.warn('🗑️ [DELETE] Show delete confirmation for ID:', id);
+    setItemToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      console.warn('🗑️ [DELETE] Confirmed delete for:', itemToDelete);
+      setUpdating(true);
+      
+      const token = await AsyncStorage.getItem('token');
+      console.warn('🗑️ [DELETE] Token:', token ? '✓' : '✗');
+      
+      if (!token) {
+        Alert.alert('Error', 'No authentication token');
+        setUpdating(false);
+        return;
+      }
+      
+      if (!userToken?.id) {
+        Alert.alert('Error', 'No user ID');
+        setUpdating(false);
+        return;
+      }
+      
+      const userId = userToken.id;
+      const url = `http://localhost:8080/api/availability/delete-user-unavailability?userId=${userId}&unavailabilityId=${itemToDelete}`;
+      
+      console.warn('🗑️ [DELETE] Calling URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      console.warn('🗑️ [DELETE] Response status:', response.status);
+      
+      if (response.ok) {
+        console.warn('✅ [DELETE] Success!');
+        Alert.alert('Success', 'Unavailability removed successfully');
+        setShowDeleteConfirm(false);
+        setItemToDelete(null);
+        fetchUnavailability(userId);
+      } else {
+        console.warn('❌ [DELETE] Error status:', response.status);
+        const errorText = await response.text();
+        console.warn('❌ [DELETE] Error:', errorText);
+        Alert.alert('Error', `Failed (${response.status}): ${errorText}`);
+      }
+    } catch (error) {
+      console.warn('❌ [DELETE] Exception:', error);
+      Alert.alert('Error', String(error));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Cancel delete
+  const cancelDelete = () => {
+    console.warn('🗑️ [DELETE] Delete cancelled');
+    setShowDeleteConfirm(false);
+    setItemToDelete(null);
+  };
+
+  // Helper function to reset modal
+  const resetAddModal = () => {
     setStartDate('');
     setEndDate('');
+    setReason('');
+    setNotes('');
+    setIsRecurring(false);
+    setRecurrencePattern('');
     setIsSelectingStartDate(true);
   };
 
-  // Function to remove unavailability
-  const handleRemoveUnavailability = (id: string) => {
-    setCurrentUnavailability(currentUnavailability.filter(item => item.id !== id));
-  };
+
 
   // Create marked dates for the modal calendar
   const getModalMarkedDates = () => {
-    const marked: { [key: string]: MarkingProps } = {};
+    const marked: { [key: string]: any } = {};
 
-    if (startDate) {
+    // Helper function to parse date format
+    const parseDate = (dateStr: string): string => {
+      const parts = dateStr.trim().split(' ');
+      const year = parts[0];
+      const monthStr = parts[1];
+      const day = parts[2];
+      
+      const months: { [key: string]: string } = {
+        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+      };
+      
+      const month = months[monthStr] || '01';
+      return `${year}-${month}-${day.padStart(2, '0')}`;
+    };
+
+    // Helper function to get all dates between two dates
+    const getDatesBetween = (startStr: string, endStr: string): string[] => {
+      const dates: string[] = [];
+      const start = new Date(startStr);
+      const end = new Date(endStr);
+      
+      const current = new Date(start);
+      while (current <= end) {
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, '0');
+        const day = String(current.getDate()).padStart(2, '0');
+        dates.push(`${year}-${month}-${day}`);
+        current.setDate(current.getDate() + 1);
+      }
+      return dates;
+    };
+
+    // Helper function to generate recurring dates (same as in updateCalendarMarking)
+    const getRecurringDates = (startStr: string, endStr: string, pattern: string, dayOfWeek?: number): string[] => {
+      const dates: string[] = [];
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
+      
+      // Get the duration of one occurrence
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+      
+      // Generate recurring instances for the next 12 months
+      const today = new Date();
+      const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+      
+      let currentStart = new Date(startDate);
+      
+      if (pattern === 'weekly' && dayOfWeek !== undefined) {
+        // Weekly recurrence
+        while (currentStart.getDay() !== dayOfWeek && currentStart < oneYearLater) {
+          currentStart.setDate(currentStart.getDate() + 1);
+        }
+        
+        // Generate weekly occurrences
+        while (currentStart < oneYearLater) {
+          const currentEnd = new Date(currentStart.getTime() + durationMs);
+          const datesInRange = getDatesBetween(
+            currentStart.toISOString().split('T')[0],
+            currentEnd.toISOString().split('T')[0]
+          );
+          dates.push(...datesInRange);
+          currentStart.setDate(currentStart.getDate() + 7); // Next week
+        }
+      } else if (pattern === 'monthly') {
+        // Monthly recurrence - same day each month
+        const dayOfMonth = startDate.getDate();
+        
+        while (currentStart < oneYearLater) {
+          const currentEnd = new Date(currentStart.getTime() + durationMs);
+          const datesInRange = getDatesBetween(
+            currentStart.toISOString().split('T')[0],
+            currentEnd.toISOString().split('T')[0]
+          );
+          dates.push(...datesInRange);
+          
+          // Move to same day next month
+          currentStart.setMonth(currentStart.getMonth() + 1);
+        }
+      }
+      
+      return dates;
+    };
+
+    // Mark all existing unavailable dates with recurring patterns
+    currentUnavailability.forEach((item) => {
+      const dateRangeParts = item.dateRange.split(' - ');
+      let itemStartDate = dateRangeParts[0];
+      let itemEndDate = dateRangeParts[dateRangeParts.length - 1];
+      
+      itemStartDate = parseDate(itemStartDate);
+      itemEndDate = parseDate(itemEndDate);
+      
+      let datesInRange: string[] = [];
+      let displayColor = '#FFC107'; // Default yellow for normal schedules
+      
+      // Determine color and dates based on recurrence
+      if (item.isRecurring && item.recurrencePattern) {
+        if (item.recurrencePattern === 'weekly') {
+          displayColor = '#FF9800'; // Amber/Orange for weekly recurring
+          datesInRange = getRecurringDates(itemStartDate, itemEndDate, item.recurrencePattern, item.dayOfWeek);
+        } else if (item.recurrencePattern === 'monthly') {
+          displayColor = '#FF6F00'; // Deep orange for monthly recurring
+          datesInRange = getRecurringDates(itemStartDate, itemEndDate, item.recurrencePattern, item.dayOfWeek);
+        }
+      } else {
+        // Normal schedule - yellow color
+        displayColor = '#FFC107';
+        datesInRange = getDatesBetween(itemStartDate, itemEndDate);
+      }
+      
+      datesInRange.forEach((date) => {
+        // Mark all existing unavailable dates with appropriate color
+        marked[date] = {
+          marked: true,
+          color: displayColor,
+          textColor: '#ffffff',
+          selected: true,
+          selectedColor: displayColor,
+          selectedTextColor: '#ffffff',
+          disableTouchEvent: true,
+        };
+      });
+    });
+
+    // Mark selected start date (has priority over existing dates)
+    if (startDate && showAddModal) {
       marked[startDate] = {
         selected: true,
         selectedColor: '#4CAF50',
@@ -161,7 +797,8 @@ export default function AvailabilityScreen() {
       };
     }
 
-    if (endDate) {
+    // Mark selected end date (has priority over existing dates)
+    if (endDate && showAddModal) {
       marked[endDate] = {
         selected: true,
         selectedColor: '#ff9800',
@@ -209,7 +846,8 @@ export default function AvailabilityScreen() {
         {/* Calendar Section */}
         <View style={styles.calendarSection}>
           <Calendar
-            current={'2024-07-01'}
+            current={new Date().toISOString().split('T')[0]}
+            minDate={new Date().toISOString().split('T')[0]}
             onDayPress={handleDateSelection}
             markedDates={selectedDates}
             theme={{
@@ -219,6 +857,8 @@ export default function AvailabilityScreen() {
               arrowColor: '#ff9800',
               monthTextColor: '#2d4150',
               indicatorColor: 'blue',
+              disabledArrowColor: '#d9e1e8',
+              textDisabledColor: '#d9e1e8',
             }}
           />
         </View>
@@ -229,29 +869,63 @@ export default function AvailabilityScreen() {
             <Text style={styles.title}>Current Unavailability</Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => setShowAddModal(true)}
+              onPress={() => {
+                resetAddModal();
+                setShowAddModal(true);
+              }}
+              disabled={loading}
             >
               <Text style={styles.addButtonText}>+ Add</Text>
             </TouchableOpacity>
           </View>
 
-          {currentUnavailability.map((unavailability: UnavailabilityItem, index: number) => (
-            <View key={unavailability.id} style={styles.unavailabilityItem}>
-              <Text style={styles.unavailabilityDate}>{unavailability.dateRange}</Text>
-              <Text style={styles.unavailabilityDuration}>{unavailability.duration}</Text>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.updateButton}>
-                  <Text style={styles.updateButtonText}>Update</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => handleRemoveUnavailability(unavailability.id)}
-                >
-                  <Text style={styles.removeButtonText}>Remove</Text>
-                </TouchableOpacity>
-              </View>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#ff9800" />
+              <Text style={styles.loadingText}>Loading unavailability...</Text>
             </View>
-          ))}
+          ) : currentUnavailability.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="calendar-clear-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No unavailability scheduled</Text>
+              <Text style={styles.emptySubtext}>Add dates when you're not available</Text>
+            </View>
+          ) : (
+            currentUnavailability.map((unavailability: UnavailabilityItem, index: number) => (
+              <Animated.View 
+                key={unavailability.id} 
+                entering={FadeInDown.delay(index * 100)}
+                style={styles.unavailabilityItem}
+              >
+                <View style={styles.unavailabilityHeader}>
+                  <View style={styles.dateIconContainer}>
+                    <Ionicons name="calendar-outline" size={20} color="#ff9800" />
+                  </View>
+                  <View style={styles.dateInfoContainer}>
+                    <Text style={styles.unavailabilityDate}>{unavailability.dateRange}</Text>
+                    <View style={styles.durationContainer}>
+                      <Ionicons name="time-outline" size={12} color="#999" />
+                      <Text style={styles.unavailabilityDuration}>{unavailability.duration}</Text>
+                    </View>
+                    {unavailability.reason && (
+                      <Text style={styles.reasonText}>Reason: {unavailability.reason}</Text>
+                    )}
+                  </View>
+                </View>
+                
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => handleRemoveUnavailability(unavailability.id)}
+                    disabled={updating}
+                  >
+                    <Ionicons name="trash-outline" size={14} color="#e74c3c" style={{ marginRight: 4 }} />
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -260,19 +934,20 @@ export default function AvailabilityScreen() {
         visible={showAddModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={() => {
+          setShowAddModal(false);
+          resetAddModal();
+        }}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <ScrollView style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Unavailability</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
                   setShowAddModal(false);
-                  setStartDate('');
-                  setEndDate('');
-                  setIsSelectingStartDate(true);
+                  resetAddModal();
                 }}
               >
                 <Text style={styles.closeButtonText}>×</Text>
@@ -281,22 +956,29 @@ export default function AvailabilityScreen() {
 
             <View style={styles.dateSelectionInfo}>
               <Text style={styles.instructionText}>
-                {isSelectingStartDate ? 'Select start date' : 'Select end date (optional)'}
+                {isSelectingStartDate ? 'Select start date' : 'Select end date'}
               </Text>
-              {startDate && (
-                <Text style={styles.selectedDateText}>
-                  Start: {new Date(startDate).toLocaleDateString()}
-                </Text>
-              )}
-              {endDate && (
-                <Text style={styles.selectedDateText}>
-                  End: {new Date(endDate).toLocaleDateString()}
-                </Text>
-              )}
+              <View style={styles.dateTableContainer}>
+                <View style={styles.dateTableRow}>
+                  <View style={styles.dateTableCell}>
+                    <Text style={styles.dateTableLabel}>Start Date</Text>
+                    <Text style={styles.dateTableValue}>
+                      {startDate ? new Date(startDate).toLocaleDateString() : '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.dateTableCell}>
+                    <Text style={styles.dateTableLabel}>End Date</Text>
+                    <Text style={styles.dateTableValue}>
+                      {endDate ? new Date(endDate).toLocaleDateString() : '—'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
             <Calendar
-              current={startDate || '2024-07-01'}
+              current={startDate || new Date().toISOString().split('T')[0]}
+              minDate={new Date().toISOString().split('T')[0]}
               onDayPress={handleModalDateSelection}
               markedDates={getModalMarkedDates()}
               theme={{
@@ -305,32 +987,280 @@ export default function AvailabilityScreen() {
                 todayTextColor: '#ff9800',
                 arrowColor: '#ff9800',
                 monthTextColor: '#2d4150',
+                disabledArrowColor: '#d9e1e8',
+                textDisabledColor: '#d9e1e8',
               }}
             />
+
+            {/* Reason Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Reason (Optional)</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g., Personal Leave, Medical"
+                value={reason}
+                onChangeText={setReason}
+                placeholderTextColor="#999"
+              />
+            </View>
+
+            {/* Notes Field */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Additional Notes (Optional)</Text>
+              <TextInput
+                style={[styles.textInput, styles.textAreaInput]}
+                placeholder="Add any additional details..."
+                value={notes}
+                onChangeText={setNotes}
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            {/* Recurring Section */}
+            <View style={styles.recurringContainer}>
+              <TouchableOpacity
+                style={styles.recurringToggle}
+                onPress={() => setIsRecurring(!isRecurring)}
+              >
+                <View style={[styles.checkbox, isRecurring && styles.checkboxChecked]}>
+                  {isRecurring && <Ionicons name="checkmark" size={16} color="#fff" />}
+                </View>
+                <Text style={styles.recurringLabel}>Is this recurring?</Text>
+              </TouchableOpacity>
+
+              {isRecurring && (
+                <View style={styles.recurringOptions}>
+                  <TouchableOpacity
+                    style={[styles.recurringOption, recurrencePattern === 'weekly' && styles.recurringOptionActive]}
+                    onPress={() => setRecurrencePattern('weekly')}
+                  >
+                    <Text style={[styles.recurringOptionText, recurrencePattern === 'weekly' && styles.recurringOptionTextActive]}>Weekly</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.recurringOption, recurrencePattern === 'monthly' && styles.recurringOptionActive]}
+                    onPress={() => setRecurrencePattern('monthly')}
+                  >
+                    <Text style={[styles.recurringOptionText, recurrencePattern === 'monthly' && styles.recurringOptionTextActive]}>Monthly</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
                   setShowAddModal(false);
-                  setStartDate('');
-                  setEndDate('');
-                  setIsSelectingStartDate(true);
+                  resetAddModal();
                 }}
+                disabled={updating}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.saveButton, !startDate && styles.saveButtonDisabled]}
                 onPress={handleAddUnavailability}
-                disabled={!startDate}
+                disabled={!startDate || updating}
               >
-                <Text style={styles.saveButtonText}>Save</Text>
+                {updating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Add Confirmation Modal */}
+      <Modal
+        visible={showAddConfirm}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelAddConfirm}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.addConfirmContainer}>
+            <Ionicons name="warning-outline" size={48} color="#ff9800" style={{ marginBottom: 16 }} />
+            <Text style={styles.addConfirmTitle}>Mark as Unavailable?</Text>
+            <Text style={styles.addConfirmMessage}>
+              During this period, you <Text style={styles.addConfirmHighlight}>won't receive any booking requests</Text> from customers.
+            </Text>
+            
+            {isRecurring && (
+              <View style={styles.recurringInfoBox}>
+                <Ionicons name="repeat" size={18} color="#FF9800" style={{ marginRight: 8 }} />
+                <Text style={styles.recurringInfoText}>
+                  Recurring: <Text style={styles.recurringInfoBold}>{recurrencePattern?.toUpperCase()}</Text>
+                </Text>
+              </View>
+            )}
+            
+            <Text style={styles.addConfirmSubMessage}>
+              Please make sure this is the correct period before confirming.
+            </Text>
+
+            <View style={styles.addConfirmButtonContainer}>
+              <TouchableOpacity
+                style={styles.addConfirmCancelButton}
+                onPress={cancelAddConfirm}
+                disabled={updating}
+              >
+                <Text style={styles.addConfirmCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addConfirmConfirmButton, updating && styles.addConfirmConfirmButtonDisabled]}
+                onPress={confirmAddUnavailability}
+                disabled={updating}
+              >
+                {updating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.addConfirmConfirmButtonText}>Confirm</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Date Details Modal */}
+      <Modal
+        visible={showDateDetailsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDateDetailsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.dateDetailsContainer}>
+            <View style={styles.dateDetailsHeader}>
+              <TouchableOpacity
+                onPress={() => setShowDateDetailsModal(false)}
+                style={styles.dateDetailsCloseButton}
+              >
+                <Ionicons name="close" size={28} color="#2d4150" />
+              </TouchableOpacity>
+              <Text style={styles.dateDetailsTitle}>Schedule Details</Text>
+              <View style={{ width: 28 }} />
+            </View>
+
+            {selectedDateDetails && (
+              <ScrollView style={styles.dateDetailsContent}>
+                {/* Date Range */}
+                <View style={styles.dateDetailsSection}>
+                  <View style={styles.dateDetailsSectionHeader}>
+                    <Ionicons name="calendar-outline" size={20} color="#FF9800" />
+                    <Text style={styles.dateDetailsSectionTitle}>Date Range</Text>
+                  </View>
+                  <Text style={styles.dateDetailsValue}>{selectedDateDetails.dateRange}</Text>
+                </View>
+
+                {/* Duration */}
+                <View style={styles.dateDetailsSection}>
+                  <View style={styles.dateDetailsSectionHeader}>
+                    <Ionicons name="time-outline" size={20} color="#FF9800" />
+                    <Text style={styles.dateDetailsSectionTitle}>Duration</Text>
+                  </View>
+                  <Text style={styles.dateDetailsValue}>{selectedDateDetails.duration}</Text>
+                </View>
+
+                {/* Recurrence Info */}
+                {selectedDateDetails.isRecurring && selectedDateDetails.recurrencePattern && (
+                  <View style={styles.dateDetailsSection}>
+                    <View style={styles.dateDetailsSectionHeader}>
+                      <Ionicons name="repeat-outline" size={20} color="#FF9800" />
+                      <Text style={styles.dateDetailsSectionTitle}>Recurrence</Text>
+                    </View>
+                    <Text style={styles.dateDetailsValue}>
+                      {selectedDateDetails.recurrencePattern.charAt(0).toUpperCase() + selectedDateDetails.recurrencePattern.slice(1)} Recurring
+                    </Text>
+                  </View>
+                )}
+
+                {/* Reason */}
+                {selectedDateDetails.reason && (
+                  <View style={styles.dateDetailsSection}>
+                    <View style={styles.dateDetailsSectionHeader}>
+                      <Ionicons name="document-text-outline" size={20} color="#FF9800" />
+                      <Text style={styles.dateDetailsSectionTitle}>Reason</Text>
+                    </View>
+                    <Text style={styles.dateDetailsValue}>{selectedDateDetails.reason}</Text>
+                  </View>
+                )}
+
+                {/* Notes */}
+                {selectedDateDetails.notes && (
+                  <View style={styles.dateDetailsSection}>
+                    <View style={styles.dateDetailsSectionHeader}>
+                      <Ionicons name="chatbox-outline" size={20} color="#FF9800" />
+                      <Text style={styles.dateDetailsSectionTitle}>Notes</Text>
+                    </View>
+                    <Text style={styles.dateDetailsValue}>{selectedDateDetails.notes}</Text>
+                  </View>
+                )}
+
+                {/* No additional info message */}
+                {!selectedDateDetails.reason && !selectedDateDetails.notes && (
+                  <View style={styles.dateDetailsEmptySection}>
+                    <Ionicons name="information-circle-outline" size={32} color="#ccc" />
+                    <Text style={styles.dateDetailsEmptyText}>No additional details provided</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.dateDetailsCloseActionButton}
+              onPress={() => setShowDateDetailsModal(false)}
+            >
+              <Text style={styles.dateDetailsCloseActionButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteConfirmContainer}>
+            <Ionicons name="trash-outline" size={48} color="#e74c3c" style={{ marginBottom: 16 }} />
+            <Text style={styles.deleteConfirmTitle}>Delete Unavailability?</Text>
+            <Text style={styles.deleteConfirmMessage}>
+              Are you sure you want to remove this unavailability? This action cannot be undone.
+            </Text>
+
+            <View style={styles.deleteConfirmButtonContainer}>
+              <TouchableOpacity
+                style={styles.deleteConfirmCancelButton}
+                onPress={cancelDelete}
+                disabled={updating}
+              >
+                <Text style={styles.deleteConfirmCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteConfirmDeleteButton, updating && styles.deleteConfirmDeleteButtonDisabled]}
+                onPress={confirmDelete}
+                disabled={updating}
+              >
+                {updating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.deleteConfirmDeleteButtonText}>Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -338,7 +1268,7 @@ export default function AvailabilityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F5F7FA',
   },
   scrollContent: {
     padding: 16,
@@ -351,172 +1281,661 @@ const styles = StyleSheet.create({
   },
   calendarSection: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-    marginTop:50
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginTop: 50,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   unavailabilitySection: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ff9800',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2d4150',
+    letterSpacing: 0.3,
   },
   addButton: {
     backgroundColor: '#ff9800',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#ff9800',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   addButtonText: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   unavailabilityItem: {
     marginBottom: 16,
-    padding: 10,
+    padding: 16,
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 6,
+    borderColor: '#E8EEF5',
+    borderRadius: 12,
+    backgroundColor: '#FAFBFC',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  unavailabilityHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  dateIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#FFF3E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  dateInfoContainer: {
+    flex: 1,
   },
   unavailabilityDate: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
     color: '#2d4150',
+    letterSpacing: 0.2,
+  },
+  durationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
   },
   unavailabilityDuration: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#999',
+    fontWeight: '500',
+    marginLeft: 6,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 12,
+    gap: 10,
   },
   updateButton: {
-    backgroundColor: '#ffeb3b',
+    backgroundColor: '#FFF3E0',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    marginRight: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
   },
   updateButtonText: {
-    color: '#2d4150',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#E67E22',
+    fontSize: 13,
+    fontWeight: '600',
   },
   removeButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#FFEBEE',
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
   },
   removeButtonText: {
-    color: '#333',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#e74c3c',
+    fontSize: 13,
+    fontWeight: '600',
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    width: '90%',
-    maxHeight: '80%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#2d4150',
+    letterSpacing: 0.3,
   },
   closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#f0f0f0',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F5F7FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
-    fontSize: 18,
-    color: '#666',
+    fontSize: 28,
+    color: '#999',
     fontWeight: 'bold',
   },
   dateSelectionInfo: {
     marginBottom: 20,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    padding: 14,
+    backgroundColor: '#F5F7FA',
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff9800',
   },
   instructionText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#2d4150',
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   selectedDateText: {
     fontSize: 14,
     color: '#555',
-    marginBottom: 4,
+    marginBottom: 6,
+    fontWeight: '500',
   },
   modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 20,
+    marginTop: 24,
+    gap: 12,
   },
   cancelButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#F5F7FA',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-    marginRight: 12,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   cancelButtonText: {
-    color: '#333',
+    color: '#666',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#4CAF50',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   saveButtonDisabled: {
     backgroundColor: '#cccccc',
+    shadowOpacity: 0,
   },
   saveButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  // Loading and empty states
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#666',
+  },
+  emptySubtext: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#999',
+  },
+  reasonText: {
+    fontSize: 12,
+    color: '#E67E22',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  // Input fields
+  inputContainer: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2d4150',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#2d4150',
+    backgroundColor: '#F5F7FA',
+  },
+  textAreaInput: {
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  // Recurring options
+  recurringContainer: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8EEF5',
+  },
+  recurringToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    backgroundColor: '#fff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  recurringLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2d4150',
+  },
+  recurringOptions: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+  recurringOption: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F7FA',
+  },
+  recurringOptionActive: {
+    backgroundColor: '#FFE0B2',
+    borderColor: '#ff9800',
+  },
+  recurringOptionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666',
+  },
+  recurringOptionTextActive: {
+    color: '#E67E22',
+    fontWeight: '600',
+  },
+  // Date table styles
+  dateTableContainer: {
+    marginTop: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  dateTableRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  dateTableCell: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: '#E0E0E0',
+  },
+  dateTableLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateTableValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FF6B6B',
+  },
+  // Add confirmation modal styles
+  addConfirmContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 28,
+    marginHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  addConfirmTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2d4150',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  addConfirmMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  addConfirmHighlight: {
+    fontWeight: '700',
+    color: '#e74c3c',
+  },
+  addConfirmSubMessage: {
+    fontSize: 13,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontStyle: 'italic',
+  },
+  addConfirmButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    width: '100%',
+  },
+  addConfirmCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#F5F7FA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addConfirmCancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  addConfirmConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF9800',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF9800',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  addConfirmConfirmButtonDisabled: {
+    backgroundColor: '#cccccc',
+    shadowOpacity: 0,
+  },
+  addConfirmConfirmButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  recurringInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8E1',
+    borderRadius: 10,
+    padding: 12,
+    marginVertical: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+  },
+  recurringInfoText: {
+    fontSize: 13,
+    color: '#E65100',
+    fontWeight: '500',
+  },
+  recurringInfoBold: {
+    fontWeight: '700',
+    color: '#BF360C',
+  },
+  // Delete confirmation modal styles
+  deleteConfirmContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 28,
+    marginHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  deleteConfirmTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2d4150',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  deleteConfirmMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  deleteConfirmButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    width: '100%',
+  },
+  deleteConfirmCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#F5F7FA',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteConfirmCancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteConfirmDeleteButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#e74c3c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  deleteConfirmDeleteButtonDisabled: {
+    backgroundColor: '#cccccc',
+    shadowOpacity: 0,
+  },
+  deleteConfirmDeleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  // Date Details Modal Styles
+  dateDetailsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '80%',
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  dateDetailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dateDetailsCloseButton: {
+    padding: 8,
+  },
+  dateDetailsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2d4150',
+  },
+  dateDetailsContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  dateDetailsSection: {
+    marginBottom: 20,
+  },
+  dateDetailsSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dateDetailsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2d4150',
+    marginLeft: 8,
+  },
+  dateDetailsValue: {
+    fontSize: 16,
+    color: '#4a5f6f',
+    fontWeight: '500',
+    paddingLeft: 28,
+  },
+  dateDetailsEmptySection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  dateDetailsEmptyText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
+  },
+  dateDetailsCloseActionButton: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#FF9800',
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#FF9800',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dateDetailsCloseActionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

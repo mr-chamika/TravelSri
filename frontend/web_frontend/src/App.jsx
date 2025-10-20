@@ -1,5 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from 'react';
+import { Toaster } from 'react-hot-toast';
+import { HotelProvider } from './contexts/HotelContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import HotelAdminLayout from './layouts/HotelAdminLayout';
 //import './App.css';
 import Login from './pages/Login/Login';
 import SignUp from './pages/SignUp/SignUp'
@@ -29,7 +33,7 @@ import GuideQuotation from "./pages/Admin/GuideQuotation";
 import HotelQuotation from "./pages/Admin/HotelQuotation";
 
 // Hotel Admin components
-const HotelAdmin = lazy(() => import('./pages/HotelAdmin/HotelAdmin'));
+// const HotelAdmin = lazy(() => import('./pages/HotelAdmin/HotelAdmin')); // We'll use our new HotelAdminLayout instead
 const HotelDashboard = lazy(() => import('./pages/HotelAdmin/HotelDashboard/HotelDashboard'));
 const RoomManagement = lazy(() => import('./pages/HotelAdmin/RoomManagement/RoomManagement'));
 const BookingsManagement = lazy(() => import('./pages/HotelAdmin/BookingsManagement/BookingsManagement'));
@@ -69,6 +73,7 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
 
         {/* Redirect root to dashboard */}
         <Routes>
@@ -90,7 +95,10 @@ function App() {
           {/* Login route without AdminLayout */}
 
           <Route
-
+            path="/login"
+            element={<Login />}
+          />
+          <Route
             path="/"
             element={<Login />}
           />
@@ -324,11 +332,15 @@ function App() {
             } />
           </Route>
 
-          {/* Hotel Admin Routes */}
+          {/* Hotel Admin Routes - Protected */}
           <Route path="/hotel" element={
-            <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
-              <HotelAdmin />
-            </Suspense>
+            <ProtectedRoute requiredRole="hotel">
+              <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>
+                <HotelProvider>
+                  <HotelAdminLayout />
+                </HotelProvider>
+              </Suspense>
+            </ProtectedRoute>
           }>
             <Route index element={
               <Suspense fallback={<div className="flex justify-center items-center h-screen">Loading...</div>}>

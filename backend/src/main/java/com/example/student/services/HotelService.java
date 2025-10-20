@@ -1,12 +1,18 @@
 package com.example.student.services;
 
 import com.example.student.model.Hotel;
+import com.example.student.model.HotelRoom;
 import com.example.student.repo.HotelsRepo;
+import com.example.student.repo.HotelRoomRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -16,21 +22,45 @@ public class HotelService {
     private HotelsRepo hotelsRepo;
 
     @Autowired
+    private HotelRoomRepo hotelRoomRepo;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     /**
      * Register a new hotel with validation and password encryption
      */
     public Hotel registerNewHotel(Hotel hotel) {
+        // Debug logging
+        System.out.println("Registering new hotel: username=" + hotel.getUsername() + ", email=" + hotel.getEmail());
+        
+        // Validate required fields - prevent NullPointerException
+        if (hotel.getUsername() == null || hotel.getUsername().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: username is null or empty");
+            return null;
+        }
+        
+        if (hotel.getEmail() == null || hotel.getEmail().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: email is null or empty");
+            return null;
+        }
+        
+        if (hotel.getPassword() == null || hotel.getPassword().trim().isEmpty()) {
+            System.out.println("Hotel registration failed: password is null or empty");
+            return null;
+        }
+        
         // Check if email already exists
         Optional<Hotel> existingByEmail = hotelsRepo.findByEmail(hotel.getEmail());
         if (existingByEmail.isPresent()) {
+            System.out.println("Hotel registration failed: email already exists");
             return null; // Hotel with this email already exists
         }
 
         // Check if username already exists
         Optional<Hotel> existingByUsername = hotelsRepo.findByUsername(hotel.getUsername());
         if (existingByUsername.isPresent()) {
+            System.out.println("Hotel registration failed: username already exists");
             return null; // Hotel with this username already exists
         }
 
@@ -39,41 +69,127 @@ public class HotelService {
         String hashedPassword = passwordEncoder.encode(plainPassword);
         hotel.setPassword(hashedPassword);
 
-        // Set default values
-        hotel.setActive(false);
-        hotel.setVerified(false);
+        // Set default values - automatically verify and activate for better user experience
+        hotel.setActive(true);  // Set to true so users can log in immediately
+        hotel.setVerified(true); // Set to true so users can log in immediately
         hotel.setCreatedAt(java.time.Instant.now().toString());
         hotel.setUpdatedAt(java.time.Instant.now().toString());
 
-        // Initialize default values for numeric fields
-        if (hotel.getRatings() == 0) hotel.setRatings(0);
-        if (hotel.getReviewCount() == 0) hotel.setReviewCount(0);
-        if (hotel.getOriginalPrice() == 0) hotel.setOriginalPrice(0);
-        if (hotel.getCurrentPrice() == 0) hotel.setCurrentPrice(0);
-        if (hotel.getSinglePrice() == 0) hotel.setSinglePrice(0);
-        if (hotel.getDoublePrice() == 0) hotel.setDoublePrice(0);
-        if (hotel.getAvailableSingle() == 0) hotel.setAvailableSingle(0);
-        if (hotel.getAvailableDouble() == 0) hotel.setAvailableDouble(0);
-        if (hotel.getMaxSingle() == 0) hotel.setMaxSingle(0);
-        if (hotel.getMaxDouble() == 0) hotel.setMaxDouble(0);
+        // Log image upload information for debugging
+        if (hotel.getImages() != null && hotel.getImages().length > 0) {
+            System.out.println("Hotel images received: " + hotel.getImages().length + " images");
+            for (int i = 0; i < hotel.getImages().length; i++) {
+                String image = hotel.getImages()[i];
+                if (image != null) {
+                    System.out.println("Image " + (i+1) + " length: " + image.length() + " characters");
+                    System.out.println("Image " + (i+1) + " starts with: " + image.substring(0, Math.min(50, image.length())));
+                }
+            }
+        } else {
+            System.out.println("No hotel images received");
+        }
+        
+        if (hotel.getHotelImagesPaths() != null && hotel.getHotelImagesPaths().length > 0) {
+            System.out.println("Hotel image paths received: " + hotel.getHotelImagesPaths().length + " paths");
+            for (String path : hotel.getHotelImagesPaths()) {
+                System.out.println("Image path: " + path);
+            }
+        }
 
-        return hotelsRepo.save(hotel);
+        // Validate and process hotel images if provided
+        if (hotel.getImages() != null && hotel.getImages().length > 0) {
+            for (int i = 0; i < hotel.getImages().length; i++) {
+                String image = hotel.getImages()[i];
+                if (image != null && !image.trim().isEmpty()) {
+                    // Basic validation for base64 image format
+                    if (!image.startsWith("data:image/")) {
+                        System.out.println("Warning: Image " + (i+1) + " does not appear to be a valid base64 image");
+                    }
+                } else {
+                    System.out.println("Warning: Image " + (i+1) + " is null or empty");
+                }
+            }
+        }
+
+    // Initialize default values for numeric fields (handle possible nulls)
+    if (hotel.getRatings() == null) hotel.setRatings(0);
+    if (hotel.getReviewCount() == null) hotel.setReviewCount(0);
+    if (hotel.getOriginalPrice() == null) hotel.setOriginalPrice(0);
+    if (hotel.getCurrentPrice() == null) hotel.setCurrentPrice(0);
+    if (hotel.getSinglePrice() == null) hotel.setSinglePrice(0);
+    if (hotel.getDoublePrice() == null) hotel.setDoublePrice(0);
+    if (hotel.getAvailableSingle() == null) hotel.setAvailableSingle(0);
+    if (hotel.getAvailableDouble() == null) hotel.setAvailableDouble(0);
+    if (hotel.getMaxSingle() == null) hotel.setMaxSingle(0);
+    if (hotel.getMaxDouble() == null) hotel.setMaxDouble(0);
+
+        // Save the hotel first to get the hotel ID
+        Hotel savedHotel = hotelsRepo.save(hotel);
+        
+        // Create individual hotel room entries based on room type details
+        if (savedHotel != null && hotel.getRoomTypeDetails() != null && hotel.getRoomTypeDetails().length > 0) {
+            System.out.println("Creating individual room entries for " + hotel.getRoomTypeDetails().length + " room types");
+            createHotelRoomsFromTypeDetails(savedHotel.get_id(), hotel.getRoomTypeDetails());
+            
+            // Update hotel availability counts based on created rooms
+            syncHotelAvailabilityFromRoomsCollection(savedHotel.get_id());
+            
+            // Get the updated hotel with new availability counts
+            Optional<Hotel> updatedHotelOpt = hotelsRepo.findById(savedHotel.get_id());
+            if (updatedHotelOpt.isPresent()) {
+                savedHotel = updatedHotelOpt.get();
+                System.out.println("Hotel availability updated - maxSingle: " + savedHotel.getMaxSingle() + 
+                                 ", maxDouble: " + savedHotel.getMaxDouble() + 
+                                 ", availableSingle: " + savedHotel.getAvailableSingle() + 
+                                 ", availableDouble: " + savedHotel.getAvailableDouble());
+            }
+        }
+        
+        return savedHotel;
     }
 
     /**
      * Authenticate hotel login
      */
     public Hotel authenticateHotel(String username, String password) {
+        // Debug logging
+        System.out.println("Authenticating hotel: " + username);
+        
+        // Find the hotel by username
         Optional<Hotel> hotelOpt = hotelsRepo.findByUsername(username);
         
-        if (hotelOpt.isPresent()) {
-            Hotel hotel = hotelOpt.get();
-            if (passwordEncoder.matches(password, hotel.getPassword())) {
-                return hotel;
-            }
+        if (!hotelOpt.isPresent()) {
+            System.out.println("Authentication failed: Hotel with username " + username + " not found");
+            return null;
         }
+
+//        System.out.println("hotel>>>>", hotelOpt.stream().count());
         
-        return null; // Authentication failed
+        Hotel hotel = hotelOpt.get();
+
+        System.out.println("Hotel authenticated: >>>>>" + hotel);
+        
+        // Check if the password matches
+        System.out.println("passwordx: " + password);
+        boolean passwordMatches = passwordEncoder.matches(password, hotel.getPassword());
+        System.out.println("Password matches: " + passwordMatches);
+        if (passwordMatches) {
+            System.out.println("Authentication successful for: " + username);
+            System.out.println("function called<<<<");
+            // Check verification and active status for debugging
+            if (!hotel.isVerified()) {
+                System.out.println("Note: Hotel " + username + " is not yet verified");
+            }
+            
+            if (!hotel.isActive()) {
+                System.out.println("Note: Hotel " + username + " is not active");
+            }
+            
+            return hotel;
+        } else {
+            System.out.println("Authentication failed: Invalid password for " + username);
+            return null;
+        }
     }
 
     /**
@@ -308,5 +424,195 @@ public class HotelService {
      */
     public boolean isUsernameRegistered(String username) {
         return hotelsRepo.findByUsername(username).isPresent();
+    }
+
+    /**
+     * Update hotel availability based on room data
+     * Maps: maxSingle = total standard rooms, maxDouble = total deluxe rooms
+     *       availableSingle = available standard rooms, availableDouble = available deluxe rooms
+     */
+    public Hotel updateHotelAvailabilityFromRooms(String hotelId, 
+                                                  int totalStandardRooms, 
+                                                  int totalDeluxeRooms,
+                                                  int availableStandardRooms, 
+                                                  int availableDeluxeRooms) {
+        Optional<Hotel> hotelOpt = hotelsRepo.findById(hotelId);
+        
+        if (hotelOpt.isPresent()) {
+            Hotel hotel = hotelOpt.get();
+            
+            // Update availability based on room data
+            hotel.setMaxSingle(totalStandardRooms);
+            hotel.setMaxDouble(totalDeluxeRooms);
+            hotel.setAvailableSingle(availableStandardRooms);
+            hotel.setAvailableDouble(availableDeluxeRooms);
+            
+            // Update timestamp
+            hotel.setUpdatedAt(java.time.Instant.now().toString());
+            
+            // Save and return updated hotel
+            return hotelsRepo.save(hotel);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Automatically calculate and update hotel availability from hotelRooms collection
+     * This method counts rooms by type and availability status from the hotelRooms collection
+     */
+    public Hotel syncHotelAvailabilityFromRoomsCollection(String hotelId) {
+        try {
+            // Get all rooms for this hotel
+            List<HotelRoom> allRooms = hotelRoomRepo.findByHotelId(hotelId);
+            
+            // Count rooms by type (assuming "standard" and "deluxe" are the room types)
+            long totalStandardRooms = allRooms.stream()
+                    .filter(room -> room.getType() != null && 
+                           (room.getType().toLowerCase().contains("standard") || 
+                            room.getType().toLowerCase().contains("single")))
+                    .count();
+            
+            long totalDeluxeRooms = allRooms.stream()
+                    .filter(room -> room.getType() != null && 
+                           (room.getType().toLowerCase().contains("deluxe") || 
+                            room.getType().toLowerCase().contains("double")))
+                    .count();
+            
+            // Count available rooms by type (status = "Available")
+            long availableStandardRooms = allRooms.stream()
+                    .filter(room -> room.getType() != null && 
+                           (room.getType().toLowerCase().contains("standard") || 
+                            room.getType().toLowerCase().contains("single")) &&
+                           "Available".equalsIgnoreCase(room.getStatus()))
+                    .count();
+            
+            long availableDeluxeRooms = allRooms.stream()
+                    .filter(room -> room.getType() != null && 
+                           (room.getType().toLowerCase().contains("deluxe") || 
+                            room.getType().toLowerCase().contains("double")) &&
+                           "Available".equalsIgnoreCase(room.getStatus()))
+                    .count();
+            
+            // Update hotel availability
+            return updateHotelAvailabilityFromRooms(hotelId, 
+                    (int) totalStandardRooms, 
+                    (int) totalDeluxeRooms, 
+                    (int) availableStandardRooms, 
+                    (int) availableDeluxeRooms);
+                    
+        } catch (Exception e) {
+            System.err.println("Error syncing hotel availability from rooms collection: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Sync availability for all hotels from their respective room collections
+     */
+    public void syncAllHotelsAvailabilityFromRooms() {
+        try {
+            List<Hotel> allHotels = hotelsRepo.findAll();
+            
+            for (Hotel hotel : allHotels) {
+                if (hotel.get_id() != null) {
+                    syncHotelAvailabilityFromRoomsCollection(hotel.get_id());
+                }
+            }
+            
+            System.out.println("Successfully synced availability for " + allHotels.size() + " hotels");
+            
+        } catch (Exception e) {
+            System.err.println("Error syncing all hotels availability: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Create individual hotel room entries from room type details
+     */
+    private void createHotelRoomsFromTypeDetails(String hotelId, String[] roomTypeDetails) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            
+            for (String roomTypeJson : roomTypeDetails) {
+                if (roomTypeJson != null && !roomTypeJson.trim().isEmpty()) {
+                    try {
+                        // Parse the JSON string to extract room details
+                        Map<String, Object> roomData = mapper.readValue(roomTypeJson, new TypeReference<Map<String, Object>>() {});
+                        
+                        String roomType = (String) roomData.get("type");
+                        Integer count = (Integer) roomData.get("count");
+                        Object priceObj = roomData.get("price");
+                        Integer occupancy = (Integer) roomData.get("occupancy");
+                        String bedConfiguration = (String) roomData.get("bedConfiguration");
+                        
+                        // Handle price conversion (might be String or Number)
+                        double price = 0.0;
+                        if (priceObj instanceof Number) {
+                            price = ((Number) priceObj).doubleValue();
+                        } else if (priceObj instanceof String) {
+                            try {
+                                price = Double.parseDouble((String) priceObj);
+                            } catch (NumberFormatException e) {
+                                System.out.println("Warning: Could not parse price: " + priceObj);
+                            }
+                        }
+                        
+                        // Get amenities (might be array or list)
+                        List<String> amenities = new ArrayList<>();
+                        Object amenitiesObj = roomData.get("amenities");
+                        if (amenitiesObj instanceof List) {
+                            amenities = (List<String>) amenitiesObj;
+                        }
+                        
+                        System.out.println("Creating " + count + " rooms of type: " + roomType + 
+                                         " with price: " + price + " and occupancy: " + occupancy);
+                        
+                        // Create individual room entries based on the count
+                        for (int i = 1; i <= count; i++) {
+                            HotelRoom hotelRoom = new HotelRoom();
+                            hotelRoom.setHotelId(hotelId);
+                            hotelRoom.setRoomNumber(roomType + "-" + String.format("%03d", i)); // e.g., "Standard-001"
+                            hotelRoom.setType(roomType);
+                            hotelRoom.setDescription(roomType + " room with " + bedConfiguration);
+                            hotelRoom.setCapacity(occupancy != null ? occupancy : 2); // Default to 2 if null
+                            hotelRoom.setPrice(price);
+                            hotelRoom.setStatus("Available"); // Default status
+                            hotelRoom.setAmenities(amenities);
+                            hotelRoom.setImages(new ArrayList<>()); // Empty initially
+                            hotelRoom.setCreatedAt(java.time.Instant.now().toString());
+                            hotelRoom.setUpdatedAt(java.time.Instant.now().toString());
+                            
+                            // Save the room
+                            HotelRoom savedRoom = hotelRoomRepo.save(hotelRoom);
+                            System.out.println("Created room: " + savedRoom.getRoomNumber() + " for hotel ID: " + hotelId);
+                        }
+                        
+                    } catch (Exception e) {
+                        System.err.println("Error parsing room type JSON: " + roomTypeJson);
+                        e.printStackTrace();
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error creating hotel rooms: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Get all rooms for a specific hotel
+     */
+    public List<HotelRoom> getHotelRooms(String hotelId) {
+        try {
+            return hotelRoomRepo.findByHotelId(hotelId);
+        } catch (Exception e) {
+            System.err.println("Error getting hotel rooms: " + e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 }

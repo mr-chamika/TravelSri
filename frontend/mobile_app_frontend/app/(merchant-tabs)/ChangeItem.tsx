@@ -221,7 +221,7 @@ const ChangeItem: React.FC = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Price (LKR)</Text>
+          <Text style={styles.sectionLabel}>Price</Text>
           <TextInput
             style={styles.textInput}
             value={price}

@@ -32,6 +32,7 @@ public class HotelController {
     
     @Autowired
     private HotelService hotelService;
+
     
     @Autowired
     private HotelEmailService hotelEmailService;
@@ -41,16 +42,22 @@ public class HotelController {
     @PostMapping("/register")
     public ResponseEntity<?> registerHotel(@RequestBody Hotel hotel) {
         try {
+            // Debug logging
+            System.out.println("Hotel registration request received: " + hotel);
+            
             // Validate required fields
             if (hotel.getUsername() == null || hotel.getUsername().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Username is required");
                 return new ResponseEntity<>("Username is required", HttpStatus.BAD_REQUEST);
             }
             
             if (hotel.getEmail() == null || hotel.getEmail().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Email is required");
                 return new ResponseEntity<>("Email is required", HttpStatus.BAD_REQUEST);
             }
             
             if (hotel.getPassword() == null || hotel.getPassword().trim().isEmpty()) {
+                System.out.println("Hotel registration failed: Password is required");
                 return new ResponseEntity<>("Password is required", HttpStatus.BAD_REQUEST);
             }
             
@@ -58,13 +65,17 @@ public class HotelController {
             Hotel savedHotel = hotelService.registerNewHotel(hotel);
             
             if (savedHotel != null) {
+                System.out.println("Hotel registration successful for: " + hotel.getUsername());
                 return new ResponseEntity<>("Success", HttpStatus.CREATED);
             } else {
-                return new ResponseEntity<>("Signup failed", HttpStatus.BAD_REQUEST);
+                System.out.println("Hotel registration failed: Service returned null");
+                return new ResponseEntity<>("Signup failed - username or email may already be in use", HttpStatus.BAD_REQUEST);
             }
             
         } catch (Exception e) {
-            return new ResponseEntity<>("Signup failed", HttpStatus.INTERNAL_SERVER_ERROR);
+            System.out.println("Hotel registration failed with exception: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Signup failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     
@@ -74,32 +85,51 @@ public class HotelController {
             String username = hotel.getUsername();
             String password = hotel.getPassword();
             
+            System.out.println("Login attempt for username: " + username);
+            
             if (username == null || username.trim().isEmpty()) {
+                System.out.println("Login failed: Username is required");
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Username is required");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
             
             if (password == null || password.trim().isEmpty()) {
+                System.out.println("Login failed: Password is required");
                 Map<String, String> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Password is required");
                 return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
             }
+
+
             
             // Use service to authenticate hotel
             Hotel authenticatedHotel = hotelService.authenticateHotel(username, password);
+            System.out.println("authenticatedHotel: " + authenticatedHotel);
             
             if (authenticatedHotel != null) {
+                System.out.println("Hotel authenticated successfully: " + username);
+                
+                // TEMPORARY FIX - Auto verify and activate during login for better user experience
+                if (!authenticatedHotel.isVerified() || !authenticatedHotel.isActive()) {
+                    System.out.println("Auto-verifying and activating hotel: " + username);
+                    authenticatedHotel.setVerified(true);
+                    authenticatedHotel.setActive(true);
+                    authenticatedHotel = hotelsRepo.save(authenticatedHotel);
+                }
+                
                 // Check if hotel is verified and active
                 if (!authenticatedHotel.isVerified()) {
+                    System.out.println("Login failed: Hotel account is not verified yet: " + username);
                     Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Hotel account is not verified yet");
+                    errorResponse.put("error", "Your account is pending verification. Please contact support.");
                     return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
                 }
                 
                 if (!authenticatedHotel.isActive()) {
+                    System.out.println("Login failed: Hotel account is not active: " + username);
                     Map<String, String> errorResponse = new HashMap<>();
-                    errorResponse.put("error", "Hotel account is not active");
+                    errorResponse.put("error", "Your account has been deactivated. Please contact support.");
                     return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
                 }
                 
@@ -112,18 +142,26 @@ public class HotelController {
                 
                 // Generate JWT token
                 String token = generateHotelToken(userDetails, authenticatedHotel);
+                System.out.println("Login successful, token generated for: " + username);
                 
-                Map<String, String> responseBody = new HashMap<>();
+                Map<String, Object> responseBody = new HashMap<>();
                 responseBody.put("token", token);
+                responseBody.put("hotelName", authenticatedHotel.getHotelName());
+                responseBody.put("username", authenticatedHotel.getUsername());
+                responseBody.put("email", authenticatedHotel.getEmail());
+                responseBody.put("message", "Login successful");
                 return ResponseEntity.ok(responseBody);
                 
             } else {
+                System.out.println("Login failed: Invalid credentials for username: " + username);
                 Map<String, String> errorBody = new HashMap<>();
                 errorBody.put("error", "Invalid username or password");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorBody);
             }
             
         } catch (Exception e) {
+            System.out.println("Login failed with exception: " + e.getMessage());
+            e.printStackTrace();
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Login failed: " + e.getMessage());
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -140,18 +178,14 @@ public class HotelController {
         return user;
     }
     
-    // Simplified token generation for hotels
+    // Generate JWT token for hotels
     private String generateHotelToken(UserDetails userDetails, Hotel hotel) {
         try {
-            // Create a temporary User object for JWT generation
-            com.example.student.model.User tempUser = new com.example.student.model.User();
-            tempUser.set_id(hotel.get_id());
-            tempUser.setEmail(hotel.getEmail());
-            tempUser.setUsername(hotel.getUsername());
-            tempUser.setRole("ROLE_HOTEL");
-            
-            return jwtUtil.generateToken(userDetails, tempUser);
+            // Use the dedicated hotel token generator
+            return jwtUtil.generateHotelToken(userDetails, hotel);
         } catch (Exception e) {
+            // Log the error for debugging
+            e.printStackTrace();
             // Fallback: generate a simple token
             return "hotel-token-" + hotel.getUsername() + "-" + System.currentTimeMillis();
         }
@@ -552,6 +586,60 @@ public class HotelController {
 
     // ========== ADDITIONAL ENDPOINTS ==========
     
+    @GetMapping("/username/{username}")
+    public ResponseEntity<?> getHotelByUsername(@PathVariable String username) {
+        try {
+            Optional<Hotel> hotelOpt = hotelService.findByUsername(username);
+            
+            if (hotelOpt.isPresent()) {
+                Hotel hotel = hotelOpt.get();
+                return new ResponseEntity<>(hotel, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found with username: " + username);
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fetch hotel by username: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/verify-hotel-by-username/{username}")
+    public ResponseEntity<?> verifyHotelByUsername(@PathVariable String username) {
+        try {
+            Optional<Hotel> hotelOpt = hotelsRepo.findByUsername(username);
+            
+            if (hotelOpt.isPresent()) {
+                Hotel hotel = hotelOpt.get();
+                hotel.setVerified(true);
+                hotel.setActive(true);
+                hotel.setUpdatedAt(java.time.Instant.now().toString());
+                
+                Hotel updatedHotel = hotelsRepo.save(hotel);
+                
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel verified and activated successfully");
+                response.put("username", username);
+                response.put("verified", updatedHotel.isVerified());
+                response.put("active", updatedHotel.isActive());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to verify hotel: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
     @GetMapping("/verified")
     public ResponseEntity<List<Hotel>> getVerifiedHotels() {
         try {
@@ -593,6 +681,237 @@ public class HotelController {
             
         } catch (Exception e) {
             return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ========== ROOM AVAILABILITY SYNC ENDPOINTS ==========
+    
+    /**
+     * Manually update hotel availability based on room counts
+     */
+    @PatchMapping("/{id}/sync-availability")
+    public ResponseEntity<?> updateHotelAvailability(
+            @PathVariable String id,
+            @RequestParam int totalStandardRooms,
+            @RequestParam int totalDeluxeRooms,
+            @RequestParam int availableStandardRooms,
+            @RequestParam int availableDeluxeRooms) {
+        try {
+            Hotel updatedHotel = hotelService.updateHotelAvailabilityFromRooms(
+                    id, totalStandardRooms, totalDeluxeRooms, 
+                    availableStandardRooms, availableDeluxeRooms);
+            
+            if (updatedHotel != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel availability updated successfully");
+                response.put("hotel", updatedHotel);
+                response.put("maxSingle", updatedHotel.getMaxSingle());
+                response.put("maxDouble", updatedHotel.getMaxDouble());
+                response.put("availableSingle", updatedHotel.getAvailableSingle());
+                response.put("availableDouble", updatedHotel.getAvailableDouble());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to update hotel availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Automatically sync hotel availability from hotelRooms collection
+     */
+    @PatchMapping("/{id}/sync-availability-auto")
+    public ResponseEntity<?> syncHotelAvailabilityFromRooms(@PathVariable String id) {
+        try {
+            Hotel updatedHotel = hotelService.syncHotelAvailabilityFromRoomsCollection(id);
+            
+            if (updatedHotel != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hotel availability synced successfully from rooms collection");
+                response.put("hotel", updatedHotel);
+                response.put("maxSingle", updatedHotel.getMaxSingle());
+                response.put("maxDouble", updatedHotel.getMaxDouble());
+                response.put("availableSingle", updatedHotel.getAvailableSingle());
+                response.put("availableDouble", updatedHotel.getAvailableDouble());
+                
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            } else {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found or sync failed");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to sync hotel availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Sync availability for all hotels from their room collections
+     */
+    @PatchMapping("/sync-all-availability")
+    public ResponseEntity<?> syncAllHotelsAvailability() {
+        try {
+            hotelService.syncAllHotelsAvailabilityFromRooms();
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "All hotels availability synced successfully");
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to sync all hotels availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    // ========== HOTEL AVAILABILITY CALENDAR ENDPOINTS ==========
+    
+    /**
+     * Get hotel availability calendar
+     */
+    @GetMapping("/availability")
+    public ResponseEntity<?> getHotelAvailability(@RequestHeader("Authorization") String authHeader) {
+        try {
+            // Extract username from JWT token
+            String token = authHeader.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(token);
+            
+            // Find hotel by username
+            Optional<Hotel> hotelOptional = hotelsRepo.findByUsername(username);
+            
+            if (!hotelOptional.isPresent()) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+            Hotel hotel = hotelOptional.get();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("availability", hotel.getAvailability() != null ? hotel.getAvailability() : new ArrayList<>());
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fetch availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Update hotel availability calendar (bulk update)
+     */
+    @PostMapping("/availability")
+    public ResponseEntity<?> updateHotelAvailability(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody com.example.student.dto.HotelAvailabilityRequest request) {
+        try {
+            // Extract username from JWT token
+            String token = authHeader.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(token);
+            
+            // Find hotel by username
+            Optional<Hotel> hotelOptional = hotelsRepo.findByUsername(username);
+            
+            if (!hotelOptional.isPresent()) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+            Hotel hotel = hotelOptional.get();
+            
+            // Update availability
+            hotel.setAvailability(request.getAvailability());
+            hotel.setUpdatedAt(new Date().toString());
+            
+            hotelsRepo.save(hotel);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Availability updated successfully");
+            response.put("availability", hotel.getAvailability());
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to update availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * Update single date availability
+     */
+    @PutMapping("/availability/date")
+    public ResponseEntity<?> setDateAvailability(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody com.example.student.dto.DateAvailabilityRequest request) {
+        try {
+            // Extract username from JWT token
+            String token = authHeader.replace("Bearer ", "");
+            String username = jwtUtil.extractUsername(token);
+            
+            // Find hotel by username
+            Optional<Hotel> hotelOptional = hotelsRepo.findByUsername(username);
+            
+            if (!hotelOptional.isPresent()) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Hotel not found");
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            }
+            
+            Hotel hotel = hotelOptional.get();
+            
+            // Get or initialize availability list
+            List<com.example.student.model.HotelAvailability> availability = hotel.getAvailability();
+            if (availability == null) {
+                availability = new ArrayList<>();
+            }
+            
+            // Remove existing entry for this date
+            availability.removeIf(a -> a.getDate().equals(request.getDate()));
+            
+            // Add new entry if not marking as available
+            if (!"available".equals(request.getStatus())) {
+                com.example.student.model.HotelAvailability newAvailability = 
+                    new com.example.student.model.HotelAvailability(
+                        request.getDate(), 
+                        request.getStatus(), 
+                        request.getReason()
+                    );
+                availability.add(newAvailability);
+            }
+            
+            // Update hotel
+            hotel.setAvailability(availability);
+            hotel.setUpdatedAt(new Date().toString());
+            
+            hotelsRepo.save(hotel);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Date availability updated successfully");
+            response.put("date", request.getDate());
+            response.put("status", request.getStatus());
+            
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to update date availability: " + e.getMessage());
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

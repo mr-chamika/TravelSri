@@ -421,7 +421,7 @@ export default function App() {
                                 </View>
                                 <View className="bg-[#d9d9d98e] w-[160px] h-[200px] items-center py-5 rounded-2xl">
                                     <Image
-                                        className="w-[150px] h-[100px]"
+                                        className="w-[150px] h-[130px]"
                                         source={{ uri: `data:image/jpeg;base64,${x.image}` }}
                                     />
                                     <View className='pt-2'>
