@@ -161,8 +161,8 @@ const ShopProfileScreen: React.FC = () => {
                         </TouchableOpacity>
                     </View>
                     <View style={styles.detailsContainer}>
-                        <ProfileDetailRow label="Email" value="shop@gmail.com" />
-                        <ProfileDetailRow label="Phone" value="0123456789" />
+                        <ProfileDetailRow label="Email" value="bimsa2021@gmail.com" />
+                        <ProfileDetailRow label="Phone" value="0782345678" />
                         <ProfileDetailRow label="Shopname" value="Shop" />
                         <ProfileDetailRow label="Address" value="Hikkaduwa,Galle" />
                     </View>
