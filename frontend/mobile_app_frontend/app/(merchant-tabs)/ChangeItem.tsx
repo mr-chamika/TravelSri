@@ -15,9 +15,8 @@ import { Feather, AntDesign } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-// Use the SAME type as in Listings.tsx to match your MongoDB structure
 type ListingItem = {
-  _id: string; // Changed back to _id to match MongoDB
+  _id: string;
   name: string;
   price: number;
   image: string;
@@ -36,6 +35,7 @@ const ChangeItem: React.FC = () => {
   const [quantity, setQuantity] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({}); // Track validation errors
 
   const API_BASE_URL = 'http://192.168.43.208:8080';
 
@@ -67,35 +67,54 @@ const ChangeItem: React.FC = () => {
     fetchItem();
   }, [id]);
 
+  // Validation for individual fields
+  const validateField = (field: string, value: string) => {
+    let error = '';
+    if (!value.trim()) {
+      error = 'This field is required.';
+    } else if (field === 'name' && value.trim().length < 3) {
+      error = 'Item name must be at least 3 characters long.';
+    } else if (field === 'price' && (isNaN(Number(value)) || Number(value) <= 0)) {
+      error = 'Please enter a valid positive price.';
+    } else if (field === 'quantity' && (isNaN(Number(value)) || Number(value) <= 0)) {
+      error = 'Please enter a valid positive quantity.';
+    } else if (field === 'description' && value.trim().length < 10) {
+      error = 'Description must be at least 10 characters long.';
+    } else if (field === 'imageUri' && !value) {
+      error = 'Please add an image for the item.';
+    }
+    return error;
+  };
+
+  // Validate all fields before submission
+  const validateForm = () => {
+    const formErrors: { [key: string]: string } = {};
+    formErrors.name = validateField('name', name);
+    formErrors.price = validateField('price', price);
+    formErrors.quantity = validateField('quantity', quantity);
+    formErrors.description = validateField('description', description);
+    formErrors.imageUri = validateField('imageUri', imageUri);
+
+    setErrors(formErrors);
+    return Object.keys(formErrors).every((key) => !formErrors[key]);
+  };
+
   const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Item name is required');
-      return;
-    }
-
-    if (!price.trim() || isNaN(Number(price))) {
-      Alert.alert('Error', 'Please enter a valid price');
-      return;
-    }
-
-    if (!quantity.trim() || isNaN(Number(quantity)) || Number(quantity) < 0) {
-      Alert.alert('Error', 'Please enter a valid quantity');
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fix the errors before submitting.');
       return;
     }
 
     if (!item) return;
 
-    // Only send the fields that should be updated, preserving shopId
     const updatePayload = {
-      _id: item._id, // Use _id to match MongoDB structure
+      _id: item._id,
       name: name.trim(),
       price: Number(price),
       count: Number(quantity),
       description: description.trim(),
       image: imageUri,
     };
-
-    console.log('Update payload:', updatePayload); // Debug log
 
     try {
       const response = await fetch(`${API_BASE_URL}/shopitems/update?id=${id}`, {
@@ -105,16 +124,12 @@ const ChangeItem: React.FC = () => {
         },
         body: JSON.stringify(updatePayload),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Update failed:', errorText); // Debug log
         throw new Error(errorText || 'Failed to update item');
       }
-      
-      const result = await response.json();
-      console.log('Update result:', result); // Debug log
-      
+
       Alert.alert('Success', 'Item updated successfully!');
       router.back();
     } catch (error) {
@@ -124,23 +139,27 @@ const ChangeItem: React.FC = () => {
   };
 
   const handleImageChange = async () => {
-    // Request permission to access the media library
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission denied', 'Sorry, we need camera roll permissions to make this work!');
       return;
     }
 
-    // Launch the image library to pick a single image
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      base64: true,
     });
 
     if (!result.canceled && result.assets[0].base64) {
       setImageUri(result.assets[0].base64);
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors['imageUri'];
+        return newErrors;
+      });
     }
   };
 
@@ -168,12 +187,6 @@ const ChangeItem: React.FC = () => {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <AntDesign name="arrowleft" size={24} color="#000" />
         </TouchableOpacity>
-        <TouchableOpacity>
-          <Feather name="bell" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.titleContainer}>
         <Text style={styles.pageTitle}>Change Item</Text>
       </View>
 
@@ -189,20 +202,22 @@ const ChangeItem: React.FC = () => {
               </View>
             )}
           </TouchableOpacity>
+          {errors.imageUri ? <Text style={styles.errorText}>{errors.imageUri}</Text> : null}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Item Name</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              value={name}
-              onChangeText={setItemName}
-              placeholder="Enter item name"
-              placeholderTextColor="#999"
-            />
-            <View style={styles.requiredDot} />
-          </View>
+          <TextInput
+            style={styles.textInput}
+            value={name}
+            onChangeText={(text) => {
+              setItemName(text);
+              setErrors((prev) => ({ ...prev, name: validateField('name', text) }));
+            }}
+            placeholder="Enter item name"
+            placeholderTextColor="#999"
+          />
+          {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -210,11 +225,15 @@ const ChangeItem: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(text) => {
+              setPrice(text);
+              setErrors((prev) => ({ ...prev, price: validateField('price', text) }));
+            }}
             placeholder="Enter price"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
+          {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -222,11 +241,15 @@ const ChangeItem: React.FC = () => {
           <TextInput
             style={styles.textInput}
             value={quantity}
-            onChangeText={setQuantity}
+            onChangeText={(text) => {
+              setQuantity(text);
+              setErrors((prev) => ({ ...prev, quantity: validateField('quantity', text) }));
+            }}
             placeholder="Enter quantity"
             placeholderTextColor="#999"
             keyboardType="numeric"
           />
+          {errors.quantity ? <Text style={styles.errorText}>{errors.quantity}</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -234,13 +257,17 @@ const ChangeItem: React.FC = () => {
           <TextInput
             style={[styles.textInput, styles.descriptionInput]}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(text) => {
+              setDescription(text);
+              setErrors((prev) => ({ ...prev, description: validateField('description', text) }));
+            }}
             placeholder="Enter description"
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
             textAlignVertical="top"
           />
+          {errors.description ? <Text style={styles.errorText}>{errors.description}</Text> : null}
         </View>
 
         <TouchableOpacity style={styles.publishButton} onPress={handleSave}>
@@ -321,4 +348,9 @@ const styles = StyleSheet.create({
   publishButtonText: { fontSize: 16, fontWeight: '600', color: '#000' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 5,
+  },
 });

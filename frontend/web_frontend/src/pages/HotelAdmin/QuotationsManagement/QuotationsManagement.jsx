@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import quotationService from '../../../services/quotationService';
 import pendingTripService from '../../../services/pendingTripService';
 import hotelService from '../../../services/hotelService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 import { Link } from 'react-router-dom';
 
 // Input component
@@ -273,11 +274,29 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div className="border-r pr-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Package Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Group Package Name"
+                    name="packageName"
+                    value={editedQuotation.packageName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.packageName || editedQuotation.pendingTripName || 'Custom Package'}</div>
+                )}
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Hotel Name</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                {isEditing ? (
+                  <Input
+                    label="Hotel Name"
+                    name="hotelName"
+                    value={editedQuotation.hotelName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 font-medium">{editedQuotation.hotelName || 'Your Hotel'}</div>
+                )}
               </div>
             </div>
             <div>
@@ -285,20 +304,47 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   <span className="material-icons text-sm mr-1 align-text-bottom">person</span> Contact Person
                 </label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                {isEditing ? (
+                  <Input
+                    label="Contact Person"
+                    name="contactPersonName"
+                    value={editedQuotation.contactPersonName}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPersonName}</div>
+                )}
               </div>
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">email</span> Contact Email
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Email"
+                      name="contactEmail"
+                      value={editedQuotation.contactEmail}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200 overflow-hidden text-ellipsis">{editedQuotation.contactEmail}</div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="material-icons text-sm mr-1 align-text-bottom">phone</span> Contact Phone
                   </label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  {isEditing ? (
+                    <Input
+                      label="Contact Phone"
+                      name="contactPhone"
+                      value={editedQuotation.contactPhone}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">{editedQuotation.contactPhone}</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -316,25 +362,55 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
             <div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Accommodation Type</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.accommodationType || 'Not specified'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Accommodation Type"
+                    name="accommodationType"
+                    value={editedQuotation.accommodationType}
+                    onChange={handleChange}
+                    options={roomTypes}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.accommodationType || 'Not specified'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Group Size</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
-                  {editedQuotation.groupSize || '0'} people
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Group Size"
+                    type="number"
+                    name="groupSize"
+                    value={editedQuotation.groupSize}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">groups</span>
+                    {editedQuotation.groupSize || '0'} people
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Rooms</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
-                  <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
-                  {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
-                </div>
+                {isEditing ? (
+                  <Input
+                    label="Number of Rooms"
+                    type="number"
+                    name="roomsRequired"
+                    value={editedQuotation.roomsRequired}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200 flex items-center">
+                    <span className="material-icons text-yellow-600 mr-1 text-sm">hotel</span>
+                    {editedQuotation.roomsRequired || Math.ceil(editedQuotation.groupSize / 2) || '0'} rooms
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
@@ -349,15 +425,35 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               <div className="flex flex-wrap mb-4">
                 <div className="w-1/2 pr-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkInDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-in Date"
+                      type="date"
+                      name="checkInDate"
+                      value={editedQuotation.checkInDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkInDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
                 <div className="w-1/2 pl-2 mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                    {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
-                  </div>
+                  {isEditing ? (
+                    <Input
+                      label="Check-out Date"
+                      type="date"
+                      name="checkOutDate"
+                      value={editedQuotation.checkOutDate}
+                      onChange={handleChange}
+                    />
+                  ) : (
+                    <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                      {formatDate(editedQuotation.checkOutDate) || 'Not specified'}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -370,32 +466,64 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Meal Plan</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.mealPlan || 'Breakfast Only'}
-                </div>
+                {isEditing ? (
+                  <Select
+                    label="Meal Plan"
+                    name="mealPlan"
+                    value={editedQuotation.mealPlan}
+                    onChange={handleChange}
+                    options={['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive']}
+                  />
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.mealPlan || 'Breakfast Only'}
+                  </div>
+                )}
               </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Additional Services</label>
-                <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                  {editedQuotation.airportTransfer ? 
-                    <span className="text-green-600 flex items-center">
-                      <span className="material-icons text-sm mr-1">check_circle</span> Pool Facilities Included
-                    </span> : 
-                    <span className="text-gray-500 flex items-center">
-                      <span className="material-icons text-sm mr-1">cancel</span> No Pool Facilities
-                    </span>
-                  }
-                </div>
+                {isEditing ? (
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="airportTransfer"
+                      checked={!!editedQuotation.airportTransfer}
+                      onChange={e => setEditedQuotation(prev => ({ ...prev, airportTransfer: e.target.checked }))}
+                      className="rounded text-yellow-500 focus:ring-yellow-400"
+                    />
+                    <span>Include Pool Facilities</span>
+                  </label>
+                ) : (
+                  <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                    {editedQuotation.airportTransfer ? 
+                      <span className="text-green-600 flex items-center">
+                        <span className="material-icons text-sm mr-1">check_circle</span> Pool Facilities Included
+                      </span> : 
+                      <span className="text-gray-500 flex items-center">
+                        <span className="material-icons text-sm mr-1">cancel</span> No Pool Facilities
+                      </span>
+                    }
+                  </div>
+                )}
               </div>
             </div>
           </div>
           
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Special Accommodation Requirements</label>
-            <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
-              {editedQuotation.specialRequirements || 'None specified'}
-            </div>
+            {isEditing ? (
+              <Textarea
+                label="Special Accommodation Requirements"
+                name="specialRequirements"
+                value={editedQuotation.specialRequirements}
+                onChange={handleChange}
+              />
+            ) : (
+              <div className="bg-gray-50 p-3 rounded border border-gray-200 min-h-[80px] whitespace-pre-wrap">
+                {editedQuotation.specialRequirements || 'None specified'}
+              </div>
+            )}
           </div>
         </section>
 
@@ -418,20 +546,23 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="text-gray-600 border-b pb-2">Accommodation Subtotal:</div>
               <div className="text-right font-medium border-b pb-2">
-                LKR {((roomPrices[quotation.accommodationType] || 0) * 
-                  (quotation.roomsRequired || Math.ceil(quotation.groupSize / 2)) * 
-                  calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                LKR {calculateAccommodationTotal(quotation).toFixed(2)}
               </div>
               
-              {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && (
+              {quotation.mealPlan && (
                 <>
                   <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
                   <div className="text-right font-medium">
-                    LKR {(quotation.groupSize * 
-                      (quotation.mealPlan === 'Half Board' ? 25 : 
-                       quotation.mealPlan === 'Full Board' ? 40 : 
-                       quotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
-                      calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    {(() => {
+                      const total = calculateMealPlanUpgradeTotal(quotation);
+                      console.log('Displaying meal plan in card:', {
+                        mealPlan: quotation.mealPlan,
+                        mealPricePerPerson: quotation.mealPricePerPerson,
+                        groupSize: quotation.groupSize,
+                        calculatedTotal: total
+                      });
+                      return `LKR ${total.toFixed(2)}`;
+                    })()}
                   </div>
                 </>
               )}
@@ -467,19 +598,51 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                   <span className="material-icons text-sm mr-1">local_offer</span>
                   Discount ({quotation.discountOffered}%):
                 </span>
-                <span className="font-medium">-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+                <span className="font-medium">-LKR {(calculateSubtotalBeforeDiscount(quotation) * quotation.discountOffered / 100).toFixed(2)}</span>
               </div>
             )}
             
             <div className="flex justify-between font-bold text-lg border-t border-yellow-300 pt-3 mt-3 bg-yellow-50 p-3 rounded">
               <span className="text-gray-800">Total Quote Amount:</span>
-              <span className="text-xl">LKR {(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
+              <span className="text-xl">LKR {quotation.finalAmount 
+                ? (typeof quotation.finalAmount === 'number' ? quotation.finalAmount.toFixed(2) : parseFloat(quotation.finalAmount).toFixed(2))
+                : calculateFinalTotal(quotation)}</span>
+            </div>
+            
+            {/* Per-Person Breakdown */}
+            <div className="mt-4 bg-blue-50 p-3 border border-blue-200 rounded">
+              <h5 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                Per Person Breakdown (Group Size: {quotation.groupSize})
+              </h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-blue-700">Accommodation per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {quotation.accommodationPricePerPerson 
+                    ? quotation.accommodationPricePerPerson.toFixed(2) 
+                    : (calculateAccommodationTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700">Meal plan per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {(quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0)
+                    ? quotation.mealPricePerPerson.toFixed(2) 
+                    : (calculateMealPlanUpgradeTotal(quotation) / quotation.groupSize).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700 font-semibold border-t pt-1">Total per person:</div>
+                <div className="text-right font-bold text-blue-900 border-t pt-1">
+                  LKR {quotation.totalPricePerPerson 
+                    ? quotation.totalPricePerPerson.toFixed(2) 
+                    : calculatePerPersonPrice(quotation).toFixed(2)}
+                </div>
+              </div>
             </div>
             
             <div className="mt-4 text-xs text-gray-500 bg-white p-3 border border-gray-100 rounded">
               <div className="flex items-start mb-1">
                 <span className="material-icons text-yellow-600 text-sm mr-2">info</span>
-                <p>Rates are based on group accommodation package.</p>
+                <p>Rates are based on group accommodation package. Per-person prices are calculated and saved automatically.</p>
               </div>
               <div className="flex items-start">
                 <span className="material-icons text-yellow-600 text-sm mr-2">event</span>
@@ -801,8 +964,8 @@ const QuotationsManagement = () => {
     checkOutDate: '',
     groupSize: 10,
     pricePerPersonPerNight: 0, // Price per person per night for accommodation
-    mealPlan: 'Breakfast Only',
-    mealPlanPricePerPerson: 15, // Price per person per night for meal plan
+    mealPlan: '',
+    mealPlanPricePerPerson: 0, // Price per person per night for meal plan
     specialRequirements: '',
     totalAmount: 0,
     discountOffered: 0,
@@ -1246,26 +1409,45 @@ const QuotationsManagement = () => {
     return accommodationCost;
   };
   
-  // Calculate meal plan cost
+  // Calculate meal plan cost (mirroring accommodation calculation pattern)
   const calculateMealPlanUpgradeTotal = (quotation = newQuotation) => {
     if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.groupSize) return 0;
     
     const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
     
-    // Calculate meal plan costs for any selected plan
-    if (quotation.mealPlan) {
-      // If mealPlanPricePerPerson is set, use it directly
-      if (quotation.mealPlanPricePerPerson) {
-        return quotation.groupSize * quotation.mealPlanPricePerPerson * nights;
-      } 
+    console.log('calculateMealPlanUpgradeTotal called:', {
+      mealPlan: quotation.mealPlan,
+      mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+      mealPricePerPerson: quotation.mealPricePerPerson,
+      groupSize: quotation.groupSize,
+      nights: nights
+    });
+    
+    // Calculate meal plan cost based on price per person per night
+    let mealPlanCost = 0;
+    
+    if (quotation.mealPlan && quotation.mealPlanPricePerPerson) {
+      // Use meal plan price per person per night (same pattern as accommodation)
+      mealPlanCost = quotation.mealPlanPricePerPerson * quotation.groupSize * nights;
+      console.log('Using mealPlanPricePerPerson:', mealPlanCost);
+    } else if (quotation.mealPlan && quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0) {
+      // FALLBACK: If mealPlanPricePerPerson is undefined, fetch mealPricePerPerson and multiply by groupSize
+      // mealPricePerPerson is the total per person for entire stay
+      // So total for group = mealPricePerPerson * groupSize
+      mealPlanCost = quotation.mealPricePerPerson * quotation.groupSize;
+      console.log('Using mealPricePerPerson (fallback) - mealPricePerPerson:', quotation.mealPricePerPerson, '× groupSize:', quotation.groupSize, '=', mealPlanCost);
+    } else if (quotation.mealPlan) {
       // Fall back to default pricing if not set
-      return quotation.groupSize * 
-        (quotation.mealPlan === 'Breakfast Only' ? 15 :
-         quotation.mealPlan === 'Half Board' ? 25 : 
-         quotation.mealPlan === 'Full Board' ? 40 : 
-         quotation.mealPlan === 'All Inclusive' ? 60 : 0) * nights;
+      const defaultPrice = quotation.mealPlan === 'Breakfast Only' ? 1000 :
+         quotation.mealPlan === 'Half Board' ? 1500 : 
+         quotation.mealPlan === 'Full Board' ? 2000 : 
+         quotation.mealPlan === 'All Inclusive' ? 2500 : 0;
+      mealPlanCost = defaultPrice * quotation.groupSize * nights;
+      console.log('Using default price:', mealPlanCost);
     }
-    return 0;
+    
+    console.log('Final mealPlanCost:', mealPlanCost);
+    return mealPlanCost;
   };
   
   // Calculate pool facilities cost (function name kept for backward compatibility)
@@ -1426,7 +1608,7 @@ const QuotationsManagement = () => {
       groupSize: tripPackage.maxGroupSize,
       pricePerPersonPerNight: 5000, // Default starting price per person per night in LKR
       mealPlan: 'Breakfast Only',
-      mealPlanPricePerPerson: 1500, // Default meal plan price in LKR
+      mealPlanPricePerPerson: 1000, // Default meal plan price in LKR
       // Add reference to the original trip
       originalTripId: tripPackage.id,
       // Use real hotel data from API
@@ -1458,6 +1640,29 @@ const QuotationsManagement = () => {
         // window.location.href = '/hotel/login';
         return;
       }
+
+      // Get current user info and fetch hotel details
+      const currentUser = HotelAuthService.getCurrentUser();
+      const currentUsername = currentUser?.username;
+      
+      if (!currentUsername) {
+        console.error('Username not found in authentication data');
+        showFlashMessage('Unable to identify hotel user. Please login again.', 'error');
+        return;
+      }
+
+      console.log('Fetching hotel details for username:', currentUsername);
+      
+      // Fetch hotel details by username to get hotel ID
+      let hotelDetails = null;
+      try {
+        hotelDetails = await hotelService.getHotelByUsername(currentUsername);
+        console.log('Hotel details fetched:', hotelDetails);
+      } catch (error) {
+        console.error('Failed to fetch hotel details:', error);
+        showFlashMessage('Unable to fetch hotel information. Please contact support.', 'error');
+        return;
+      }
       
       // Validate package name - ensure it's not empty
       if (!newQuotation.packageName || newQuotation.packageName.trim() === '') {
@@ -1465,9 +1670,16 @@ const QuotationsManagement = () => {
         return;
       }
       
-      // Calculate total amount
+      // Calculate total amount and per-person prices
       const accommodationTotal = calculateAccommodationTotal(newQuotation);
+      const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+      const transportationTotal = calculateTransportationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+      
+      // Calculate per-person prices (mirroring accommodation calculation pattern)
+      const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+      const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
+      const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
       
       // Ensure all necessary data is properly structured for the backend
       const quotationToAdd = {
@@ -1482,16 +1694,33 @@ const QuotationsManagement = () => {
         finalAmount: finalTotal,
         quoteNumber: `HQ-${Date.now().toString().substr(-6)}`, // Generate a unique quote number
         
-        // Ensure consistent field names for hotel details
-        hotelId: newQuotation.hotelId || hotelData.id || '',
-        hotelName: newQuotation.hotelName || hotelData.hotelName || '',
-        hotelAddress: newQuotation.hotelAddress || hotelData.address || '',
-        hotelWebsite: newQuotation.hotelWebsite || hotelData.website || '',
+        // Add hotel user information for filtering quotations by hotel
+        hotelUsername: currentUsername,
+        createdBy: currentUsername,
+        
+        // Add hotel ID and details from fetched hotel information
+        hotelId: hotelDetails?._id || hotelDetails?.id || '',
+        hotelName: hotelDetails?.hotelName || hotelDetails?.name || '',
+        hotelAddress: hotelDetails?.hotelAddress || hotelDetails?.address || '',
+        hotelWebsite: hotelDetails?.website || '',
+        hotelPhone: hotelDetails?.phoneNumber || hotelDetails?.phone || '',
+        hotelEmail: hotelDetails?.email || hotelDetails?.contactEmail || '',
+        hotelCity: hotelDetails?.city || '',
+        hotelDistrict: hotelDetails?.district || '',
+        
+        // Add calculated per-person prices to be saved in database
+        accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+        mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+        totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
+        
+        // Ensure meal plan data is included
+        mealPlan: newQuotation.mealPlan || '',
+        mealPlanPricePerPerson: newQuotation.mealPlanPricePerPerson || 0,
         
         // Ensure consistent field names for contact details
-        contactPersonName: newQuotation.contactPersonName || hotelData.managerName || '',
-        contactEmail: newQuotation.contactEmail || hotelData.email || '',
-        contactPhone: newQuotation.contactPhone || hotelData.phone || '',
+        contactPersonName: newQuotation.contactPersonName || hotelDetails?.contactPerson || hotelDetails?.managerName || '',
+        contactEmail: newQuotation.contactEmail || hotelDetails?.contactEmail || hotelDetails?.email || '',
+        contactPhone: newQuotation.contactPhone || hotelDetails?.phoneNumber || hotelDetails?.phone || '',
         
         // Ensure both new and old field names are sent for pool facilities
         poolFacilities: newQuotation.poolFacilities || newQuotation.airportTransfer || false,
@@ -1503,9 +1732,26 @@ const QuotationsManagement = () => {
       // Call the API to create quotation
       console.log('Sending quotation data:', quotationToAdd);
       console.log('Package name being sent to database:', quotationToAdd.packageName);
+      console.log('Hotel ID being sent to database:', quotationToAdd.hotelId);
+      console.log('Meal plan data being sent:', {
+        mealPlan: quotationToAdd.mealPlan,
+        mealPlanPricePerPerson: quotationToAdd.mealPlanPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson
+      });
+      console.log('Per-person prices being sent to database:', {
+        accommodationPricePerPerson: quotationToAdd.accommodationPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson,
+        totalPricePerPerson: quotationToAdd.totalPricePerPerson
+      });
       const createdQuotation = await quotationService.createQuotation(quotationToAdd);
       console.log('Created quotation response:', createdQuotation);
       console.log('Package name in response:', createdQuotation.packageName || createdQuotation.pendingTripName);
+      console.log('Hotel ID in response:', createdQuotation.hotelId);
+      console.log('Meal plan data in response:', {
+        mealPlan: createdQuotation.mealPlan,
+        mealPlanPricePerPerson: createdQuotation.mealPlanPricePerPerson,
+        mealPricePerPerson: createdQuotation.mealPricePerPerson
+      });
       
       // Even if the API call fails with 401 but returns a mock object, we proceed
       // to give the user a better experience, but we won't refetch the list from API
@@ -1539,7 +1785,14 @@ const QuotationsManagement = () => {
         
         // This is a workaround: create a local quotation object to give better UX
         const accommodationTotal = calculateAccommodationTotal(newQuotation);
+        const mealPlanTotal = calculateMealPlanUpgradeTotal(newQuotation);
+        const transportationTotal = calculateTransportationTotal(newQuotation);
         const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
+        
+        // Calculate per-person prices (mirroring accommodation calculation pattern)
+        const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
+        const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
+        const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
         
         const mockQuotation = {
           ...newQuotation,
@@ -1549,6 +1802,9 @@ const QuotationsManagement = () => {
           status: 'Pending',
           totalAmount: accommodationTotal,
           finalAmount: finalTotal,
+          accommodationPricePerPerson: parseFloat(accommodationPricePerPerson.toFixed(2)),
+          mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
+          totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
         };
         
         // Add to state and close modal
@@ -1569,6 +1825,15 @@ const QuotationsManagement = () => {
   
   // Handle view quotation details
   const handleViewDetails = (quotation) => {
+    console.log('=== VIEW DETAILS DEBUG ===');
+    console.log('Full quotation object:', quotation);
+    console.log('Meal Plan:', quotation.mealPlan);
+    console.log('Meal Plan Price Per Person (nightly):', quotation.mealPlanPricePerPerson);
+    console.log('Meal Price Per Person (total):', quotation.mealPricePerPerson);
+    console.log('Group Size:', quotation.groupSize);
+    console.log('Check-in:', quotation.checkInDate);
+    console.log('Check-out:', quotation.checkOutDate);
+    console.log('========================');
     setSelectedQuotation(quotation);
     setShowDetailModal(true);
   };
@@ -2385,7 +2650,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     
                     <div className="text-gray-600 font-medium col-span-3 bg-yellow-50 p-1 rounded mt-2">
-                      Add-on Services
+                      Meal Plan
                     </div>
                     
                     <div className="text-gray-600 pl-2 flex items-center">
@@ -2393,14 +2658,14 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                       {quotation.mealPlan || 'No Meal Plan'}:
                     </div>
                     <div className="text-gray-600">
-                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${quotation.mealPlanPricePerPerson || 0} × ${quotation.groupSize} people × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? 
+                      `LKR ${quotation.mealPricePerPerson} × ${quotation.groupSize} people` : '-'}
                     </div>
                     <div className="text-right">
-                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? `LKR ${(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? `LKR ${(quotation.mealPricePerPerson * quotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
                     </div>
                     
-                    <div className="text-gray-600 pl-2 flex items-center">
+                    {/* <div className="text-gray-600 pl-2 flex items-center">
                       <span className="material-icons text-yellow-600 text-xs mr-1">pool</span>
                       Pool Facilities:
                     </div>
@@ -2409,7 +2674,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     <div className="text-right">
                       {quotation.airportTransfer && quotation.transportationPrice > 0 ? `LKR ${quotation.transportationPrice?.toFixed(2) || '0.00'}` : 'LKR 0.00'}
-                    </div>
+                    </div> */}
                     
                     <div className="text-gray-700 font-medium pl-2 border-t border-gray-100 pt-1 mt-1">
                       Subtotal (before discount):
@@ -2417,7 +2682,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     <div className="border-t border-gray-100 pt-1 mt-1"></div>
                     <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1">
                       LKR {((quotation.totalAmount || 0) + 
-                        (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                        (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                         (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
                     </div>
                     
@@ -2429,12 +2694,12 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         </div>
                         <div className="text-green-600">
                           {quotation.discountOffered}% of LKR {((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
                         </div>
                         <div className="text-right text-green-600 font-medium">
                           -LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100).toFixed(2)}
                         </div>
                         
@@ -2444,7 +2709,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         <div className="border-t border-gray-100 pt-1 mt-1"></div>
                         <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1 text-yellow-700">
                           LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
                         </div>
                       </>
@@ -2464,14 +2729,40 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                       LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
                     </div>
                     
-                    <div className="text-gray-600 pl-2">Meal Plan ({quotation.mealPlan || 'None'}):</div>
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                      {quotation.mealPlan || 'None'}:
+                    </div>
                     <div className="text-gray-600">
-                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${quotation.mealPlanPricePerPerson}/day × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        console.log('Meal Plan Display Check:', {
+                          hasMealPlan: !!quotation.mealPlan,
+                          mealPlan: quotation.mealPlan,
+                          mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+                          mealPricePerPerson: quotation.mealPricePerPerson,
+                          calculatedPricePerNight: pricePerNight,
+                          nights: nights
+                        });
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${pricePerNight.toFixed(2)}/day × ${nights} days` : '-';
+                      })()}
                     </div>
                     <div className="text-right font-medium">
-                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${(quotation.mealPlanPricePerPerson * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${(pricePerNight * nights).toFixed(2)}` : 'LKR 0.00';
+                      })()}
                     </div>
                     
                     <div className="text-gray-600 pl-2">Pool Facilities:</div>
@@ -2488,9 +2779,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         <div className="text-green-600 pl-2">Discount ({quotation.discountOffered}%):</div>
                         <div className="text-green-600">Applied to total</div>
                         <div className="text-right text-green-600 font-medium">
-                          -LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
-                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
+                          -LKR {(calculateSubtotalBeforeDiscount(quotation) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
                         </div>
                       </>
                     )}
@@ -2500,10 +2789,9 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     <div className="border-t border-blue-100 pt-1 mt-1"></div>
                     <div className="text-right font-medium border-t border-blue-100 pt-1 mt-1 text-blue-700">
-                      LKR {quotation.groupSize ? 
-                        (((quotation.totalAmount || 0) + 
-                          (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
-                          (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100) / quotation.groupSize).toFixed(2) : '0.00'}
+                      LKR {quotation.totalPricePerPerson 
+                        ? quotation.totalPricePerPerson.toFixed(2)
+                        : calculatePerPersonPrice(quotation).toFixed(2)}
                     </div>
                   </div>
                   
@@ -2537,13 +2825,21 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
         
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
-          {(quotation.status === 'Pending' || quotation.status === 'Under Review') && (
-            <button
-              onClick={() => onDelete(quotation.id)}
-              className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
-            >
-              <span className="material-icons text-sm mr-1">delete</span> Delete
-            </button>
+          {quotation.status === 'Pending' && (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm flex items-center border border-gray-300"
+              >
+                <span className="material-icons text-sm mr-1">edit</span> Edit
+              </button>
+              <button
+                onClick={() => onDelete(quotation.id)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md text-sm flex items-center transition-colors duration-200"
+              >
+                <span className="material-icons text-sm mr-1">delete</span> Delete
+              </button>
+            </>
           )}
           <button
             onClick={onClose}
@@ -2725,8 +3021,8 @@ const StatusBadge = ({ status }) => {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {groupPackages.map((tripPackage) => (
-                  <tr 
-                    key={tripPackage.id} 
+                  <tr
+                    key={tripPackage.id || tripPackage.packageCode}
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleViewGroupPackage(tripPackage)}
                   >
@@ -2906,7 +3202,7 @@ const StatusBadge = ({ status }) => {
                 Check-out Date
               </th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Duration
+                Nights
               </th>
               <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Group Size
@@ -2933,9 +3229,9 @@ const StatusBadge = ({ status }) => {
                 </td>
               </tr>
             ) : (
-              currentQuotations.map((q, index) => (
-                <tr 
-                  key={q.id} 
+              currentQuotations.map((q) => (
+                <tr
+                  key={q.id || q.quoteNumber}
                   className="hover:bg-gray-50 cursor-pointer"
                   onClick={() => handleViewDetails(q)}
                 >
@@ -2955,8 +3251,8 @@ const StatusBadge = ({ status }) => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center text-sm text-gray-600">
-                      <span className="material-icons text-yellow-500 text-xs mr-1">schedule</span>
-                      {calculateDuration(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} days
+                      <span className="material-icons text-yellow-500 text-xs mr-1">nights_stay</span>
+                      {calculateNights(q.checkInDate || q.departureDate, q.checkOutDate || q.returnDate)} nights
                     </div>
                   </td>
                   <td className="py-3 px-4">
@@ -2976,7 +3272,9 @@ const StatusBadge = ({ status }) => {
                     </span>
                   </td>
                   <td className="py-3 px-4 font-medium">
-                    LKR {q.totalAmount ? q.totalAmount.toFixed(2) : '0.00'}
+                    LKR {q.finalAmount 
+                      ? (typeof q.finalAmount === 'number' ? q.finalAmount.toFixed(2) : parseFloat(q.finalAmount).toFixed(2))
+                      : calculateFinalTotal(q)}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
@@ -3017,7 +3315,7 @@ const StatusBadge = ({ status }) => {
             
             {Array.from({ length: Math.ceil(filteredQuotations.length / itemsPerPage) }).map((_, index) => (
               <button
-                key={index}
+                key={`page-${index}`}
                 onClick={() => paginate(index + 1)}
                 className={`px-3 py-1 rounded-md ${
                   currentPage === index + 1
@@ -3207,7 +3505,7 @@ const StatusBadge = ({ status }) => {
                           <span className="material-icons text-yellow-500 text-xs mr-1">info</span>
                           Room allocation will be determined after quotation approval
                         </div>
-                      </div>
+                      </div> 
                       
                       <div className="mt-2 flex items-center justify-between">
                         <div className="text-sm font-medium text-yellow-800">Total Accommodation Price:</div>
@@ -3236,10 +3534,10 @@ const StatusBadge = ({ status }) => {
                           const selectedMealPlan = e.target.value;
                           // Set default prices based on meal plan
                           let mealPlanPrice = 0;
-                          if (selectedMealPlan === 'Breakfast Only') mealPlanPrice = 15;
-                          else if (selectedMealPlan === 'Half Board') mealPlanPrice = 25;
-                          else if (selectedMealPlan === 'Full Board') mealPlanPrice = 40;
-                          else if (selectedMealPlan === 'All Inclusive') mealPlanPrice = 60;
+                          if (selectedMealPlan === 'Breakfast Only') mealPlanPrice = 1000;
+                          else if (selectedMealPlan === 'Half Board') mealPlanPrice = 1500;
+                          else if (selectedMealPlan === 'Full Board') mealPlanPrice = 2000;
+                          else if (selectedMealPlan === 'All Inclusive') mealPlanPrice = 2500;
                           
                           setNewQuotation({
                             ...newQuotation, 
@@ -3399,6 +3697,37 @@ const StatusBadge = ({ status }) => {
                           
                           <div className="text-gray-600 border-t pt-1 mt-1">Total Amount:</div>
                           <div className="text-right font-medium border-t pt-1 mt-1">LKR {calculateFinalTotal(newQuotation)}</div>
+                        </div>
+                      </div>
+
+                      {/* Per-Person Price Breakdown */}
+                      <div className="mb-3 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium flex items-center text-blue-800">
+                            <span className="material-icons text-blue-600 text-sm mr-1">person</span>
+                            Per Person Breakdown
+                          </span>
+                          <span className="text-sm text-blue-600">Saved to Database</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-blue-700">Accommodation per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateAccommodationTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700">Meal plan per person:</div>
+                          <div className="text-right font-medium text-blue-800">
+                            LKR {(calculateMealPlanUpgradeTotal(newQuotation) / (newQuotation.groupSize || 1)).toFixed(2)}
+                          </div>
+                          
+                          <div className="text-blue-700 font-semibold border-t border-blue-300 pt-1">Total per person:</div>
+                          <div className="text-right font-bold text-blue-900 border-t border-blue-300 pt-1">
+                            LKR {calculatePerPersonPrice(newQuotation).toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-blue-600">
+                          <span className="material-icons text-xs mr-1">info</span>
+                          These calculated values will be saved to the database when you create the quotation.
                         </div>
                       </div>
 
@@ -3620,12 +3949,12 @@ const StatusBadge = ({ status }) => {
                             
                             <div className="text-gray-600 pl-2">Meal Plan ({newQuotation.mealPlan || 'None'}):</div>
                             <div className="text-gray-600">
-                              {newQuotation.mealPlanPricePerPerson ? 
+                              {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
                               `LKR ${newQuotation.mealPlanPricePerPerson}/day × ${calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} days` : '-'}
                             </div>
                             <div className="text-right font-medium">
-                              {newQuotation.mealPlanPricePerPerson ? 
-                              `LKR ${(newQuotation.mealPlanPricePerPerson * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                              LKR {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
+                              (newQuotation.mealPlanPricePerPerson * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2) : '0.00'}
                             </div>
                             
                             <div className="text-gray-600 pl-2">Pool Facilities:</div>

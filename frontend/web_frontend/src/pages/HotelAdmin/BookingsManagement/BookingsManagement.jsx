@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import bookingService from '../../../services/bookingService';
 import roomService from '../../../services/roomService';
+import { HotelAuthService, HotelAvailabilityService } from '../../../services/hotelAuthService';
 
 /* ------------------------------------------------------------------ */
 /*  BookingsManagement Component                                      */
@@ -85,30 +87,65 @@ const BookingsManagement = () => {
   useEffect(() => {
     fetchAvailableRooms();
     fetchRoomTypes();
+    fetchHotelAvailability(); // Load hotel availability data
     const fetchBookings = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const data = await bookingService.getAllBookings();
+        
         // Transform data to match frontend model and add display IDs
-        const transformedData = data.map((booking, index) => ({
-          id: booking.id, // Original MongoDB ID
-          displayId: index + 1, // Sequential display ID starting from 1
-          guestName: booking.guestName,
-          guestEmail: booking.guestEmail,
-          guestPhone: '', // Not available in backend model
-          roomType: booking.roomType,
-          roomNumber: String(booking.roomNumber), // Convert to string for frontend
-          adults: 1, // Default values as backend doesn't have these
-          children: 0,
-          checkIn: booking.checkIn,
-          checkOut: booking.checkOut,
-          status: booking.status,
-          paymentStatus: booking.status === 'Confirmed' ? 'Fully Paid' : 'Partially Paid', // Derive from status
-          totalAmount: booking.totalCost,
-          specialRequests: '',
-          paymentMethod: 'Credit Card', // Default value as backend doesn't have this
-        }));
+        const transformedData = data.map((booking, index) => {
+          // Check if this is a traveler booking (Bookingdto) or admin booking
+          const isTravelerBooking = booking.travelerId || booking.providerType;
+          
+          if (isTravelerBooking) {
+            // Transform traveler booking (from bookings collection)
+            return {
+              id: booking.id,
+              displayId: index + 1,
+              guestName: booking.serviceName || 'Traveler Booking',
+              guestEmail: booking.travelerId || '', // Store traveler ID as email for now
+              guestPhone: booking.numberOfGuests ? `${booking.numberOfGuests} guests` : '',
+              roomType: booking.selectedRoomTypes && booking.selectedRoomTypes.length > 0 
+                ? booking.selectedRoomTypes.join(', ') 
+                : 'N/A',
+              roomNumber: booking.numberOfRooms ? String(booking.numberOfRooms) + ' rooms' : 'N/A',
+              adults: booking.adults || 0,
+              children: booking.children || 0,
+              checkIn: booking.checkInDate || booking.serviceStartDate,
+              checkOut: booking.checkOutDate || booking.serviceEndDate,
+              status: booking.status || 'Pending',
+              paymentStatus: booking.paymentStatus || 'Pending',
+              totalAmount: booking.totalAmount ? Number(booking.totalAmount) : 0,
+              specialRequests: booking.specialRequests || '',
+              paymentMethod: 'Online Payment',
+              source: 'traveler', // Mark as traveler booking
+              bookingData: booking, // Store original booking data for reference
+            };
+          } else {
+            // Transform admin booking (existing format)
+            return {
+              id: booking.id,
+              displayId: index + 1,
+              guestName: booking.guestName,
+              guestEmail: booking.guestEmail,
+              guestPhone: '',
+              roomType: booking.roomType,
+              roomNumber: String(booking.roomNumber),
+              adults: 1,
+              children: 0,
+              checkIn: booking.checkIn,
+              checkOut: booking.checkOut,
+              status: booking.status,
+              paymentStatus: booking.status === 'Confirmed' ? 'Fully Paid' : 'Partially Paid',
+              totalAmount: booking.totalCost,
+              specialRequests: '',
+              paymentMethod: 'Credit Card',
+              source: 'admin', // Mark as admin booking
+            };
+          }
+        });
         
         // Update the next display ID
         setNextDisplayId(data.length + 1);
@@ -116,117 +153,6 @@ const BookingsManagement = () => {
       } catch (err) {
         console.error('Failed to fetch bookings:', err);
         setError('Failed to load bookings. Please try again later.');
-        // Fallback to sample data if API fails
-        // setBookings([
-        //   {
-        //     id: 'sample1', // Mock MongoDB ID
-        //     displayId: 1,  // Display ID
-        //     guestName: 'Theekshana Thathsara',
-        //     guestEmail: 'thathsara@example.com',
-        //     guestPhone: '+9471-555-0101',
-        //     roomType: 'Deluxe Room',
-        //     roomNumber: '101',
-        //     adults: 2,
-        //     children: 0,
-        //     checkIn: '2025-06-12',
-        //     checkOut: '2025-06-15',
-        //     status: 'Confirmed',
-        //     paymentStatus: 'Fully Paid',
-        //     totalAmount: 450,
-        //     specialRequests: 'Early check-in if possible',
-        //     paymentMethod: 'Credit Card',
-        //   },
-        //   {
-        //     id: 'sample2', // Mock MongoDB ID
-        //     displayId: 2,  // Display ID
-        //     guestName: 'Tharusha Samarawickrama',
-        //     guestEmail: 'tharusha@example.com',
-        //     guestPhone: '+9477-585-0162',
-        //     roomType: 'Suite',
-        //     roomNumber: '103',
-        //     adults: 2,
-        //     children: 1,
-        //     checkIn: '2025-06-23',
-        //     checkOut: '2025-06-26',
-        //     status: 'Confirmed',
-        //     paymentStatus: 'Partially Paid',
-        //     totalAmount: 750,
-        //     specialRequests: 'High floor with city view',
-        //     paymentMethod: 'Debit Card',
-        //   },
-        //   {
-        //     id: 'sample3', // Mock MongoDB ID
-        //     displayId: 3,  // Display ID
-        //     guestName: 'Hasith Chamika',
-        //     guestEmail: 'chamika@example.com',
-        //     guestPhone: '+9478-958-0175',
-        //     roomType: 'Standard Room',
-        //     roomNumber: '105',
-        //     adults: 1,
-        //     children: 0,
-        //     checkIn: '2025-06-17',
-        //     checkOut: '2025-06-19',
-        //     status: 'Confirmed',
-        //     paymentStatus: 'Fully Paid',
-        //     totalAmount: 240,
-        //     specialRequests: '',
-        //     paymentMethod: 'Credit Card',
-        //   },
-        //   {
-        //     id: 'sample4', // Mock MongoDB ID
-        //     displayId: 4,  // Display ID
-        //     guestName: 'Charitha Sudewa',
-        //     guestEmail: 'charitha@example.com',
-        //     guestPhone: '+9475-963-4583',
-        //     roomType: 'Deluxe Room',
-        //     roomNumber: '201',
-        //     adults: 2,
-        //     children: 2,
-        //     checkIn: '2025-06-18',
-        //     checkOut: '2025-06-20',
-        //     status: 'Cancelled',
-        //     paymentStatus: 'Refunded',
-        //     totalAmount: 300,
-        //     specialRequests: 'Extra rollaway bed',
-        //     paymentMethod: 'Bank Transfer',
-        //   },
-        //   {
-        //     id: 'sample5', // Mock MongoDB ID
-        //     displayId: 5,  // Display ID
-        //     guestName: 'Bimsara Imash',
-        //     guestEmail: 'bimsara@example.com',
-        //     guestPhone: '+9472-852-4635',
-        //     roomType: 'Suite',
-        //     roomNumber: '202',
-        //     adults: 2,
-        //     children: 0,
-        //     checkIn: '2025-06-20',
-        //     checkOut: '2025-06-22',
-        //     status: 'Confirmed',
-        //     paymentStatus: 'Fully Paid',
-        //     totalAmount: 1250,
-        //     specialRequests: 'Late check-out requested',
-        //     paymentMethod: 'Credit Card',
-        //   },
-        //   {
-        //     id: 'sample6', // Mock MongoDB ID
-        //     displayId: 6,  // Display ID
-        //     guestName: 'Teshini Sawidya',
-        //     guestEmail: 'teshini@example.com',
-        //     guestPhone: '+9476-450-6395',
-        //     roomType: 'Standard Room',
-        //     roomNumber: '203',
-        //     adults: 2,
-        //     children: 0,
-        //     checkIn: '2025-06-20',
-        //     checkOut: '2025-06-22',
-        //     status: 'Confirmed',
-        //     paymentStatus: 'Fully Paid',
-        //     totalAmount: 1250,
-        //     specialRequests: 'Late check-out requested',
-        //     paymentMethod: 'Credit Card',
-        //   }
-        // ]);
         setNextDisplayId(7); // Set next display ID after sample data
       }
       setIsLoading(false);
@@ -270,6 +196,23 @@ const BookingsManagement = () => {
   };
   const [newBooking, setNewBooking] = useState(blankBooking);
   const [editBooking, setEditBooking] = useState(null);
+  
+  // Hotel availability state
+  const [hotelAvailability, setHotelAvailability] = useState(new Set());
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [hotelData, setHotelData] = useState(null); // Add hotel data state
+  const today = new Date();
+
+  // Get current user helper function
+  const getCurrentUserId = () => {
+    const user = HotelAuthService.getCurrentUser();
+    return user ? user.username : 'default'; // Use username as unique identifier
+  };
+
+  // Generate user-specific storage key for availability
+  const getUserAvailabilityKey = () => {
+    return `hotelUnavailability_${getCurrentUserId()}`;
+  };
 
   /* -------------------------------------------------------------- */
   /* 2. CONSTANTS & HELPERS                                          */
@@ -364,6 +307,253 @@ const BookingsManagement = () => {
     setFlashMessage({ visible: true, message, type });
   };
 
+  // Hotel availability functions (adapted from dashboard)
+  const fetchHotelAvailability = async () => {
+    try {
+      setAvailabilityLoading(true);
+      
+      // Get current hotel ID from authenticated user
+      const user = HotelAuthService.getCurrentUser();
+      if (!user || !user.hotelId) {
+        console.error('No hotel ID found for current user');
+        return;
+      }
+
+      // Fetch hotel data and availability from database
+      const data = await HotelAvailabilityService.getHotelAvailability(user.hotelId);
+      
+      if (data) {
+        setHotelData(data);
+        
+        // Build availability Set from database
+        const availabilitySet = new Set();
+        
+        if (data.availability && Array.isArray(data.availability)) {
+          data.availability.forEach(avail => {
+            const dateString = avail.date;
+            const status = avail.status; // 'available', 'booked', 'unavailable'
+            
+            // Store each status with date
+            availabilitySet.add(`${status}_${dateString}`);
+          });
+        }
+        
+        setHotelAvailability(availabilitySet);
+      }
+    } catch (error) {
+      console.error('Error fetching hotel availability:', error);
+      showFlashMessage('Error loading hotel availability', 'error');
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
+  // Helper function to get availability status for a date
+  const getAvailabilityStatus = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    
+    // Check what status is set for this date
+    if (hotelAvailability.has(`unavailable_${dateString}`)) {
+      return 'unavailable';
+    }
+    if (hotelAvailability.has(`booked_${dateString}`)) {
+      return 'booked';
+    }
+    if (hotelAvailability.has(`available_${dateString}`)) {
+      return 'available';
+    }
+    
+    // Default is available if not explicitly set
+    return 'available';
+  };
+
+  // Helper function to count booked rooms on a specific date
+  const getBookedRoomsOnDate = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    let bookedCount = 0;
+
+    bookings.forEach(booking => {
+      // Only count confirmed and pending bookings
+      if (booking.status !== 'Confirmed' && booking.status !== 'Pending') {
+        return;
+      }
+
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      const checkDate = new Date(date);
+
+      // Check if this date falls within the booking period (check-in to check-out)
+      if (checkDate >= checkIn && checkDate < checkOut) {
+        // For traveler bookings, numberOfRooms is in the roomNumber field
+        if (booking.source === 'traveler' && booking.roomNumber) {
+          const roomsMatch = booking.roomNumber.match(/(\d+)\s*rooms?/i);
+          if (roomsMatch) {
+            bookedCount += parseInt(roomsMatch[1], 10);
+          }
+        } else {
+          // For admin bookings, count as 1 room
+          bookedCount += 1;
+        }
+      }
+    });
+
+    return bookedCount;
+  };
+
+  // Helper function to get available rooms on a specific date
+  const getAvailableRoomsOnDate = (date) => {
+    if (!hotelData || !hotelData.totalRooms) {
+      return 0; // If no hotel data, assume no rooms available
+    }
+
+    const totalRooms = hotelData.totalRooms;
+    const bookedRooms = getBookedRoomsOnDate(date);
+    const availableRooms = totalRooms - bookedRooms;
+
+    return Math.max(0, availableRooms); // Can't be negative
+  };
+
+  // Helper function to check if hotel is available on a date
+  // Updated logic: 
+  // - 'unavailable' = Cannot book at all (hotel closed)
+  // - 'booked' = Can book if rooms are available (partial bookings OK)
+  // - 'available' = Can book freely
+  const isHotelAvailable = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const todayString = format(today, 'yyyy-MM-dd');
+    
+    // Past dates are unavailable by default
+    if (dateString < todayString) {
+      return false;
+    }
+    
+    const status = getAvailabilityStatus(date);
+    
+    // If manually marked as unavailable, no bookings allowed
+    if (status === 'unavailable') {
+      return false;
+    }
+    
+    // If status is 'booked', check if there are available rooms
+    if (status === 'booked') {
+      return getAvailableRoomsOnDate(date) > 0;
+    }
+    
+    // If status is 'available' or any other status, allow booking
+    return true;
+  };
+
+  // Helper function to check if a date conflicts with existing bookings
+  const hasBookingConflict = (date, excludeBookingId = null) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    
+    return bookings.some(booking => {
+      // Skip the booking being edited (for edit form)
+      if (excludeBookingId && booking.id === excludeBookingId) {
+        return false;
+      }
+      
+      // Only check confirmed and pending bookings
+      if (booking.status !== 'Confirmed' && booking.status !== 'Pending') {
+        return false;
+      }
+      
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+      const checkDate = new Date(date);
+      
+      // Check if the date falls within the booking period
+      // A booking occupies the hotel from check-in date up to (but not including) check-out date
+      return checkDate >= checkIn && checkDate < checkOut;
+    });
+  };
+
+  // Combined function to check if a date is fully available (hotel + no booking conflicts)
+  const isDateFullyAvailable = (date, excludeBookingId = null) => {
+    return isHotelAvailable(date) && !hasBookingConflict(date, excludeBookingId);
+  };
+
+  // Function to validate if a date range is available (updated to include booking conflicts)
+  const isDateRangeAvailable = (checkInDate, checkOutDate, excludeBookingId = null) => {
+    if (!checkInDate || !checkOutDate) return false;
+    
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    
+    // Iterate through each night of the stay
+    for (let date = new Date(checkIn); date < checkOut; date.setDate(date.getDate() + 1)) {
+      if (!isDateFullyAvailable(date, excludeBookingId)) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  // Get the next available date from a given start date (updated to include booking conflicts)
+  const getNextAvailableDate = (startDate = new Date(), excludeBookingId = null) => {
+    const date = new Date(startDate);
+    const maxDaysToCheck = 365; // Prevent infinite loop
+    let daysChecked = 0;
+    
+    while (daysChecked < maxDaysToCheck) {
+      if (isDateFullyAvailable(date, excludeBookingId)) {
+        return format(date, 'yyyy-MM-dd');
+      }
+      date.setDate(date.getDate() + 1);
+      daysChecked++;
+    }
+    
+    // Fallback to today if no available date found
+    return format(new Date(), 'yyyy-MM-dd');
+  };
+
+  // Enhanced input change handler that validates availability
+  const handleInputChangeWithAvailabilityCheck = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'checkIn' || name === 'checkOut') {
+      // Update the booking state first
+      const updatedBooking = { ...newBooking, [name]: value };
+      
+      // Check if both dates are set and validate availability
+      if (updatedBooking.checkIn && updatedBooking.checkOut) {
+        if (!isDateRangeAvailable(updatedBooking.checkIn, updatedBooking.checkOut)) {
+          showFlashMessage('Selected dates are not available due to hotel restrictions or existing bookings. Please choose different dates.', 'error');
+          return;
+        }
+      }
+      
+      setNewBooking(updatedBooking);
+    } else {
+      // For non-date fields, use regular handler
+      handleInputChange(e);
+    }
+  };
+
+  // Enhanced edit input change handler that validates availability
+  const handleEditInputChangeWithAvailabilityCheck = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'checkIn' || name === 'checkOut') {
+      // Update the edit booking state first
+      const updatedBooking = { ...editBooking, [name]: value };
+      
+      // Check if both dates are set and validate availability (exclude current booking from conflict check)
+      if (updatedBooking.checkIn && updatedBooking.checkOut) {
+        if (!isDateRangeAvailable(updatedBooking.checkIn, updatedBooking.checkOut, editBooking.id)) {
+          showFlashMessage('Selected dates are not available due to hotel restrictions or existing bookings. Please choose different dates.', 'error');
+          return;
+        }
+      }
+      
+      setEditBooking(updatedBooking);
+    } else {
+      // For non-date fields, use regular handler
+      handleEditInputChange(e);
+    }
+  };
+
   /* -------------------------------------------------------------- */
   /* 3. HANDLERS                                                    */
   /* -------------------------------------------------------------- */
@@ -436,6 +626,12 @@ const BookingsManagement = () => {
       if (!newBooking.guestName || !newBooking.guestEmail || !newBooking.roomType || 
           !newBooking.roomNumber || !newBooking.checkIn || !newBooking.checkOut) {
         showFlashMessage('Please fill in all required fields.', 'error');
+        return;
+      }
+      
+      // Validate hotel availability for the selected date range
+      if (!isDateRangeAvailable(newBooking.checkIn, newBooking.checkOut)) {
+        showFlashMessage('Hotel is not available for the selected dates due to restrictions or existing bookings. Please choose different dates.', 'error');
         return;
       }
       
@@ -554,6 +750,12 @@ const BookingsManagement = () => {
     e.preventDefault();
 
     try {
+      // Validate hotel availability for the selected date range (exclude current booking from conflict check)
+      if (!isDateRangeAvailable(editBooking.checkIn, editBooking.checkOut, editBooking.id)) {
+        showFlashMessage('Hotel is not available for the selected dates due to restrictions or existing bookings. Please choose different dates.', 'error');
+        return;
+      }
+      
       const calculatedAmount = calculateAmount(editBooking);
       const updatedBooking = {
         ...editBooking,
@@ -876,8 +1078,17 @@ const BookingsManagement = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredBookings.map((b) => (
-              <tr key={b.id}>
-                <td className="py-3 px-4">#{b.displayId}</td>
+              <tr key={b.id} className={b.source === 'traveler' ? 'bg-blue-50' : ''}>
+                <td className="py-3 px-4">
+                  <div className="flex items-center space-x-2">
+                    <span>#{b.displayId}</span>
+                    {b.source === 'traveler' && (
+                      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800" title="Traveler Booking">
+                        👤
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="py-3 px-4">{b.guestName}</td>
                 <td className="py-3 px-4">
                   {b.roomType} ({b.roomNumber})
@@ -1046,18 +1257,21 @@ const BookingsManagement = () => {
                     label="Check-in*"
                     type="date"
                     name="checkIn"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getNextAvailableDate()}
                     value={newBooking.checkIn}
-                    onChange={handleInputChange}
+                    onChange={handleInputChangeWithAvailabilityCheck}
                     required
                   />
                   <Input
                     label="Check-out*"
                     type="date"
                     name="checkOut"
-                    min={newBooking.checkIn || undefined}
+                    min={newBooking.checkIn ? 
+                      getNextAvailableDate(new Date(new Date(newBooking.checkIn).getTime() + 24 * 60 * 60 * 1000)) : 
+                      getNextAvailableDate(new Date(new Date().getTime() + 24 * 60 * 60 * 1000))
+                    }
                     value={newBooking.checkOut}
-                    onChange={handleInputChange}
+                    onChange={handleInputChangeWithAvailabilityCheck}
                     required
                   />
                   <Input
@@ -1263,17 +1477,21 @@ const BookingsManagement = () => {
                     label="Check-in*"
                     type="date"
                     name="checkIn"
+                    min={getNextAvailableDate(new Date(), editBooking?.id)}
                     value={editBooking.checkIn}
-                    onChange={handleEditInputChange}
+                    onChange={handleEditInputChangeWithAvailabilityCheck}
                     required
                   />
                   <Input
                     label="Check-out*"
                     type="date"
                     name="checkOut"
-                    min={editBooking.checkIn || undefined}
+                    min={editBooking.checkIn ? 
+                      getNextAvailableDate(new Date(new Date(editBooking.checkIn).getTime() + 24 * 60 * 60 * 1000), editBooking?.id) : 
+                      getNextAvailableDate(new Date(new Date().getTime() + 24 * 60 * 60 * 1000), editBooking?.id)
+                    }
                     value={editBooking.checkOut}
-                    onChange={handleEditInputChange}
+                    onChange={handleEditInputChangeWithAvailabilityCheck}
                     required
                   />
                   <Input
@@ -1386,7 +1604,19 @@ const BookingsManagement = () => {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             {/* Modal header */}
             <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-              <h3 className="text-xl font-bold">Booking #{selectedBooking.displayId} Details</h3>
+              <div className="flex items-center space-x-3">
+                <h3 className="text-xl font-bold">Booking #{selectedBooking.displayId} Details</h3>
+                {selectedBooking.source === 'traveler' && (
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                    Traveler Booking
+                  </span>
+                )}
+                {selectedBooking.source === 'admin' && (
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                    Admin Booking
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setShowViewModal(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -1426,6 +1656,39 @@ const BookingsManagement = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Traveler Booking Info - Show additional details for traveler bookings */}
+              {selectedBooking.source === 'traveler' && selectedBooking.bookingData && (
+                <section className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="text-lg font-medium mb-3 text-blue-900">Online Booking Details</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {selectedBooking.bookingData.payHereOrderId && (
+                      <div>
+                        <p className="font-medium text-gray-600">Order ID</p>
+                        <p className="text-gray-900">{selectedBooking.bookingData.payHereOrderId}</p>
+                      </div>
+                    )}
+                    {selectedBooking.bookingData.bookingTime && (
+                      <div>
+                        <p className="font-medium text-gray-600">Booking Time</p>
+                        <p className="text-gray-900">{new Date(selectedBooking.bookingData.bookingTime).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {selectedBooking.bookingData.numberOfGuests && (
+                      <div>
+                        <p className="font-medium text-gray-600">Number of Guests</p>
+                        <p className="text-gray-900">{selectedBooking.bookingData.numberOfGuests}</p>
+                      </div>
+                    )}
+                    {selectedBooking.bookingData.numberOfNights && (
+                      <div>
+                        <p className="font-medium text-gray-600">Number of Nights</p>
+                        <p className="text-gray-900">{selectedBooking.bookingData.numberOfNights}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
 
               {/* Guest Information */}
               <section>
@@ -1516,11 +1779,26 @@ const BookingsManagement = () => {
                   <p className="bg-gray-50 p-3 rounded-md">{selectedBooking.specialRequests}</p>
                 </section>
               )}
+
+              {/* Note for traveler bookings */}
+              {selectedBooking.source === 'traveler' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <span className="material-icons text-yellow-600 mr-2">info</span>
+                    <div>
+                      <p className="font-medium text-yellow-800">Traveler Booking Notice</p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        This booking was made through the traveler system. Editing and deletion are managed through the traveler interface.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
             <div className="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
-              {selectedBooking.status !== 'Cancelled' && (
+              {selectedBooking.source !== 'traveler' && selectedBooking.status !== 'Cancelled' && (
                 <button
                   onClick={() => {
                     handleDelete(selectedBooking.id);
@@ -1530,7 +1808,7 @@ const BookingsManagement = () => {
                   Delete
                 </button>
               )}
-              {selectedBooking.status !== 'Cancelled' && (
+              {selectedBooking.source !== 'traveler' && selectedBooking.status !== 'Cancelled' && (
                 <button
                   onClick={() => {
                     setShowViewModal(false);

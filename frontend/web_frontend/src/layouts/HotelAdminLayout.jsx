@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useHotel } from '../contexts/HotelContext';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -10,7 +10,29 @@ const HotelAdminSidebar = () => {
   return (
     <div className="bg-white shadow-lg h-screen w-64 fixed left-0 top-0 border-r border-gray-200 overflow-y-auto">
       <div className="p-6 border-b border-gray-200">
-        <img src="/hotel-logo.svg" alt="Hotel Logo" className="h-10 mx-auto mb-2" />
+        {/* Hotel Profile Image */}
+        <div className="flex justify-center mb-4">
+          {hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? (
+            <img 
+              src={hotel?.thumbnail || hotel?.images[0]} 
+              alt="Hotel Profile" 
+              className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400 shadow-lg"
+              onError={(e) => {
+                // Fallback to default icon if image fails to load
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div 
+            className={`w-20 h-20 rounded-full bg-yellow-400 flex items-center justify-center border-4 border-yellow-500 shadow-lg ${
+              hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? 'hidden' : 'flex'
+            }`}
+          >
+            <span className="material-icons text-white text-4xl">business</span>
+          </div>
+        </div>
+        
         <h2 className="text-lg font-bold text-center text-gray-800">
           {loading ? 'Loading...' : hotel?.hotelName || 'Hotel Admin'}
         </h2>
@@ -22,67 +44,144 @@ const HotelAdminSidebar = () => {
       <nav className="mt-6 px-4">
         <ul className="space-y-2">
           <li>
-            <a 
-              href="/hotel/dashboard" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/dashboard" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">dashboard</span>
-              <span>Dashboard</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>dashboard</span>
+                  <span>Dashboard</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/rooms" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/rooms" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">hotel</span>
-              <span>Room Management</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>hotel</span>
+                  <span>Room Management</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/bookings" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/bookings" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">calendar_today</span>
-              <span>Bookings</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>calendar_today</span>
+                  <span>Bookings</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/quotations" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/quotations" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">receipt</span>
-              <span>Quotation Requests</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>receipt</span>
+                  <span>Quotation Requests</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/earnings" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/earnings" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">payments</span>
-              <span>Earnings</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>payments</span>
+                  <span>Earnings</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/feedback" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/feedback" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">reviews</span>
-              <span>Feedback</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>reviews</span>
+                  <span>Feedback</span>
+                </>
+              )}
+            </NavLink>
           </li>
           <li>
-            <a 
-              href="/hotel/profile" 
-              className="flex items-center p-3 text-gray-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            <NavLink 
+              to="/hotel/profile" 
+              end
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-all duration-200 border-l-4 ${
+                  isActive 
+                    ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                    : 'text-gray-700 hover:bg-yellow-50 border-transparent'
+                }`
+              }
             >
-              <span className="material-icons mr-3 text-gray-500">account_circle</span>
-              <span>Profile</span>
-            </a>
+              {({ isActive }) => (
+                <>
+                  <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : 'text-gray-500'}`}>account_circle</span>
+                  <span>Profile</span>
+                </>
+              )}
+            </NavLink>
           </li>
         </ul>
       </nav>
@@ -120,18 +219,18 @@ const HotelAdminHeader = () => {
         </h1>
         
         <div className="flex items-center space-x-4">
-          <a 
-            href="/hotel/notifications" 
+          <NavLink 
+            to="/hotel/notifications" 
             className="p-2 text-gray-500 hover:text-yellow-500 rounded-full relative"
           >
             <span className="material-icons">notifications</span>
             <span className="absolute top-1 right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
               2
             </span>
-          </a>
+          </NavLink>
           
-          <a 
-            href="/hotel/profile" 
+          <NavLink 
+            to="/hotel/profile" 
             className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100"
           >
             <div className="w-8 h-8 bg-gray-200 rounded-full overflow-hidden">
@@ -144,7 +243,7 @@ const HotelAdminHeader = () => {
             <span className="text-sm font-medium text-gray-700">
               {loading ? 'Loading...' : hotel?.name || 'Admin'}
             </span>
-          </a>
+          </NavLink>
         </div>
       </div>
     </header>
@@ -160,9 +259,9 @@ const HotelAdminLayout = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-6 bg-white rounded-lg shadow-md">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
-          <h2 className="text-xl font-semibold mb-2">Loading Hotel Dashboard</h2>
-          <p className="text-gray-500">Please wait while we load your profile...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div> 
+          <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+          <p className="text-gray-500">Please wait while we load the page...</p>
         </div>
       </div>
     );

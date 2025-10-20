@@ -1,4 +1,8 @@
 package com.example.student.services;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
 import com.example.student.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
+
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -29,6 +33,23 @@ public class Hashingpw {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Allow your React app's origin
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081")); // Use your React app's port
+        // Allow all standard methods (GET, POST, etc.)
+        configuration.setAllowedMethods(Arrays.asList("*"));
+        // Allow all standard headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // Allow credentials
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply this config to all routes
+        return source;
     }
 
     @Bean
@@ -177,6 +198,7 @@ public class Hashingpw {
                                 "/reviews//stats",
                                 "/reviews/service-search",
                                 "/reviews/by-rating",
+                                "/api/translate/**",
                                 "/api/test/public",
                                 "/hotel-rooms/**",
                                 "/api/guide/search",

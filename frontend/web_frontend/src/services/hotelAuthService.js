@@ -188,4 +188,55 @@ const HotelRoomService = {
   },
 };
 
-export { HotelAuthService, HotelRoomService, hotelApiClient };
+/**
+ * Hotel availability service using authenticated API client
+ */
+const HotelAvailabilityService = {
+  /**
+   * Get hotel availability data
+   * @returns {Promise} - Promise with availability data
+   */
+  getAvailability: async () => {
+    try {
+      const response = await hotelApiClient.get('/hotels/availability');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch availability:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Update hotel availability for specific dates
+   * @param {Array} availabilityData - Array of availability entries
+   * @returns {Promise} - Promise with updated availability data
+   */
+  updateAvailability: async (availabilityData) => {
+    try {
+      const response = await hotelApiClient.post('/hotels/availability', { availability: availabilityData });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update availability:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Set availability for a single date
+   * @param {string} date - Date in YYYY-MM-DD format
+   * @param {string} status - Status: 'available', 'booked', or 'unavailable'
+   * @param {string} reason - Reason for the status
+   * @returns {Promise} - Promise with updated availability
+   */
+  setDateAvailability: async (date, status, reason = '') => {
+    try {
+      const response = await hotelApiClient.put('/hotels/availability/date', { date, status, reason });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to set date availability:', error);
+      throw error;
+    }
+  },
+};
+
+export { HotelAuthService, HotelRoomService, HotelAvailabilityService, hotelApiClient };

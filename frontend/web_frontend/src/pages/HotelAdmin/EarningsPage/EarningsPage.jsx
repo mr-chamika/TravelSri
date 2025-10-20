@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,9 +14,14 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
+import toast from 'react-hot-toast';
 
 // Import services
 import bookingService from '../../../services/bookingService';
+import { HotelAuthService } from '../../../services/hotelAuthService';
 
 // Register Chart.js components
 ChartJS.register(
@@ -53,6 +58,18 @@ const EarningsPage = () => {
     earningsByDayOfWeek: {},
     earningsTrend: []
   });
+
+  // Report generation state
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [showReportOptions, setShowReportOptions] = useState(false);
+  const [reportType, setReportType] = useState('detailed'); // 'detailed', 'summary', 'custom'
+  const [reportDateRange, setReportDateRange] = useState('month'); // 'week', 'month', 'quarter', 'year', 'custom'
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  
+  // Refs for chart capture
+  const trendChartRef = useRef(null);
+  const roomTypeChartRef = useRef(null);
+  const dayOfWeekChartRef = useRef(null);
 
   // Fetch booking data from API
   useEffect(() => {
@@ -298,6 +315,393 @@ const EarningsPage = () => {
     }, 0);
   };
   
+  // ========== REPORT GENERATION FUNCTIONS ==========
+  
+  // Get hotel name from authenticated user
+  const getHotelName = () => {
+    const user = HotelAuthService.getCurrentUser();
+    return user?.hotelName || 'Hotel';
+  };
+  
+  // Get bookings for report based on selected date range
+  const getReportBookings = () => {
+    if (!bookings || bookings.length === 0) return [];
+    
+    const now = new Date();
+    let startDate, endDate = now;
+    
+    if (reportDateRange === 'custom') {
+      if (!customDateRange.start || !customDateRange.end) return [];
+      startDate = new Date(customDateRange.start);
+      endDate = new Date(customDateRange.end);
+    } else {
+      switch(reportDateRange) {
+        case 'week':
+          startDate = new Date();
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate = new Date();
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'quarter':
+          startDate = new Date();
+          startDate.setMonth(now.getMonth() - 3);
+          break;
+        case 'year':
+          startDate = new Date();
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          startDate = new Date();
+          startDate.setMonth(now.getMonth() - 1);
+      }
+    }
+    
+    return bookings.filter(booking => {
+      const bookingDate = booking.createdAt ? new Date(booking.createdAt) : new Date();
+      return bookingDate >= startDate && bookingDate <= endDate;
+    });
+  };
+  
+  // Calculate report statistics
+  const getReportStats = (reportBookings) => {
+    if (!reportBookings || reportBookings.length === 0) {
+      return {
+        totalRevenue: 0,
+        totalBookings: 0,
+        averageBookingValue: 0,
+        commission: 0,
+        netRevenue: 0,
+        roomTypeBreakdown: {},
+        statusBreakdown: {},
+        paymentMethodBreakdown: {}
+      };
+    }
+    
+    let totalRevenue = 0;
+    const roomTypeBreakdown = {};
+    const statusBreakdown = {};
+    const paymentMethodBreakdown = {};
+    
+    reportBookings.forEach(booking => {
+      const amount = booking.totalCost || booking.totalAmount || 0;
+      totalRevenue += amount;
+      
+      // Room type breakdown
+      const roomType = booking.roomType || 'Unknown';
+      roomTypeBreakdown[roomType] = (roomTypeBreakdown[roomType] || 0) + amount;
+      
+      // Status breakdown
+      const status = booking.status || 'Unknown';
+      statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
+      
+      // Payment method breakdown
+      const paymentMethod = booking.paymentMethod || 'Unknown';
+      paymentMethodBreakdown[paymentMethod] = (paymentMethodBreakdown[paymentMethod] || 0) + amount;
+    });
+    
+    const totalBookings = reportBookings.length;
+    const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+    const commission = totalRevenue * 0.1; // 10% commission
+    const netRevenue = totalRevenue - commission;
+    
+    return {
+      totalRevenue,
+      totalBookings,
+      averageBookingValue,
+      commission,
+      netRevenue,
+      roomTypeBreakdown,
+      statusBreakdown,
+      paymentMethodBreakdown
+    };
+  };
+  
+  // Format date range for report header
+  const getReportDateRangeText = () => {
+    if (reportDateRange === 'custom') {
+      if (!customDateRange.start || !customDateRange.end) return 'Custom Range';
+      return `${format(new Date(customDateRange.start), 'MMM dd, yyyy')} - ${format(new Date(customDateRange.end), 'MMM dd, yyyy')}`;
+    }
+    
+    const now = new Date();
+    let startDate;
+    
+    switch(reportDateRange) {
+      case 'week':
+        startDate = new Date();
+        startDate.setDate(now.getDate() - 7);
+        return `${format(startDate, 'MMM dd, yyyy')} - ${format(now, 'MMM dd, yyyy')}`;
+      case 'month':
+        startDate = new Date();
+        startDate.setMonth(now.getMonth() - 1);
+        return `${format(startDate, 'MMM dd, yyyy')} - ${format(now, 'MMM dd, yyyy')}`;
+      case 'quarter':
+        startDate = new Date();
+        startDate.setMonth(now.getMonth() - 3);
+        return `${format(startDate, 'MMM dd, yyyy')} - ${format(now, 'MMM dd, yyyy')}`;
+      case 'year':
+        startDate = new Date();
+        startDate.setFullYear(now.getFullYear() - 1);
+        return `${format(startDate, 'MMM dd, yyyy')} - ${format(now, 'MMM dd, yyyy')}`;
+      default:
+        return 'Last Month';
+    }
+  };
+  
+  // Generate PDF Report
+  const generatePDFReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      
+      console.log('Starting PDF generation...');
+      
+      const reportBookings = getReportBookings();
+      console.log('Report bookings:', reportBookings.length);
+      
+      const stats = getReportStats(reportBookings);
+      console.log('Report stats:', stats);
+      
+      // Helper function for currency formatting (defined locally)
+      const formatCurrencyForPDF = (amount) => {
+        return new Intl.NumberFormat('en-LK', {
+          style: 'currency',
+          currency: 'LKR',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(amount);
+      };
+      
+      // Create PDF document
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPosition = 20;
+      
+      console.log('PDF document created');
+      
+      // Header
+      doc.setFillColor(255, 198, 0); // Yellow theme
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${getHotelName()}`, pageWidth / 2, 15, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.text('Financial Report', pageWidth / 2, 25, { align: 'center' });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      yPosition = 45;
+      
+      console.log('Header added');
+      
+      // Report Info
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Report Type: ${reportType === 'detailed' ? 'Detailed' : reportType === 'summary' ? 'Summary' : 'Custom'}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Period: ${getReportDateRangeText()}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Total Bookings: ${stats.totalBookings}`, 14, yPosition);
+      yPosition += 12;
+      
+      console.log('Report info added');
+      
+      // Summary Statistics
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(255, 152, 0);
+      doc.text('Financial Summary', 14, yPosition);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 8;
+      
+      const summaryData = [
+        ['Metric', 'Amount'],
+        ['Total Revenue', formatCurrencyForPDF(stats.totalRevenue)],
+        ['Platform Commission (10%)', formatCurrencyForPDF(stats.commission)],
+        ['Net Revenue', formatCurrencyForPDF(stats.netRevenue)],
+        ['Average Booking Value', formatCurrencyForPDF(stats.averageBookingValue)],
+      ];
+      
+      console.log('Summary data prepared');
+      
+      autoTable(doc, {
+        startY: yPosition,
+        head: [summaryData[0]],
+        body: summaryData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [255, 198, 0], textColor: [255, 255, 255] },
+        margin: { left: 14, right: 14 },
+      });
+      
+      yPosition = doc.lastAutoTable.finalY + 12;
+      
+      console.log('Summary table added');
+      
+      // Room Type Breakdown
+      if (reportType !== 'summary') {
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(255, 152, 0);
+        doc.text('Revenue by Room Type', 14, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 8;
+        
+        const roomTypeData = [
+          ['Room Type', 'Revenue', 'Percentage'],
+          ...Object.entries(stats.roomTypeBreakdown).map(([type, amount]) => [
+            type,
+            formatCurrencyForPDF(amount),
+            `${((amount / stats.totalRevenue) * 100).toFixed(1)}%`
+          ])
+        ];
+        
+        console.log('Room type data prepared');
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [roomTypeData[0]],
+          body: roomTypeData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [255, 198, 0], textColor: [255, 255, 255] },
+          margin: { left: 14, right: 14 },
+        });
+        
+        yPosition = doc.lastAutoTable.finalY + 12;
+        console.log('Room type table added');
+      }
+      
+      // Booking Status Breakdown
+      if (reportType === 'detailed') {
+        // Check if we need a new page
+        if (yPosition > pageHeight - 60) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(255, 152, 0);
+        doc.text('Booking Status Distribution', 14, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 8;
+        
+        const statusData = [
+          ['Status', 'Count', 'Percentage'],
+          ...Object.entries(stats.statusBreakdown).map(([status, count]) => [
+            status,
+            count.toString(),
+            `${((count / stats.totalBookings) * 100).toFixed(1)}%`
+          ])
+        ];
+        
+        console.log('Status data prepared');
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [statusData[0]],
+          body: statusData.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [255, 198, 0], textColor: [255, 255, 255] },
+          margin: { left: 14, right: 14 },
+        });
+        
+        yPosition = doc.lastAutoTable.finalY + 12;
+        console.log('Status table added');
+        
+        // Detailed Bookings List
+        if (yPosition > pageHeight - 60) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(255, 152, 0);
+        doc.text('Detailed Booking List', 14, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += 8;
+        
+        const bookingsData = [
+          ['Date', 'Guest', 'Room Type', 'Status', 'Amount'],
+          ...reportBookings.slice(0, 50).map(booking => [
+            format(booking.createdAt ? new Date(booking.createdAt) : new Date(), 'MMM dd, yyyy'),
+            booking.guestName || 'N/A',
+            booking.roomType || 'N/A',
+            booking.status || 'N/A',
+            formatCurrencyForPDF(booking.totalCost || booking.totalAmount || 0)
+          ])
+        ];
+        
+        console.log('Bookings data prepared');
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [bookingsData[0]],
+          body: bookingsData.slice(1),
+          theme: 'striped',
+          headStyles: { fillColor: [255, 198, 0], textColor: [255, 255, 255] },
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 8 },
+        });
+        
+        console.log('Bookings table added');
+      }
+      
+      // Footer on all pages
+      console.log('Adding footers...');
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+        doc.text(
+          `${getHotelName()} - Confidential`,
+          14,
+          pageHeight - 10
+        );
+      }
+      
+      console.log('Footers added, saving PDF...');
+      
+      // Save PDF
+      const fileName = `Financial_Report_${getHotelName().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      doc.save(fileName);
+      
+      console.log('PDF saved successfully!');
+      
+  setIsGeneratingReport(false);
+  setShowReportOptions(false);
+  toast.success('✅ PDF report generated successfully!');
+      
+    } catch (error) {
+  console.error('Error generating PDF report:', error);
+  console.error('Error stack:', error.stack);
+  console.error('Error message:', error.message);
+  toast.error(`❌ Failed to generate report. Error: ${error.message}`);
+  setIsGeneratingReport(false);
+    }
+  };
+  
+  // Print Report (opens print dialog)
+  const printReport = () => {
+    window.print();
+  };
+  
+  // ========== END REPORT GENERATION FUNCTIONS ==========
+  
   // Chart title suffix based on filter
   const getFilterTitle = () => {
     switch(dateRange) {
@@ -401,11 +805,113 @@ const EarningsPage = () => {
   };
 
   return (
-    <div className="p-6">
-      <header className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">Revenue Analytics</h2>
-        <p className="text-gray-600">Track your hotel's financial performance</p>
-      </header>
+    <>
+      {/* Print Styles - Hide everything except earnings content when printing */}
+      <style>
+        {`
+          @media print {
+            /* Hide everything by default */
+            body * {
+              visibility: hidden;
+            }
+            
+            /* Show only the printable earnings content */
+            #printable-earnings-content,
+            #printable-earnings-content * {
+              visibility: visible;
+            }
+            
+            /* Position printable content at top-left */
+            #printable-earnings-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            
+            /* Hide buttons and interactive elements */
+            .no-print,
+            button,
+            .print-hide {
+              display: none !important;
+            }
+            
+            /* Remove backgrounds for print */
+            body {
+              background: white !important;
+            }
+            
+            /* Optimize charts for print */
+            canvas {
+              max-width: 100% !important;
+              height: auto !important;
+            }
+            
+            /* Page breaks */
+            .page-break-before {
+              page-break-before: always;
+            }
+            
+            .page-break-after {
+              page-break-after: always;
+            }
+            
+            /* Ensure tables print properly */
+            table {
+              page-break-inside: avoid;
+            }
+            
+            /* Print header styling */
+            .print-header {
+              text-align: center;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #FFC600;
+            }
+            
+            /* Remove shadows and transitions for print */
+            * {
+              box-shadow: none !important;
+              transition: none !important;
+            }
+          }
+        `}
+      </style>
+      
+      <div className="p-6" id="printable-earnings-content">
+        {/* Print Header - Only visible when printing */}
+        <div className="print-header hidden print:block mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">{getHotelName()} - Financial Report</h1>
+          <p className="text-gray-600 mt-2">Generated: {format(new Date(), 'MMMM dd, yyyy HH:mm')}</p>
+          <p className="text-gray-600">Period: {dateRange === 'week' ? 'Last 7 Days' : dateRange === 'month' ? 'Last 30 Days' : 'Last 12 Months'}</p>
+        </div>
+        
+        <header className="mb-8 flex justify-between items-center print-hide">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Revenue Analytics</h2>
+            <p className="text-gray-600">Track your hotel's financial performance</p>
+          </div>
+          
+          {/* Report Generation Button */}
+          <div className="flex gap-3 no-print">
+            <button
+              onClick={() => setShowReportOptions(true)}
+              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105"
+            >
+              <span className="material-icons">description</span>
+              <span className="font-medium">Generate Report</span>
+            </button>
+            
+            <button
+              onClick={printReport}
+              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105"
+              title="Print Current View"
+            >
+              <span className="material-icons">print</span>
+              <span className="font-medium">Print</span>
+            </button>
+          </div>
+        </header>
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -718,7 +1224,187 @@ const EarningsPage = () => {
 
         </>
       )}
+      
+      {/* Report Options Modal */}
+      {showReportOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-t-lg">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className="material-icons text-white text-3xl">assessment</span>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">Generate Financial Report</h3>
+                    <p className="text-yellow-100 text-sm">Customize and download your financial report</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowReportOptions(false)}
+                  className="text-white hover:bg-yellow-600 rounded-full p-1 transition-colors"
+                >
+                  <span className="material-icons">close</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Report Type Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  <span className="material-icons text-lg align-middle mr-1">article</span>
+                  Report Type
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setReportType('summary')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      reportType === 'summary'
+                        ? 'border-yellow-500 bg-yellow-50 shadow-md'
+                        : 'border-gray-200 hover:border-yellow-300'
+                    }`}
+                  >
+                    <span className="material-icons text-2xl block mb-2 text-yellow-600">summarize</span>
+                    <span className="block font-medium text-sm">Summary</span>
+                    <span className="block text-xs text-gray-500">Quick overview</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setReportType('detailed')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      reportType === 'detailed'
+                        ? 'border-yellow-500 bg-yellow-50 shadow-md'
+                        : 'border-gray-200 hover:border-yellow-300'
+                    }`}
+                  >
+                    <span className="material-icons text-2xl block mb-2 text-yellow-600">description</span>
+                    <span className="block font-medium text-sm">Detailed</span>
+                    <span className="block text-xs text-gray-500">Full breakdown</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setReportType('custom')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      reportType === 'custom'
+                        ? 'border-yellow-500 bg-yellow-50 shadow-md'
+                        : 'border-gray-200 hover:border-yellow-300'
+                    }`}
+                  >
+                    <span className="material-icons text-2xl block mb-2 text-yellow-600">tune</span>
+                    <span className="block font-medium text-sm">Custom</span>
+                    <span className="block text-xs text-gray-500">Customize fields</span>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Date Range Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  <span className="material-icons text-lg align-middle mr-1">date_range</span>
+                  Date Range
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {['week', 'month', 'quarter', 'year', 'custom'].map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setReportDateRange(range)}
+                      className={`py-2 px-3 rounded-lg border-2 font-medium text-sm transition-all ${
+                        reportDateRange === range
+                          ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
+                          : 'border-gray-200 hover:border-yellow-300 text-gray-600'
+                      }`}
+                    >
+                      {range === 'week' && 'Last Week'}
+                      {range === 'month' && 'Last Month'}
+                      {range === 'quarter' && 'Last Quarter'}
+                      {range === 'year' && 'Last Year'}
+                      {range === 'custom' && 'Custom'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Custom Date Range Inputs */}
+              {reportDateRange === 'custom' && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={customDateRange.start}
+                        onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={customDateRange.end}
+                        onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Report Preview Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-blue-600">info</span>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-900 mb-2">Report Preview</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• <strong>Type:</strong> {reportType === 'detailed' ? 'Detailed Report' : reportType === 'summary' ? 'Summary Report' : 'Custom Report'}</li>
+                      <li>• <strong>Period:</strong> {getReportDateRangeText()}</li>
+                      <li>• <strong>Bookings:</strong> {getReportBookings().length} bookings</li>
+                      <li>• <strong>Total Revenue:</strong> {formatCurrency(getReportStats(getReportBookings()).totalRevenue)}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex gap-3 justify-end">
+              <button
+                onClick={() => setShowReportOptions(false)}
+                disabled={isGeneratingReport}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              
+              <button
+                onClick={generatePDFReport}
+                disabled={isGeneratingReport || (reportDateRange === 'custom' && (!customDateRange.start || !customDateRange.end))}
+                className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isGeneratingReport ? (
+                  <>
+                    <span className="material-icons animate-spin">refresh</span>
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-icons">download</span>
+                    <span>Download PDF</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 };
 

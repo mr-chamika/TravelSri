@@ -35,7 +35,7 @@ apiClient.interceptors.response.use(
 
 // Bookings API service
 const bookingService = {
-  // Get all bookings
+  // Get all bookings (combines admin bookings and traveler bookings)
   getAllBookings: async () => {
     try {
       // Get the hotel ID from user data
@@ -55,10 +55,36 @@ const bookingService = {
         return [];
       }
       
-      // Include hotel ID as query parameter to filter by hotel
-      // Note: The path should include the /api prefix that the backend expects
-      const response = await apiClient.get(`/api/admin-hotel-bookings?hotelId=${hotelId}`);
-      return response.data;
+      // Fetch both admin bookings and traveler bookings in parallel
+      const [adminBookings, travelerBookings] = await Promise.all([
+        // Admin hotel bookings (existing system)
+        apiClient.get(`/api/admin-hotel-bookings?hotelId=${hotelId}`)
+          .then(response => response.data)
+          .catch(error => {
+            console.error('Error fetching admin bookings:', error);
+            return [];
+          }),
+        
+        // Traveler bookings from bookings collection
+        apiClient.get(`/api/bookings/hotel/provider/${hotelId}`)
+          .then(response => {
+            // The response might be wrapped in a bookings property
+            if (response.data && response.data.bookings) {
+              return response.data.bookings;
+            }
+            return response.data;
+          })
+          .catch(error => {
+            console.error('Error fetching traveler bookings:', error);
+            return [];
+          })
+      ]);
+      
+      console.log('Admin bookings:', adminBookings);
+      console.log('Traveler bookings:', travelerBookings);
+      
+      // Combine both booking sources
+      return [...adminBookings, ...travelerBookings];
     } catch (error) {
       console.error('Error fetching bookings:', error);
       if (error.response) {

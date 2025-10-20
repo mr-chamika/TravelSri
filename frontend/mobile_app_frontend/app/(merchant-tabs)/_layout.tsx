@@ -54,7 +54,7 @@ export default function MerchantTabLayout() {
 
   return (
     <View className='flex-1'>
-      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
+      {/* <topbar pressing={toggleMenu} notifying={toggling} on={notify} /> */}
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,

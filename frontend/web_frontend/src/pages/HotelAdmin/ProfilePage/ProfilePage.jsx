@@ -9,6 +9,10 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [newGalleryImages, setNewGalleryImages] = useState([]);
   const [formData, setFormData] = useState({
     hotelName: '',
     address: '',
@@ -37,6 +41,19 @@ const ProfilePage = () => {
   useEffect(() => {
     if (hotel) {
       setIsProfileLoading(false);
+      
+      // Set profile image preview from hotel data
+      if (hotel.thumbnail) {
+        setProfileImagePreview(hotel.thumbnail);
+      } else if (hotel.images && hotel.images.length > 0) {
+        setProfileImagePreview(hotel.images[0]);
+      }
+
+      // Load existing gallery images
+      if (hotel.images && hotel.images.length > 0) {
+        setGalleryImages(hotel.images);
+      }
+      
       // Map the backend data structure to our form structure
       setFormData(prevData => ({
         ...prevData,
@@ -169,6 +186,107 @@ const ProfilePage = () => {
     });
   };
 
+  // Handle profile image upload
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a valid image (JPG, JPEG, or PNG)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should not exceed 5MB');
+      return;
+    }
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64Image = e.target.result;
+      setProfileImage(base64Image);
+      setProfileImagePreview(base64Image);
+      toast.success('Profile image selected successfully');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove profile image
+  const handleRemoveProfileImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+    // Reset file input
+    const fileInput = document.getElementById('profileImage');
+    if (fileInput) fileInput.value = '';
+  };
+
+  // Handle gallery images upload
+  const handleGalleryImagesChange = (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+
+    // Validate number of images (max 10 total)
+    const currentImageCount = galleryImages.length + newGalleryImages.length;
+    if (currentImageCount + files.length > 10) {
+      toast.error(`You can only have up to 10 images in total. Currently you have ${currentImageCount} images.`);
+      return;
+    }
+
+    // Validate each file
+    const validFiles = [];
+    for (const file of files) {
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!validTypes.includes(file.type)) {
+        toast.error(`${file.name} is not a valid image type. Please use JPG or PNG.`);
+        continue;
+      }
+
+      // Check file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum size is 5MB.`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    // Read valid files as base64
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Image = e.target.result;
+        setNewGalleryImages(prev => [...prev, { preview: base64Image, data: base64Image }]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (validFiles.length > 0) {
+      toast.success(`${validFiles.length} image(s) added successfully`);
+    }
+  };
+
+  // Remove existing gallery image
+  const handleRemoveGalleryImage = (index) => {
+    setGalleryImages(prev => prev.filter((_, i) => i !== index));
+    toast.success('Image removed');
+  };
+
+  // Remove new gallery image
+  const handleRemoveNewGalleryImage = (index) => {
+    setNewGalleryImages(prev => prev.filter((_, i) => i !== index));
+    toast.success('Image removed');
+  };
+
   const validateForm = () => {
     const errors = {};
     if (!formData.hotelName.trim()) errors.hotelName = 'Hotel name is required';
@@ -192,6 +310,12 @@ const ProfilePage = () => {
         // Show loading state
         setIsLoading(true);
         
+        // Combine existing and new gallery images
+        const allGalleryImages = [
+          ...galleryImages,
+          ...newGalleryImages.map(img => img.data)
+        ];
+        
         // Convert form data to backend model structure
         const profileData = {
           hotelName: formData.hotelName,
@@ -205,7 +329,11 @@ const ProfilePage = () => {
           stars: formData.starRating,
           facilities: formData.facilities,
           paymentOptions: formData.paymentOptions,
-          bankDetails: formData.bankDetails
+          bankDetails: formData.bankDetails,
+          // Add profile image if it was changed
+          thumbnail: profileImage || hotel?.thumbnail || null,
+          // Add all gallery images
+          images: allGalleryImages
         };
         
         // Send data to backend using the context function
@@ -214,6 +342,9 @@ const ProfilePage = () => {
         
         // Show success message
         toast.success('Profile updated successfully!');
+        
+        // Clear new images array after successful save
+        setNewGalleryImages([]);
         
         // Exit editing mode
         setIsEditing(false);
@@ -269,6 +400,149 @@ const ProfilePage = () => {
       ) : isEditing ? (
         // Edit Form
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6">
+          {/* Profile Image Upload Section */}
+          <div className="mb-8 pb-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4">Profile Image</h2>
+            <div className="flex items-center space-x-6">
+              {/* Image Preview */}
+              <div className="flex-shrink-0">
+                {profileImagePreview || hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? (
+                  <img
+                    src={profileImagePreview || hotel?.thumbnail || hotel?.images[0]}
+                    alt="Hotel Profile"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-yellow-400 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-full bg-yellow-400 flex items-center justify-center border-4 border-yellow-500 shadow-lg">
+                    <span className="material-icons text-white text-5xl">business</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Controls */}
+              <div className="flex-grow">
+                <input
+                  type="file"
+                  id="profileImage"
+                  accept="image/jpeg,image/jpg,image/png"
+                  onChange={handleProfileImageChange}
+                  className="hidden"
+                />
+                <div className="space-y-2">
+                  <div>
+                    <label
+                      htmlFor="profileImage"
+                      className="inline-flex items-center px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md cursor-pointer transition-colors"
+                    >
+                      <span className="material-icons text-sm mr-2">upload</span>
+                      Upload Profile Image
+                    </label>
+                  </div>
+                  {(profileImagePreview || hotel?.thumbnail) && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveProfileImage}
+                      className="inline-flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
+                    >
+                      <span className="material-icons text-sm mr-2">delete</span>
+                      Remove Image
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Recommended: Square image, at least 400x400px. Max size: 5MB. Formats: JPG, PNG
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Hotel Images Gallery Management */}
+          <div className="mb-8 pb-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium mb-4 flex items-center">
+              <span className="material-icons text-yellow-600 mr-2">photo_library</span>
+              Hotel Images Gallery
+            </h2>
+            
+            {/* Upload new images */}
+            <div className="mb-4">
+              <input
+                type="file"
+                id="galleryImages"
+                accept="image/jpeg,image/jpg,image/png"
+                multiple
+                onChange={handleGalleryImagesChange}
+                className="hidden"
+              />
+              <label
+                htmlFor="galleryImages"
+                className="inline-flex items-center px-4 py-2 bg-yellow-300 hover:bg-yellow-400 text-black rounded-md cursor-pointer transition-colors"
+              >
+                <span className="material-icons text-sm mr-2">add_photo_alternate</span>
+                Add More Images
+              </label>
+              <p className="text-xs text-gray-500 mt-2">
+                Max 10 images total. Each image max 5MB. Formats: JPG, PNG
+              </p>
+            </div>
+
+            {/* Display existing and new images */}
+            {(galleryImages.length > 0 || newGalleryImages.length > 0) ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {/* Existing images */}
+                {galleryImages.map((image, index) => (
+                  <div key={`existing-${index}`} className="relative group">
+                    <img
+                      src={image}
+                      alt={`Gallery Image ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg shadow-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveGalleryImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
+                    >
+                      <span className="material-icons text-sm">close</span>
+                    </button>
+                    {hotel?.thumbnail === image && (
+                      <div className="absolute bottom-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                        <span className="material-icons text-xs mr-1">star</span>
+                        Profile
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* New images */}
+                {newGalleryImages.map((image, index) => (
+                  <div key={`new-${index}`} className="relative group">
+                    <img
+                      src={image.preview}
+                      alt={`New Image ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg shadow-md border-2 border-green-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveNewGalleryImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
+                    >
+                      <span className="material-icons text-sm">close</span>
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                      New
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <span className="material-icons text-gray-400 text-5xl mb-2">add_photo_alternate</span>
+                <p className="text-gray-500">No images yet. Add some images to showcase your hotel.</p>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h2 className="text-lg font-medium mb-4">Basic Information</h2>
@@ -549,17 +823,28 @@ const ProfilePage = () => {
         <div className="bg-white rounded-lg shadow-sm">
           <div className="p-6 border-b">
             <div className="flex items-start">
-              <div className="w-32 h-32 bg-gray-200 rounded-lg overflow-hidden">
-                <img 
-                  src="/hotel-logo.png" 
-                  alt={formData.hotelName} 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://via.placeholder.com/120?text=Hotel";
-                  }}
-                />
+              {/* Profile Image */}
+              <div className="flex-shrink-0">
+                {hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? (
+                  <img 
+                    src={hotel?.thumbnail || hotel?.images[0]} 
+                    alt={formData.hotelName} 
+                    className="w-32 h-32 rounded-full object-cover border-4 border-yellow-400 shadow-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-32 h-32 rounded-full bg-yellow-400 flex items-center justify-center border-4 border-yellow-500 shadow-lg ${
+                    hotel?.thumbnail || (hotel?.images && hotel.images.length > 0) ? 'hidden' : 'flex'
+                  }`}
+                >
+                  <span className="material-icons text-white text-5xl">business</span>
+                </div>
               </div>
+              
               <div className="ml-6 flex-1">
                 <h2 className="text-2xl font-bold">{formData.hotelName}</h2>
                 <div className="flex items-center mt-1">
@@ -571,6 +856,51 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
+          {/* Hotel Images Gallery */}
+          {hotel?.images && hotel.images.length > 0 && (
+            <div className="p-6 border-b bg-gray-50">
+              <h3 className="text-lg font-medium mb-4 flex items-center">
+                <span className="material-icons text-yellow-600 mr-2">photo_library</span>
+                Hotel Images ({hotel.images.length})
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {hotel.images.map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative group overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300"
+                  >
+                    <img
+                      src={image}
+                      alt={`Hotel Image ${index + 1}`}
+                      className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZSBVbmF2YWlsYWJsZTwvdGV4dD48L3N2Zz4=';
+                      }}
+                    />
+                    {index === 0 && hotel?.thumbnail === image && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                        <span className="material-icons text-xs mr-1">star</span>
+                        Profile
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                      <button
+                        onClick={() => {
+                          // Open image in new tab for full view
+                          window.open(image, '_blank');
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white text-gray-800 px-3 py-1 rounded-full text-sm flex items-center"
+                      >
+                        <span className="material-icons text-sm mr-1">open_in_new</span>
+                        View
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
