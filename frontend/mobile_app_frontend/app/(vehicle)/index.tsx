@@ -148,6 +148,7 @@ export default function Index() {
       <View className="bg-gradient-to-br from-[#FEFA17] to-[#FEF08A] px-4 pt-6 pb-4">
         <View className="flex-row justify-between items-start mb-4">
           <View className="flex-1">
+            <Text className="text-gray-900 text-2xl font-black">Welcome!</Text>
             <Text className="text-gray-900 text-2xl font-black mt-1">{userName}</Text>
           </View>
         </View>
@@ -156,21 +157,13 @@ export default function Index() {
         <View className="bg-[#FEFA17] rounded-2xl p-4 shadow-lg">
           <View className="flex-row justify-between">
             <View className="items-center flex-1">
-              <Text className="text-gray-900 text-2xl font-black">4</Text>
+              <Text className="text-gray-900 text-3xl font-black">4</Text>
               <Text className="text-gray-700 text-xs font-medium mt-1">Bookings</Text>
             </View>
-            <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
+            <View className="w-px h-14 bg-gray-400 bg-opacity-30"></View>
             <View className="items-center flex-1">
-              <Text className="text-gray-900 text-2xl font-black">LKR17.3K</Text>
+              <Text className="text-gray-900 text-3xl font-black">LKR17.3K</Text>
               <Text className="text-gray-700 text-xs font-medium mt-1">Earnings</Text>
-            </View>
-            <View className="w-px h-12 bg-gray-400 bg-opacity-30"></View>
-            <View className="items-center flex-1">
-              <View className="flex-row items-center justify-center">
-                <Text className="text-gray-900 text-2xl font-black">4.8</Text>
-                <Text className="text-yellow-600 text-base ml-0.5">★</Text>
-              </View>
-              <Text className="text-gray-700 text-xs font-medium mt-1">Rating</Text>
             </View>
           </View>
         </View>
