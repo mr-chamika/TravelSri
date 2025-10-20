@@ -15,7 +15,7 @@ import {
 // Import services
 import bookingService from '../../../services/bookingService';
 import roomService from '../../../services/roomService';
-import { HotelAuthService } from '../../../services/hotelAuthService';
+import { HotelAuthService, HotelAvailabilityService } from '../../../services/hotelAuthService';
 
 // Import components
 import StatsCards from '../../../components/HotelAdminM/HotelAdmin/Dashboard/StatsCards';
@@ -89,54 +89,52 @@ const HotelDashboard = () => {
     try {
       setAvailabilityLoading(true);
       
-      // Load saved unavailable dates for current user
-      const userKey = getUserAvailabilityKey();
-      const savedUnavailability = localStorage.getItem(userKey);
-      let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
+      // Fetch availability from backend
+      const availabilityData = await HotelAvailabilityService.getAvailability();
       
-      // Load saved unavailability reasons for current user
-      const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
-      const savedReasons = localStorage.getItem(userReasonsKey);
-      let reasons = savedReasons ? JSON.parse(savedReasons) : {};
+      // Process the availability data
+      const unavailableDates = new Set();
+      const reasons = {};
+      const statusMap = {};
       
-      // Load saved availability status for current user
-      const userStatusKey = `hotelAvailabilityStatus_${getCurrentUserId()}`;
-      const savedStatus = localStorage.getItem(userStatusKey);
-      let statusMap = savedStatus ? JSON.parse(savedStatus) : {};
-      
-      const today = new Date();
-      const todayString = format(today, 'yyyy-MM-dd');
-      
-      // Clean up any past unavailable dates (no longer needed)
-      const pastDatesToRemove = [];
-      unavailableDates.forEach(dateString => {
-        if (dateString < todayString) {
-          pastDatesToRemove.push(dateString);
-        }
-      });
-      
-      if (pastDatesToRemove.length > 0) {
-        pastDatesToRemove.forEach(dateString => {
-          unavailableDates.delete(dateString);
-          delete reasons[dateString]; // Also remove reasons for past dates
-          delete statusMap[dateString]; // Also remove status for past dates
+      if (availabilityData && availabilityData.availability) {
+        availabilityData.availability.forEach(item => {
+          const dateString = item.date;
+          
+          if (item.status !== 'available') {
+            unavailableDates.add(`unavailable_${dateString}`);
+            statusMap[dateString] = item.status; // 'booked' or 'unavailable'
+            
+            if (item.reason) {
+              reasons[dateString] = item.reason;
+            }
+          }
         });
-        
-        // Save cleaned unavailable dates, reasons, and status for current user
-        const unavailabilityArray = Array.from(unavailableDates);
-        localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
-        localStorage.setItem(userReasonsKey, JSON.stringify(reasons));
-        localStorage.setItem(userStatusKey, JSON.stringify(statusMap));
-        console.log('Cleaned past unavailable dates');
       }
       
-      // Store unavailable dates, reasons, and status (all future dates are available by default)
+      // Store availability data
       setHotelAvailability(unavailableDates);
       setUnavailabilityReasons(reasons);
       setAvailabilityStatus(statusMap);
       
     } catch (err) {
       console.error('Failed to fetch hotel availability:', err);
+      // Fallback to localStorage if API fails
+      const userKey = getUserAvailabilityKey();
+      const savedUnavailability = localStorage.getItem(userKey);
+      let unavailableDates = savedUnavailability ? new Set(JSON.parse(savedUnavailability)) : new Set();
+      
+      const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
+      const savedReasons = localStorage.getItem(userReasonsKey);
+      let reasons = savedReasons ? JSON.parse(savedReasons) : {};
+      
+      const userStatusKey = `hotelAvailabilityStatus_${getCurrentUserId()}`;
+      const savedStatus = localStorage.getItem(userStatusKey);
+      let statusMap = savedStatus ? JSON.parse(savedStatus) : {};
+      
+      setHotelAvailability(unavailableDates);
+      setUnavailabilityReasons(reasons);
+      setAvailabilityStatus(statusMap);
     } finally {
       setAvailabilityLoading(false);
     }
@@ -145,29 +143,58 @@ const HotelDashboard = () => {
   // Save hotel availability (user-specific - in real app this would save to backend)
   const saveHotelAvailability = async (newUnavailability, newReasons = null, newStatus = null) => {
     try {
-      // Save unavailable dates for current user
-      const userKey = getUserAvailabilityKey();
-      const unavailabilityArray = Array.from(newUnavailability);
-      localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
+      // Prepare availability data for backend
+      const availabilityArray = [];
+      const today = new Date();
+      const todayString = format(today, 'yyyy-MM-dd');
+      
+      // Build availability entries from the sets and maps
+      newUnavailability.forEach(key => {
+        const dateString = key.replace('unavailable_', '');
+        
+        // Only include current and future dates
+        if (dateString >= todayString) {
+          availabilityArray.push({
+            date: dateString,
+            status: newStatus?.[dateString] || 'unavailable',
+            reason: newReasons?.[dateString] || ''
+          });
+        }
+      });
+      
+      // Save to backend
+      await HotelAvailabilityService.updateAvailability(availabilityArray);
+      
+      // Update local state
       setHotelAvailability(newUnavailability);
       
-      // Save reasons if provided
       if (newReasons !== null) {
-        const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
-        localStorage.setItem(userReasonsKey, JSON.stringify(newReasons));
         setUnavailabilityReasons(newReasons);
       }
       
-      // Save status if provided
+      if (newStatus !== null) {
+        setAvailabilityStatus(newStatus);
+      }
+      
+      // Also save to localStorage as backup
+      const userKey = getUserAvailabilityKey();
+      const unavailabilityArray = Array.from(newUnavailability);
+      localStorage.setItem(userKey, JSON.stringify(unavailabilityArray));
+      
+      if (newReasons !== null) {
+        const userReasonsKey = `hotelUnavailabilityReasons_${getCurrentUserId()}`;
+        localStorage.setItem(userReasonsKey, JSON.stringify(newReasons));
+      }
+      
       if (newStatus !== null) {
         const userStatusKey = `hotelAvailabilityStatus_${getCurrentUserId()}`;
         localStorage.setItem(userStatusKey, JSON.stringify(newStatus));
-        setAvailabilityStatus(newStatus);
       }
       
       return true;
     } catch (err) {
       console.error('Failed to save hotel availability:', err);
+      alert('Failed to save availability. Please try again.');
       return false;
     }
   };
@@ -337,6 +364,13 @@ const HotelDashboard = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  // Auto-update availability based on room capacity when bookings or rooms change
+  useEffect(() => {
+    if (bookings.length > 0 && totalRoomsCount > 0) {
+      autoUpdateAvailabilityBasedOnCapacity();
+    }
+  }, [bookings, totalRoomsCount]);
+
   // Update dashboard stats based on bookings data and available rooms data
   const dashboardData = {
     availableRooms: availableRoomsCount,
@@ -405,19 +439,110 @@ const HotelDashboard = () => {
     });
   };
 
+  // Helper function to count booked rooms on a specific date
+  const getBookedRoomsOnDate = (date) => {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const bookedRooms = bookings.filter(booking => {
+      const checkIn = format(new Date(booking.checkIn), 'yyyy-MM-dd');
+      const checkOut = format(new Date(booking.checkOut), 'yyyy-MM-dd');
+      return dateString >= checkIn && dateString < checkOut;
+    });
+    return bookedRooms.length;
+  };
+
+  // Helper function to get available rooms on a specific date
+  const getAvailableRoomsOnDate = (date) => {
+    const bookedCount = getBookedRoomsOnDate(date);
+    const available = totalRoomsCount - bookedCount;
+    return Math.max(0, available); // Never return negative
+  };
+
+  // Function to automatically mark dates as unavailable when capacity is reached
+  const autoUpdateAvailabilityBasedOnCapacity = async () => {
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
+    const newStatus = { ...availabilityStatus };
+    const newReasons = { ...unavailabilityReasons };
+    let hasChanges = false;
+
+    // Check next 365 days (1 year ahead)
+    for (let i = 0; i < 365; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() + i);
+      const dateString = format(checkDate, 'yyyy-MM-dd');
+      
+      // Skip if already manually set to unavailable
+      if (newStatus[dateString] === 'unavailable' && newReasons[dateString] && !newReasons[dateString].includes('(Auto)')) {
+        continue;
+      }
+
+      const availableRooms = getAvailableRoomsOnDate(checkDate);
+      
+      // If no rooms available (capacity reached), mark as unavailable
+      if (availableRooms === 0 && totalRoomsCount > 0) {
+        if (newStatus[dateString] !== 'unavailable' || !newReasons[dateString]?.includes('(Auto)')) {
+          newStatus[dateString] = 'unavailable';
+          newReasons[dateString] = '(Auto) Fully booked - No rooms available';
+          hasChanges = true;
+        }
+      } 
+      // If rooms become available again and it was auto-marked, revert to available
+      else if (availableRooms > 0 && newReasons[dateString]?.includes('(Auto)')) {
+        newStatus[dateString] = 'available';
+        delete newReasons[dateString];
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      setAvailabilityStatus(newStatus);
+      setUnavailabilityReasons(newReasons);
+      
+      // Save to backend
+      const availabilityArray = Object.keys(newStatus)
+        .filter(date => date >= todayString && newStatus[date] !== 'available')
+        .map(date => ({
+          date,
+          status: newStatus[date],
+          reason: newReasons[date] || ''
+        }));
+      
+      try {
+        await HotelAvailabilityService.updateAvailability({ availability: availabilityArray });
+        console.log('Auto-updated availability based on room capacity');
+      } catch (error) {
+        console.error('Failed to auto-update availability:', error);
+      }
+    }
+  };
+
   // Helper function to check if hotel is available on a date
   const isHotelAvailable = (date) => {
     const dateString = format(date, 'yyyy-MM-dd');
     const todayString = format(today, 'yyyy-MM-dd');
     
-    // All future dates (including today) are available by default
-    if (dateString >= todayString) {
-      // Check if it's explicitly marked as unavailable
-      return !hotelAvailability.has(`unavailable_${dateString}`);
+    // Past dates are unavailable by default
+    if (dateString < todayString) {
+      return false;
     }
     
-    // Past dates are unavailable by default
-    return false;
+    // Check the availability status
+    const status = availabilityStatus[dateString];
+    
+    // If explicitly marked as unavailable, not available for booking
+    if (status === 'unavailable') {
+      return false;
+    }
+    
+    // If marked as booked, check if there are still rooms available
+    if (status === 'booked') {
+      const availableRooms = getAvailableRoomsOnDate(date);
+      // Available for booking only if there are rooms left
+      return availableRooms > 0;
+    }
+    
+    // If marked as available or no status, available for booking
+    return true;
   };
 
   // Helper function to get calendar day status
@@ -429,15 +554,32 @@ const HotelDashboard = () => {
     const todayString = format(today, 'yyyy-MM-dd');
     
     const hasBookings = hasBookingsOnDate(date);
-    const isAvailable = isHotelAvailable(date);
     const isToday = dateString === todayString;
     const isPastDate = dateString < todayString;
+    
+    // Check the availability status from the availabilityStatus object
+    const status = availabilityStatus[dateString];
     
     if (isToday) return 'today';
     if (isPastDate && !hasBookings) return 'past-unavailable'; // Past dates without bookings
     if (isPastDate && hasBookings) return 'past-booked'; // Past dates with bookings
-    if (!isAvailable) return 'unavailable';
-    if (hasBookings) return 'booked';
+    
+    // If explicitly marked as unavailable, show as unavailable (no bookings allowed)
+    if (status === 'unavailable') return 'unavailable';
+    
+    // If marked as booked or has bookings, check room availability
+    if (status === 'booked' || hasBookings) {
+      const availableRooms = getAvailableRoomsOnDate(date);
+      if (availableRooms === 0) {
+        // No rooms available - cannot book (show as unavailable)
+        return 'unavailable';
+      } else {
+        // Has bookings but still has rooms available (show as booked/partial)
+        return 'booked';
+      }
+    }
+    
+    // If marked as available or no status, show as available
     return 'available';
   };
 
@@ -454,20 +596,15 @@ const HotelDashboard = () => {
       return;
     }
     
+    // Load existing reason and status when opening modal
+    const existingReason = unavailabilityReasons[dateString] || '';
+    const existingStatus = availabilityStatus[dateString] || 'available';
+    
     setSelectedDateForAvailability(date);
+    setReasonText(existingReason);
+    setSelectedStatus(existingStatus);
     setShowAvailabilityModal(true);
   };
-
-  // useEffect to load existing reason and status when modal opens
-  useEffect(() => {
-    if (showAvailabilityModal && selectedDateForAvailability) {
-      const dateStr = format(selectedDateForAvailability, 'yyyy-MM-dd');
-      const existingReason = unavailabilityReasons[dateStr] || '';
-      const existingStatus = availabilityStatus[dateStr] || 'available';
-      setReasonText(existingReason);
-      setSelectedStatus(existingStatus);
-    }
-  }, [showAvailabilityModal, selectedDateForAvailability, unavailabilityReasons, availabilityStatus]);
 
   // State for monthly data calculated from real bookings
   const [monthlyData, setMonthlyData] = useState([]);
@@ -791,23 +928,32 @@ const HotelDashboard = () => {
     const formattedDate = format(selectedDateForAvailability, 'MMMM dd, yyyy');
     const existingReason = unavailabilityReasons[dateString] || '';
     const currentStatus = availabilityStatus[dateString] || 'available';
+    
+    // Use ref for textarea to avoid re-render issues
+    const reasonInputRef = useRef(null);
 
     const handleSaveAvailability = async () => {
+      // Get the current value from the textarea ref
+      const currentReasonText = reasonInputRef.current?.value || '';
+      
       // Validate that reason is provided for unavailable or booked status
-      if ((selectedStatus === 'unavailable' || selectedStatus === 'booked') && !reasonText.trim()) {
+      if ((selectedStatus === 'unavailable' || selectedStatus === 'booked') && !currentReasonText.trim()) {
         alert('Please provide a reason for marking this date as ' + selectedStatus);
         return;
       }
 
-      await toggleDateAvailability(dateString, selectedStatus, reasonText);
+      await toggleDateAvailability(dateString, selectedStatus, currentReasonText);
       setShowAvailabilityModal(false);
       setReasonText(''); // Clear the reason text after closing
       setSelectedStatus('available'); // Reset status
     };
 
     const handleBulkAvailability = async (days, status) => {
+      // Get the current value from the textarea ref
+      const currentReasonText = reasonInputRef.current?.value || '';
+      
       // Validate reason for bulk unavailable/booked
-      if ((status === 'unavailable' || status === 'booked') && !reasonText.trim()) {
+      if ((status === 'unavailable' || status === 'booked') && !currentReasonText.trim()) {
         alert('Please provide a reason for marking dates as ' + status);
         return;
       }
@@ -834,8 +980,8 @@ const HotelDashboard = () => {
             // Make unavailable or booked
             newUnavailability.add(`unavailable_${dayString}`);
             newStatus[dayString] = status;
-            if (reasonText.trim()) {
-              newReasons[dayString] = reasonText.trim();
+            if (currentReasonText.trim()) {
+              newReasons[dayString] = currentReasonText.trim();
             }
           }
         }
@@ -885,6 +1031,55 @@ const HotelDashboard = () => {
               </div>
             </div>
 
+            {/* Room Availability Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center">
+                  <span className="material-icons text-blue-600 text-lg mr-2">bed</span>
+                  <span className="font-medium text-gray-700">Room Availability:</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div>
+                    <span className={`font-bold text-lg ${
+                      getAvailableRoomsOnDate(selectedDateForAvailability) === 0 
+                        ? 'text-red-600' 
+                        : getAvailableRoomsOnDate(selectedDateForAvailability) < totalRoomsCount / 2
+                        ? 'text-yellow-600'
+                        : 'text-green-600'
+                    }`}>
+                      {getAvailableRoomsOnDate(selectedDateForAvailability)}
+                    </span>
+                    <span className="text-gray-600 text-xs ml-1">/ {totalRoomsCount}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">available</span>
+                </div>
+              </div>
+              {getAvailableRoomsOnDate(selectedDateForAvailability) === 0 && totalRoomsCount > 0 && (
+                <div className="mt-2 text-xs text-red-600 flex items-start">
+                  <span className="material-icons text-sm mr-1">block</span>
+                  <span><strong>Fully Booked:</strong> All rooms are occupied. No new bookings can be accepted.</span>
+                </div>
+              )}
+              {hasBookings && getAvailableRoomsOnDate(selectedDateForAvailability) > 0 && (
+                <div className="mt-2 text-xs text-green-700 flex items-start">
+                  <span className="material-icons text-sm mr-1">check_circle</span>
+                  <span><strong>Partially Booked:</strong> {getBookedRoomsOnDate(selectedDateForAvailability)} room(s) booked, {getAvailableRoomsOnDate(selectedDateForAvailability)} room(s) still available for new bookings.</span>
+                </div>
+              )}
+              {!hasBookings && getAvailableRoomsOnDate(selectedDateForAvailability) > 0 && (
+                <div className="mt-2 text-xs text-gray-600 flex items-start">
+                  <span className="material-icons text-sm mr-1">event_available</span>
+                  <span>No bookings yet. All {totalRoomsCount} rooms available for booking.</span>
+                </div>
+              )}
+              {currentStatus === 'unavailable' && !unavailabilityReasons[dateString]?.includes('(Auto)') && (
+                <div className="mt-2 text-xs text-orange-700 flex items-start">
+                  <span className="material-icons text-sm mr-1">warning</span>
+                  <span><strong>Manually Unavailable:</strong> This date is marked unavailable by admin. Users cannot make bookings regardless of room availability.</span>
+                </div>
+              )}
+            </div>
+
             {/* Status Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -899,6 +1094,7 @@ const HotelDashboard = () => {
                       ? 'bg-green-500 text-white shadow-md'
                       : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'
                   }`}
+                  title="Open for all bookings"
                 >
                   Available
                 </button>
@@ -910,6 +1106,7 @@ const HotelDashboard = () => {
                       ? 'bg-yellow-500 text-white shadow-md'
                       : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-200'
                   }`}
+                  title="Has bookings, but users can still book if rooms available"
                 >
                   Booked
                 </button>
@@ -921,9 +1118,20 @@ const HotelDashboard = () => {
                       ? 'bg-red-500 text-white shadow-md'
                       : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
                   }`}
+                  title="Closed for bookings - users cannot book this date"
                 >
                   Unavailable
                 </button>
+              </div>
+              
+              {/* Status explanation */}
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-600 mb-1"><strong>Status Guide:</strong></p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li><span className="text-green-600 font-medium">● Available:</span> Open for all bookings</li>
+                  <li><span className="text-yellow-600 font-medium">● Booked:</span> Has bookings, but users can still book if rooms are available</li>
+                  <li><span className="text-red-600 font-medium">● Unavailable:</span> Closed - users cannot make any bookings (e.g., maintenance, renovation)</li>
+                </ul>
               </div>
             </div>
 
@@ -934,9 +1142,10 @@ const HotelDashboard = () => {
                   <span className="text-red-500">*</span>}
               </label>
               <textarea
+                ref={reasonInputRef}
                 id="reason"
-                value={reasonText}
-                onChange={(e) => setReasonText(e.target.value)}
+                name="reason"
+                defaultValue={reasonText}
                 placeholder={
                   selectedStatus === 'booked' 
                     ? 'Private booking, Wedding, etc.' 
@@ -947,11 +1156,10 @@ const HotelDashboard = () => {
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent resize-none"
                 rows="2"
                 maxLength={200}
-                required={selectedStatus === 'booked' || selectedStatus === 'unavailable'}
               />
               <div className="flex justify-between items-center mt-1">
-                <p className="text-xs text-gray-400">{reasonText.length}/200</p>
-                {(selectedStatus === 'booked' || selectedStatus === 'unavailable') && !reasonText.trim() && (
+                <p className="text-xs text-gray-400">Max 200 characters</p>
+                {(selectedStatus === 'booked' || selectedStatus === 'unavailable') && (
                   <p className="text-xs text-red-500 font-medium">Required</p>
                 )}
               </div>

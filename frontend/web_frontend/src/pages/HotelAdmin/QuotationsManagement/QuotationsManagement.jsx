@@ -546,20 +546,23 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
               
               <div className="text-gray-600 border-b pb-2">Accommodation Subtotal:</div>
               <div className="text-right font-medium border-b pb-2">
-                LKR {((roomPrices[quotation.accommodationType] || 0) * 
-                  (quotation.roomsRequired || Math.ceil(quotation.groupSize / 2)) * 
-                  calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                LKR {calculateAccommodationTotal(quotation).toFixed(2)}
               </div>
               
-              {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && (
+              {quotation.mealPlan && (
                 <>
                   <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
                   <div className="text-right font-medium">
-                    LKR {(quotation.groupSize * 
-                      (quotation.mealPlan === 'Half Board' ? 25 : 
-                       quotation.mealPlan === 'Full Board' ? 40 : 
-                       quotation.mealPlan === 'All Inclusive' ? 60 : 0) * 
-                      calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
+                    {(() => {
+                      const total = calculateMealPlanUpgradeTotal(quotation);
+                      console.log('Displaying meal plan in card:', {
+                        mealPlan: quotation.mealPlan,
+                        mealPricePerPerson: quotation.mealPricePerPerson,
+                        groupSize: quotation.groupSize,
+                        calculatedTotal: total
+                      });
+                      return `LKR ${total.toFixed(2)}`;
+                    })()}
                   </div>
                 </>
               )}
@@ -595,13 +598,15 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                   <span className="material-icons text-sm mr-1">local_offer</span>
                   Discount ({quotation.discountOffered}%):
                 </span>
-                <span className="font-medium">-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
+                <span className="font-medium">-LKR {(calculateSubtotalBeforeDiscount(quotation) * quotation.discountOffered / 100).toFixed(2)}</span>
               </div>
             )}
             
             <div className="flex justify-between font-bold text-lg border-t border-yellow-300 pt-3 mt-3 bg-yellow-50 p-3 rounded">
               <span className="text-gray-800">Total Quote Amount:</span>
-              <span className="text-xl">LKR {(quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)}</span>
+              <span className="text-xl">LKR {quotation.finalAmount 
+                ? (typeof quotation.finalAmount === 'number' ? quotation.finalAmount.toFixed(2) : parseFloat(quotation.finalAmount).toFixed(2))
+                : calculateFinalTotal(quotation)}</span>
             </div>
             
             {/* Per-Person Breakdown */}
@@ -620,7 +625,7 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                 
                 <div className="text-blue-700">Meal plan per person:</div>
                 <div className="text-right font-medium text-blue-800">
-                  LKR {quotation.mealPricePerPerson 
+                  LKR {(quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0)
                     ? quotation.mealPricePerPerson.toFixed(2) 
                     : (calculateMealPlanUpgradeTotal(quotation) / quotation.groupSize).toFixed(2)}
                 </div>
@@ -1404,26 +1409,45 @@ const QuotationsManagement = () => {
     return accommodationCost;
   };
   
-  // Calculate meal plan cost
+  // Calculate meal plan cost (mirroring accommodation calculation pattern)
   const calculateMealPlanUpgradeTotal = (quotation = newQuotation) => {
     if (!quotation.checkInDate || !quotation.checkOutDate || !quotation.groupSize) return 0;
     
     const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
     
-    // Calculate meal plan costs for any selected plan
-    if (quotation.mealPlan) {
-      // If mealPlanPricePerPerson is set, use it directly
-      if (quotation.mealPlanPricePerPerson) {
-        return quotation.groupSize * quotation.mealPlanPricePerPerson * nights;
-      } 
+    console.log('calculateMealPlanUpgradeTotal called:', {
+      mealPlan: quotation.mealPlan,
+      mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+      mealPricePerPerson: quotation.mealPricePerPerson,
+      groupSize: quotation.groupSize,
+      nights: nights
+    });
+    
+    // Calculate meal plan cost based on price per person per night
+    let mealPlanCost = 0;
+    
+    if (quotation.mealPlan && quotation.mealPlanPricePerPerson) {
+      // Use meal plan price per person per night (same pattern as accommodation)
+      mealPlanCost = quotation.mealPlanPricePerPerson * quotation.groupSize * nights;
+      console.log('Using mealPlanPricePerPerson:', mealPlanCost);
+    } else if (quotation.mealPlan && quotation.mealPricePerPerson && quotation.mealPricePerPerson > 0) {
+      // FALLBACK: If mealPlanPricePerPerson is undefined, fetch mealPricePerPerson and multiply by groupSize
+      // mealPricePerPerson is the total per person for entire stay
+      // So total for group = mealPricePerPerson * groupSize
+      mealPlanCost = quotation.mealPricePerPerson * quotation.groupSize;
+      console.log('Using mealPricePerPerson (fallback) - mealPricePerPerson:', quotation.mealPricePerPerson, '× groupSize:', quotation.groupSize, '=', mealPlanCost);
+    } else if (quotation.mealPlan) {
       // Fall back to default pricing if not set
-      return quotation.groupSize * 
-        (quotation.mealPlan === 'Breakfast Only' ? 1000 :
+      const defaultPrice = quotation.mealPlan === 'Breakfast Only' ? 1000 :
          quotation.mealPlan === 'Half Board' ? 1500 : 
          quotation.mealPlan === 'Full Board' ? 2000 : 
-         quotation.mealPlan === 'All Inclusive' ? 2500 : 0) * nights;
+         quotation.mealPlan === 'All Inclusive' ? 2500 : 0;
+      mealPlanCost = defaultPrice * quotation.groupSize * nights;
+      console.log('Using default price:', mealPlanCost);
     }
-    return 0;
+    
+    console.log('Final mealPlanCost:', mealPlanCost);
+    return mealPlanCost;
   };
   
   // Calculate pool facilities cost (function name kept for backward compatibility)
@@ -1652,10 +1676,9 @@ const QuotationsManagement = () => {
       const transportationTotal = calculateTransportationTotal(newQuotation);
       const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
       
-      // Calculate per-person prices
+      // Calculate per-person prices (mirroring accommodation calculation pattern)
       const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
-      // For mealPricePerPerson, use the direct per-person per-day rate instead of calculating from total
-      const mealPricePerPerson = newQuotation.mealPlanPricePerPerson || 0; // This is already per person per day
+      const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
       const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
       
       // Ensure all necessary data is properly structured for the backend
@@ -1690,6 +1713,10 @@ const QuotationsManagement = () => {
         mealPricePerPerson: parseFloat(mealPricePerPerson.toFixed(2)),
         totalPricePerPerson: parseFloat(totalPricePerPerson.toFixed(2)),
         
+        // Ensure meal plan data is included
+        mealPlan: newQuotation.mealPlan || '',
+        mealPlanPricePerPerson: newQuotation.mealPlanPricePerPerson || 0,
+        
         // Ensure consistent field names for contact details
         contactPersonName: newQuotation.contactPersonName || hotelDetails?.contactPerson || hotelDetails?.managerName || '',
         contactEmail: newQuotation.contactEmail || hotelDetails?.contactEmail || hotelDetails?.email || '',
@@ -1706,6 +1733,11 @@ const QuotationsManagement = () => {
       console.log('Sending quotation data:', quotationToAdd);
       console.log('Package name being sent to database:', quotationToAdd.packageName);
       console.log('Hotel ID being sent to database:', quotationToAdd.hotelId);
+      console.log('Meal plan data being sent:', {
+        mealPlan: quotationToAdd.mealPlan,
+        mealPlanPricePerPerson: quotationToAdd.mealPlanPricePerPerson,
+        mealPricePerPerson: quotationToAdd.mealPricePerPerson
+      });
       console.log('Per-person prices being sent to database:', {
         accommodationPricePerPerson: quotationToAdd.accommodationPricePerPerson,
         mealPricePerPerson: quotationToAdd.mealPricePerPerson,
@@ -1715,6 +1747,11 @@ const QuotationsManagement = () => {
       console.log('Created quotation response:', createdQuotation);
       console.log('Package name in response:', createdQuotation.packageName || createdQuotation.pendingTripName);
       console.log('Hotel ID in response:', createdQuotation.hotelId);
+      console.log('Meal plan data in response:', {
+        mealPlan: createdQuotation.mealPlan,
+        mealPlanPricePerPerson: createdQuotation.mealPlanPricePerPerson,
+        mealPricePerPerson: createdQuotation.mealPricePerPerson
+      });
       
       // Even if the API call fails with 401 but returns a mock object, we proceed
       // to give the user a better experience, but we won't refetch the list from API
@@ -1752,7 +1789,7 @@ const QuotationsManagement = () => {
         const transportationTotal = calculateTransportationTotal(newQuotation);
         const finalTotal = parseFloat(calculateFinalTotal(newQuotation));
         
-        // Calculate per-person prices
+        // Calculate per-person prices (mirroring accommodation calculation pattern)
         const accommodationPricePerPerson = newQuotation.groupSize > 0 ? (accommodationTotal / newQuotation.groupSize) : 0;
         const mealPricePerPerson = newQuotation.groupSize > 0 ? (mealPlanTotal / newQuotation.groupSize) : 0;
         const totalPricePerPerson = newQuotation.groupSize > 0 ? (finalTotal / newQuotation.groupSize) : 0;
@@ -1788,6 +1825,15 @@ const QuotationsManagement = () => {
   
   // Handle view quotation details
   const handleViewDetails = (quotation) => {
+    console.log('=== VIEW DETAILS DEBUG ===');
+    console.log('Full quotation object:', quotation);
+    console.log('Meal Plan:', quotation.mealPlan);
+    console.log('Meal Plan Price Per Person (nightly):', quotation.mealPlanPricePerPerson);
+    console.log('Meal Price Per Person (total):', quotation.mealPricePerPerson);
+    console.log('Group Size:', quotation.groupSize);
+    console.log('Check-in:', quotation.checkInDate);
+    console.log('Check-out:', quotation.checkOutDate);
+    console.log('========================');
     setSelectedQuotation(quotation);
     setShowDetailModal(true);
   };
@@ -2612,11 +2658,11 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                       {quotation.mealPlan || 'No Meal Plan'}:
                     </div>
                     <div className="text-gray-600">
-                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${quotation.mealPlanPricePerPerson} × ${quotation.groupSize} people × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? 
+                      `LKR ${quotation.mealPricePerPerson} × ${quotation.groupSize} people` : '-'}
                     </div>
                     <div className="text-right">
-                      {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? `LKR ${(quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                      {quotation.mealPlan && quotation.mealPricePerPerson > 0 ? `LKR ${(quotation.mealPricePerPerson * quotation.groupSize).toFixed(2)}` : 'LKR 0.00'}
                     </div>
                     
                     {/* <div className="text-gray-600 pl-2 flex items-center">
@@ -2636,7 +2682,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     <div className="border-t border-gray-100 pt-1 mt-1"></div>
                     <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1">
                       LKR {((quotation.totalAmount || 0) + 
-                        (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                        (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                         (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
                     </div>
                     
@@ -2648,12 +2694,12 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         </div>
                         <div className="text-green-600">
                           {quotation.discountOffered}% of LKR {((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)).toFixed(2)}
                         </div>
                         <div className="text-right text-green-600 font-medium">
                           -LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100).toFixed(2)}
                         </div>
                         
@@ -2663,7 +2709,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         <div className="border-t border-gray-100 pt-1 mt-1"></div>
                         <div className="text-right font-medium border-t border-gray-100 pt-1 mt-1 text-yellow-700">
                           LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
+                            (quotation.mealPlan && quotation.mealPricePerPerson > 0 ? quotation.mealPricePerPerson * quotation.groupSize : 0) + 
                             (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100)).toFixed(2)}
                         </div>
                       </>
@@ -2683,14 +2729,40 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                       LKR {((quotation.pricePerPersonPerNight || (quotation.totalAmount && quotation.groupSize && calculateNights(quotation.checkInDate, quotation.checkOutDate) > 0 ? (quotation.totalAmount / (quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate))) : 0)) * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}
                     </div>
                     
-                    <div className="text-gray-600 pl-2">Meal Plan ({quotation.mealPlan || 'None'}):</div>
+                    <div className="text-gray-600 pl-2 flex items-center">
+                      <span className="material-icons text-yellow-600 text-xs mr-1">restaurant</span>
+                      {quotation.mealPlan || 'None'}:
+                    </div>
                     <div className="text-gray-600">
-                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${quotation.mealPlanPricePerPerson}/day × ${calculateNights(quotation.checkInDate, quotation.checkOutDate)} days` : '-'}
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        console.log('Meal Plan Display Check:', {
+                          hasMealPlan: !!quotation.mealPlan,
+                          mealPlan: quotation.mealPlan,
+                          mealPlanPricePerPerson: quotation.mealPlanPricePerPerson,
+                          mealPricePerPerson: quotation.mealPricePerPerson,
+                          calculatedPricePerNight: pricePerNight,
+                          nights: nights
+                        });
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${pricePerNight.toFixed(2)}/day × ${nights} days` : '-';
+                      })()}
                     </div>
                     <div className="text-right font-medium">
-                      {quotation.mealPlanPricePerPerson && quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? 
-                      `LKR ${(quotation.mealPlanPricePerPerson * calculateNights(quotation.checkInDate, quotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                      {(() => {
+                        const nights = calculateNights(quotation.checkInDate, quotation.checkOutDate);
+                        // If mealPlanPricePerPerson is undefined, calculate it from mealPricePerPerson
+                        const pricePerNight = quotation.mealPlanPricePerPerson || 
+                          (quotation.mealPricePerPerson && nights > 0 ? quotation.mealPricePerPerson / nights : 0);
+                        
+                        return quotation.mealPlan && pricePerNight > 0 ? 
+                          `LKR ${(pricePerNight * nights).toFixed(2)}` : 'LKR 0.00';
+                      })()}
                     </div>
                     
                     <div className="text-gray-600 pl-2">Pool Facilities:</div>
@@ -2707,9 +2779,7 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                         <div className="text-green-600 pl-2">Discount ({quotation.discountOffered}%):</div>
                         <div className="text-green-600">Applied to total</div>
                         <div className="text-right text-green-600 font-medium">
-                          -LKR {(((quotation.totalAmount || 0) + 
-                            (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
-                            (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
+                          -LKR {(calculateSubtotalBeforeDiscount(quotation) * (quotation.discountOffered || 0) / 100 / quotation.groupSize).toFixed(2)}
                         </div>
                       </>
                     )}
@@ -2719,10 +2789,9 @@ const QuotationDetailView = ({ quotation, onClose, onDelete }) => {
                     </div>
                     <div className="border-t border-blue-100 pt-1 mt-1"></div>
                     <div className="text-right font-medium border-t border-blue-100 pt-1 mt-1 text-blue-700">
-                      LKR {quotation.groupSize ? 
-                        (((quotation.totalAmount || 0) + 
-                          (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && quotation.mealPlanPricePerPerson > 0 ? quotation.mealPlanPricePerPerson * quotation.groupSize * calculateNights(quotation.checkInDate, quotation.checkOutDate) : 0) + 
-                          (quotation.airportTransfer && quotation.transportationPrice > 0 ? quotation.transportationPrice : 0)) * (1 - (quotation.discountOffered || 0) / 100) / quotation.groupSize).toFixed(2) : '0.00'}
+                      LKR {quotation.totalPricePerPerson 
+                        ? quotation.totalPricePerPerson.toFixed(2)
+                        : calculatePerPersonPrice(quotation).toFixed(2)}
                     </div>
                   </div>
                   
@@ -3203,7 +3272,9 @@ const StatusBadge = ({ status }) => {
                     </span>
                   </td>
                   <td className="py-3 px-4 font-medium">
-                    LKR {q.totalAmount ? q.totalAmount.toFixed(2) : '0.00'}
+                    LKR {q.finalAmount 
+                      ? (typeof q.finalAmount === 'number' ? q.finalAmount.toFixed(2) : parseFloat(q.finalAmount).toFixed(2))
+                      : calculateFinalTotal(q)}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
@@ -3878,12 +3949,12 @@ const StatusBadge = ({ status }) => {
                             
                             <div className="text-gray-600 pl-2">Meal Plan ({newQuotation.mealPlan || 'None'}):</div>
                             <div className="text-gray-600">
-                              {newQuotation.mealPlanPricePerPerson ? 
+                              {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
                               `LKR ${newQuotation.mealPlanPricePerPerson}/day × ${calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)} days` : '-'}
                             </div>
                             <div className="text-right font-medium">
-                              {newQuotation.mealPlanPricePerPerson ? 
-                              `LKR ${(newQuotation.mealPlanPricePerPerson * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2)}` : 'LKR 0.00'}
+                              LKR {newQuotation.mealPlan && newQuotation.mealPlanPricePerPerson ? 
+                              (newQuotation.mealPlanPricePerPerson * calculateNights(newQuotation.checkInDate, newQuotation.checkOutDate)).toFixed(2) : '0.00'}
                             </div>
                             
                             <div className="text-gray-600 pl-2">Pool Facilities:</div>

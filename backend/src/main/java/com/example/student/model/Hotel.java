@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 
 @Setter
 @Getter
@@ -108,5 +110,8 @@ public class Hotel{
     // Audit fields
     private String createdAt;
     private String updatedAt;
+    
+    // Hotel Availability Calendar
+    private List<HotelAvailability> availability;
 
 }

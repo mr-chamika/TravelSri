@@ -263,16 +263,15 @@ const QuotationDetailView = ({ quotation, onClose, onApprove, onReject, onUpdate
                     LKR {quotation.accommodationPricePerPerson ? quotation.accommodationPricePerPerson.toFixed(2) : 'Not calculated'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Meals per person:</span>
-                  <span className="font-medium">
-                    LKR {quotation.mealPricePerPerson ? quotation.mealPricePerPerson.toFixed(2) : 'Not calculated'}
-                    {/* Debug info */}
-                    <span className="text-xs text-gray-400 block">
-                      (Raw: {JSON.stringify(quotation.mealPricePerPerson)})
+                {/* Only show meals row if meal plan is selected and has a price */}
+                {quotation.mealPlan && quotation.mealPricePerPerson > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Meals per person ({quotation.mealPlan}):</span>
+                    <span className="font-medium">
+                      LKR {quotation.mealPricePerPerson.toFixed(2)}
                     </span>
-                  </span>
-                </div>
+                  </div>
+                )}
                 <div className="flex justify-between border-t pt-2">
                   <span className="font-medium">Total per person:</span>
                   <span className="font-bold text-lg">
