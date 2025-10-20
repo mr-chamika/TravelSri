@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import GuideQuotationDetailsModal from "../../components/admin/GuideQuotationDetailsModal";
 
 const AllGuideQuotation = () => {
     const [guideQuotations, setGuideQuotations] = useState([]);
@@ -7,7 +8,11 @@ const AllGuideQuotation = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const API_BASE_URL = "http://localhost:8080/api/guide-quotation";
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedQuotation, setSelectedQuotation] = useState(null);
+
+    const API_BASE_URL = "http://localhost:8080/api/guide";
 
     useEffect(() => {
         loadQuotations();
@@ -17,7 +22,15 @@ const AllGuideQuotation = () => {
     const loadQuotations = () => {
         const storedQuotations = localStorage.getItem('guideQuotationsForTrip');
         if (storedQuotations) {
-            setGuideQuotations(JSON.parse(storedQuotations));
+            const quotations = JSON.parse(storedQuotations);
+            console.log("=== LOADED GUIDE QUOTATIONS ===");
+            console.log("Quotations:", quotations);
+            if (quotations.length > 0) {
+                console.log("First quotation:", quotations[0]);
+                console.log("Available fields:", Object.keys(quotations[0]));
+            }
+            console.log("===============================");
+            setGuideQuotations(quotations);
         }
         setLoading(false);
     };
@@ -37,9 +50,41 @@ const AllGuideQuotation = () => {
         })}`;
     };
 
-    const handleViewQuotation = async (quotationId) => {
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
         try {
-            const response = await axios.get(`${API_BASE_URL}/download-pdf/${quotationId}`, {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
+    };
+
+    const handleViewQuotation = (quotation) => {
+        console.log("=== VIEWING GUIDE QUOTATION ===");
+        console.log("Selected quotation:", quotation);
+        console.log("===============================");
+        setSelectedQuotation(quotation);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedQuotation(null);
+    };
+
+    const handleSelectQuotation = (quotation) => {
+        localStorage.setItem('selectedGuideQuotation', JSON.stringify(quotation));
+        alert(`Selected: Guide ${quotation.guideId} - ${formatPriceLKR(quotation.quotedAmount)}`);
+    };
+
+    const handleDownloadPDF = async (quotationId) => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/${quotationId}/pdf`, {
                 responseType: 'blob'
             });
             
@@ -48,13 +93,23 @@ const AllGuideQuotation = () => {
             window.open(url, '_blank');
         } catch (error) {
             console.error("Error downloading PDF:", error);
-            alert("Unable to view quotation PDF. Please try again.");
+            alert("Unable to download quotation PDF. Please try again.");
         }
     };
 
-    const handleSelectQuotation = (quotation) => {
-        localStorage.setItem('selectedGuideQuotation', JSON.stringify(quotation));
-        alert(`Selected: ${quotation.guideId} - ${formatPriceLKR(quotation.price)}`);
+    const getStatusColor = (status) => {
+        switch(status?.toLowerCase()) {
+            case 'accepted':
+                return 'bg-green-100 text-green-800';
+            case 'rejected':
+                return 'bg-red-100 text-red-800';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'expired':
+                return 'bg-gray-100 text-gray-800';
+            default:
+                return 'bg-blue-100 text-blue-800';
+        }
     };
 
     if (loading) {
@@ -73,7 +128,7 @@ const AllGuideQuotation = () => {
                         <div className="flex items-center justify-between mb-8 md:mb-12">
                             <div>
                                 <h1 className="font-bold text-2xl md:text-3xl text-gray-800 mb-2">
-                                    {tripData?.title || "Trip"} <span className="text-gray-500 font-normal text-lg">(All guides quotations)</span>
+                                    {tripData?.title || "Trip"} <span className="text-gray-500 font-normal text-lg">(All guide quotations)</span>
                                 </h1>
                                 <a href="/pendingtripdetails" className="inline-block">
                                     <button className="flex items-center bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg px-3 py-1 transition-colors duration-200 text-sm">
@@ -97,7 +152,7 @@ const AllGuideQuotation = () => {
                                 <div className="text-center py-12">
                                     <div className="text-gray-500 mb-4">
                                         <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h4M9 7h6m-6 4h6m-6 4h6" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
                                     </div>
                                     <h3 className="text-lg font-medium text-gray-900 mb-2">No guide quotations found</h3>
@@ -106,7 +161,7 @@ const AllGuideQuotation = () => {
                             ) : (
                                 guideQuotations.map((guide, idx) => (
                                     <div
-                                        key={guide.quotationId || idx}
+                                        key={guide._id || idx}
                                         className="flex flex-col sm:flex-row items-start sm:items-center bg-gray-100 rounded-xl px-4 md:px-6 py-4 md:py-5 hover:bg-gray-200 transition-colors duration-200"
                                     >
                                         <div className="flex-1 w-full mb-3 sm:mb-0">
@@ -114,31 +169,48 @@ const AllGuideQuotation = () => {
                                                 Guide ID: {guide.guideId || `Guide ${idx + 1}`}
                                             </div>
                                             <div className="text-sm text-gray-600 mb-1">
-                                                {formatPriceLKR(guide.price)}
+                                                Quoted Amount: {formatPriceLKR(guide.quotedAmount)}
                                             </div>
-                                            {guide.pdfFilename && (
-                                                <div className="text-xs text-gray-500">
-                                                    PDF: {guide.pdfFilename}
+                                            {guide.quotationNotes && (
+                                                <div className="text-xs text-gray-500 mb-2">
+                                                    Notes: {guide.quotationNotes}
                                                 </div>
                                             )}
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(guide.status)}`}>
+                                                    {guide.status || 'Pending'}
+                                                </span>
+                                                {guide.quotationDate && (
+                                                    <span className="text-xs text-gray-500">
+                                                        Date: {formatDate(guide.quotationDate)}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-gray-500">
+                                                    Trip ID: {guide.pendingTripId}
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button 
-                                                onClick={() => handleViewQuotation(guide.quotationId)}
-                                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
-                                                disabled={!guide.quotationPdf}
+                                                onClick={() => handleViewQuotation(guide)}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                             >
-                                                View PDF
+                                                View Details
                                             </button>
-                                            <button 
+                                            {/* Uncomment if you have PDF functionality */}
+                                            {/* <button 
+                                                onClick={() => handleDownloadPDF(guide._id)}
+                                                className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
+                                            >
+                                                PDF
+                                            </button> */}
+                                            {/* <button 
                                                 onClick={() => handleSelectQuotation(guide)}
-                                                className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                                 title="Select this quotation"
                                             >
-                                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                </svg>
-                                            </button>
+                                                Select
+                                            </button> */}
                                         </div>
                                     </div>
                                 ))
@@ -155,6 +227,13 @@ const AllGuideQuotation = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Guide Quotation Details Modal */}
+            <GuideQuotationDetailsModal 
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                quotation={selectedQuotation}
+            />
         </div>
     );
 };

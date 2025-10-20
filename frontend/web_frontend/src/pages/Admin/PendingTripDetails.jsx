@@ -106,50 +106,73 @@ const PendingTripDetails = () => {
         };
     };
 
+    const getVehiclePriceRange = () => {
+        if (vehicleQuotations.length === 0) return null;
+        const prices = vehicleQuotations.map(q => q.quotedAmount).filter(p => p != null); // Use quotedAmount for vehicle quotations
+        if (prices.length === 0) return null;
+        return {
+            min: Math.min(...prices),
+            max: Math.max(...prices)
+        };
+    };
+
+    const getHotelPriceRange = () => {
+        if (hotelQuotations.length === 0) return null;
+        const prices = hotelQuotations.map(q => q.totalPricePerPerson).filter(p => p != null);
+        if (prices.length === 0) return null;
+        return {
+            min: Math.min(...prices),
+            max: Math.max(...prices)
+        };
+    };
+
     const quotationsList = [
         {
-            icon: "bg-blue-400",
-            label: "Hotel Quotations",
-            count: hotelQuotations.length,
-            data: hotelQuotations,
-            type: "hotel",
-            href: "/allhotelquotation",
-            iconSvg: (
-                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
-                    <rect x="4" y="8" width="16" height="10" rx="2" />
-                    <rect x="9" y="4" width="6" height="4" rx="1" />
-                </svg>
-            )
-        },
-        {
-            icon: "bg-purple-400",
-            label: "Vehicle Quotations",
-            count: vehicleQuotations.length,
-            data: vehicleQuotations,
-            type: "vehicle",
-            href: "/allvehiclequotation",
-            iconSvg: (
-                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
-                    <rect x="3" y="13" width="18" height="5" rx="2" />
-                    <circle cx="7" cy="19" r="2" />
-                    <circle cx="17" cy="19" r="2" />
-                </svg>
-            )
-        },
-        {
-            icon: "bg-green-400",
-            label: "Guide Quotations",
-            count: guideQuotations.length,
-            data: guideQuotations,
-            type: "guide",
-            href: "/allguidequotation",
-            iconSvg: (
-                <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
-                    <circle cx="12" cy="9" r="4" />
-                    <rect x="6" y="15" width="12" height="5" rx="2.5" />
-                </svg>
-            )
-        }
+        icon: "bg-blue-400",
+        label: "Hotel Quotations",
+        count: hotelQuotations.length,
+        data: hotelQuotations,
+        type: "hotel",
+        href: "/allhotelquotation",
+        priceRange: getHotelPriceRange(),
+        iconSvg: (
+            <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                <rect x="4" y="8" width="16" height="10" rx="2" />
+                <rect x="9" y="4" width="6" height="4" rx="1" />
+            </svg>
+        )
+    },
+    {
+        icon: "bg-purple-400",
+        label: "Vehicle Quotations",
+        count: vehicleQuotations.length,
+        data: vehicleQuotations,
+        type: "vehicle",
+        href: "/allvehiclequotation",
+        priceRange: getVehiclePriceRange(),
+        iconSvg: (
+            <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                <rect x="3" y="13" width="18" height="5" rx="2" />
+                <circle cx="7" cy="19" r="2" />
+                <circle cx="17" cy="19" r="2" />
+            </svg>
+        )
+    },
+    {
+        icon: "bg-green-400",
+        label: "Guide Quotations",
+        count: guideQuotations.length,
+        data: guideQuotations,
+        type: "guide",
+        href: "/allguidequotation",
+        priceRange: getGuidePriceRange(),
+        iconSvg: (
+            <svg width="20" height="20" fill="white" viewBox="0 0 24 24">
+                <circle cx="12" cy="9" r="4" />
+                <rect x="6" y="15" width="12" height="5" rx="2.5" />
+            </svg>
+        )
+    }
     ];
 
     return (
@@ -249,9 +272,9 @@ const PendingTripDetails = () => {
                                                     }`}>
                                                         {loadingQuotations ? "Loading..." : `${item.count} quotation${item.count !== 1 ? 's' : ''}`}
                                                     </span>
-                                                    {item.count > 0 && !loadingQuotations && (
+                                                    {item.count > 0 && !loadingQuotations && item.priceRange && (
                                                         <span className="text-xs text-gray-600">
-                                                            Price range: {formatPriceLKR(Math.min(...item.data.map(q => q.totalPricePerPerson)))} - {formatPriceLKR(Math.max(...item.data.map(q => q.totalPricePerPerson)))}
+                                                            Price range: {formatPriceLKR(item.priceRange.min)} - {formatPriceLKR(item.priceRange.max)}
                                                         </span>
                                                     )}
                                                 </div>
