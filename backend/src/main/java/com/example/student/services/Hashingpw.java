@@ -39,7 +39,7 @@ public class Hashingpw {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow your React app's origin
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081")); // Use your React app's port
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081","http://localhost:5173")); // Use your React app's port
         // Allow all standard methods (GET, POST, etc.)
         configuration.setAllowedMethods(Arrays.asList("*"));
         // Allow all standard headers

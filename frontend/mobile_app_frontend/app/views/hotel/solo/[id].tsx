@@ -131,7 +131,8 @@ export default function Views() {
                 //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
                 const data1: HotelView = await res1.json()
 
-                //console.log(data1)
+                console.log('data1')
+                console.log(data1)
                 setHotelv(data1)
                 //setHotel(data1)
 
