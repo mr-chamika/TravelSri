@@ -19,15 +19,6 @@ const AllHotelQuotation = () => {
         loadTripData();
     }, []);
 
-    //old loadQuotations function
-    // const loadQuotations = () => {
-    //     const storedQuotations = localStorage.getItem('hotelQuotationsForTrip');
-    //     if (storedQuotations) {
-    //         setHotelQuotations(JSON.parse(storedQuotations));
-    //     }
-    //     setLoading(false);
-    // };
-
     const loadQuotations = () => {
         const storedQuotations = localStorage.getItem('hotelQuotationsForTrip');
         if (storedQuotations) {
@@ -59,22 +50,6 @@ const AllHotelQuotation = () => {
         })}`;
     };
 
-    //Old handleViewQuotation function
-    // const handleViewQuotation = async (quotationId) => {
-    //     try {
-    //         const response = await axios.get(`${API_BASE_URL}/trip/${quotationId}`, {
-    //             responseType: 'blob'
-    //         });
-            
-    //         const blob = new Blob([response.data], { type: 'application/pdf' });
-    //         const url = window.URL.createObjectURL(blob);
-    //         window.open(url, '_blank');
-    //     } catch (error) {
-    //         console.error("Error downloading PDF:", error);
-    //         alert("Unable to view quotation PDF. Please try again.");
-    //     }
-    // };
-
     const handleViewQuotation = (quotation) => {
         console.log("=== VIEWING QUOTATION ===");
         console.log("Selected quotation:", quotation);
@@ -91,7 +66,7 @@ const AllHotelQuotation = () => {
     const handleSelectQuotation = (quotation) => {
         localStorage.setItem('selectedHotelQuotation', JSON.stringify(quotation));
         const price = quotation.totalPricePerPerson || quotation.finalAmount || quotation.totalAmount;
-        alert(`Selected: ${quotation.hotelId} - ${formatPriceLKR(quotation.price)}`);
+        alert(`Selected: ${quotation.hotelId} - ${formatPriceLKR(price)}`);
     };
 
     const handleDownloadPDF = async (quotationId) => {
@@ -221,10 +196,11 @@ const AllHotelQuotation = () => {
                             )}
                         </div>
 
+                        {/* Updated Continue button to go back to PendingTripDetails */}
                         <div className="flex justify-center">
                             <a href="/pendingtripdetails" className="w-full sm:w-auto">
                                 <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full sm:w-auto">
-                                    Continue
+                                    Back to Trip Planning
                                 </button>
                             </a>
                         </div>

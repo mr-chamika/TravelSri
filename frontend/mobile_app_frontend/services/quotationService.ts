@@ -83,7 +83,7 @@ export const fetchPendingTrips = async (): Promise<PendingTrip[]> => {
 
     // Make API call with JWT token
     const response = await fetch(
-      `${BASE_URL}/guide/groupTours?userId=${userId}`,
+      `${BASE_URL}/api/guide/groupTours?userId=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -133,7 +133,7 @@ export const submitQuotation = async (
     console.log(`📤 Token preview: ${token?.substring(0, 20)}...`);
     console.log(`📤 Quotation data:`, quotationData);
 
-    const url = `${BASE_URL}/guide/submitQuotation/${tourId}`;
+    const url = `${BASE_URL}/api/guide/submitQuotation/${tourId}`;
     console.log(`📤 API URL: ${url}`);
 
     const headers = {
@@ -200,7 +200,7 @@ export const fetchSubmittedQuotations = async (): Promise<SubmittedQuotation[]> 
 
     console.log('🔍 Fetching submitted quotations for userId:', userId);
 
-    const url = `${BASE_URL}/guide/submittedQuotation/${userId}`;
+    const url = `${BASE_URL}/api/guide/submittedQuotation/${userId}`;
     console.log(`📥 API URL: ${url}`);
 
     // Make API call with JWT token

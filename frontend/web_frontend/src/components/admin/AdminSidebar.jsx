@@ -23,8 +23,8 @@ const AdminSidebar = () => {
           />
           <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs px-2 font-bold">4</span>
         </div>
-        <div className="font-bold text-lg">Tharusha</div>
-        <div className="text-gray-400 text-sm">tharusha@gmail.com</div>
+        <div className="font-bold text-lg">Hasith</div>
+        <div className="text-gray-400 text-sm">hasithchamika2002@gmail.com</div>
       </div>
       <nav className="flex flex-col gap-4">
         {sidebarLinks.map((link, idx) => (

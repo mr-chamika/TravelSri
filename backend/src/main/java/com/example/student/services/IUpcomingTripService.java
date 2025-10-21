@@ -60,4 +60,7 @@ public interface IUpcomingTripService {
 
     // Cancel upcoming trip
     UpcomingTrip cancelUpcomingTrip(String upcomingTripId, String reason);
+
+    // Update WhatsApp link
+    UpcomingTrip updateWhatsappLink(String upcomingTripId, String whatsappLink);
 }

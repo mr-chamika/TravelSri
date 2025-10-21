@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "upcoming_trips")
@@ -20,7 +21,7 @@ import java.util.List;
 public class UpcomingTrip {
 
     @Id
-    private String upcomingTripId;
+    private String id;
 
     // ========== TRIP BASIC INFORMATION (From PendingTrip) ==========
 
@@ -223,6 +224,9 @@ public class UpcomingTrip {
     @Field("cancellation_policy")
     private String cancellationPolicy;
 
+    @Field("whatsapp_link")
+    private String whatsappLink; // WhatsApp group link for trip coordination
+
     // ========== ADMIN AND TRACKING FIELDS ==========
 
     @Field("created_by")
@@ -258,24 +262,58 @@ public class UpcomingTrip {
     public Double calculateTotalTripCost() {
         double total = 0.0;
 
+        // Hotel cost - try final amount first, then calculate from per-person rates
         if (hotelFinalAmount != null) {
             total += hotelFinalAmount;
-        }
-        if (vehicleFinalAmount != null) {
-            total += vehicleFinalAmount;
-        }
-        if (guideFinalAmount != null) {
-            total += guideFinalAmount;
+            System.out.println("Added hotel final amount: " + hotelFinalAmount);
+        } else if (accommodationPricePerPerson != null && mealPricePerPerson != null && groupSize != null) {
+            double hotelCost = (accommodationPricePerPerson + mealPricePerPerson) * groupSize;
+            total += hotelCost;
+            System.out.println("Calculated hotel cost from per-person rates: " + hotelCost + 
+                              " (accommodation: " + accommodationPricePerPerson + 
+                              " + meal: " + mealPricePerPerson + 
+                              " × group size: " + groupSize + ")");
+        } else {
+            System.out.println("No hotel cost data available");
         }
 
+        // Vehicle cost - try final amount first, then quoted amount
+        if (vehicleFinalAmount != null) {
+            total += vehicleFinalAmount;
+            System.out.println("Added vehicle final amount: " + vehicleFinalAmount);
+        } else if (vehicleQuotedAmount != null) {
+            total += vehicleQuotedAmount;
+            System.out.println("Added vehicle quoted amount: " + vehicleQuotedAmount);
+        } else {
+            System.out.println("No vehicle cost data available");
+        }
+
+        // Guide cost - try final amount first, then quoted amount
+        if (guideFinalAmount != null) {
+            total += guideFinalAmount;
+            System.out.println("Added guide final amount: " + guideFinalAmount);
+        } else if (guideQuotedAmount != null) {
+            total += guideQuotedAmount;
+            System.out.println("Added guide quoted amount: " + guideQuotedAmount);
+        } else {
+            System.out.println("No guide cost data available");
+        }
+
+        System.out.println("Total calculated trip cost: " + total);
         return total;
     }
 
     public Double calculateTotalPricePerPerson() {
         if (groupSize != null && groupSize > 0) {
-            return calculateTotalTripCost() / groupSize;
+            Double totalCost = calculateTotalTripCost();
+            Double pricePerPerson = totalCost / groupSize;
+            System.out.println("Calculated price per person: " + pricePerPerson + 
+                              " (total cost: " + totalCost + " ÷ group size: " + groupSize + ")");
+            return pricePerPerson;
+        } else {
+            System.out.println("Cannot calculate price per person - invalid group size: " + groupSize);
+            return 0.0;
         }
-        return 0.0;
     }
 
     public boolean isPaymentComplete() {
@@ -297,4 +335,48 @@ public class UpcomingTrip {
         }
         return numberOfDates != null ? numberOfDates : 1;
     }
+
+    // Vehicle quotation reference fields
+    @Field("vehicle_quotation_id")
+    private String vehicleQuotationId;
+
+    @Field("vehicle_quoted_amount")
+    private Double vehicleQuotedAmount;
+
+    @Field("vehicle_quotation_notes")
+    private String vehicleQuotationNotes;
+
+    @Field("vehicle_quotation_date")
+    private Date vehicleQuotationDate;
+
+    @Field("vehicle_owner_id")
+    private String vehicleOwnerId;
+
+    // Guide quotation reference fields
+    @Field("guide_quotation_id")
+    private String guideQuotationId;
+
+    @Field("guide_quoted_amount")
+    private Double guideQuotedAmount;
+
+    @Field("guide_quotation_notes")
+    private String guideQuotationNotes;
+
+    @Field("guide_quotation_date")
+    private Date guideQuotationDate;
+
+    // Hotel quotation reference fields (ensure these exist)
+    @Field("hotel_quotation_id")
+    private String hotelQuotationId;
+
+    @Field("hotel_quote_number")
+    private String hotelQuoteNumber;
+
+    // ========== CANCELLATION DETAILS ==========
+
+    @Field("cancellation_reason")
+    private String cancellationReason;
+
+    @Field("cancelled_at")
+    private LocalDateTime cancelledAt;
 }

@@ -6,6 +6,10 @@ import com.example.student.model.VehicleQuotation;
 import com.example.student.repo.PendingTripRepo;
 import com.example.student.repo.UserRepo;
 import com.example.student.repo.VehicleQuotationRepo;
+import com.example.student.model.Vehicle;
+import com.example.student.repo.PendingTripRepo;
+import com.example.student.repo.VehicleQuotationRepo;
+import com.example.student.repo.VehicleRepo;
 import com.example.student.repo.VehicleOwnerQuotationRepo;
 import com.example.student.model.VehicleOwnerQuotation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/VehicleOwnerQuotation")
+@RequestMapping("/api/vehicle")
 public class VehicleQuotationController {
 
     @Autowired
@@ -215,6 +219,52 @@ public class VehicleQuotationController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+//    @GetMapping("/vehiclegroupTours")
+//    public List<PendingTrip> getUnsubmittedToursForGuide(@RequestParam String userId) {
+//
+//        System.out.println("Received userId: " + userId);
+//
+//        // Fetch guide's location using UserRepo
+//        Optional<User> userOpt = userRepo.findUserLocationById(userId);
+//        String guideLocation = userOpt.map(User::getLocation).orElse(null);
+//
+//        System.out.println("Guide location for userId " + userId + ": " + guideLocation);
+//
+//        if (guideLocation == null) {
+//            System.out.println("Guide location not found for userId: " + userId);
+//            return Collections.emptyList();
+//        }
+//
+//        // Use PendingTripRepo to fetch trips starting from guide's location
+//        List<PendingTrip> allToursFromLocation = tourRepo.findByStartLocation(guideLocation);
+//        System.out.println("Total tours starting from guide location: " + allToursFromLocation.size());
+//        allToursFromLocation.forEach(t ->
+//                System.out.println("Tour ID: " + t.getPtId() + ", Start Location: " + t.getStartLocation())
+//        );
+//
+//        // Fetch quotations by guideId
+//        List<VehicleQuotation> guideQuotations = quotationRepo.findByVehicleId(userId);
+//        System.out.println("Total quotations found for guide: " + guideQuotations.size());
+//        guideQuotations.forEach(q ->
+//                System.out.println("Quotation for PendingTrip ID: " + q.getPendingTripId())
+//        );
+//
+//        Set<String> quotedTourIds = guideQuotations.stream()
+//                .map(q -> String.valueOf(q.getPendingTripId()))
+//                .collect(Collectors.toSet());
+//        System.out.println("Quoted Tour IDs set: " + quotedTourIds);
+//
+//        // Filter tours where the guide has not sent any quotation yet
+//        List<PendingTrip> unsubmittedTours = allToursFromLocation.stream()
+//                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.getPtId())))
+//                .collect(Collectors.toList());
+//
+//        System.out.println("Unsubmitted Tours count: " + unsubmittedTours.size());
+//        unsubmittedTours.forEach(t -> System.out.println("Unsubmitted Tour ID: " + t.getPtId()));
+//
+//        return unsubmittedTours;
+//    }
 
     @GetMapping("/vehiclegroupTours")
     public List<PendingTrip> getUnsubmittedToursForGuide(@RequestParam String userId) {

@@ -131,10 +131,10 @@ const FeedbackPage = () => {
           // Hide notification after 3 seconds
           setTimeout(() => {
             setNotification(null);
-          }, 3000);
+          }, 300);
           
           resolve();
-        }, 800); // Simulate network delay
+        }, 500); // Simulate network delay
       } catch (error) {
         // Show error notification
         setNotification({
@@ -145,7 +145,7 @@ const FeedbackPage = () => {
         // Hide notification after 3 seconds
         setTimeout(() => {
           setNotification(null);
-        }, 3000);
+        }, 300);
         
         reject(error);
       }

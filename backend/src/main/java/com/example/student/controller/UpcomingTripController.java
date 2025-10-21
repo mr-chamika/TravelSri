@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -296,12 +297,43 @@ public class UpcomingTripController {
             @PathVariable("id") String upcomingTripId,
             @RequestParam("reason") String reason) {
         try {
-            if (reason == null || reason.trim().isEmpty()) {
+            // Get the existing trip
+            Optional<UpcomingTrip> existingTrip = upcomingTripService.getUpcomingTripById(upcomingTripId);
+
+            if (existingTrip.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            UpcomingTrip trip = existingTrip.get();
+
+            // Update the trip status and add cancellation details
+            trip.setTripStatus("Cancelled");
+            trip.setCancellationReason(reason);
+            trip.setCancelledAt(LocalDateTime.now());
+            trip.setUpdatedAt(LocalDateTime.now());
+
+            // Save the updated trip
+            UpcomingTrip updatedTrip = upcomingTripService.updateUpcomingTrip(upcomingTripId, trip);
+
+            return ResponseEntity.ok(updatedTrip);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Update WhatsApp link
+    @PatchMapping("/updateWhatsappLink/{id}")
+    public ResponseEntity<UpcomingTrip> updateWhatsappLink(
+            @PathVariable("id") String upcomingTripId,
+            @RequestParam("whatsappLink") String whatsappLink) {
+        try {
+            if (whatsappLink == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
-            UpcomingTrip cancelledTrip = upcomingTripService.cancelUpcomingTrip(upcomingTripId, reason);
-            return new ResponseEntity<>(cancelledTrip, HttpStatus.OK);
+            UpcomingTrip updatedTrip = upcomingTripService.updateWhatsappLink(upcomingTripId, whatsappLink);
+            return new ResponseEntity<>(updatedTrip, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         } catch (Exception e) {

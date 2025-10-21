@@ -79,7 +79,7 @@ const FlashMessage = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 5000);
+    }, 500);
     
     return () => clearTimeout(timer);
   }, [onClose]);

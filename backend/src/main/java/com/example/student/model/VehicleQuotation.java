@@ -24,7 +24,6 @@ public class VehicleQuotation {
     private Date createdAt;
     private Date updatedAt;
 
-
     // Default constructor
     public VehicleQuotation() {
         this.createdAt = new Date();
