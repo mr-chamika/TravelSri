@@ -13,30 +13,57 @@ const App = () => {
   const reviews = [
     {
       id: 1,
-      name: 'Катерина Лущекоя',
-      username: '@katya_lush',
+      name: 'Sarah Johnson',
+      username: '@sarah_travels',
       rating: 5,
       review:
-        'Можем помочь с SEO-продвижением вашего сайта и увеличить трафик. Доработаем или создадим контент для вашего бизнеса.',
-      avatar: 'https://via.placeholder.com/50?text=User+1', // Placeholder image URL
+        'Amazing guide! He took us to hidden waterfalls and local restaurants that weren\'t in any guidebook. Very knowledgeable about Sri Lankan culture and history. Highly recommended!',
+      avatar: 'https://via.placeholder.com/50?text=Sarah+J', // Placeholder image URL
     },
     {
       id: 2,
-      name: 'Катерина Лужецкая',
-      username: '@katya_luzheckaya',
-      rating: 3,
+      name: 'Michael Chen',
+      username: '@mike_explorer',
+      rating: 5,
       review:
-        'Анализируем запросы и выявляем ключевые слова. Создаем оптимизированный контент для вашего сайта. Работаем с Google Analytics и Яндекс Метрикой.',
-      avatar: ' https://via.placeholder.com/50?text=User+2', // Placeholder image URL
+        'Best hiking experience ever! The guide was punctual, professional, and made sure everyone was comfortable. Perfect balance of adventure and safety. Will definitely book again!',
+      avatar: 'https://via.placeholder.com/50?text=Michael+C', // Placeholder image URL
     },
     {
       id: 3,
-      name: 'Катериня Лужецкая',
-      username: '@kateryna_luzheckaya',
+      name: 'Emma Wilson',
+      username: '@emma_wanderlust',
       rating: 4,
       review:
-        'Нашей команде удалось разработать уникальный контент, который помогает увеличить конверсии, варьируя аудиторию через SEO Рекомендации целей, копирайта на 100%.',
-      avatar: ' https://via.placeholder.com/50?text=User+3', // Placeholder image URL
+        'Great experience overall! Very friendly and accommodating. The tour covered all major attractions in Kandy. Minor issue with timing but nothing major. Would recommend!',
+      avatar: 'https://via.placeholder.com/50?text=Emma+W', // Placeholder image URL
+    },
+    {
+      id: 4,
+      name: 'Raj Patel',
+      username: '@raj_backpacker',
+      rating: 5,
+      review:
+        'Fantastic guide who really knows the Nuwara Eliya region! Shared interesting stories and local insights. The tea plantation tour was unforgettable. Great value for money.',
+      avatar: 'https://via.placeholder.com/50?text=Raj+P', // Placeholder image URL
+    },
+    {
+      id: 5,
+      name: 'Lisa Martinez',
+      username: '@lisa_adventure',
+      rating: 4,
+      review:
+        'Good experience with the beach and coral reef tour. Guide was knowledgeable and safety-conscious. Water was calm and beautiful. Would have loved more time at the beach.',
+      avatar: 'https://via.placeholder.com/50?text=Lisa+M', // Placeholder image URL
+    },
+    {
+      id: 6,
+      name: 'James Cooper',
+      username: '@james_explorer',
+      rating: 5,
+      review:
+        'Phenomenal! The guide took us on an authentic Colombo street food tour. We tried 15 different dishes and learned so much about local cuisines. Best experience yet!',
+      avatar: 'https://via.placeholder.com/50?text=James+C', // Placeholder image URL
     },
   ];
 

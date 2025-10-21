@@ -1,16 +1,34 @@
 package com.example.student.services;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
 
+import com.example.student.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
+@EnableWebSecurity
 public class Hashingpw {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -18,14 +36,37 @@ public class Hashingpw {
     }
 
     @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Allow your React app's origin
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8081","http://localhost:5173")); // Use your React app's port
+        // Allow all standard methods (GET, POST, etc.)
+        configuration.setAllowedMethods(Arrays.asList("*"));
+        // Allow all standard headers
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        // Allow credentials
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); // Apply this config to all routes
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(withDefaults()) // Apply the global CORS configuration
                 .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Make the security context stateless
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add our JWT filter
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(
-                                "/user/signup",
                                 "/user/login",
+                                "/web/login",
+                                "/ws/**",
+                                "/ws",
+                                "/system/**",
+                                "/user/signup",
                                 "/user/check-email",
                                 "/user/profile",
                                 "/user/reset-password",
@@ -37,13 +78,39 @@ public class Hashingpw {
                                 "/hotels/reset-password",
                                 "/hotels",
                                 "/hotels/**",
+                                //"/guide/groupTours/{userId}",
                                 "/guide/groupTours",
+                                "/guide/test",
                                 "/guide/submitQuotation/**", // Fixed: Allow all submitQuotation endpoints
                                 "/guide/submittedQuotation/{guideId}", // Fixed: Allow all submittedQuotation endpoints
                                 "/vehicle/addVehicle",
                                 "/vehicle/all",
                                 "/vehicle/edit",
+                                "/vehicle/owner",
+                                "/vehicle/bookings/provider/{providerId}",
+                                "/vehicle/bookings/provider/{providerId}/pending",
+                                "/vehicle/bookings/provider/{providerId}/confirmed",
+                                "/vehicle/bookings/{bookingId}/accept",
                                 "/traveler/**",
+                                "/api/upcomingTrip/create",
+                                "/api/upcomingTrip/getall",
+                                "/api/upcomingTrip/get/{id}",
+                                "/api/upcomingTrip/updateWhatsappLink/{original_pending_trip_id}",
+//                                "/api/upcomingTrip/update/{id}",
+//                                "/api/upcomingTrip/delete/{id}",
+//
+//                                "/api/upcomingTrip/getByOriginalPendingTripId/{originalPendingTripId}",
+//                                "/api/upcomingTrip/getByStatus/{status}",
+//                                "/api/upcomingTrip/getByPaymentStatus/{paymentStatus}",
+//                                "/api/upcomingTrip/getByCustomerId/{customerId}",
+//                                "/api/upcomingTrip/getActive",
+//                                "/api/upcomingTrip/getByDateRange",
+//                                "/api/upcomingTrip/exists/{originalPendingTripId}",
+//                                "/api/upcomingTrip/updateStatus/{id}",
+//                                "/api/upcomingTrip/updatePaymentStatus/{id}",
+//                                "/api/upcomingTrip/recalculateCosts/{id}",
+//                                "/api/upcomingTrip/markCompleted/{id}",
+//                                "/api/upcomingTrip/cancel/{id}",
                                 "/api/pendingTrip/getall",
                                 "/api/pendingTrip/create",
                                 "/api/pendingTrip/update/{id}",
@@ -52,6 +119,9 @@ public class Hashingpw {
                                 "/api/guide/create",
                                 "/api/guide/getall",
                                 "/api/guide/get/{id}",
+                                "/api/guide/get/{id}",
+                                "/bookings/{guideId}/confirmed/count",
+                                "/api/guide/trip/{pendingTripId}",
                                 "/api/guide/delete/{id}",
                                 "/api/guide/city/{baseCity}",
                                 "/api/guide/language/{language}",
@@ -74,6 +144,7 @@ public class Hashingpw {
                                 "/api/guide-quotation/create-json",
                                 "/api/guide-quotation/get/{quotationId}",
                                 "/api/guide-quotation/trip/{pendingTripId}",
+                                "/api/guide/trip/{pendingTripId}",
                                 "/api/guide-quotation/guide/{guideId}",
                                 "/api/guide-quotation/trip/{pendingTripId}/guide/{guideId}",
                                 "/api/guide-quotation/download-pdf/{quotationId}",
@@ -105,12 +176,15 @@ public class Hashingpw {
                                 "/api/vehicle/capacity/range",
                                 "/api/vehicle/city/{baseCity}/capacity/min/{minCapacity}",
                                 "/api/vehicle/update/{id}",
+                                "/api/vehicle/trip/{pendingTripId}",
+                                "/api/upcomingTrip/cancel/{original_pending_trip_id}",
                                 "/api/quotations",
                                 "/api/quotations/**",
                                 "/api/quotations/{id}",
                                 "/api/quotations/{id}/status",
+                                "/api/admin-hotel-bookings",
                                 "/api/admin-hotel-bookings/{id}",
-                                "/api/admin-hotel-bookings/{id}",
+                                "/api/admin-hotel-bookings/test-auth",
                                 "/auth/**",
                                 "/shopitems/all",
                                 "/shopitems/view",
@@ -141,6 +215,7 @@ public class Hashingpw {
                                 "/api/wallet/platform",
                                 "/api/wallet/traveler/{travelerId}",
                                 "/api/payments/payhere/status/{orderId}",
+                                "/api/payments/provider/{providerId}/total-income",
                                 "/api/bookings/{bookingId}/accept",
                                 "api/payments/payhere/process-confirmation-fee/{bookingId}",
                                 "/api/wallet/provider/{providerId}",
@@ -155,13 +230,98 @@ public class Hashingpw {
                                 "/reviews/by-service",
                                 "/reviews//stats",
                                 "/reviews/service-search",
-                                "/reviews/by-rating"
+                                "/reviews/by-rating",
+                                "/api/translate/**",
+                                "/api/test/public",
+                                "/hotel-rooms/**",
+                                "/api/guide/search",
+                                "/api/payments/payhere/simple-health",
+                                "/api/payments/payhere/create-checkout",
+                                "/api/payments/payhere/test/booking-info/{bookingId}",
+                                "api/payments/payhere/test/generate-hash",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/return/{bookingId}",
+                                "/api/payments/payhere/sdk/payment-completed/",
+                                "/api/guide/bookings/{guideId}",
+                                "/api/guide/bookings/{guideId}/pending",
+                                "/api/guide/bookings/{guideId}/confirmed",
+                                "/api/guide/bookings/{guideId}/completed",
+                                "/api/guide/bookings/{guideId}/today",
+                                "/api/guide/bookings/{guideId}/upcoming",
+                                "/api/guide/bookings/{bookingId}/accept",
+                                "/api/guide/bookings/{bookingId}/reject",
+                                "/api/guide/bookings/{bookingId}/complete",
+                                "/api/guide/bookings/{guideId}/stats",
+                                "/api/guide/bookings/{guideId}/daterange",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/payhere/config-check",
+                                "/api/payments/payhere/test/verify-hash",
+                                "/api/payments/payhere/test/debug-payment-data",
+                                "/api/payments/payhere/test/config",
+                                "/api/payments/payhere/test-refund/{BOOKING_ID}",
+                                "/api/payments/payhere/test/validate-money-flow/{BookingId}",
+                                "/api/payments/admin/all-bookings-status",
+                                "/api/payments/payhere/debug/config-check",
+                                "/api/payments/status/check",
+                                "/api/payments/status/bulk-check",
+                                "/api/payments/status/update",
+                                "/api/payments/history/{bookingId}",
+                                "/api/payments/summary/{bookingId}",
+                                "/api/payments/money-flow/{bookingId}",
+                                "/api/payments/wallet/{travelerId}",
+                                "/api/payments/refund/partial/{bookingId}",
+                                "/api/payments/refund/full/{bookingId}",
+                                "/api/payments/payout/confirmation-fee/{bookingId}",
+                                "/api/payments/payout/final/{bookingId}",
+                                "/api/payments/validate/{bookingId}",
+                                "/api/bookings/hotel/create",
+                                "/api/posts/getPosts/{userId}",
+                                "/api/posts/create",
+                                "/api/posts/like/{postId}",
+                                "/api/places/health",
+                                "/api/places/test",
+                                "/api/places/autocomplete",
+                                "/api/places/details",
+                                "/api/places/nearby",
+                                "/api/posts/post/{postId}",
+                                "/api/posts/edit/{postId}",
+                                "/api/posts/delete/{postId}",
+                                "/api/availability/create-unavailability",
+                                "/api/availability/check-provider",
+                                "/api/availability/user-unavailable-guides",
+                                "/api/availability/user-unavailable-vehicles",
+                                "/api/availability/update-user-status",
+                                "/api/availability/delete-user-unavailability",
+                                "/api/availability/user-schedules/{userId}",
+                                "/api/bookings/guide/{bookingId}/accept",
+                                "/VehicleOwnerQuotation/submitQuotation/{tourId}",
+                                "/VehicleOwnerQuotation/vehiclegroupTours",
+                                "/VehicleOwnerQuotation/vehicleOwnerId/{userId}",
+                                "/VehicleOwnerQuotation/**",
+                                "/notification/**"
 
                         ).permitAll() // <-- THIS LINE MAKES REGISTRATION PUBLIC
                         .anyRequest().authenticated() // Secure all other endpoints
+
                 )
-                .httpBasic(withDefaults()); // Use Basic Auth for the secured endpoints
+                .formLogin(form -> form
+                        .loginPage("/user/login") // Specify a custom login page
+                        .usernameParameter("email")
+                        .permitAll()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(withDefaults()) // Apply the global CORS configuration
+                .csrf(csrf -> csrf.disable()) // Disable CSRF, common for stateless APIs
+                .formLogin(form -> form.disable())
+                .httpBasic(basic->basic.disable()) ;// Use Basic Auth for the secured endpoints
+        //.formLogin(form -> form.disable());
+
 
         return http.build();
     }
+
 }

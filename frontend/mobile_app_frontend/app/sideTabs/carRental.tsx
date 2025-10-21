@@ -421,7 +421,7 @@ export default function App() {
                                 </View>
                                 <View className="bg-[#d9d9d98e] w-[160px] h-[200px] items-center py-5 rounded-2xl">
                                     <Image
-                                        className="w-[150px] h-[100px]"
+                                        className="w-[150px] h-[130px]"
                                         source={{ uri: `data:image/jpeg;base64,${x.image}` }}
                                     />
                                     <View className='pt-2'>
@@ -431,7 +431,7 @@ export default function App() {
                                                 source={p}
                                             />
                                             <Text className=" text-md italic text-center">
-                                                {x.members} Members
+                                                Upto {x.members} Members
                                             </Text>
                                         </View>
                                         <View className='flex-row items-center gap-4 my-1'>

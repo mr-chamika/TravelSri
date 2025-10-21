@@ -1,8 +1,14 @@
 package com.example.student.controller;
 
 import com.example.student.model.PendingTrip;
+import com.example.student.model.User;
+import com.example.student.model.VehicleQuotation;
+import com.example.student.repo.PendingTripRepo;
+import com.example.student.repo.UserRepo;
+import com.example.student.repo.VehicleQuotationRepo;
 import com.example.student.model.Vehicle;
 import com.example.student.repo.PendingTripRepo;
+import com.example.student.repo.VehicleQuotationRepo;
 import com.example.student.repo.VehicleRepo;
 import com.example.student.repo.VehicleOwnerQuotationRepo;
 import com.example.student.model.VehicleOwnerQuotation;
@@ -16,11 +22,17 @@ import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/VehicleOwnerQuotation")
+@RequestMapping("/api/vehicle")
 public class VehicleQuotationController {
 
     @Autowired
     private PendingTripRepo tourRepo;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private VehicleQuotationRepo quotationRepo;
 
     @Autowired
     private VehicleOwnerQuotationRepo vehicleOwnerQuotationRepo;
@@ -94,55 +106,36 @@ public class VehicleQuotationController {
         System.out.println("Vehicle quotation data: " + quotationRequest);
 
         try {
-            // Validate input
             if (quotationRequest.getQuotedAmount() == null || quotationRequest.getQuotedAmount() <= 0) {
-                System.out.println("Invalid amount: " + quotationRequest.getQuotedAmount());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body("Invalid amount provided");
             }
 
-            // Check if tour exists
             Optional<PendingTrip> optionalTour = tourRepo.findById(tourId);
             if (optionalTour.isEmpty()) {
-                System.out.println("Tour not found with ID: " + tourId);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Tour not found with id: " + tourId);
             }
 
             PendingTrip tour = optionalTour.get();
-            System.out.println("Found tour: " + tour.getTitle());
 
-            // Get vehicle owner ID from request body (allows temporary owner IDs)
-//            String vehicleOwnerId = quotationRequest.getVehicleOwnerId();
+            // Use userId from request body to set vehicleOwnerId
+            String vehicleOwnerId = quotationRequest.getOwnerId();
+            System.out.println("Using vehicle owner ID from request: " + vehicleOwnerId);
 
-            // If vehicle owner ID is not in the request, try to get it from tour
-            if (vehicleOwnerId == null || vehicleOwnerId.isEmpty()) {
-                vehicleOwnerId = tour.getVehicleId();
-            }
-
-            // If still no vehicle owner ID, use a default temporary one
-            if (vehicleOwnerId == null || vehicleOwnerId.isEmpty()) {
-                vehicleOwnerId = "TEMP_VEHICLE_OWNER_ID_001";
-                System.out.println("Using default temporary vehicle owner ID: " + vehicleOwnerId);
-            }
-
-            System.out.println("Using vehicle owner ID: " + vehicleOwnerId);
-
-            // Check if quotation already exists for this tour and vehicle owner
+            // Proceed as before with this vehicleOwnerId
             Optional<VehicleOwnerQuotation> existingQuotation = vehicleOwnerQuotationRepo.findByPendingTripIdAndOwnerId(tourId, vehicleOwnerId);
 
             VehicleOwnerQuotation quotation;
             if (existingQuotation.isPresent()) {
-                // Update existing quotation
                 quotation = existingQuotation.get();
                 quotation.setQuotedAmount(quotationRequest.getQuotedAmount());
                 quotation.setQuotationNotes(quotationRequest.getQuotationNotes());
                 quotation.setQuotationDate(new java.util.Date());
                 quotation.setUpdatedAt(new java.util.Date());
-                quotation.setStatus("pending"); // Reset status to pending
+                quotation.setStatus("pending");
                 System.out.println("Updating existing vehicle quotation");
             } else {
-                // Create new quotation
                 quotation = new VehicleOwnerQuotation();
                 quotation.setPendingTripId(tourId);
                 quotation.setOwnerId(vehicleOwnerId);
@@ -155,19 +148,17 @@ public class VehicleQuotationController {
                 System.out.println("Creating new vehicle quotation");
             }
 
-            // Save the quotation to vehicle_owner_quotation collection
             VehicleOwnerQuotation savedQuotation = vehicleOwnerQuotationRepo.save(quotation);
             System.out.println("Successfully saved vehicle quotation with ID: " + savedQuotation.get_id());
 
             return ResponseEntity.ok(savedQuotation);
 
         } catch (Exception e) {
-            System.err.println("Error submitting vehicle quotation: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error submitting vehicle quotation: " + e.getMessage());
         }
     }
+
 
     // Fixed endpoint to get submitted quotations by vehicle owner ID
     @GetMapping("/submittedQuotation/{vehicleOwnerId}")
@@ -216,4 +207,110 @@ public class VehicleQuotationController {
                     .body("Error fetching submitted quotations");
         }
     }
+
+    @GetMapping("/trip/{pendingTripId}")
+    public ResponseEntity<List<VehicleQuotation>> getQuotationsByPendingTripId(@PathVariable("pendingTripId") String pendingTripId) {
+        try {
+            List<VehicleQuotation> quotations = quotationRepo.findByPendingTripId(pendingTripId);
+            return new ResponseEntity<>(quotations, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+//    @GetMapping("/vehiclegroupTours")
+//    public List<PendingTrip> getUnsubmittedToursForGuide(@RequestParam String userId) {
+//
+//        System.out.println("Received userId: " + userId);
+//
+//        // Fetch guide's location using UserRepo
+//        Optional<User> userOpt = userRepo.findUserLocationById(userId);
+//        String guideLocation = userOpt.map(User::getLocation).orElse(null);
+//
+//        System.out.println("Guide location for userId " + userId + ": " + guideLocation);
+//
+//        if (guideLocation == null) {
+//            System.out.println("Guide location not found for userId: " + userId);
+//            return Collections.emptyList();
+//        }
+//
+//        // Use PendingTripRepo to fetch trips starting from guide's location
+//        List<PendingTrip> allToursFromLocation = tourRepo.findByStartLocation(guideLocation);
+//        System.out.println("Total tours starting from guide location: " + allToursFromLocation.size());
+//        allToursFromLocation.forEach(t ->
+//                System.out.println("Tour ID: " + t.getPtId() + ", Start Location: " + t.getStartLocation())
+//        );
+//
+//        // Fetch quotations by guideId
+//        List<VehicleQuotation> guideQuotations = quotationRepo.findByVehicleId(userId);
+//        System.out.println("Total quotations found for guide: " + guideQuotations.size());
+//        guideQuotations.forEach(q ->
+//                System.out.println("Quotation for PendingTrip ID: " + q.getPendingTripId())
+//        );
+//
+//        Set<String> quotedTourIds = guideQuotations.stream()
+//                .map(q -> String.valueOf(q.getPendingTripId()))
+//                .collect(Collectors.toSet());
+//        System.out.println("Quoted Tour IDs set: " + quotedTourIds);
+//
+//        // Filter tours where the guide has not sent any quotation yet
+//        List<PendingTrip> unsubmittedTours = allToursFromLocation.stream()
+//                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.getPtId())))
+//                .collect(Collectors.toList());
+//
+//        System.out.println("Unsubmitted Tours count: " + unsubmittedTours.size());
+//        unsubmittedTours.forEach(t -> System.out.println("Unsubmitted Tour ID: " + t.getPtId()));
+//
+//        return unsubmittedTours;
+//    }
+
+    @GetMapping("/vehiclegroupTours")
+    public List<PendingTrip> getUnsubmittedToursForGuide(@RequestParam String userId) {
+
+        System.out.println("Received userId: " + userId);
+
+        // Fetch guide's location using UserRepo
+        Optional<User> userOpt = userRepo.findUserLocationById(userId);
+        String guideLocation = userOpt.map(User::getLocation).orElse(null);
+
+        System.out.println("Guide location for userId " + userId + ": " + guideLocation);
+
+        if (guideLocation == null) {
+            System.out.println("Guide location not found for userId: " + userId);
+            return Collections.emptyList();
+        }
+
+        // Use PendingTripRepo to fetch trips starting from guide's location
+        List<PendingTrip> allToursFromLocation = tourRepo.findByStartLocation(guideLocation);
+        System.out.println("Total tours starting from guide location: " + allToursFromLocation.size());
+        allToursFromLocation.forEach(t ->
+                System.out.println("Tour ID: " + t.getPtId() + ", Start Location: " + t.getStartLocation())
+        );
+
+        // Fetch quotations by guideId
+        List<VehicleQuotation> guideQuotations = quotationRepo.findByVehicleId(userId);
+        System.out.println("Total quotations found for guide: " + guideQuotations.size());
+        guideQuotations.forEach(q ->
+                System.out.println("Quotation for PendingTrip ID: " + q.getPendingTripId())
+        );
+
+        Set<String> quotedTourIds = guideQuotations.stream()
+                .map(q -> String.valueOf(q.getPendingTripId()))
+                .collect(Collectors.toSet());
+        System.out.println("Quoted Tour IDs set: " + quotedTourIds);
+
+        // Filter tours where the guide has not sent any quotation yet
+        List<PendingTrip> unsubmittedTours = allToursFromLocation.stream()
+                .filter(tour -> !quotedTourIds.contains(String.valueOf(tour.getPtId())))
+                .collect(Collectors.toList());
+
+        System.out.println("Unsubmitted Tours count: " + unsubmittedTours.size());
+        unsubmittedTours.forEach(t -> System.out.println("Unsubmitted Tour ID: " + t.getPtId()));
+
+        return unsubmittedTours;
+    }
+
+
 }

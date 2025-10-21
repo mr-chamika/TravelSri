@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface PendingTripRepo extends MongoRepository<PendingTrip, String> {
+
     @Query("{'date': {$gte: ?0}}")
     List<PendingTrip> findPendingTrips(LocalDate currentDate);
 
@@ -19,4 +20,8 @@ public interface PendingTripRepo extends MongoRepository<PendingTrip, String> {
         }
         return findPendingTrips(currentDate);
     }
+
+
+    List<PendingTrip> findByStartLocation(String startLocation);
+
 }

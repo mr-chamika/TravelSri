@@ -4,15 +4,36 @@
  */
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Make sure the API URL ends with /api
+let baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// Remove trailing slash if present
+if (baseUrl.endsWith('/')) {
+  baseUrl = baseUrl.slice(0, -1);
+}
+// Add /api if not already present
+const API_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
-// Create axios instance
+// Create axios instance with authentication
 const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
+// Add authentication to requests
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Helper to generate demo data
 const generateMockQuotations = (count = 15) => {
@@ -102,6 +123,19 @@ const generateMockQuotations = (count = 15) => {
       accommodationType: ['Hotel', 'Resort', 'Mixed'][Math.floor(Math.random() * 3)],
       transportationNeeded: Math.random() > 0.2,
       guidesRequired: 1 + Math.floor(Math.random() * 3), // 1-4 guides
+      
+      // Add the new per-person pricing fields for mock data
+      accommodationPricePerPerson: Math.round((baseAmount * 0.7) / groupSize), // 70% for accommodation
+      mealPricePerPerson: Math.round((baseAmount * 0.2) / groupSize), // 20% for meals  
+      mealPlanPricePerPerson: Math.round((baseAmount * 0.2) / groupSize), // Alternative field name for compatibility
+      totalPricePerPerson: Math.round(baseAmount / groupSize),
+      
+      // Add meal plan information for mock data
+      mealPlan: ['Breakfast Only', 'Half Board', 'Full Board', 'All Inclusive'][Math.floor(Math.random() * 4)],
+      
+      // Add hotel user information for filtering
+      hotelUsername: 'mock_hotel_user',
+      createdBy: 'mock_hotel_user'
     };
   });
 };
@@ -111,50 +145,138 @@ const quotationService = {
   // Get all quotations
   getAllQuotations: async () => {
     try {
-      const response = await apiClient.get('/quotations');
-      return response.data;
+      // Check for token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        return []; // Return empty array instead of throwing error
+      }
+      
+      console.log('QuotationService - Making API request to fetch quotations...');
+      
+      // Make request with explicit token
+      const response = await apiClient.get('/quotations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('QuotationService - API Response:', response.data);
+      console.log('QuotationService - First quotation from API:', response.data?.[0]);
+      
+      return response.data || [];
     } catch (error) {
-      console.error('Error fetching quotations:', error);
-      // Fallback to mock data if API call fails
-      return generateMockQuotations();
+      console.error('QuotationService - Error fetching quotations:', error);
+      console.error('QuotationService - Error response:', error.response?.data);
+      console.error('QuotationService - Error status:', error.response?.status);
+      
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+      }
+      
+      // Check if we should fall back to mock data for development
+      console.warn('QuotationService - API failed, returning empty array (not using mock data)');
+      return [];
     }
   },
   
   // Get quotation by ID
   getQuotationById: async (id) => {
     try {
-      const response = await apiClient.get(`/quotations/${id}`);
+      console.log(`QuotationService - Fetching quotation by ID: ${id}`);
+      
+      // Check for authentication token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.warn('QuotationService - No authentication token found');
+      }
+      
+      const response = await apiClient.get(`/quotations/${id}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      console.log(`QuotationService - API Response for quotation ${id}:`, response.data);
+      console.log(`QuotationService - mealPricePerPerson value:`, response.data?.mealPricePerPerson);
+      console.log(`QuotationService - mealPlanPricePerPerson value:`, response.data?.mealPlanPricePerPerson);
+      
       return response.data;
     } catch (error) {
-      console.error(`Error fetching quotation ${id}:`, error);
+      console.error(`QuotationService - Error fetching quotation ${id}:`, error);
+      console.error(`QuotationService - Error status:`, error.response?.status);
+      console.error(`QuotationService - Error data:`, error.response?.data);
+      
       // Fallback to mock data
+      console.warn(`QuotationService - Falling back to mock data for quotation ${id}`);
       const quotations = generateMockQuotations();
-      return quotations.find(q => q.id === id) || null;
+      const mockQuotation = quotations.find(q => q.id === id) || null;
+      console.log(`QuotationService - Mock quotation:`, mockQuotation);
+      return mockQuotation;
     }
   },
   
   // Create a new quotation
   createQuotation: async (quotationData) => {
     try {
+      // Check if user is authenticated
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        throw new Error('Authentication token not found. Please login again.');
+      }
+      
       // Format dates for Java LocalDate compatibility if needed
       const formattedData = {
         ...quotationData,
         // checkInDate and checkOutDate should already be in YYYY-MM-DD format
       };
       
-      const response = await apiClient.post('/quotations', formattedData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating quotation:', error);
-      // For development, return mock data as fallback
-      return {
+      console.log('Sending formatted quotation data to API:', formattedData);
+      
+      // Log request configuration for debugging
+      const requestConfig = {
+        method: 'POST',
+        url: `${API_URL}/quotations`,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        data: formattedData
+      };
+      console.log('API request configuration:', requestConfig);
+      
+      // Make sure we're explicitly including the token in this critical request
+      const response = await apiClient.post('/quotations', formattedData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('API response:', response);
+      
+      // Return the created quotation data
+      return response.data || {
         ...quotationData,
         id: `qtn-${Date.now()}`,
         quoteNumber: `QTN-${Date.now().toString().slice(-6)}`,
         createdAt: new Date().toISOString(),
         status: 'Pending',
-        roomAvailability: 'Available',
       };
+    } catch (error) {
+      console.error('Error creating quotation:', error);
+      
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+        throw new Error('Your session has expired. Please login again.');
+      }
+      
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      }
+      
+      // Throw the error to be handled by the calling function
+      throw error;
     }
   },
   
@@ -174,14 +296,101 @@ const quotationService = {
     }
   },
   
-  // Delete a quotation
+  // Delete a quotation by ID
   deleteQuotation: async (id) => {
     try {
-      await apiClient.delete(`/quotations/${id}`);
-      return { success: true, id };
+      // Check for token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        return { 
+          success: false, 
+          id, 
+          error: 'Authentication token not found. Please login to delete quotations.',
+          authError: true 
+        };
+      }
+      
+      // Make request with explicit token
+      const response = await apiClient.delete(`/quotations/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      return { 
+        success: true, 
+        id,
+        response 
+      };
     } catch (error) {
       console.error(`Error deleting quotation ${id}:`, error);
-      return { success: false, id, error: error.message };
+      
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+        return { 
+          success: false, 
+          id, 
+          error: 'Your session has expired. Please login again.',
+          authError: true 
+        };
+      }
+      
+      return { 
+        success: false, 
+        id, 
+        error: error.message || 'Error deleting quotation' 
+      };
+    }
+  },
+  
+  // Delete a quotation by quote number
+  deleteQuotationByQuoteNumber: async (quoteNumber) => {
+    try {
+      // Check for token
+      const token = localStorage.getItem('hotelAuthToken') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Authentication token not found. Please login again.');
+        return { 
+          success: false, 
+          quoteNumber, 
+          error: 'Authentication token not found. Please login to delete quotations.',
+          authError: true 
+        };
+      }
+      
+      // Make request with explicit token
+      const response = await apiClient.delete(`/quotations/by-number/${quoteNumber}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      return { 
+        success: true, 
+        quoteNumber,
+        response 
+      };
+    } catch (error) {
+      console.error(`Error deleting quotation with quote number ${quoteNumber}:`, error);
+      
+      // Handle authentication errors
+      if (error.response && error.response.status === 401) {
+        console.error('Authentication failed. Please login again.');
+        return { 
+          success: false, 
+          quoteNumber, 
+          error: 'Your session has expired. Please login again.',
+          authError: true 
+        };
+      }
+      
+      return { 
+        success: false, 
+        quoteNumber, 
+        error: error.message || 'Error deleting quotation' 
+      };
     }
   },
   

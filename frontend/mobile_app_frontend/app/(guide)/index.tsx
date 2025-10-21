@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  Text
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import individual components
 import StatsCard from '../../components/ui/starCard';
@@ -21,13 +23,15 @@ import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { jwtDecode } from 'jwt-decode';
 
 // Import your screen components
 import BookingScreen from './bookings';
 import AvailabilityScreen from './availability';
 import TravelFeedScreen from '../views/travelFeed/[id]'; // Make sure this has default export
-import ProfileScreen from '../(guide)/profile';
+import QuotationScreen from '../sideTabsG/quotations';
 import RatingScreen from '../views/guideRating/[id]';
+import { method } from 'lodash';
 
 // Type definitions
 interface Stats {
@@ -37,12 +41,21 @@ interface Stats {
   earnings: string;
 }
 
+interface MyToken {
+  sub: string;
+  roles: string[];
+  username: string;
+  email: string;
+  id: string
+}
+
 export type GuideStackParamList = {
   Home: undefined;
   bookings: undefined;
   Profile: undefined;
   availability: undefined;
   travelFeed: undefined;
+  quotation: undefined;
   rating: undefined;
 };
 
@@ -109,17 +122,57 @@ const TravelMateGuideHome = () => {
 
   const [selectedDate, setSelectedDate] = useState(8);
   const [show, setShow] = useState(false);
+  const [userName, setUserName] = useState('Guide');
 
   const opacity = useSharedValue(0);
   const [notify, setNotify] = useState(false);
   const stats = {
-    activeBookings: '12',
-    rating: '4.9',
-    totalTours: '47',
-    earnings: '$2,340'
+    activeBookings: '3',
+    rating: '4.5',
+    totalTours: '11',
+    earnings: '10.5K'
   };
 
   const navigation = useNavigation<GuideNavigation>();
+
+  // Fetch and decode JWT token to get username
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        console.log('🔍 JWT Token from AsyncStorage:', token ? token.substring(0, 50) + '...' : 'NO TOKEN');
+        
+        if (token) {
+          const decoded = jwtDecode<MyToken>(token);
+          console.log('🔓 Decoded JWT Token:', JSON.stringify(decoded, null, 2));
+          console.log('📋 All token fields:', Object.keys(decoded));
+          
+          // Try different possible username fields
+          const possibleUsername = 
+            decoded.username || 
+            decoded.sub || 
+            decoded.username || 
+            (decoded as any).given_name || 
+            (decoded as any).preferred_username ||
+            'Guide';
+          
+          console.log('✅ Using username:', possibleUsername);
+          console.log('📌 decoded.username:', decoded.username);
+          console.log('📌 decoded.sub:', decoded.sub);
+          console.log('📌 decoded.roles:', decoded.roles);
+          
+          setUserName(possibleUsername);
+        } else {
+          console.warn('⚠️ No token found in AsyncStorage');
+        }
+      } catch (error) {
+        console.error('❌ Error decoding token:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      }
+    };
+    
+    fetchUserName();
+  }, []);
 
   const menuItems = [
     {
@@ -129,10 +182,10 @@ const TravelMateGuideHome = () => {
       id: 'bookings'
     },
     {
-      icon: '👤',
-      title: 'My Profile',
-      subtitle: 'Manage your guide profile',
-      id: 'profile'
+      icon: '💬',
+      title: 'Group Tour Quotation',
+      subtitle: 'Group Tour Quotation',
+      id: 'quotation'
     },
     {
       icon: '📅',
@@ -141,13 +194,13 @@ const TravelMateGuideHome = () => {
       id: 'availability'
     },
     {
-      icon: '⛰️',
+      icon: '🧳',
       title: 'Travel Feed',
       subtitle: 'Create and manage tours',
       id: 'travelFeed' // Fixed: changed from 'packages' to 'travelFeed'
     },
     {
-      icon: '😊',
+      icon: '⭐',
       title: 'Rating & Reviews',
       subtitle: 'View Rating and Review',
       id: 'Rating'
@@ -162,9 +215,9 @@ const TravelMateGuideHome = () => {
         console.log('Navigating to bookings screen...');
         navigation.navigate('bookings');
         break;
-      case 'profile':
-        console.log('Navigating to profile screen...');
-        navigation.navigate('Profile');
+      case 'quotation':
+        console.log('Navigating to quotation screen...');
+        navigation.navigate('quotation');
         break;
       case 'availability':
         console.log('Navigating to availability screen...');
@@ -210,13 +263,15 @@ const TravelMateGuideHome = () => {
     }
   };
 
+  
+
   return (
     <SafeAreaView style={styles.container}>
       <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Header
-          userName="Sunil"
+          userName={userName}
           welcomeMessage="Ready to guide travelers today?"
           gradientColors={['rgba(254, 250, 23, 1)', 'rgba(255, 215, 0, 0.9)', 'rgba(255, 196, 0, 0.8)']}
         />
@@ -228,6 +283,7 @@ const TravelMateGuideHome = () => {
             onMenuItemPress={handleMenuItemPress}
           />
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -247,7 +303,7 @@ const TravelMateGuide = () => {
       <Stack.Screen name="availability" component={AvailabilityScreen} />
       <Stack.Screen name="travelFeed" component={TravelFeedScreen} />
       {/* Add other screens here when ready */}
-      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="quotation" component={QuotationScreen} />
       <Stack.Screen name="rating" component={RatingScreen} /> 
     </Stack.Navigator>
   );

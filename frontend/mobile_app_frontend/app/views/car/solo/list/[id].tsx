@@ -115,9 +115,11 @@ export default function App() {
         }
 
     }
-    useEffect(() => {
-        x();
-    }, [])
+    useFocusEffect(
+        useCallback(() => {
+            x();
+        }, [])
+    );
 
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
     const [isModalVisible, setModalVisible] = useState(false);
@@ -125,7 +127,8 @@ export default function App() {
     const [startLocation, setStartLocation] = useState('');
     const [endLocation, setEndLocation] = useState('');
     const [language, setLanguage] = useState('');
-    const [isOneway, setOneWay] = useState(false);
+    const [isOneway, setOneWay] = useState(true);
+    const [isWayback, setWayback] = useState(false);
     const [isBookingComplete, setIsBookingComplete] = useState(false);
     const [selectedTime, setSelectedTime] = useState({ hour: 12, minute: 30 });
     const [bookingData, setBookingData] = useState<Book | null>(null);
@@ -163,6 +166,7 @@ export default function App() {
             return acc;
         }, {} as { [key: string]: { selected: boolean; selectedColor: string } });
     }, [selectedDates]);
+
     const handleSubmit = async () => {
         // 1. Validate that all required fields are filled
         if (Object.keys(selectedDates).length === 0 || !startLocation.trim() || !endLocation.trim() || !language.trim() || !time) {
@@ -181,13 +185,14 @@ export default function App() {
         };
 
         // 3. Update the component's state to reflect the completed booking
+        console.log(newBooking)
         setBookingData(newBooking);
         setModalVisible(false);
         setIsBookingComplete(true);
 
         //console.log(newBooking)
 
-        const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${newBooking.start}&language=${newBooking.language}`)
+        const res = await fetch(`http://localhost:8080/traveler/vehicle-gets?location=${newBooking.start}&language=${newBooking.language}`)
 
         const data = await res.json();
 
@@ -230,6 +235,7 @@ export default function App() {
         try {
             const sessionExists = await AsyncStorage.getItem('solocbookingSession');
             const bookingCompleteStatus = await AsyncStorage.getItem('solocbookingComplete')
+            console.log(sessionExists + " " + bookingCompleteStatus)
 
             setSelectedDates([]);
             setIsBookingComplete(false);
@@ -259,6 +265,28 @@ export default function App() {
                     setLanguage(parsedBooking.language);
                     //setSelectedTime(parsedBooking.time);
                     setTime(parsedBooking.time)
+
+                    const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${startLocation}&language=${language}`)
+
+                    const data = await res.json();
+
+                    if (data) {
+
+                        //console.log(data)
+                        setVehicles(data)
+
+                    }
+                    const res1 = await fetch(`http://localhost:8080/traveler/category-get`)
+
+                    const data1 = await res1.json();
+
+                    if (data1) {
+
+                        //console.log(data1)
+                        setCategories(data1)
+
+                    }
+
                 }
 
             } else {
@@ -327,6 +355,21 @@ export default function App() {
                                     />
                                 </View>
                                 <View className="w-full gap-7 mt-4">
+                                    <View className='flex-row w-full justify-between'>
+
+                                        <View className="flex-row items-center pt-2 gap-4">
+                                            <Text className="text-base text-gray-800">One-Way Trip</Text>
+                                            <TouchableOpacity onPress={() => { setOneWay(prevState => !prevState); setWayback(prevState => !prevState) }} className={`w-6 h-6 rounded border-2 justify-center items-center mr-2 ${isOneway ? 'bg-blue-500 border-blue-500' : 'border-gray-400'}`}>
+                                                {isOneway && <Text className="text-white font-bold">✓</Text>}
+                                            </TouchableOpacity>
+                                        </View>
+                                        <View className="flex-row items-center pt-2 gap-4">
+                                            <Text className="text-base text-gray-800">Way-back Trip</Text>
+                                            <TouchableOpacity onPress={() => { setWayback(prevState => !prevState); setOneWay(prevState => !prevState) }} className={`w-6 h-6 rounded border-2 justify-center items-center mr-2 ${isWayback ? 'bg-blue-500 border-blue-500' : 'border-gray-400'}`}>
+                                                {isWayback && <Text className="text-white font-bold">✓</Text>}
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
 
                                     <View className='flex-row justify-between gap-2'>
                                         <View className='flex-1'>
@@ -354,12 +397,7 @@ export default function App() {
                                             </View>
                                         </View>
                                     </View>
-                                    <View className="flex-row items-center pt-2 gap-4">
-                                        <Text className="text-base text-gray-800">One-Way Trip</Text>
-                                        <TouchableOpacity onPress={() => setOneWay(prevState => !prevState)} className={`w-6 h-6 rounded border-2 justify-center items-center mr-2 ${isOneway ? 'bg-blue-500 border-blue-500' : 'border-gray-400'}`}>
-                                            {isOneway && <Text className="text-white font-bold">✓</Text>}
-                                        </TouchableOpacity>
-                                    </View>
+
                                 </View>
                             </ScrollView>
 

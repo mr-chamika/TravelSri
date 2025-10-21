@@ -1,242 +1,615 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, StyleSheet } from 'react-native';
-import { BookingRequestsList } from '../../components/ui/bookingReqList';
-import { BookingCalendar } from '../../components/ui/bookingCalender';
-import { RequestDetailsModal } from '../../components/ui/requestDetailModal';
-import { TabNavigation } from '../../components/ui/tabNavigation';
-import Topbar from '../../components/ui/guideTopbar';
-import BackButton from '../../components/ui/backButton';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
+import { router } from 'expo-router'
+import { Text, View, TouchableOpacity, ScrollView, RefreshControl } from 'react-native'
+import { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-// Types
-interface BookingRequest {
-  id: string;
-  destination: string;
-  date: string;
-  time: string;
-  duration: string;
-  groupSize: number;
-  status: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  specialRequests: string;
-  price: number;
+interface MyToken {
+    sub: string;
+    roles: string[];
+    username: string;
+    email: string;
+    id: string;
 }
 
-interface AcceptedBooking {
-  date: string;
-  title: string;
-  time: string;
-  customerName: string;
+interface BookingData {
+    _id?: string;
+    price: number;
+    bookingDates: string[];
+    location: string;
+    userId: string;
+    username: string;
+    status?: string;
+    travelerId?: string;
+    providerId?: string;
+    providerType?: string;
+    serviceName?: string;
+    serviceDescription?: string;
+    serviceStartDate?: string;
+    serviceEndDate?: string;
+    totalAmount?: number;
+    currency?: string;
+    paymentStatus?: string;
+    bookingTime?: string;
+    specialRequests?: string;
+    numberOfGuests?: number;
+    languagePreference?: string;
+    createdAt?: string;
+    mobileNumber?: string;
 }
 
-type TabType = 'requests' | 'calendar';
-
-// Dummy Booking Requests
-const dummyBookingRequests: BookingRequest[] = [
-  {
-    id: '1',
-    destination: 'Sigiriya Rock Fortress',
-    date: '2024-07-15',
-    time: '08:00 AM',
-    duration: '6 hours',
-    groupSize: 4,
-    status: 'pending',
-    customerName: 'John Smith',
-    customerEmail: 'john.smith@email.com',
-    customerPhone: '+1-555-0123',
-    specialRequests: 'Please provide water bottles and snacks',
-    price: 120,
-  },
-  {
-    id: '2',
-    destination: 'Kandy Temple Tour',
-    date: '2024-07-18',
-    time: '09:30 AM',
-    duration: '4 hours',
-    groupSize: 2,
-    status: 'pending',
-    customerName: 'Sarah Johnson',
-    customerEmail: 'sarah.j@email.com',
-    customerPhone: '+1-555-0456',
-    specialRequests: 'Vegetarian lunch preferred',
-    price: 80,
-  }
-];
-
-// Dummy Accepted Bookings
-const dummyAcceptedBookings: AcceptedBooking[] = [
-  {
-    date: '2024-07-20',
-    title: 'Galle Fort Walking Tour',
-    time: '10:00 AM',
-    customerName: 'Mike Wilson',
-  }
-];
-
-export const GuideBookingScreen = () => {
-  const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
-  const [acceptedBookings, setAcceptedBookings] = useState<AcceptedBooking[]>(dummyAcceptedBookings);
-  const [selectedRequest, setSelectedRequest] = useState<BookingRequest | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<TabType>('requests');
-  const [loading, setLoading] = useState(true);
-  const [notify, setNotify] = useState(false);
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    // Simulate loading then set dummy bookings
-    const timer = setTimeout(() => {
-      setBookingRequests(dummyBookingRequests);
-      setLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleRequestResponse = async (requestId: string, action: 'accept' | 'decline') => {
-    try {
-      const request = bookingRequests.find(r => r.id === requestId);
-      if (!request) return false;
-
-      if (action === 'accept') {
-        setAcceptedBookings(prev => [
-          ...prev,
-          {
-            date: request.date,
-            title: request.destination,
-            time: request.time,
-            customerName: request.customerName
-          }
-        ]);
-      }
-
-      setBookingRequests(prev =>
-        prev.map(request =>
-          request.id === requestId
-            ? { ...request, status: action === 'accept' ? 'accepted' : 'declined' }
-            : request
-        )
-      );
-      setShowDetails(false);
-      return true;
-    } catch (error) {
-      console.error('Error responding to request:', error);
-      return false;
-    }
-  };
-
-  const handleRequestPress = (request: BookingRequest) => {
-    setSelectedRequest(request);
-    setShowDetails(true);
-  };
-
-  // Animation for sidebar
-  const translateX = useSharedValue(-1000);
-  const opacity = useSharedValue(0);
-  const menuStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-    opacity: opacity.value,
-  }));
-
-  const toggleMenu = () => {
-    setShow(!show);
-    translateX.value = withTiming(show ? -1000 : 0, { duration: 300 });
-    opacity.value = withTiming(show ? 0 : 1, { duration: 300 });
-  };
-
-  const toggling = () => {
-    setNotify(!notify);
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <Topbar pressing={toggleMenu} notifying={toggling} on={notify} />
-
-       
-
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <BackButton />
-          <Text style={styles.headerTitle}>Booking Requests</Text>
-        </View>
-
-        <TabNavigation
-          selectedTab={selectedTab}
-          onTabChange={setSelectedTab}
-          pendingCount={bookingRequests.filter(r => r.status === 'pending').length}
-        />
-
-        {selectedTab === 'requests' ? (
-          <BookingRequestsList
-            requests={bookingRequests}
-            onRequestPress={handleRequestPress}
-          />
-        ) : (
-          <BookingCalendar
-            acceptedBookings={acceptedBookings}
-            pendingRequests={bookingRequests.filter(r => r.status === 'pending')}
-          />
-        )}
-
-        <RequestDetailsModal
-          visible={showDetails}
-          request={selectedRequest}
-          onClose={() => setShowDetails(false)}
-          onResponse={handleRequestResponse}
-        />
-      </View>
-    </SafeAreaView>
-  );
+// Map backend booking data to frontend BookingData interface
+const mapBookingDtoToBookingData = (dto: any): BookingData => {
+    // Try to find booking ID from various possible field names
+    const bookingId = dto._id || dto.id || dto.bookingId || '';
+    
+    console.log('📌 Mapping booking - available fields:', Object.keys(dto));
+    console.log('📌 Resolved booking ID from fields (looking for _id, id, bookingId):', bookingId);
+    
+    return {
+        _id: bookingId,
+        price: dto.price || 0,
+        bookingDates: dto.bookingDates || [],
+        location: dto.location || '',
+        userId: dto.userId || '',
+        mobileNumber: dto.mobileNumber || '',
+        username: dto.username || '',
+        status: dto.status || 'PENDING',
+    };
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  content: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    paddingBottom: 15
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginLeft:50,
-    marginBottom:10
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#6B7280',
-    fontSize: 16,
-  },
-   backButtonContainer: {
-    marginRight: 10,
-    // Add custom styling here
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  
-});
+export default function App() {
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [bookings, setBookings] = useState<BookingData[]>([]);
+    const [filteredBookings, setFilteredBookings] = useState<BookingData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [userToken, setUserToken] = useState<MyToken | null>(null);
 
-export default GuideBookingScreen;
+    // Load user token
+    useEffect(() => {
+        const loadUserToken = async () => {
+            try {
+                const token = await AsyncStorage.getItem("token");
+                if (token) {
+                    const decodedToken: MyToken = jwtDecode(token);
+                    setUserToken(decodedToken);
+                }
+            } catch (error) {
+                console.error("Error loading user token:", error);
+            }
+        };
+        loadUserToken();
+    }, []);
+
+    // Fetch bookings from API
+    const fetchBookings = useCallback(async () => {
+        if (!userToken) {
+            console.log('⚠️ userToken not available yet');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            console.log('🔍 Fetching all bookings for user ID:', userToken.id);
+
+            const token = await AsyncStorage.getItem("token");
+            console.log('🔑 Token retrieved:', token ? 'Yes (length: ' + token.length + ')' : 'No');
+            
+            if (!token) {
+                console.error('❌ No token found in AsyncStorage');
+                setBookings([]);
+                return;
+            }
+
+            // Use single API endpoint to fetch all bookings
+            const url = `http://localhost:8080/api/bookings/provider/${userToken.id}?providerId=${userToken.id}`;
+            console.log('📡 Calling API URL:', url);
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            console.log('📨 Response status:', response.status);
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ All bookings fetched:', data.length, 'bookings');
+                
+                // Log all booking statuses for debugging
+                if (data.length > 0) {
+                    console.log('🔍 First booking object:', JSON.stringify(data[0], null, 2));
+                    console.log('📊 All booking statuses:', data.map((b: any) => b.status));
+                }
+                
+                // Map backend data to frontend format
+                const mappedBookings = data.map((dto: any) => mapBookingDtoToBookingData(dto));
+                setBookings(mappedBookings);
+                
+                // Log mapped bookings for debugging
+                console.log('📝 Mapped bookings:', mappedBookings.map((b: BookingData) => ({ username: b.username, status: b.status, id: b._id })));
+                
+                // Filter will be applied in the handleFilterChange
+                filterBookings(mappedBookings, activeFilter);
+            } else {
+                const errorText = await response.text();
+                console.error("❌ Failed to fetch bookings - Status:", response.status);
+                console.error("❌ Error response:", errorText);
+                setBookings([]);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching bookings:", error);
+            setBookings([]);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [userToken, activeFilter]);
+
+    // Filter bookings based on status
+    const filterBookings = (bookingsList: BookingData[], filter: string) => {
+        let filtered = bookingsList;
+
+        console.log(`🔎 Filtering bookings - Filter: "${filter}", Total bookings: ${bookingsList.length}`);
+        
+        switch (filter) {
+            case 'Pending':
+                // Show bookings that are pending (not yet accepted)
+                filtered = bookingsList.filter(booking => {
+                    const isPending = booking.status === 'pending' || 
+                        booking.status === 'PENDING_PROVIDER_ACCEPTANCE' ||
+                        booking.status === 'PENDING_PAYMENT';
+                    if (isPending) {
+                        console.log(`  ✅ Pending: ${booking.username} (${booking.status})`);
+                    }
+                    return isPending;
+                });
+                break;
+            case 'Confirmed':
+                // Show bookings that are confirmed/accepted or active
+                filtered = bookingsList.filter(booking => {
+                    const isConfirmed = booking.status === 'active' || 
+                        booking.status === 'ACCEPTED' ||
+                        booking.status === 'ACTIVE' ||
+                        booking.status === 'CONFIRMED';
+                    if (isConfirmed) {
+                        console.log(`  ✅ Confirmed: ${booking.username} (${booking.status})`);
+                    }
+                    return isConfirmed;
+                });
+                break;
+            case 'Completed':
+                // Show completed bookings
+                filtered = bookingsList.filter(booking => {
+                    const isCompleted = booking.status === 'complete' || 
+                        booking.status === 'COMPLETE' ||
+                        booking.status === 'completed' ||
+                        booking.status === 'COMPLETED';
+                    if (isCompleted) {
+                        console.log(`  ✅ Completed: ${booking.username} (${booking.status})`);
+                    }
+                    return isCompleted;
+                });
+                break;
+            case 'Reject':
+                // Show rejected bookings
+                filtered = bookingsList.filter(booking => {
+                    const isRejected = booking.status === 'reject' || 
+                        booking.status === 'REJECT' ||
+                        booking.status === 'rejected' || 
+                        booking.status === 'REJECTED';
+                    if (isRejected) {
+                        console.log(`  ❌ Rejected: ${booking.username} (${booking.status})`);
+                    }
+                    return isRejected;
+                });
+                break;
+            case 'Canceled':
+                // Show canceled bookings
+                filtered = bookingsList.filter(booking => {
+                    const isCanceled = booking.status === 'canceled' || 
+                        booking.status === 'CANCELED' ||
+                        booking.status === 'cancelled' || 
+                        booking.status === 'CANCELLED';
+                    if (isCanceled) {
+                        console.log(`  🚫 Canceled: ${booking.username} (${booking.status})`);
+                    }
+                    return isCanceled;
+                });
+                break;
+            case 'All':
+            default:
+                // Show all bookings
+                filtered = bookingsList;
+                console.log(`  📋 Showing all bookings: ${filtered.length} items`);
+                break;
+        }
+
+        console.log(`📊 Filtered result: ${filtered.length} bookings for filter: ${filter}`);
+        setFilteredBookings(filtered);
+    };
+
+    // Handle filter change
+    const handleFilterChange = (filter: string) => {
+        setActiveFilter(filter);
+        filterBookings(bookings, filter);
+    };
+
+    // Handle refresh
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchBookings();
+    }, [fetchBookings]);
+
+    // Fetch bookings when screen focuses
+    useFocusEffect(
+        useCallback(() => {
+            if (userToken) {
+                fetchBookings();
+            }
+        }, [fetchBookings, userToken])
+    );
+
+    const FilterTab = ({ title, isActive }: { title: string, isActive: boolean }) => (
+        <TouchableOpacity
+            className={`px-4 py-2 rounded-full transition-colors ${isActive ? 'bg-[#FEFA17]' : 'bg-gray-100'}`}
+            onPress={() => handleFilterChange(title)}
+        >
+            <Text className={`text-sm font-semibold ${isActive ? 'text-gray-900' : 'text-gray-600'}`}>
+                {title}
+            </Text>
+        </TouchableOpacity>
+    )
+
+    const BookingCard = ({ booking }: { booking: BookingData }) => {
+        // Debug: show booking prop when card renders
+        console.log('DEBUG BookingCard render - booking:', booking);
+        console.log('📌 Booking ID (_id):', booking._id);
+        console.log('👤 User ID:', booking.userId);
+        
+        // Format dates
+        const formatDate = (dateString: string) => {
+            try {
+                return new Date(dateString).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+            } catch {
+                return dateString;
+            }
+        };
+
+        // Check if booking date is today
+        const isBookingToday = (): boolean => {
+            if (!booking.bookingDates || booking.bookingDates.length === 0) {
+                return false;
+            }
+            try {
+                const bookingDate = new Date(booking.bookingDates[0]);
+                const today = new Date();
+                return bookingDate.toDateString() === today.toDateString();
+            } catch {
+                return false;
+            }
+        };
+
+        const isActive = booking.status === 'ACTIVE' || booking.status === 'active';
+        const isRejected = booking.status === 'reject' || booking.status === 'REJECT' || booking.status === 'rejected' || booking.status === 'REJECTED';
+        const isCanceled = booking.status === 'canceled' || booking.status === 'CANCELED' || booking.status === 'cancelled' || booking.status === 'CANCELLED';
+        const isCompleted = booking.status === 'complete' || booking.status === 'COMPLETE' || booking.status === 'completed' || booking.status === 'COMPLETED';
+        const isToday = isBookingToday();
+        const firstDate = booking.bookingDates?.[0] || '';
+
+        console.log(`🎯 BookingCard status check - status: "${booking.status}", isActive: ${isActive}, isRejected: ${isRejected}, isCanceled: ${isCanceled}, isCompleted: ${isCompleted}`);
+        if (isRejected) {
+            console.log(`🔴 REJECTED BOOKING DETECTED - Buttons should be hidden!`);
+        }
+        if (isCanceled) {
+            console.log(`🚫 CANCELED BOOKING DETECTED - Buttons should be hidden!`);
+        }
+        if (isCompleted) {
+            console.log(`✅ COMPLETED BOOKING DETECTED - Buttons should be hidden!`);
+        }
+
+        return (
+            <View className="mb-4">
+                <View className="bg-white rounded-2xl overflow-hidden shadow-lg">
+                    {/* Header Section with Gradient Background */}
+                    <View className={`px-5 pt-5 pb-4 ${isCompleted ? 'bg-green-500' : isCanceled ? 'bg-gray-500' : isRejected ? 'bg-red-500' : 'bg-gradient-to-r from-[#FEFA17] to-[#FFD700]'}`}>
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1 pr-3">
+                                <Text className={`text-xs font-medium mb-2 uppercase tracking-wider ${isCompleted ? 'text-green-100' : isCanceled ? 'text-gray-100' : isRejected ? 'text-red-100' : 'text-gray-600'}`}>
+                                    {isCompleted ? 'Completed' : isCanceled ? 'Canceled' : isRejected ? 'Rejected' : isActive ? 'Active Service' : 'New Request'}
+                                </Text>
+                                <Text className={`text-xl font-bold mb-1 ${isCompleted ? 'text-white' : isCanceled ? 'text-white' : isRejected ? 'text-white' : 'text-gray-900'}`}>
+                                    {booking.username}
+                                </Text>
+                            </View>
+                            <View className={`rounded-full w-12 h-12 items-center justify-center shadow-md ${isCompleted ? 'bg-green-100' : isCanceled ? 'bg-gray-100' : isRejected ? 'bg-red-100' : 'bg-white'}`}>
+                                <Ionicons name={isCompleted ? "checkmark-circle" : isCanceled ? "ban" : isRejected ? "close-circle" : "person-circle"} size={28} color={isCompleted ? "#16A34A" : isCanceled ? "#6B7280" : isRejected ? "#DC2626" : "#FEFA17"} />
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Details Section */}
+                    <View className="px-5 py-4">
+                        {/* Location */}
+                        <View className="flex-row items-start mb-4">
+                            <View className="w-10 h-10 rounded-xl bg-blue-100 items-center justify-center mr-4 flex-shrink-0">
+                                <Ionicons name="location-sharp" size={18} color="#2563EB" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-xs text-gray-500 font-semibold uppercase mb-1 tracking-wide">
+                                    Location
+                                </Text>
+                                <Text className="text-base font-bold text-gray-900">
+                                    {booking.location}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Date */}
+                        {firstDate && (
+                            <View className="flex-row items-start mb-4">
+                                <View className="w-10 h-10 rounded-xl bg-orange-100 items-center justify-center mr-4 flex-shrink-0">
+                                    <Ionicons name="calendar-sharp" size={18} color="#EA580C" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-xs text-gray-500 font-semibold uppercase mb-1 tracking-wide">
+                                        Date
+                                    </Text>
+                                    <Text className="text-base font-bold text-gray-900">
+                                        {formatDate(firstDate)}
+                                    </Text>
+                                    {booking.bookingDates && booking.bookingDates.length > 1 && (
+                                        <Text className="text-xs text-gray-400 mt-1 font-medium">
+                                            +{booking.bookingDates.length - 1} more dates
+                                        </Text>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Price */}
+                        <View className="flex-row items-start mb-1">
+                            <View className="w-10 h-10 rounded-xl bg-green-100 items-center justify-center mr-4 flex-shrink-0">
+                                <Ionicons name="cash-sharp" size={18} color="#16A34A" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-xs text-gray-500 font-semibold uppercase mb-1 tracking-wide">
+                                    Offered Price
+                                </Text>
+                                <Text className="text-xl font-black text-green-600">
+                                    Rs. {booking.price.toLocaleString()}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Mobile Number - Only show for active bookings */}
+                        {isActive && booking.mobileNumber && (
+                            <View className="border-t border-gray-100 mt-4 pt-3">
+                                <View className="flex-row items-center mb-2">
+                                    <Ionicons name="call-sharp" size={16} color="#2563EB" />
+                                    <Text className="text-xs text-gray-500 font-semibold uppercase mb-1 ml-2 tracking-wide">
+                                        Mobile Number
+                                    </Text>
+                                </View>
+                                <Text className="text-lg font-bold text-blue-600">
+                                    {booking.mobileNumber}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Action Buttons - Hide for rejected, canceled, and completed bookings */}
+                    {!isRejected && !isCanceled && !isCompleted && (
+                    <View className={`flex-row gap-3 px-5 pb-5 pt-2 ${isActive ? 'flex-wrap' : ''}`}>
+                        {/* Decline/Cancel Button */}
+                        <TouchableOpacity
+                            className={`${isActive ? 'w-full' : 'flex-1'} py-3.5 rounded-xl bg-gray-100 border-2 border-gray-200 active:opacity-70`}
+                            onPress={async () => {
+                                try {
+                                    const actionType = isActive ? 'Cancel' : 'Decline';
+                                    console.log(`${actionType}ing booking`);
+                                    console.log('  - User ID:', booking.userId);
+                                    console.log('  - Username:', booking.username);
+
+                                    const token = await AsyncStorage.getItem("token");
+                                    if (!token) {
+                                        console.error('No token found');
+                                        return;
+                                    }
+
+                                    // Get providerId from decoded token
+                                    if (!userToken?.id) {
+                                        console.error('No provider ID found in token');
+                                        return;
+                                    }
+                                    console.log(`booking id ${booking._id}`);
+
+                                    // Use cancel endpoint for active bookings, reject for pending
+                                    const endpoint = isActive ? 'cancel' : 'cancel';
+                                    const response = await fetch(
+                                        `http://localhost:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
+                                        {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${token}`,
+                                            },
+                                        }
+                                    );
+
+                                    if (response.ok) {
+                                        console.log(`✅ Booking ${actionType.toLowerCase()}ed successfully`);
+                                        // Refresh bookings list
+                                        fetchBookings();
+                                    } else {
+                                        console.error(`❌ Failed to ${actionType.toLowerCase()} booking:`, response.status);
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ Error ${isActive ? 'cancelling' : 'declining'} booking:`, error);
+                                }
+                            }}
+                        >
+                            <Text className="text-center text-gray-700 font-bold text-base">
+                                {isActive ? 'Cancel' : 'Decline'}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        {/* Accept / Complete Button */}
+                        <TouchableOpacity
+                            disabled={isActive && !isToday}
+                            className={`${isActive ? 'w-full' : 'flex-1'} py-3.5 rounded-xl shadow-lg active:opacity-90 ${
+                                isActive && !isToday
+                                    ? 'bg-gray-300 opacity-50'
+                                    : 'bg-gradient-to-r from-[#FEFA17] to-[#FFD700]'
+                            }`}
+                            onPress={async () => {
+                                try {
+                                    const actionType = isActive ? 'Complete' : 'Accept';
+                                    console.log(`${actionType}ing booking`);
+                                    console.log('  - User ID:', booking.userId);
+                                    console.log('  - Username:', booking.username);
+
+                                    const token = await AsyncStorage.getItem("token");
+                                    if (!token) {
+                                        console.error('No token found');
+                                        return;
+                                    }
+
+                                    // Get providerId from decoded token
+                                    if (!userToken?.id) {
+                                        console.error('No provider ID found in token');
+                                        return;
+                                    }
+
+                                    const endpoint = isActive ? 'complete' : 'accept';
+                                    const response = await fetch(
+                                        `http://localhost:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
+                                        {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'Authorization': `Bearer ${token}`,
+                                            },
+                                        }
+                                    );
+
+                                    if (response.ok) {
+                                        console.log(`✅ Booking ${actionType.toLowerCase()}ed successfully`);
+                                        // Refresh bookings list
+                                        fetchBookings();
+                                    } else {
+                                        console.error(`❌ Failed to ${actionType.toLowerCase()} booking:`, response.status);
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ Error ${isActive ? 'completing' : 'accepting'} booking:`, error);
+                                }
+                            }}
+                        >
+                            <Text className={`text-center font-black text-base ${
+                                isActive && !isToday ? 'text-gray-600' : 'text-gray-900'
+                            }`}>
+                                {isActive ? `Complete${!isToday ? ` (${formatDate(firstDate)})` : ''}` : 'Accept'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    )}
+
+                    {/* Info Message for Active Bookings */}
+                    {isActive && !isToday && (
+                        <View className="px-5 pb-3">
+                            <View className="bg-blue-50 border-l-4 border-blue-500 px-3 py-2 rounded">
+                                <Text className="text-xs text-blue-700 font-semibold">
+                                    ℹ️ Complete button will be available on {formatDate(firstDate)}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                </View>
+            </View>
+        );
+    };
+
+    // Debug: log filtered bookings when component renders
+    console.log('DEBUG filteredBookings (on render):', filteredBookings);
+
+    if (loading && !refreshing) {
+        return (
+            <View className="flex-1 bg-gray-50 justify-center items-center">
+                <View className="items-center">
+                    <Ionicons name="hourglass-outline" size={48} color="#FEFA17" />
+                    <Text className="text-gray-600 mt-4 font-semibold">Loading bookings...</Text>
+                </View>
+            </View>
+        );
+    }
+
+    return (
+        <ScrollView
+            className="flex-1 bg-gray-50"
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FEFA17" />
+            }
+        >
+            {/* Header with Back Button */}
+            <View className="bg-gradient-to-b from-[#FEFA17] to-[#FFD700] px-5 pt-4 pb-6 shadow-md">
+                <View className="flex-row items-center gap-3 mb-6">
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        className="w-10 h-10 rounded-full bg-white/30 items-center justify-center"
+                    >
+                        <Ionicons name="chevron-back" size={24} color="#000" />
+                    </TouchableOpacity>
+                    <View>
+                        <Text className="text-2xl font-black text-gray-900">
+                            Booking Requests
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Filter Tabs */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-2">
+                        <FilterTab title="All" isActive={activeFilter === 'All'} />
+                        <FilterTab title="Pending" isActive={activeFilter === 'Pending'} />
+                        <FilterTab title="Confirmed" isActive={activeFilter === 'Confirmed'} />
+                        <FilterTab title="Completed" isActive={activeFilter === 'Completed'} />
+                        <FilterTab title="Reject" isActive={activeFilter === 'Reject'} />
+                        <FilterTab title="Canceled" isActive={activeFilter === 'Canceled'} />
+                    </View>
+                </ScrollView>
+            </View>
+
+            <View className="px-5 py-6 pb-24">
+                {/* Booking Cards */}
+                {filteredBookings.length === 0 ? (
+                    <View className="flex items-center justify-center py-16">
+                        <View className="w-20 h-20 rounded-full bg-gray-100 items-center justify-center mb-4">
+                            <Ionicons name="document-outline" size={40} color="#9CA3AF" />
+                        </View>
+                        <Text className="text-gray-600 text-lg font-bold mb-2">No booking requests</Text>
+                        <Text className="text-gray-400 text-center text-sm">
+                            {activeFilter === 'All'
+                                ? "You don't have any booking requests yet"
+                                : `No ${activeFilter.toLowerCase()} booking requests`
+                            }
+                        </Text>
+                    </View>
+                ) : (
+                    filteredBookings.map((booking) => (
+                        <BookingCard key={booking._id} booking={booking} />
+                    ))
+                )}
+            </View>
+        </ScrollView>
+    )
+}

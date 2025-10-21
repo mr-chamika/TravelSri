@@ -9,9 +9,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 //traveler,guide,vehicleowner,store
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
 @Document(collection = "users")
 public class User {
 
@@ -59,8 +56,8 @@ public class User {
     private String location;
     private String[] images;
     private String guideType;//travel with me or visit
-    private Integer experience;
-    private String specialization;
+    private String experience;
+    private String[] specializations;
     private Integer dailyRate;//charge per day
     private String bio;//about me
     private String responseTime;

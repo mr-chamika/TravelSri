@@ -3,6 +3,7 @@ package com.example.student.controller;
 import com.example.student.model.AccommodationQuotation;
 import com.example.student.services.AccommodationQuotationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -24,6 +25,11 @@ public class AccommodationQuotationController {
     @GetMapping
     public List<AccommodationQuotation> getAllQuotations() {
         return service.getAllQuotations();
+    }
+
+    @GetMapping("/by-hotel/{hotelUsername}")
+    public List<AccommodationQuotation> getQuotationsByHotel(@PathVariable String hotelUsername) {
+        return service.getQuotationsByHotelUsername(hotelUsername);
     }
 
     @GetMapping("/{id}")
@@ -85,6 +91,35 @@ public class AccommodationQuotationController {
                 "error", "Failed to delete quotation",
                 "message", e.getMessage()
             ));
+        }
+    }
+    
+    @DeleteMapping("/by-number/{quoteNumber}")
+    public ResponseEntity<?> deleteQuotationByNumber(@PathVariable String quoteNumber) {
+        try {
+            service.deleteQuotationByQuoteNumber(quoteNumber);
+            return ResponseEntity.ok(Map.of("success", true, "quoteNumber", quoteNumber));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "error", "Failed to delete quotation by quote number",
+                "message", e.getMessage()
+            ));
+        }
+    }
+
+
+    //Tharusha Samarawickrama
+
+    @GetMapping("/trip/{pendingTripId}")
+    public ResponseEntity<List<AccommodationQuotation>> getQuotationsByPendingTripId(@PathVariable("pendingTripId") String pendingTripId) {
+        try {
+            List<AccommodationQuotation> quotations = service.getQuotationsByPendingTripId(pendingTripId);
+            return new ResponseEntity<>(quotations, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

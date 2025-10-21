@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import QuotationDetailsModal from "../../components/admin/QuotationDetailsModal";
 
 const AllHotelQuotation = () => {
     const [hotelQuotations, setHotelQuotations] = useState([]);
@@ -7,7 +8,11 @@ const AllHotelQuotation = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const API_BASE_URL = "http://localhost:8080/api/hotel-quotation";
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedQuotation, setSelectedQuotation] = useState(null);
+
+    const API_BASE_URL = "http://localhost:8080/api/quotations";
 
     useEffect(() => {
         loadQuotations();
@@ -17,7 +22,15 @@ const AllHotelQuotation = () => {
     const loadQuotations = () => {
         const storedQuotations = localStorage.getItem('hotelQuotationsForTrip');
         if (storedQuotations) {
-            setHotelQuotations(JSON.parse(storedQuotations));
+            const quotations = JSON.parse(storedQuotations);
+            console.log("=== LOADED HOTEL QUOTATIONS ===");
+            console.log("Quotations:", quotations);
+            if (quotations.length > 0) {
+                console.log("First quotation:", quotations[0]);
+                console.log("Available fields:", Object.keys(quotations[0]));
+            }
+            console.log("==============================");
+            setHotelQuotations(quotations);
         }
         setLoading(false);
     };
@@ -37,9 +50,28 @@ const AllHotelQuotation = () => {
         })}`;
     };
 
-    const handleViewQuotation = async (quotationId) => {
+    const handleViewQuotation = (quotation) => {
+        console.log("=== VIEWING QUOTATION ===");
+        console.log("Selected quotation:", quotation);
+        console.log("========================");
+        setSelectedQuotation(quotation);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedQuotation(null);
+    };
+
+    const handleSelectQuotation = (quotation) => {
+        localStorage.setItem('selectedHotelQuotation', JSON.stringify(quotation));
+        const price = quotation.totalPricePerPerson || quotation.finalAmount || quotation.totalAmount;
+        alert(`Selected: ${quotation.hotelId} - ${formatPriceLKR(price)}`);
+    };
+
+    const handleDownloadPDF = async (quotationId) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/download-pdf/${quotationId}`, {
+            const response = await axios.get(`${API_BASE_URL}/${quotationId}/pdf`, {
                 responseType: 'blob'
             });
             
@@ -48,13 +80,8 @@ const AllHotelQuotation = () => {
             window.open(url, '_blank');
         } catch (error) {
             console.error("Error downloading PDF:", error);
-            alert("Unable to view quotation PDF. Please try again.");
+            alert("Unable to download quotation PDF. Please try again.");
         }
-    };
-
-    const handleSelectQuotation = (quotation) => {
-        localStorage.setItem('selectedHotelQuotation', JSON.stringify(quotation));
-        alert(`Selected: ${quotation.hotelId} - ${formatPriceLKR(quotation.price)}`);
     };
 
     if (loading) {
@@ -114,47 +141,79 @@ const AllHotelQuotation = () => {
                                                 Hotel ID: {hotel.hotelId || `Hotel ${idx + 1}`}
                                             </div>
                                             <div className="text-sm text-gray-600 mb-1">
-                                                {formatPriceLKR(hotel.price)}
+                                                {/* {formatPriceLKR(hotel.totalPricePerPerson)} */}
+                                                Total Price Per Person: {formatPriceLKR(hotel.totalPricePerPerson)} | Meal Price : {formatPriceLKR(hotel.mealPricePerPerson)} | Accommodation Price : {formatPriceLKR(hotel.accommodationPricePerPerson)}
                                             </div>
-                                            {hotel.pdfFilename && (
+                                            {/* {hotel.pdfFilename && (
                                                 <div className="text-xs text-gray-500">
                                                     PDF: {hotel.pdfFilename}
                                                 </div>
-                                            )}
+                                            )} */}
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                    hotel.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                    hotel.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                    hotel.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {hotel.status || 'Pending'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    Group Size: {hotel.groupSize || 'N/A'}
+                                                </span>
+                                                {hotel.quoteNumber && (
+                                                    <span className="text-xs text-gray-500">
+                                                        Quote #: {hotel.quoteNumber}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button 
-                                                onClick={() => handleViewQuotation(hotel.quotationId)}
-                                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
-                                                disabled={!hotel.quotationPdf}
+                                                onClick={() => handleViewQuotation(hotel)}
+                                                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                             >
-                                                View PDF
+                                                View Details
                                             </button>
-                                            <button 
+                                            {hotel.quotationPdf && (
+                                                <button 
+                                                    onClick={() => handleDownloadPDF(hotel.quotationId)}
+                                                    className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
+                                                >
+                                                    PDF
+                                                </button>
+                                            )}
+                                            {/* <button 
                                                 onClick={() => handleSelectQuotation(hotel)}
-                                                className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                                                className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded px-4 py-1 text-sm transition-colors duration-200"
                                                 title="Select this quotation"
                                             >
-                                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                                                    <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                </svg>
-                                            </button>
+                                                Select
+                                            </button> */}
                                         </div>
                                     </div>
                                 ))
                             )}
                         </div>
 
+                        {/* Updated Continue button to go back to PendingTripDetails */}
                         <div className="flex justify-center">
                             <a href="/pendingtripdetails" className="w-full sm:w-auto">
                                 <button className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer w-full sm:w-auto">
-                                    Continue
+                                    Back to Trip Planning
                                 </button>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Quotation Details Modal */}
+            <QuotationDetailsModal 
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                quotation={selectedQuotation}
+            />
         </div>
     );
 };

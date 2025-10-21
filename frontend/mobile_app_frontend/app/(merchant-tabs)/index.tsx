@@ -69,9 +69,10 @@ const Listings: React.FC = () => {
   const [listings, setListings] = useState<ListingItem[]>([]);
   const [filteredListings, setFilteredListings] = useState<ListingItem[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ListingItem | null>(null);
   const [shopId, setShopId] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start loading initially
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,14 +87,11 @@ const Listings: React.FC = () => {
         return null;
       }
       const decodedToken = jwtDecode<JWTPayload>(token);
-      console.log('🔍 Full decoded token:', decodedToken);
       const foundShopId = decodedToken.id;
       if (foundShopId) {
-        console.log('✅ Shop ID found:', foundShopId);
         return foundShopId;
       } else {
         console.error('❌ No valid shop ID found in token');
-        console.log('Available token fields:', Object.keys(decodedToken));
         return null;
       }
     } catch (error) {
@@ -104,7 +102,6 @@ const Listings: React.FC = () => {
 
   const fetchShopListings = useCallback(async (shopId: string, showLoader = true) => {
     if (!shopId || shopId.trim() === '') {
-      console.error('❌ Cannot fetch listings: Invalid shop ID');
       setError('Invalid shop ID');
       return;
     }
@@ -116,10 +113,6 @@ const Listings: React.FC = () => {
         throw new Error('No authentication token available.');
       }
 
-      console.log('🔍 Shop ID:', shopId);
-      console.log('🔍 Shop ID type:', typeof shopId);
-      console.log('🔍 Full URL:', `${API_BASE_URL}/shopitems/by-shop?shopid=${shopId}`);
-
       const response = await fetch(`${API_BASE_URL}/shopitems/by-shop?shopid=${shopId}`, {
         method: 'GET',
         headers: {
@@ -128,14 +121,25 @@ const Listings: React.FC = () => {
         },
       });
       
-      console.log('🔍 Fetching listings for response:', response);
       if (!response.ok) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
-      const data: ListingItem[] = await response.json();
-      console.log(`✅ Successfully fetched ${data.length} items`);
-      setListings(data);
-      setFilteredListings(data);
+
+      // --- FIX: Check for empty response before parsing JSON ---
+      const responseText = await response.text();
+      if (responseText) {
+        const data: ListingItem[] = JSON.parse(responseText);
+        console.log(`✅ Successfully fetched ${data.length} items`);
+        setListings(data);
+        setFilteredListings(data);
+      } else {
+        // Handle empty response gracefully, which means no items
+        console.log('✅ Received empty response, setting listings to empty array.');
+        setListings([]);
+        setFilteredListings([]);
+      }
+      // --- END OF FIX ---
+
     } catch (error) {
       console.error('❌ Error fetching listings:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -150,16 +154,13 @@ const Listings: React.FC = () => {
     const shopId = await extractShopIdFromToken();
     if (shopId) {
       setShopId(shopId);
-      console.log('🔍 Initializing app with shop ID:', shopId);
       await fetchShopListings(shopId, false);
     } else {
       setError('Authentication required');
       Alert.alert(
         'Authentication Required',
         'Please log in to view your shop listings.',
-        [
-          { text: 'OK', onPress: () => console.log('User acknowledged auth error') }
-        ]
+        [{ text: 'OK' }]
       );
     }
     setIsLoading(false);
@@ -194,9 +195,7 @@ const Listings: React.FC = () => {
   const handleDeleteItem = async () => {
     if (!selectedItem) return;
     
-    // Close the modal immediately
     setModalVisible(false);
-    setSelectedItem(null);
     
     try {
       const token = await AsyncStorage.getItem('token');
@@ -214,6 +213,7 @@ const Listings: React.FC = () => {
         throw new Error(`Failed to delete item: ${response.status}`);
       }
       
+      setSelectedItem(null);
       // Refresh the listings after successful deletion
       if (shopId) {
         fetchShopListings(shopId);
@@ -238,17 +238,6 @@ const Listings: React.FC = () => {
     router.push('/(merchant-tabs)/AddItem');
   };
 
-  if (isLoading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFD700" />
-          <Text style={styles.loadingText}>Loading your listings...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -283,6 +272,7 @@ const Listings: React.FC = () => {
 
       <ScrollView
         style={styles.listingsContainer}
+        contentContainerStyle={{ flexGrow: 1 }} // Ensures content can fill space for centering
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -292,7 +282,11 @@ const Listings: React.FC = () => {
           />
         }
       >
-        {error ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD700" />
+          </View>
+        ) : error ? (
           <View style={styles.errorContainer}>
             <MaterialIcons name="error-outline" size={48} color="#ff4444" />
             <Text style={styles.errorText}>{error}</Text>
@@ -339,46 +333,92 @@ const Listings: React.FC = () => {
         )}
       </ScrollView>
 
-      <Modal
-        transparent
-        animationType="slide"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+      {/* Main Action Modal */}
+<Modal
+  transparent
+  animationType="slide"
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContainer}>
+      <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
+
+      {/* Delete button now opens confirm modal */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.deleteButton]}
+        onPress={() => {
+          setModalVisible(false);
+          setConfirmDeleteVisible(true); // Show confirmation modal
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
+        <Text style={styles.modalButtonText}>Delete</Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.deleteButton]}
-              onPress={handleDeleteItem}
-            >
-              <Text style={styles.modalButtonText}>Delete</Text>
-            </TouchableOpacity>
+      {/* Change Button */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.changeButton]}
+        onPress={handleChangeItem}
+      >
+        <Text style={styles.modalButtonText}>Change</Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.changeButton]}
-              onPress={handleChangeItem}
-            >
-              <Text style={styles.modalButtonText}>Change</Text>
-            </TouchableOpacity>
+      {/* Cancel Button */}
+      <TouchableOpacity
+        style={[styles.modalButton, styles.cancelButton]}
+        onPress={() => {
+          setModalVisible(false);
+          setSelectedItem(null);
+        }}
+      >
+        <Text style={[styles.modalButtonText, { color: '#666' }]}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => {
-                setModalVisible(false);
-                setSelectedItem(null);
-              }}
-            >
-              <Text style={[styles.modalButtonText, { color: '#666' }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+{/* Delete Confirmation Modal */}
+<Modal
+  transparent
+  animationType="fade"
+  visible={confirmDeleteVisible}
+  onRequestClose={() => setConfirmDeleteVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.confirmModal}>
+      <Text style={styles.confirmTitle}>Confirm Delete</Text>
+      <Text style={styles.confirmMessage}>
+        Are you sure you want to delete "{selectedItem?.name}"?
+      </Text>
+
+      <View style={styles.confirmButtons}>
+        <TouchableOpacity
+          style={[styles.confirmButton, styles.confirmCancelButton]}
+          onPress={() => setConfirmDeleteVisible(false)}
+        >
+          <Text style={styles.confirmButtonText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.confirmButton, styles.confirmDeleteButton]}
+          onPress={async () => {
+            setConfirmDeleteVisible(false);
+            await handleDeleteItem();
+          }}
+        >
+          <Text style={styles.confirmButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
     </SafeAreaView>
   );
 };
 
+// ... Your styles remain the same
 export default Listings;
 
 const styles = StyleSheet.create({
@@ -401,15 +441,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   listingsTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#000'
+    color: '#000',
   },
   addButton: {
     padding: 8,
@@ -606,4 +647,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
+  confirmModal: {
+  width: '85%',
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  paddingVertical: 25,
+  paddingHorizontal: 20,
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.25,
+  shadowRadius: 5,
+  elevation: 8,
+},
+confirmTitle: {
+  fontSize: 22,
+  fontWeight: '600',
+  color: '#222',
+  marginBottom: 10,
+},
+confirmMessage: {
+  fontSize: 16,
+  color: '#555',
+  textAlign: 'center',
+  lineHeight: 22,
+  marginBottom: 25,
+  paddingHorizontal: 10,
+},
+confirmButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-evenly',
+  width: '100%',
+},
+confirmButton: {
+  flex: 1,
+  paddingVertical: 12,
+  marginHorizontal: 8,
+  borderRadius: 10,
+  alignItems: 'center',
+},
+confirmCancelButton: {
+  backgroundColor: '#E5E5E5',
+},
+confirmDeleteButton: {
+  backgroundColor: '#FFC107',
+},
+confirmButtonText: {
+  fontSize: 16,
+  fontWeight: '600',
+  color: '#000',
+},
 });

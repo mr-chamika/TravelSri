@@ -236,6 +236,21 @@ export default function AdminNavbar() {
     { label: "Upcoming Trip", to: "/allupcomingtrips" },
   ];
 
+  const handleLogout = () => {
+    // Optional: Clear any stored authentication data
+    localStorage.clear(); // This clears all localStorage data
+    // Or clear specific items:
+    // localStorage.removeItem('authToken');
+    // localStorage.removeItem('userRole');
+    // localStorage.removeItem('selectedUpcomingTrip');
+
+    // Navigate to login page
+    window.location.href = "http://localhost:5173/";
+
+    // Alternative: If you want to use react-router navigation:
+    // navigate('/');
+  };
+
   const renderMobileMenu = (
     <Menu
       anchorEl={mobileMenuAnchor}
@@ -263,7 +278,7 @@ export default function AdminNavbar() {
         </IconButton>
         <span>Notifications</span>
       </MenuItem>
-      <MenuItem>
+      <MenuItem onClick={handleLogout}>
         <Button
           variant="contained"
           sx={{
@@ -362,6 +377,7 @@ export default function AdminNavbar() {
               </IconButton>
               <Button
                 variant="contained"
+                onClick={handleLogout} // Add this onClick handler
                 sx={{
                   bgcolor: "#ffe600",
                   color: "#222",

@@ -53,6 +53,7 @@ const Icon: React.FC<{ name: string; size: number; color: string }> = ({ name, s
     'share': '📤',
     'download': '📥',
     'support': '🎧',
+
   };
 
   return (
@@ -77,6 +78,11 @@ interface Booking {
   facilities: string[];
   ratings: number;
   mobileNumber: string;
+  serviceId: string;
+  dayNumber: number;
+  date: string;
+  singleRooms: number;
+  doubleRooms: number;
 }
 
 const BookingsScreen: React.FC = () => {
@@ -134,7 +140,15 @@ const BookingsScreen: React.FC = () => {
 
               const data = await res.json()
 
-              setBookings(data)
+              if (data.length > 0) {
+
+                setBookings(data.reverse())
+
+              } else {
+
+                setBookings([])
+
+              }
 
             }
 
@@ -142,12 +156,13 @@ const BookingsScreen: React.FC = () => {
         } catch (err) {
 
           console.log("Error from bookings getting : " + err)
+          setBookings([])
 
         }
 
       }
       getBookings();
-    }, [])
+    }, [activeFilter])
   );
 
   /*const bookings: Booking[] = [
@@ -421,15 +436,20 @@ const BookingsScreen: React.FC = () => {
     Alert.alert("Modify Booking", `Modify your ${getTypeLabel(booking.type).toLowerCase()} booking?`);
   };
 
-  const handleCancelBooking = (booking: Booking) => {
-    Alert.alert(
-      "Cancel Booking",
-      "Are you sure you want to cancel this booking?",
-      [
-        { text: "No", style: "cancel" },
-        { text: "Yes, Cancel", style: "destructive", onPress: () => console.log("Booking cancelled") }
-      ]
-    );
+  const handleCancelBooking = async (booking: Booking) => {
+
+    await fetch(`http://localhost:8080/traveler/booking-cancel`, {
+
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: booking._id })
+
+    })
+      .then(res => res.text())
+      .then(data => { if (data == "Booking cancelled") { setActiveFilter("cancelled") } })
+      .catch(err => console.log("Error from booking create " + err))
+
+
   };
 
   const renderStars = (rating: number) => {
@@ -450,7 +470,7 @@ const BookingsScreen: React.FC = () => {
   };
 
   const BookingCard: React.FC<{ booking: Booking }> = ({ booking }) => (
-    <TouchableOpacity style={styles.bookingCard} activeOpacity={0.7}>
+    <View style={styles.bookingCard}>
       <View style={styles.cardHeader}>
         <View style={styles.typeSection}>
           <View style={styles.typeIcon}>
@@ -525,7 +545,7 @@ const BookingsScreen: React.FC = () => {
         )}
       </View>
 
-      {booking.facilities && (
+      {booking.facilities && booking.facilities.length > 0 && (
         <View style={styles.inclusionsSection}>
           <Text style={styles.inclusionsTitle}>Includes:</Text>
           <View style={styles.inclusionsList}>
@@ -546,13 +566,13 @@ const BookingsScreen: React.FC = () => {
 
       <View style={styles.priceSection}>
         {/* Apply style to align icon and text horizontally */}
-        <View style={styles.detailItem}>
+        {booking.status != 'cancelled' && <View style={styles.detailItem}>
           <Icon name="phone" size={18} color="#4b5563" />
           <Text style={styles.detailText}>{booking.mobileNumber}</Text>
-        </View>
+        </View>}
 
         {/* This part remains the same */}
-        <View style={styles.priceInfo}>
+        <View style={booking.status == 'cancelled' ? styles.priceInfox : styles.priceInfo}>
           <Text style={styles.priceAmount}>
             LKR {booking.price.toLocaleString()}
           </Text>
@@ -572,21 +592,44 @@ const BookingsScreen: React.FC = () => {
           </TouchableOpacity>
         )}
 
-        {booking.paymentStatus != true && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => handleCancelBooking(booking)}
-          >
-            <Icon name="cancel" size={16} color={colors.red} />
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        )}
+        {booking.status != 'cancelled' && <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => handleCancelBooking(booking)}
+        >
+          <Icon name="cancel" size={16} color={colors.red} />
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>}
 
-        <TouchableOpacity style={styles.viewButton}>
+
+        {booking.status != 'cancelled' && <TouchableOpacity style={styles.viewButton}
+
+          onPress={() => {
+            const route = booking.type === 'vehicle'
+              ? `/views/car/profile/${booking.serviceId}`
+              : `/views/${booking.type}/group/${booking.serviceId}`;
+
+            router.push({
+
+              pathname: route as any,
+              params: {
+
+                viewMode: 'true',
+                tripId: booking._id,
+                dayNumber: booking.dayNumber,
+                date: booking.date,
+                singleRooms: booking.singleRooms,
+                doubleRooms: booking.doubleRooms,
+              }
+
+            });
+          }}
+
+        >
           <Text style={styles.viewButtonText}>View Details</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
-    </TouchableOpacity>
+    </View>
+
   );
 
   const EmptyState: React.FC = () => (
@@ -602,7 +645,7 @@ const BookingsScreen: React.FC = () => {
         {activeFilter === 'active'
           ? "You haven't made any bookings yet. When you book hotels, guides, vehicles or join group tours, they will appear here."
           : activeFilter === 'past'
-            ? "Your completed bookings will appear here after your trips."
+            ? "Your completed bookings will appear here after your bookings."
             : "Your cancelled bookings will appear here."}
       </Text>
       {activeFilter === 'active' && (
@@ -954,6 +997,10 @@ const styles = StyleSheet.create({
   },
   priceInfo: {
     alignItems: 'flex-end',
+  },
+  priceInfox: {
+    alignItems: 'flex-end',
+    width: '100%'
   },
   priceAmount: {
     fontSize: 18,

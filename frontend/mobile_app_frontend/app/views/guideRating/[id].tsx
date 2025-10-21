@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, SafeAreaView } from 'react-native';
 import BackButton from '../../../components/ui/backButton';
 
 interface Review {
@@ -53,56 +53,80 @@ const ReviewItem: React.FC<{ review: Review }> = ({ review }) => (
         />
       </View>
       <View style={styles.reviewAuthorInfo}>
-        <Text style={styles.authorName}>{review.author}</Text>
+        <View style={styles.authorRow}>
+          <Text style={styles.authorName}>{review.author}</Text>
+          <View style={styles.ratingBadge}>
+            <StarRating rating={review.rating} size={12} />
+          </View>
+        </View>
         <Text style={styles.timeAgo}>{review.timeAgo}</Text>
-        <StarRating rating={review.rating} size={14} />
       </View>
     </View>
     
     <Text style={styles.reviewText}>{review.text}</Text>
-    
-    <TouchableOpacity style={styles.replyButton}>
-      <Text style={styles.replyButtonText}>Reply...........</Text>
-    </TouchableOpacity>
   </View>
 );
 
 const MobileRatingReviewApp: React.FC = () => {
   const overallRating = 4.5;
-  const totalReviews = 651;
+  const totalReviews = 6;
   
   const ratingDistribution: RatingDistribution[] = [
-    { stars: 5, count: 420, percentage: 64 },
-    { stars: 4, count: 130, percentage: 20 },
-    { stars: 3, count: 65, percentage: 10 },
-    { stars: 2, count: 26, percentage: 4 },
-    { stars: 1, count: 10, percentage: 2 }
+    { stars: 5, count: 3, percentage: 50 },
+    { stars: 4, count: 3, percentage: 50 },
+    { stars: 3, count: 0, percentage: 0 },
+    { stars: 2, count: 0, percentage: 0 },
+    { stars: 1, count: 0, percentage: 0 }
   ];
 
   const reviews: Review[] = [
     {
       id: 1,
-      author: "Екатерина Лукецкая",
-      timeAgo: "месяц назад",
+      author: "Sarah Johnson",
+      timeAgo: "2 weeks ago",
       rating: 5,
-      text: "Заказывала у ребят разработку интернет-магазина. Что могу сказать, я очень довольная, магазин сделали под ключ сразу с базовыми настройками для SEO (пока не планирую продвигать) но уже будет возможность это делать.Рекомендую, цена, качество и коммуникация на 100%.",
+      text: "Absolutely fantastic guide! Took us through hidden waterfalls and secret local spots we'd never find alone. Very knowledgeable about Sri Lankan culture and history. The best tour experience we've had!",
       avatar: "https://images.unsplash.com/photo-1494790108755-2616b332c2c2?w=100&h=100&fit=crop&crop=face"
     },
     {
       id: 2,
-      author: "Екатерина Лукецкая",
-      timeAgo: "месяц назад",
+      author: "Michael Rodriguez",
+      timeAgo: "1 month ago",
       rating: 5,
-      text: "Заказывала у ребят разработку интернет-магазина. Что могу сказать, я очень довольная, магазин сделали под ключ сразу с базовыми настройками для SEO (пока не планирую продвигать) но уже будет возможность это делать.Рекомендую, цена, качество и коммуникация на 100%.",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b332c2c2?w=100&h=100&fit=crop&crop=face"
+      text: "Outstanding hiking experience! Our guide was professional, punctual, and made sure everyone stayed safe. He shared amazing stories about the tea plantations. Would definitely book again!",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
     },
     {
       id: 3,
-      author: "Екатерина Лукецкая",
-      timeAgo: "месяц назад",
+      author: "Emma Thompson",
+      timeAgo: "1 month ago",
+      rating: 4,
+      text: "Great experience overall! Very friendly and patient guide. Covered all the major attractions in Kandy with historical insights. Minor timing issue but handled professionally. Would recommend!",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+    },
+    {
+      id: 4,
+      author: "Raj Patel",
+      timeAgo: "6 weeks ago",
       rating: 5,
-      text: "Заказывала у ребят разработку интернет-магазина. Что могу сказать, я очень довольная, магазин сделали под ключ сразу с базовыми настройками для SEO (пока не планирую продвигать) но уже будет возможность это делать.Рекомендую, цена, качество и коммуникация на 100%.",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b332c2c2?w=100&h=100&fit=crop&crop=face"
+      text: "Phenomenal guide with deep knowledge of Nuwara Eliya region! The tea plantation tour was unforgettable - learned so much about tea processing. Excellent value and authentic Sri Lankan experience!",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face"
+    },
+    {
+      id: 5,
+      author: "Lisa Martinez",
+      timeAgo: "2 months ago",
+      rating: 4,
+      text: "Beautiful beach and coral reef tour! Guide was very knowledgeable about marine life and ensured everyone's safety. Crystal clear waters and amazing snorkeling spots. Would visit again!",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+    },
+    {
+      id: 6,
+      author: "James Cooper",
+      timeAgo: "2 months ago",
+      rating: 4,
+      text: "Best street food tour ever! Guide took us to 15+ authentic local spots in Colombo. Delicious traditional dishes and fascinating stories about food culture. An adventure for all senses!",
+      avatar: "https://images.unsplash.com/photo-1516426122078-c23e76319801?w=100&h=100&fit=crop&crop=face"
     }
   ];
 
@@ -244,14 +268,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+    marginHorizontal: 0,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FCD34D',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 2.22,
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 4,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -262,42 +289,43 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: '#FCD34D',
   },
   reviewAuthorInfo: {
     flex: 1,
   },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   authorName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 2,
+  },
+  ratingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
   },
   timeAgo: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 6,
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   reviewText: {
     fontSize: 13,
     color: '#374151',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  replyButton: {
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  replyButtonText: {
-    fontSize: 13,
-    color: '#374151',
-    fontWeight: '500',
+    lineHeight: 20,
+    marginBottom: 0,
   },
 });
 

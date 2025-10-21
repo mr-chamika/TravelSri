@@ -8,11 +8,51 @@ const QuotationDetailView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper function to get meal price per person with fallback logic
+  const getMealPricePerPerson = (quotation) => {
+    // Check for direct meal price fields
+    if (quotation.mealPricePerPerson) return quotation.mealPricePerPerson;
+    if (quotation.mealPlanPricePerPerson) return quotation.mealPlanPricePerPerson;
+    
+    // Fallback: calculate from meal plan type if available
+    if (quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only') {
+      const basePrice = quotation.totalAmount || 0;
+      const groupSize = quotation.guestCount || quotation.groupSize || 1;
+      
+      // Estimate meal price based on meal plan type
+      switch (quotation.mealPlan) {
+        case 'All Inclusive':
+          return Math.round(basePrice * 0.4 / groupSize); // 40% for all-inclusive meals
+        case 'Full Board':
+          return Math.round(basePrice * 0.3 / groupSize); // 30% for full board
+        case 'Half Board':
+          return Math.round(basePrice * 0.2 / groupSize); // 20% for half board
+        default:
+          return Math.round(basePrice * 0.2 / groupSize); // Default 20%
+      }
+    }
+    
+    return 0;
+  };
+
   useEffect(() => {
     const fetchQuotation = async () => {
       try {
         setLoading(true);
         const data = await quotationService.getQuotationById(id);
+        
+        // Debug logging to check what data we receive
+        console.log('QuotationDetailView - Raw quotation data:', data);
+        if (data) {
+          console.log('QuotationDetailView - Price fields check:', {
+            accommodationPricePerPerson: data.accommodationPricePerPerson,
+            mealPricePerPerson: data.mealPricePerPerson,
+            mealPlanPricePerPerson: data.mealPlanPricePerPerson,
+            totalPricePerPerson: data.totalPricePerPerson,
+            mealPlan: data.mealPlan
+          });
+        }
+        
         setQuotation(data);
         setError(null);
       } catch (err) {
@@ -277,32 +317,129 @@ const QuotationDetailView = () => {
           </section>
         )}
         
-        {/* Price Details */}
-        <section>
-          <h3 className="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
-            Price Details
-          </h3>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <p>Room Rate</p>
-              <p className="font-medium">LKR {quotation.totalAmount / calculateNights(quotation.checkIn, quotation.checkOut)} per night</p>
+        {/* Accommodation Price Details */}
+        <section className="bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+          <h4 className="text-lg font-medium mb-3 flex items-center border-b pb-2">
+            <span className="material-icons mr-2 text-yellow-600">payments</span>
+            Accommodation Price Details
+          </h4>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="text-gray-600">Room Type:</div>
+              <div className="text-right font-medium">{quotation.roomType || quotation.accommodationType || 'Standard'}</div>
+              
+              <div className="text-gray-600">Group Size:</div>
+              <div className="text-right font-medium">{quotation.guestCount || quotation.groupSize || 0} people</div>
+              
+              <div className="text-gray-600">Stay Duration:</div>
+              <div className="text-right font-medium">{calculateNights(quotation.checkIn, quotation.checkOut)} nights</div>
+              
+              <div className="text-gray-600 border-b pb-2">Base Accommodation:</div>
+              <div className="text-right font-medium border-b pb-2">
+                LKR {quotation.totalAmount ? parseFloat(quotation.totalAmount).toFixed(2) : '0.00'}
+              </div>
+              
+              {quotation.mealPlan && quotation.mealPlan !== 'Breakfast Only' && getMealPricePerPerson(quotation) > 0 && (
+                <>
+                  <div className="text-gray-600">Meal Plan ({quotation.mealPlan}):</div>
+                  <div className="text-right font-medium">
+                    LKR {(getMealPricePerPerson(quotation) * (quotation.guestCount || quotation.groupSize || 1) * calculateNights(quotation.checkIn, quotation.checkOut)).toFixed(2)}
+                  </div>
+                </>
+              )}
+              
+              {quotation.airportTransfer && (
+                <>
+                  <div className="text-gray-600">Transportation Cost:</div>
+                  <div className="text-right font-medium">LKR {quotation.transportationPrice || '2000.00'}</div>
+                </>
+              )}
             </div>
-            <div className="flex justify-between items-center mb-2">
-              <p>Number of Nights</p>
-              <p className="font-medium">{calculateNights(quotation.checkIn, quotation.checkOut)}</p>
-            </div>
+            
             {quotation.discountOffered > 0 && (
-              <div className="flex justify-between items-center mb-2">
-                <p>Discount</p>
-                <p className="font-medium text-green-600">{quotation.discountOffered}%</p>
+              <div className="flex justify-between mb-2 text-green-600 bg-green-50 p-2 rounded">
+                <span className="flex items-center">
+                  <span className="material-icons text-sm mr-1">local_offer</span>
+                  Discount ({quotation.discountOffered}%):
+                </span>
+                <span className="font-medium">-LKR {(quotation.totalAmount * quotation.discountOffered / 100).toFixed(2)}</span>
               </div>
             )}
-            <div className="border-t border-gray-200 mt-4 pt-4 flex justify-between items-center">
-              <p className="font-medium">Total Amount</p>
-              <p className="font-bold text-xl">LKR {parseFloat(quotation.totalAmount).toFixed(2)}</p>
+            
+            <div className="flex justify-between font-bold text-lg border-t border-yellow-300 pt-3 mt-3 bg-yellow-50 p-3 rounded">
+              <span className="text-gray-800">Total Quote Amount:</span>
+              <span className="text-xl">
+                LKR {quotation.finalAmount ? 
+                  parseFloat(quotation.finalAmount).toFixed(2) : 
+                  (quotation.totalAmount - (quotation.totalAmount * (quotation.discountOffered || 0) / 100)).toFixed(2)
+                }
+              </span>
+            </div>
+            
+            {/* Per-Person Breakdown */}
+            <div className="mt-4 bg-blue-50 p-3 border border-blue-200 rounded">
+              <h5 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                <span className="material-icons text-blue-600 text-sm mr-2">person</span>
+                Per Person Breakdown (Group Size: {quotation.guestCount || quotation.groupSize || 0})
+              </h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-blue-700">Accommodation per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {quotation.accommodationPricePerPerson ? 
+                    parseFloat(quotation.accommodationPricePerPerson).toFixed(2) : 
+                    '0.00'}
+                </div>
+                
+                <div className="text-blue-700">Meal plan per person:</div>
+                <div className="text-right font-medium text-blue-800">
+                  LKR {getMealPricePerPerson(quotation).toFixed(2)}
+                </div>
+                
+                <div className="text-blue-700 font-semibold border-t pt-1">Total per person:</div>
+                <div className="text-right font-bold text-blue-900 border-t pt-1">
+                  LKR {quotation.totalPricePerPerson ? 
+                    parseFloat(quotation.totalPricePerPerson).toFixed(2) : 
+                    '0.00'}
+                </div>
+              </div>
+            </div>
+            
+            {/* Meal Plan Information */}
+            <div className="mt-4 bg-yellow-50 p-3 border border-yellow-200 rounded">
+              <h5 className="text-sm font-semibold text-yellow-800 mb-2 flex items-center">
+                <span className="material-icons text-yellow-600 text-sm mr-2">restaurant</span>
+                Meal Plan Details
+              </h5>
+              <p className="text-yellow-700 text-sm">
+                {quotation.mealPlan || 'Not specified'}
+                {quotation.mealNotes && ` - ${quotation.mealNotes}`}
+              </p>
+            </div>
+            
+            <div className="mt-4 text-xs text-gray-500 bg-white p-3 border border-gray-100 rounded">
+              <div className="flex items-start mb-1">
+                <span className="material-icons text-yellow-600 text-sm mr-2">info</span>
+                <p>Rates are based on group accommodation package. Per-person prices are calculated and saved automatically.</p>
+              </div>
+              <div className="flex items-start">
+                <span className="material-icons text-yellow-600 text-sm mr-2">event</span>
+                <p>Quote valid for 14 days from issue date.</p>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* Requirements */}
+        {quotation.requirements && (
+          <section>
+            <h3 className="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+              Special Requirements
+            </h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p>{quotation.requirements}</p>
+            </div>
+          </section>
+        )}
       </div>
       
       {/* Action Buttons */}

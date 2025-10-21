@@ -33,12 +33,15 @@ const Sidebar = ({ unreadCount = 0 }) => {
           <NavLink
             key={path}
             to={path}
+            end
             className={({ isActive }) =>
-              `flex items-center p-4 relative transition
-               ${isActive ? 'bg-yellow-300 text-black' : 'text-gray-700 hover:bg-gray-100'}`
+              `flex items-center p-4 relative transition-all duration-200 border-l-4
+               ${isActive 
+                 ? 'bg-yellow-100 text-yellow-900 border-yellow-500 font-bold shadow-sm' 
+                 : 'text-gray-700 hover:bg-gray-100 border-transparent hover:border-gray-300'}`
             }
           >
-            <span className="material-icons mr-3">{icon}</span>
+            <span className={`material-icons mr-3 ${isActive ? 'text-yellow-600' : ''}`}>{icon}</span>
             <span className="flex-1">{label}</span>
 
             {/* badge */}
