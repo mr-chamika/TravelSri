@@ -35,7 +35,7 @@ interface MyToken {
 const groupCollection = [
   { id: '1', image: pic, title: 'Matara to Colombo', duration: 2, date: '04 june 2020', stats: 'Confirm', price: 5000, max: 20, current: 3 },
   { id: '2', image: bg, title: 'Galle to Kurunegala', duration: 1, date: '05 july 2021', stats: 'Pending', price: 2300, max: 10, current: 13 },
-  { id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10 },
+  //{ id: '3', image: t, title: 'Colombo to jaffna', duration: 4, date: '06 aug 2022', stats: 'Cancelled', price: 1500, max: 25, current: 10 },
   { id: '4', image: pic, title: 'Matara to Kandy', duration: 10, date: '07 sept 2023', stats: 'Pending', price: 9000, max: 10, current: 4 },
   { id: '5', image: bg, title: 'Galle to Dehiwala', duration: 2, date: '08 oct 2024', stats: 'Pending', price: 1800, max: 15, current: 10 },
   { id: '6', image: t, title: 'Matale to Rajarata', duration: 6, date: '09 nov 2025', stats: 'Confirm', price: 700, max: 30, current: 24 },
@@ -371,7 +371,7 @@ export default function Index() {
       <View className="w-full items-center mt-1 ">
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
-        <TouchableOpacity onPress={sendMessage}>
+        {/* <TouchableOpacity onPress={sendMessage}>
           <Text>for all</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => sendPrivateMessage('6896b523a4cb790f5547f87f')}>
@@ -379,10 +379,10 @@ export default function Index() {
         </TouchableOpacity>
         <TouchableOpacity onPress={sendMessageToShops}>
           <Text>all shops</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
       </View>
-      
+
       <View className="h-[40%]">
         <Text className="text-[22px] font-semibold m-3">My Plans</Text>
 
@@ -393,7 +393,7 @@ export default function Index() {
           contentContainerClassName={`pr-16 ${!trips || trips.length === 0 ? 'w-full' : ''}`}
         >
           <View className=" flex-row gap-10 w-full">
-            {(!trips || trips.length == 0) && 
+            {(!trips || trips.length == 0) &&
               <View className=" w-full h-full justify-center items-center">
                 <Text className="text-gray-400">No plans yet</Text>
               </View>
@@ -461,8 +461,8 @@ export default function Index() {
                       <Text className="mt-1 text-[20px] text-start font-bold">
                         {item.price}.00 LKR
                       </Text>
-                      <TouchableOpacity 
-                        className="rounded-md bg-black justify-center w-16 items-center" 
+                      <TouchableOpacity
+                        className="rounded-md bg-black justify-center w-16 items-center"
                         onPress={() => router.push(`/views/group/join/${item.id}`)}
                       >
                         <Text className=" text-white font-semibold">JOIN</Text>
