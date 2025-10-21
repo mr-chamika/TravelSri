@@ -105,7 +105,7 @@ export default function App() {
             }
 
             // Use single API endpoint to fetch all bookings
-            const url = `http://192.168.1.150:8080/api/bookings/provider/${userToken.id}?providerId=${userToken.id}`;
+            const url = `http://localhost:8080/api/bookings/provider/${userToken.id}?providerId=${userToken.id}`;
             console.log('📡 Calling API URL:', url);
             
             const response = await fetch(url, {
@@ -437,7 +437,7 @@ export default function App() {
                                     // Use cancel endpoint for active bookings, reject for pending
                                     const endpoint = isActive ? 'cancel' : 'cancel';
                                     const response = await fetch(
-                                        `http://192.168.1.150:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
+                                        `http://localhost:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
                                         {
                                             method: 'POST',
                                             headers: {
@@ -493,7 +493,7 @@ export default function App() {
 
                                     const endpoint = isActive ? 'complete' : 'accept';
                                     const response = await fetch(
-                                        `http://192.168.1.150:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
+                                        `http://localhost:8080/api/bookings/${booking._id}/${endpoint}?providerId=${userToken.id}`,
                                         {
                                             method: 'POST',
                                             headers: {

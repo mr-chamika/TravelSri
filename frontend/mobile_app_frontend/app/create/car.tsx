@@ -143,7 +143,7 @@ export default function App() {
     const x = async () => {
 
         try {
-            const res = await fetch(`http://192.168.1.150:8080/traveler/vehicles-all`)
+            const res = await fetch(`http://localhost:8080/traveler/vehicles-all`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/vehicles-all`)
 
             const data = await res.json()
@@ -504,7 +504,7 @@ export default function App() {
     //             if (m == '') {
     //                 console.log(finalFormObject)
 
-    //                 await fetch('http://192.168.1.150:8080/traveler/create-trip', {
+    //                 await fetch('http://localhost:8080/traveler/create-trip', {
     //                     //await fetch('https://travelsri-backend.onrender.com/traveler/create-trip', {
 
     //                     method: 'POST',

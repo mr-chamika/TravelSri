@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigation } from '@react-navigation/native';
 
-const API_BASE_URL = 'http://192.168.1.150:8080';
+const API_BASE_URL = 'http://localhost:8080';
 
 interface MyToken {
   sub: string;
@@ -117,7 +117,7 @@ export default function VehicleQuotationsScreen() {
       
       // Correct endpoint: /groupTours (not /vehiclegroupTours)
       console.log('\n--- TEST: Fetching from /groupTours ---');
-      const url = `http://192.168.1.150:8080/api/vehicle/vehiclegroupTours`;
+      const url = `http://localhost:8080/api/vehicle/vehiclegroupTours`;
       console.log('URL:', url);
       
       const response = await fetch(url, {

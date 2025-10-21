@@ -355,7 +355,7 @@ export default function App() {
   const loadVehicleUnavailability = async () => {
     try {
       // Replace with actual API call
-      // const response = await fetch(`http://192.168.1.150:8080/vehicle/unavailability`);
+      // const response = await fetch(`http://localhost:8080/vehicle/unavailability`);
       // const data = await response.json();
       
       // Simulated data - replace with actual API call
@@ -472,8 +472,8 @@ export default function App() {
       setLoading(true);
       
       // Make API call to delete vehicle
-      console.log('Making DELETE request to:', `http://192.168.1.150:8080/vehicle/delete/${vehicle._id}`);
-      const response = await fetch(`http://192.168.1.150:8080/vehicle/delete/${vehicle._id}`, {
+      console.log('Making DELETE request to:', `http://localhost:8080/vehicle/delete/${vehicle._id}`);
+      const response = await fetch(`http://localhost:8080/vehicle/delete/${vehicle._id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
@@ -528,7 +528,7 @@ export default function App() {
           onPress: async () => {
             try {
               // API call to delete specific dates
-              // const response = await fetch(`http://192.168.1.150:8080/vehicle/${viewingVehicle._id}/unavailability`, {
+              // const response = await fetch(`http://localhost:8080/vehicle/${viewingVehicle._id}/unavailability`, {
               //   method: 'DELETE',
               //   headers: { 'Content-Type': 'application/json' },
               //   body: JSON.stringify({ dates: datesToDelete })
@@ -757,8 +757,8 @@ export default function App() {
       console.log('📍 userId value:', userId || '❌ EMPTY');
       
       const apiUrl = userId 
-        ? `http://192.168.1.150:8080/vehicle/owner?vehicleOwnerId=${userId}`
-        : `http://192.168.1.150:8080/vehicle/owner`;
+        ? `http://localhost:8080/vehicle/owner?vehicleOwnerId=${userId}`
+        : `http://localhost:8080/vehicle/owner`;
       
       console.log('� Final API URL:', apiUrl);
       console.log('✅ URL construction complete');

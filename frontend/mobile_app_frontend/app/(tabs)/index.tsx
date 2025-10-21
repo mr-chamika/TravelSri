@@ -58,7 +58,7 @@ export default function Index() {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
 
@@ -90,7 +90,7 @@ export default function Index() {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
 
@@ -169,7 +169,7 @@ export default function Index() {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to private STOMP server');
@@ -281,7 +281,7 @@ export default function Index() {
       const x: MyToken = jwtDecode(keys)
       setMtoken(x.id)
       setRole(x.roles.toString())
-      const res = await fetch(`http://192.168.1.150:8080/traveler/trips-view?id=${x.id}`)
+      const res = await fetch(`http://localhost:8080/traveler/trips-view?id=${x.id}`)
       //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trips-view?id=${x.id}`)
 
       const data = await res.json()
@@ -368,7 +368,7 @@ export default function Index() {
 
   return (
     <View className="bg-[#F2F5FA] justify-evenly h-full w-full">
-      <View className="w-full items-center mt-1 ">
+      {/*<View className="w-full items-center mt-1 ">
         <Text className="text-[22px] font-semibold text-gray-400">Good Afternoon {username} !</Text>
 
         <TouchableOpacity onPress={sendMessage}>
@@ -381,7 +381,7 @@ export default function Index() {
           <Text>all shops</Text>
         </TouchableOpacity>
 
-      </View>
+      </View>*/}
       
       <View className="h-[40%]">
         <Text className="text-[22px] font-semibold m-3">My Plans</Text>

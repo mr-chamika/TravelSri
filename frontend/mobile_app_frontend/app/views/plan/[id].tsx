@@ -85,7 +85,7 @@ export default function Views() {
 
         try {
 
-            const res = await fetch(`http://192.168.1.150:8080/traveler/trip-one?id=${id}`)
+            const res = await fetch(`http://localhost:8080/traveler/trip-one?id=${id}`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/trip-one?id=${id}`)
 
             if (res) {

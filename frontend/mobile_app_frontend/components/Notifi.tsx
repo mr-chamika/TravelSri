@@ -102,7 +102,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
         const token: MyToken = jwtDecode(keys)
 
-        const res = await fetch(`http://192.168.1.150:8080/notification/get?id=${token.id}&role=${token.roles[0]}`)
+        const res = await fetch(`http://localhost:8080/notification/get?id=${token.id}&role=${token.roles[0]}`)
 
         if (res) {
 
@@ -142,7 +142,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
 
@@ -186,7 +186,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
 
@@ -227,7 +227,7 @@ export default function NotifyModal({ isVisible, onClose }: NotifyModalProps) {
 
     const client = new Client({
 
-      brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
+      brokerURL: 'ws://localhost:8080/ws/websocket',
       reconnectDelay: 5000,
       onConnect: () => {
         console.log('Connected to private STOMP server');

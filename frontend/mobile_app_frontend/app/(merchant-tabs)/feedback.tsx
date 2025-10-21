@@ -171,7 +171,7 @@ const Feedback: React.FC = () => {
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
 
-  const API_BASE_URL = 'http://192.168.1.150:8080';
+  const API_BASE_URL = 'http://localhost:8080';
 
   const extractUserIdFromToken = useCallback(async (): Promise<string | null> => {
     try {

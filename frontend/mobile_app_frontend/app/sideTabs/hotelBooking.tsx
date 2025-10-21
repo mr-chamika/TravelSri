@@ -125,7 +125,7 @@ export default function HotelsBookingScreen() {
         try {
 
             await AsyncStorage.setItem("soloHotelBook", JSON.stringify(sending));
-            const res = await fetch(`http://192.168.1.150:8080/traveler/hotels-all?location=${location.toLocaleLowerCase()}&guests=${Number(adults) + Number(children)}`)
+            const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${location.toLocaleLowerCase()}&guests=${Number(adults) + Number(children)}`)
 
 
             if (res) {
@@ -139,7 +139,7 @@ export default function HotelsBookingScreen() {
                 } else {
 
                     setHotels([])
-                    const res = await fetch(`http://192.168.1.150:8080/traveler/hotel-all?guests=${Number(adults) + Number(children)}`)
+                    const res = await fetch(`http://localhost:8080/traveler/hotel-all?guests=${Number(adults) + Number(children)}`)
 
                     if (res) {
 

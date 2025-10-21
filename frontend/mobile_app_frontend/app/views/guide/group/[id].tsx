@@ -110,7 +110,7 @@ export default function Views() {
 
             try {
 
-                const res = await fetch(`http://192.168.1.150:8080/traveler/guides-view?id=${id}`)
+                const res = await fetch(`http://localhost:8080/traveler/guides-view?id=${id}`)
 
                 const data = await res.json()
 
@@ -121,7 +121,7 @@ export default function Views() {
 
                 }
 
-                const res2 = await fetch(`http://192.168.1.150:8080/traveler/reviews-view?id=${id}`)
+                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
                 //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
                 if (res2) {
@@ -160,7 +160,7 @@ export default function Views() {
             const order = JSON.parse(orderx);
             const booking = JSON.parse(bookingx);
 
-            await fetch('http://192.168.1.150:8080/traveler/create-trip', {
+            await fetch('http://localhost:8080/traveler/create-trip', {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

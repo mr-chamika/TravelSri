@@ -48,7 +48,7 @@ export default function Bookings() {
                 return;
             }
 
-            const url = `http://192.168.1.150:8080/api/guide/bookings/${bookingId}/accept`;
+            const url = `http://localhost:8080/api/guide/bookings/${bookingId}/accept`;
             console.log('🌐 API URL:', url);
             console.log('📤 Sending request with Authorization header');
 
@@ -99,7 +99,7 @@ export default function Bookings() {
                 return;
             }
 
-            const url = `http://192.168.1.150:8080/api/guide/bookings/${bookingId}/decline`;
+            const url = `http://localhost:8080/api/guide/bookings/${bookingId}/decline`;
             console.log('🌐 API URL (decline):', url);
 
             const response = await fetch(url, {

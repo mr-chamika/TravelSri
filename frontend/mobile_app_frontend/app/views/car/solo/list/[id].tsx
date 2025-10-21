@@ -96,7 +96,7 @@ export default function App() {
     const x = async () => {
 
         try {
-            const res = await fetch(`http://192.168.1.150:8080/traveler/vehicles-all`)
+            const res = await fetch(`http://localhost:8080/traveler/vehicles-all`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/vehicles-all`)
 
             const data = await res.json()
@@ -192,7 +192,7 @@ export default function App() {
 
         //console.log(newBooking)
 
-        const res = await fetch(`http://192.168.1.150:8080/traveler/vehicle-gets?location=${newBooking.start}&language=${newBooking.language}`)
+        const res = await fetch(`http://localhost:8080/traveler/vehicle-gets?location=${newBooking.start}&language=${newBooking.language}`)
 
         const data = await res.json();
 
@@ -202,7 +202,7 @@ export default function App() {
             setVehicles(data)
 
         }
-        const res1 = await fetch(`http://192.168.1.150:8080/traveler/category-get`)
+        const res1 = await fetch(`http://localhost:8080/traveler/category-get`)
 
         const data1 = await res1.json();
 
@@ -266,7 +266,7 @@ export default function App() {
                     //setSelectedTime(parsedBooking.time);
                     setTime(parsedBooking.time)
 
-                    const res = await fetch(`http://192.168.1.150:8080/traveler/vehicle-get?location=${startLocation}&language=${language}`)
+                    const res = await fetch(`http://localhost:8080/traveler/vehicle-get?location=${startLocation}&language=${language}`)
 
                     const data = await res.json();
 
@@ -276,7 +276,7 @@ export default function App() {
                         setVehicles(data)
 
                     }
-                    const res1 = await fetch(`http://192.168.1.150:8080/traveler/category-get`)
+                    const res1 = await fetch(`http://localhost:8080/traveler/category-get`)
 
                     const data1 = await res1.json();
 

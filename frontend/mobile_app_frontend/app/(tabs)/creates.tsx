@@ -197,7 +197,7 @@ const TripPlannerScreen: React.FC = () => {
 
   const getData = async () => {
     try {
-      const res = await fetch(`http://192.168.1.150:8080/traveler/trip-one?id=${id}`)
+      const res = await fetch(`http://localhost:8080/traveler/trip-one?id=${id}`)
 
       if (res) {
         let data = await res.json();
@@ -294,7 +294,7 @@ const TripPlannerScreen: React.FC = () => {
 
       console.log(book)
 
-      await fetch(`http://192.168.1.150:8080/traveler/create-booking`, {
+      await fetch(`http://localhost:8080/traveler/create-booking`, {
 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -391,7 +391,7 @@ const TripPlannerScreen: React.FC = () => {
             text: "Yes",
             onPress: async () => {
 
-              const res = await fetch(`http://192.168.1.150:8080/traveler/trip?id=${tripId}`, {
+              const res = await fetch(`http://localhost:8080/traveler/trip?id=${tripId}`, {
 
                 method: 'DELETE'
 
@@ -748,7 +748,7 @@ const TripPlannerScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={async () => {
 
-                  const res = await fetch(`http://192.168.1.150:8080/traveler/trip?id=${selectedId}`, {
+                  const res = await fetch(`http://localhost:8080/traveler/trip?id=${selectedId}`, {
 
                     method: 'DELETE'
 

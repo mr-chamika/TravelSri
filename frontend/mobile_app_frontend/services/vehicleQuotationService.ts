@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 
-const API_BASE_URL = 'http://192.168.1.150:8080/api';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 interface MyToken {
   sub: string;

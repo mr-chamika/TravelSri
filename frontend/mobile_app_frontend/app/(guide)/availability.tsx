@@ -296,7 +296,7 @@ export default function AvailabilityScreen() {
       setLoading(true);
       console.log('🔄 Fetching unavailability for providerId:', providerId);
       
-      const response = await fetch(`http://192.168.1.150:8080/api/availability/user-schedules/${providerId}`, {
+      const response = await fetch(`http://localhost:8080/api/availability/user-schedules/${providerId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -358,7 +358,7 @@ export default function AvailabilityScreen() {
   // Fetch bookings from the backend API
   const fetchBookingsFromBackend = async (userId: string) => {
     try {
-      const apiUrl = `http://192.168.1.150:8080/api/bookings/provider/${userId}?providerId=${userId}`;
+      const apiUrl = `http://localhost:8080/api/bookings/provider/${userId}?providerId=${userId}`;
       console.log('🔍 [BOOKINGS] START - Fetching bookings from URL:', apiUrl);
       console.log('🔍 [BOOKINGS] Using userId:', userId);
       
@@ -898,7 +898,7 @@ export default function AvailabilityScreen() {
 
       console.log('📤 Saving unavailability with params:', params.toString());
       
-      const response = await fetch(`http://192.168.1.150:8080/api/availability/create-unavailability?${params.toString()}`, {
+      const response = await fetch(`http://localhost:8080/api/availability/create-unavailability?${params.toString()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -977,7 +977,7 @@ export default function AvailabilityScreen() {
       }
       
       const userId = userToken.id;
-      const url = `http://192.168.1.150:8080/api/availability/delete-user-unavailability?userId=${userId}&unavailabilityId=${itemToDelete}`;
+      const url = `http://localhost:8080/api/availability/delete-user-unavailability?userId=${userId}&unavailabilityId=${itemToDelete}`;
       
       console.warn('🗑️ [DELETE] Calling URL:', url);
       

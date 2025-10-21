@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 
-const BASE_URL = 'http://192.168.1.150:8080';
+const BASE_URL = 'http://localhost:8080';
 
 export interface PendingTrip {
   ptId: string;

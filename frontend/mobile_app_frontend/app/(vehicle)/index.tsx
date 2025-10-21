@@ -90,7 +90,7 @@ export default function Index() {
         return;
       }
 
-      const apiUrl = `http://192.168.1.150:8080/vehicle/owner?vehicleOwnerId=${userId}`;
+      const apiUrl = `http://localhost:8080/vehicle/owner?vehicleOwnerId=${userId}`;
       console.log('📍 Vehicle API URL:', apiUrl);
 
       const response = await fetch(apiUrl, {

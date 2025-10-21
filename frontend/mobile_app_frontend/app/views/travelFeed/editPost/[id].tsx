@@ -93,7 +93,7 @@ const TRAVEL_CATEGORIES = [
   { id: 'city', label: '🏙️ City', color: '#FBBF24' },
 ];
 
-const BACKEND_BASE_URL = 'http://192.168.1.150:8080';
+const BACKEND_BASE_URL = 'http://localhost:8080';
 
 export default function EditPostScreen() {
   const navigation = useNavigation();

@@ -159,7 +159,7 @@ export default function Equipments() {
         if (!keyword.trim()) return;
 
         try {
-            const res = await fetch(`http://192.168.1.150:8080/traveler/search?keyword=${encodeURIComponent(keyword)}`);
+            const res = await fetch(`http://localhost:8080/traveler/search?keyword=${encodeURIComponent(keyword)}`);
             if (res.ok) {
                 const data = await res.json();
                 setSearchResults(data);
@@ -179,7 +179,7 @@ export default function Equipments() {
 
             try {
 
-                const res = await fetch(`http://192.168.1.150:8080/traveler/items-top?count=${10}`)
+                const res = await fetch(`http://localhost:8080/traveler/items-top?count=${10}`)
 
                 if (res.ok) {
 
@@ -205,7 +205,7 @@ export default function Equipments() {
 
             try {
 
-                const res = await fetch(`http://192.168.1.150:8080/traveler/shops-get`)
+                const res = await fetch(`http://localhost:8080/traveler/shops-get`)
                 //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shops-get`)
 
                 if (res.ok) {

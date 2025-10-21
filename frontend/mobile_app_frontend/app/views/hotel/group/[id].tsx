@@ -151,7 +151,7 @@ export default function Views() {
                     const existingBookingData = bookingDatas ? JSON.parse(bookingDatas as string) : null;
 
                     // Fetch hotel data
-                    const res1 = await fetch(`http://192.168.1.150:8080/traveler/hotels-view?id=${id}`)
+                    const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
                     const data1: HotelView = await res1.json()
                     setHotelv(data1)
 
@@ -162,7 +162,7 @@ export default function Views() {
                             params.append('ids', facilityId);
                         })
 
-                        const res3 = await fetch(`http://192.168.1.150:8080/traveler/facis-view?ids=${params.toString()}`)
+                        const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
                         if (res3) {
                             const data3 = await res3.json()
                             setFacilities(data3)
@@ -170,7 +170,7 @@ export default function Views() {
                     }
 
                     // Fetch reviews
-                    const res2 = await fetch(`http://192.168.1.150:8080/traveler/reviews-view?id=${id}`)
+                    const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
                     if (res2.ok) {
                         const data2 = await res2.json()
                         setReviews(data2)
@@ -185,7 +185,7 @@ export default function Views() {
                             params1.append('ids', roomId);
                         })
 
-                        const res4 = await fetch(`http://192.168.1.150:8080/traveler/roomtypes-view?${params1.toString()}`)
+                        const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
                         if (res4) {
                             const data4 = await res4.json()
                             setRoomTypes(data4)
@@ -231,7 +231,7 @@ export default function Views() {
 
                 try {
 
-                    const res1 = await fetch(`http://192.168.1.150:8080/traveler/hotels-view?id=${id}`)
+                    const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
 
                     const params = new URLSearchParams();
                     //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
@@ -250,7 +250,7 @@ export default function Views() {
 
 
 
-                        const res3 = await fetch(`http://192.168.1.150:8080/traveler/facis-view?ids=${params.toString()}`)
+                        const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
                         //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
 
                         if (res3) {
@@ -262,7 +262,7 @@ export default function Views() {
                         }
                     }
 
-                    const res2 = await fetch(`http://192.168.1.150:8080/traveler/reviews-view?id=${id}`)
+                    const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
                     //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
                     if (res2.ok) {
@@ -285,7 +285,7 @@ export default function Views() {
                         })
 
 
-                        const res4 = await fetch(`http://192.168.1.150:8080/traveler/roomtypes-view?${params1.toString()}`)
+                        const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
                         //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
 
                         if (res4) {
@@ -503,7 +503,7 @@ export default function Views() {
             console.log(order)
             // 4. Navigate back to the previous screen
             //router.back();
-            await fetch('http://192.168.1.150:8080/traveler/create-trip', {
+            await fetch('http://localhost:8080/traveler/create-trip', {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

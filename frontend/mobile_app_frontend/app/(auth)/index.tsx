@@ -84,7 +84,7 @@ export default function LoginScreen({ route }: AuthScreenProps<'index'>) {
 
         try {
 
-            const res = await fetch('http://192.168.1.150:8080/user/login', {
+            const res = await fetch('http://localhost:8080/user/login', {
                 //const res = await fetch('https://travelsri-backend.onrender.com/user/login', {
 
                 method: 'POST',

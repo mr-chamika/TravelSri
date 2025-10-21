@@ -80,7 +80,7 @@ export default function ShopDetailScreen() {
 
         try {
         
-            const res = await fetch(`http://192.168.1.150:8080/traveler/get-reviews?id=${id}`)
+            const res = await fetch(`http://localhost:8080/traveler/get-reviews?id=${id}`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/get-reviews?id=${id}`)
 
             if (res.ok) {
@@ -109,7 +109,7 @@ export default function ShopDetailScreen() {
 
             try {
 
-                const res = await fetch(`http://192.168.1.150:8080/traveler/shop-items?id=${id}`)
+                const res = await fetch(`http://localhost:8080/traveler/shop-items?id=${id}`)
                 //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shop-items?id=${id}`)
 
                 if (res.ok) {
@@ -138,7 +138,7 @@ export default function ShopDetailScreen() {
             try {
 
                 //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/shop-get?id=${id}`)
-                const res = await fetch(`http://192.168.1.150:8080/traveler/shop-get?id=${id}`)
+                const res = await fetch(`http://localhost:8080/traveler/shop-get?id=${id}`)
 
                 if (res.ok) {
 
@@ -360,7 +360,7 @@ export default function ShopDetailScreen() {
         if (!keyword.trim()) return;
 
         try {
-            const res = await fetch(`http://192.168.1.150:8080/traveler/search?keyword=${encodeURIComponent(keyword)}`);
+            const res = await fetch(`http://localhost:8080/traveler/search?keyword=${encodeURIComponent(keyword)}`);
             if (res.ok) {
                 const data = await res.json();
                 setSearchResults(data);
@@ -390,7 +390,7 @@ export default function ShopDetailScreen() {
                 serviceId: id.toString()
             }
 
-            await fetch(`http://192.168.1.150:8080/traveler/review-create`, {
+            await fetch(`http://localhost:8080/traveler/review-create`, {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

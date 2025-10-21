@@ -133,7 +133,7 @@ const BookingsScreen: React.FC = () => {
             const x: MyToken = jwtDecode(keys)
 
 
-            const res = await fetch(`http://192.168.1.150:8080/traveler/bookings-all?userId=${x.id}`)
+            const res = await fetch(`http://localhost:8080/traveler/bookings-all?userId=${x.id}`)
 
 
             if (res) {
@@ -438,7 +438,7 @@ const BookingsScreen: React.FC = () => {
 
   const handleCancelBooking = async (booking: Booking) => {
 
-    await fetch(`http://192.168.1.150:8080/traveler/booking-cancel`, {
+    await fetch(`http://localhost:8080/traveler/booking-cancel`, {
 
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
