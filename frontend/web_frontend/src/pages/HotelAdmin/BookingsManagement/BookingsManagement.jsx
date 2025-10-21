@@ -1883,7 +1883,7 @@ const FlashMessage = ({ message, type, onClose }) => {
       }, 500); // Match this to CSS animation duration
       
       return () => clearTimeout(closeTimer);
-    }, 4500); // Show for 4.5 seconds before starting fade out
+    }, 450); // Show for 4.5 seconds before starting fade out
     
     return () => clearTimeout(dismissTimer);
   }, [onClose]);

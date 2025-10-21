@@ -63,7 +63,7 @@ const SignupPage = () => {
       // Auto-hide after 5 seconds
       setTimeout(() => {
         setFlashMessage({ show: false, type: '', message: '' });
-      }, 5000);
+      }, 500);
     }, 10);
   };
   
@@ -1002,7 +1002,7 @@ const SignupPage = () => {
           // Redirect to login page after a delay
           setTimeout(() => {
             window.location.href = '/login';
-          }, 2000);
+          }, 200);
         } else {
           showFlash('error', result.error || 'Registration failed. Please try again.');
         }

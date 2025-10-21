@@ -33,7 +33,7 @@ const AddItem: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.1.150:8080';
 
   const validateField = (field: string, value: string) => {
     let error = '';

@@ -125,7 +125,7 @@ export default function Views() {
 
             try {
 
-                const res1 = await fetch(`http://localhost:8080/traveler/hotels-view?id=${id}`)
+                const res1 = await fetch(`http://192.168.1.150:8080/traveler/hotels-view?id=${id}`)
 
                 const params = new URLSearchParams();
                 //const res1 = await fetch(`https://travelsri-backend.onrender.com/traveler/hotels-view?id=${id}`)
@@ -145,7 +145,7 @@ export default function Views() {
 
 
 
-                    const res3 = await fetch(`http://localhost:8080/traveler/facis-view?ids=${params.toString()}`)
+                    const res3 = await fetch(`http://192.168.1.150:8080/traveler/facis-view?ids=${params.toString()}`)
                     //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
 
                     if (res3) {
@@ -157,7 +157,7 @@ export default function Views() {
                     }
                 }
 
-                const res2 = await fetch(`http://localhost:8080/traveler/reviews-view?id=${id}`)
+                const res2 = await fetch(`http://192.168.1.150:8080/traveler/reviews-view?id=${id}`)
                 //const res2 = await fetch(`https://travelsri-backend.onrender.com/traveler/reviews-view?id=${id}`)
 
                 if (res2) {
@@ -176,7 +176,7 @@ export default function Views() {
                     })
 
 
-                    const res4 = await fetch(`http://localhost:8080/traveler/roomtypes-view?${params1.toString()}`)
+                    const res4 = await fetch(`http://192.168.1.150:8080/traveler/roomtypes-view?${params1.toString()}`)
                     //const res3 = await fetch(`https://travelsri-backend.onrender.com/traveler/facis-view?id=${id}`)
 
                     if (res4) {
@@ -505,7 +505,7 @@ export default function Views() {
 
 
 
-            await fetch(`http://localhost:8080/traveler/create-booking`, {
+            await fetch(`http://192.168.1.150:8080/traveler/create-booking`, {
 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

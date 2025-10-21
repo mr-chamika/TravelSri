@@ -83,7 +83,7 @@ export default function Sidebar({ close }: TopbarProps) {
                 const x: MyToken = jwtDecode(keys)
                 try {
 
-                    const res = await fetch(`http://localhost:8080/user/profile?email=${x.email}`)
+                    const res = await fetch(`http://192.168.1.150:8080/user/profile?email=${x.email}`)
                     //const res = await fetch(`https://travelsri-backend.onrender.com/user/profile?email=${x.email}`)
 
                     const data = await res.json()

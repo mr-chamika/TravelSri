@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigation } from '@react-navigation/native';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://192.168.1.150:8080';
 
 interface MyToken {
   sub: string;
@@ -117,7 +117,7 @@ export default function VehicleQuotationsScreen() {
       
       // Correct endpoint: /groupTours (not /vehiclegroupTours)
       console.log('\n--- TEST: Fetching from /groupTours ---');
-      const url = `http://localhost:8080/VehicleOwnerQuotation/vehiclegroupTours`;
+      const url = `http://192.168.1.150:8080/api/vehicle/vehiclegroupTours`;
       console.log('URL:', url);
       
       const response = await fetch(url, {
@@ -203,7 +203,7 @@ export default function VehicleQuotationsScreen() {
       const userId = decoded.id || decoded.sub;
       console.log('📋 Extracted userId from token:', userId);
 
-      const url = `${API_BASE_URL}/VehicleOwnerQuotation/vehiclegroupTours?userId=${userId}`;
+      const url = `${API_BASE_URL}/api/vehicle/vehiclegroupTours?userId=${userId}`;
       console.log('🌐 Fetching Group Tours URL:', url);
       console.log('API_BASE_URL:', API_BASE_URL);
       console.log('Full URL being called:', url);
@@ -249,7 +249,7 @@ export default function VehicleQuotationsScreen() {
       const userId = decoded.id || decoded.sub;
       console.log('📋 Decoded Token UserID:', userId);
       
-      const url = `${API_BASE_URL}/VehicleOwnerQuotation/submittedQuotation/${userId}`;
+      const url = `${API_BASE_URL}/api/vehicle/submittedQuotation/${userId}`;
       console.log('🌐 Fetching Submitted Quotations URL:', url);
       console.log('Full URL being called:', url);
       
@@ -348,7 +348,7 @@ export default function VehicleQuotationsScreen() {
       });
 
       const response = await fetch(
-        `${API_BASE_URL}/VehicleOwnerQuotation/submitQuotation/${selectedTour?.ptId}`,
+        `${API_BASE_URL}/api/vehicle/submitQuotation/${selectedTour?.ptId}`,
         {
           method: 'PUT',
           headers: {

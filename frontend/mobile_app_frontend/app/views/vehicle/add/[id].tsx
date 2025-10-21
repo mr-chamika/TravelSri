@@ -795,7 +795,7 @@ export default function MultiStepForm() {
       const payloadSize = JSON.stringify(payload).length;
       console.log('📊 Payload size:', payloadSize, 'bytes');
 
-      const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
+      const response = await fetch(`http://192.168.1.150:8080/vehicle/addVehicle`, {
         method: "POST",
         headers: { 
           'Content-Type': "application/json",

@@ -439,7 +439,7 @@ export default function SignupForm() {
         }
 
         try {
-            const BACKEND_BASE_URL = 'http://localhost:8080';
+            const BACKEND_BASE_URL = 'http://192.168.1.150:8080';
             
             // For business users (guide, merchant, vehicle owner), restrict to Sri Lanka
             const isSriLankanOnly = formData.role !== 'user' && formData.role !== 'vehicle';
@@ -842,7 +842,7 @@ export default function SignupForm() {
         setEmailCheckStatus('checking');
         try {
             // Replace with your actual backend endpoint for email validation
-            const response = await fetch(`http://localhost:8080/user/check-email?email=${email}`);
+            const response = await fetch(`http://192.168.1.150:8080/user/check-email?email=${email}`);
             //const response = await fetch(`https://travelsri-backend.onrender.com/user/check-email?email=${email}`);
             const data = await response.text();
             console.log(data)
@@ -1267,7 +1267,7 @@ export default function SignupForm() {
 
                 //console.log(payload)
 
-                await fetch('http://localhost:8080/user/signup', {
+                await fetch('http://192.168.1.150:8080/user/signup', {
                     //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',
@@ -1311,7 +1311,7 @@ export default function SignupForm() {
 
                 const { businessType, confirmPassword, ...payload } = dataToSend
 
-                await fetch('http://localhost:8080/user/signup', {
+                await fetch('http://192.168.1.150:8080/user/signup', {
                     //await fetch('https://travelsri-backend.onrender.com/user/signup', {
 
                     method: 'POST',

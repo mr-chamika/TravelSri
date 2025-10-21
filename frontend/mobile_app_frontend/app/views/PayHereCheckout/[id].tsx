@@ -38,7 +38,7 @@ if (Platform.OS !== 'web') {
 }
 
 // API Base URL (you should move this to a config file)
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://192.168.1.150:8080';
 
 const PayHereCheckout: React.FC = () => {
   const router = useRouter();

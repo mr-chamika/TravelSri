@@ -95,16 +95,16 @@ export default function App() {
             let url = '';
             switch (activeFilter) {
                 case 'Pending':
-                    url = `http://localhost:8080/vehicle/bookings/provider/${userToken.id}/pending`;
+                    url = `http://192.168.1.150:8080/vehicle/bookings/provider/${userToken.id}/pending`;
                     console.log('📡 Using PENDING endpoint');
                     break;
                 case 'Confirmed':
-                    url = `http://localhost:8080/vehicle/bookings/provider/${userToken.id}/confirmed`;
+                    url = `http://192.168.1.150:8080/vehicle/bookings/provider/${userToken.id}/confirmed`;
                     console.log('📡 Using CONFIRMED endpoint');
                     break;
                 case 'All':
                 default:
-                    url = `http://localhost:8080/vehicle/bookings/provider/${userToken.id}`;
+                    url = `http://192.168.1.150:8080/vehicle/bookings/provider/${userToken.id}`;
                     console.log('📡 Using ALL bookings endpoint');
                     break;
             }
@@ -377,7 +377,7 @@ export default function App() {
                                         }
 
                                         const response = await fetch(
-                                            `http://localhost:8080/api/bookings/${booking._id}/cancel?vehicleOwnerId=${userToken.id}`,
+                                            `http://192.168.1.150:8080/api/bookings/${booking._id}/cancel?vehicleOwnerId=${userToken.id}`,
                                             {
                                                 method: 'POST',
                                                 headers: {
@@ -415,7 +415,7 @@ export default function App() {
                                         }
 
                                         const response = await fetch(
-                                            `http://localhost:8080/api/bookings/${booking._id}/accept?vehicleOwnerId=${userToken.id}`,
+                                            `http://192.168.1.150:8080/api/bookings/${booking._id}/accept?vehicleOwnerId=${userToken.id}`,
                                             {
                                                 method: 'POST',
                                                 headers: {

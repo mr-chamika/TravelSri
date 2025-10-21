@@ -358,7 +358,7 @@ console.log(id)
   useEffect(() => {
     const fetchVehicle = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/vehicle/edit?id=${id}`); // Replace {vehicle_id} with actual ID
+        const response = await fetch(`http://192.168.1.150:8080/vehicle/edit?id=${id}`); // Replace {vehicle_id} with actual ID
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -867,7 +867,7 @@ const handleNext = async () => {
       }
       
 
-      const response = await fetch(`http://localhost:8080/vehicle/addVehicle`, {
+      const response = await fetch(`http://192.168.1.150:8080/vehicle/addVehicle`, {
         method: "POST",
         headers: { 
           'Content-Type': "application/json",

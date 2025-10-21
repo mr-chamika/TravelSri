@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 // Replace with the local IP address of the machine running your Spring Boot server.
 // On Mac/Linux, find it with `ifconfig` or `ip addr`. On Windows, use `ipconfig`.
 // Do NOT use 'localhost' or '127.0.0.1' as your computer won't be able to reach it from a browser.
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = 'http://192.168.1.150:8080';
 
 // --- SVG Icons ---
 const MicIcon = ({ isListening = false }: { isListening?: boolean }) => (

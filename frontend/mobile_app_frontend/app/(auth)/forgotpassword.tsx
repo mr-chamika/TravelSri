@@ -84,7 +84,7 @@ export default function ForgotPassword() {
         try {
 
             //const response = await fetch(`https://travelsri-backend.onrender.com/user/check-email?email=${email}`);
-            const response = await fetch(`http://localhost:8080/user/check-email?email=${email}`);
+            const response = await fetch(`http://192.168.1.150:8080/user/check-email?email=${email}`);
             const data = await response.text();
             if (data === "Exists") {
                 setEmailCheckStatus('taken');
@@ -164,7 +164,7 @@ export default function ForgotPassword() {
         try {
 
 
-            const response = await fetch('http://localhost:8080/user/reset-password', {
+            const response = await fetch('http://192.168.1.150:8080/user/reset-password', {
                 //const response = await fetch(`https://travelsri-backend.onrender.com/user/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

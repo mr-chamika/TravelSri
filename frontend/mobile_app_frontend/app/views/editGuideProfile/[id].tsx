@@ -120,7 +120,7 @@ export default function EditProfile() {
       }
 
       const response = await fetch(
-        `http://localhost:8080/api/guides/${userToken?.id}/profile`,
+        `http://192.168.1.150:8080/api/guides/${userToken?.id}/profile`,
         {
           method: 'PUT',
           headers: {

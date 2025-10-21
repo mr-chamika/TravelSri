@@ -62,7 +62,7 @@ interface MyToken {
 }
 
 // API service functions
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://192.168.1.150:8080/api';
 
 // Get JWT token and decode it
 const getDecodedToken = async (): Promise<MyToken | null> => {

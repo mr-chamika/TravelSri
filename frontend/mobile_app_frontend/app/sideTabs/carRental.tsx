@@ -139,7 +139,7 @@ export default function App() {
     const x = async () => {
 
         try {
-            const res = await fetch(`http://localhost:8080/traveler/vehicles-all`)
+            const res = await fetch(`http://192.168.1.150:8080/traveler/vehicles-all`)
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/vehicles-all`)
 
             const data = await res.json()

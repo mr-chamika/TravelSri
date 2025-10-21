@@ -275,7 +275,7 @@ export default function Guide() {
         }
 
         try {
-            const res = bookingType == 'visit' ? await fetch(`http://localhost:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`) : await fetch(`http://localhost:8080/traveler/guides-alls?language=${lan.trim().toLowerCase()}`)
+            const res = bookingType == 'visit' ? await fetch(`http://192.168.1.150:8080/traveler/guides-all?location=${destination.trim().toLowerCase()}&language=${lan.trim().toLowerCase()}`) : await fetch(`http://192.168.1.150:8080/traveler/guides-alls?language=${lan.trim().toLowerCase()}`)
 
             //const res = await fetch(`https://travelsri-backend.onrender.com/traveler/guides-all?location=${guideLocation}&language=${guideLanguage}`)
 

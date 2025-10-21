@@ -76,7 +76,7 @@ const Listings: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = 'http://192.168.1.150:8080';
 
   // More robust function to extract shop ID from JWT token
   const extractShopIdFromToken = useCallback(async (): Promise<string | null> => {

@@ -23,7 +23,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       
       // Wait a bit before retrying
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Try again
       return apiClient(originalRequest);

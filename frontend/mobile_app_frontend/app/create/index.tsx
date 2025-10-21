@@ -273,7 +273,7 @@ export default function HotelsBookingScreen() {
 
                     try {
                         //console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
-                        const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${keyword.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+                        const res = await fetch(`http://192.168.1.150:8080/traveler/hotels-all?location=${keyword.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
                         //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
                         if (res.ok) {
@@ -335,7 +335,7 @@ export default function HotelsBookingScreen() {
 
     //         try {
     //             console.log(locationP.toLocaleLowerCase(), Number(order?.adults) + Number(order?.children))
-    //             const res = await fetch(`http://localhost:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
+    //             const res = await fetch(`http://192.168.1.150:8080/traveler/hotels-all?location=${locationP.toLocaleLowerCase()}&guests=${Number(order?.adults) + Number(order?.children)}`)
     //             //const res = await fetch('https://travelsri-backend.onrender.com/traveler/hotels-all')
 
     //             if (res.ok) {

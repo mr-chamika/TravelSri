@@ -41,7 +41,7 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
         const client = new Client({
 
-            brokerURL: 'ws://localhost:8080/ws/websocket',
+            brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
             reconnectDelay: 5000,
             onConnect: () => {
                 console.log('Connected to private STOMP server');
@@ -95,7 +95,7 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
         const client = new Client({
 
-            brokerURL: 'ws://localhost:8080/ws/websocket',
+            brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
             reconnectDelay: 5000,
             onConnect: () => {
 
@@ -141,7 +141,7 @@ export default function Topbar({ pressing, notifying, on }: TopbarProps) {
 
         const client = new Client({
 
-            brokerURL: 'ws://localhost:8080/ws/websocket',
+            brokerURL: 'ws://192.168.1.150:8080/ws/websocket',
             reconnectDelay: 5000,
             onConnect: () => {
 

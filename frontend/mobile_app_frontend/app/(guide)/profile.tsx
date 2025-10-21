@@ -84,7 +84,7 @@ export default function Profile() {
                         
                         // Fetch full profile from API
                         console.log('🌐 Fetching full profile from API...');
-                        const profileRes = await fetch(`http://localhost:8080/user/profile?email=${email}`);
+                        const profileRes = await fetch(`http://192.168.1.150:8080/user/profile?email=${email}`);
                         
                         if (profileRes.ok) {
                             const profileData = await profileRes.json();
