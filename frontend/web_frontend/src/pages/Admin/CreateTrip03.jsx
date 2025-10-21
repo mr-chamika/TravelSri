@@ -15,7 +15,7 @@ const CreateTrip03 = () => {
     // Google Maps API loader
     const { isLoaded } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyApf662eX5O6bPf0iiXkMidkcytrIgOSzM", 
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyAzLiOaAcp74uieFA1HktsN1ZS85Nolh-U", 
         libraries: ['places', 'geometry']
     });
 
@@ -253,7 +253,7 @@ const CreateTrip03 = () => {
                         {/* intermediate destinations */}
                         <div className="mb-6">
                             <label className="block text-gray-700 font-medium mb-3 text-lg">
-                                Description about intermediate stops *
+                                Description about intermediate destinations *
                             </label>
                             <textarea
                                 value={intermediatePlaces}

@@ -224,6 +224,9 @@ public class UpcomingTrip {
     @Field("cancellation_policy")
     private String cancellationPolicy;
 
+    @Field("whatsapp_link")
+    private String whatsappLink; // WhatsApp group link for trip coordination
+
     // ========== ADMIN AND TRACKING FIELDS ==========
 
     @Field("created_by")

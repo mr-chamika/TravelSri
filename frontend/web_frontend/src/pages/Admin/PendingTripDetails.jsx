@@ -104,6 +104,7 @@ const PendingTripDetails = () => {
         }));
     };
 
+    // Update the createUpcomingTripFromSelections function to include whatsappLink:
     const createUpcomingTripFromSelections = () => {
         if (!tripData) {
             throw new Error("Missing trip data");
@@ -179,6 +180,9 @@ const PendingTripDetails = () => {
             // ========== CALCULATED PRICING ==========
             totalTripCost: calculateTotalTripCost(),
             totalPricePerPerson: calculateTotalPricePerPerson(),
+
+            // ========== WHATSAPP LINK (INITIALLY EMPTY) ==========
+            whatsappLink: "", // Initialize as empty
 
             // ========== STATUS INFORMATION ==========
             tripStatus: "Confirmed",

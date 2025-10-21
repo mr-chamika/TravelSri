@@ -3,11 +3,19 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import dayjs from "dayjs";
+import axios from "axios"; // Add axios import
 
 const PendingTripDetails02 = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [upcomingTrip, setUpcomingTrip] = useState(null);
     const [calendarDate, setCalendarDate] = useState(null);
+    
+    // Add WhatsApp link state
+    const [whatsappLink, setWhatsappLink] = useState("");
+    const [isUpdatingWhatsapp, setIsUpdatingWhatsapp] = useState(false);
+    const [whatsappUpdateSuccess, setWhatsappUpdateSuccess] = useState(false);
+
+    const API_BASE_URL = "http://localhost:8080/api/upcomingTrip";
 
     useEffect(() => {
         // Load upcoming trip data - prioritize the newly created trip
@@ -44,17 +52,11 @@ const PendingTripDetails02 = () => {
         
         if (tripDataToUse) {
             setUpcomingTrip(tripDataToUse);
+            setWhatsappLink(tripDataToUse.whatsappLink || ""); // Set existing WhatsApp link
             console.log("=== UPCOMING TRIP LOADED IN DETAILS02 ===");
             console.log("Trip ID:", tripDataToUse.id);
             console.log("Trip Title:", tripDataToUse.title);
-            console.log("Selected Hotel ID:", tripDataToUse.selectedHotelId);
-            console.log("Selected Vehicle ID:", tripDataToUse.selectedVehicleId);
-            console.log("Selected Guide ID:", tripDataToUse.selectedGuideId);
-            console.log("Hotel Final Amount:", tripDataToUse.hotelFinalAmount);
-            console.log("Vehicle Final Amount:", tripDataToUse.vehicleFinalAmount);
-            console.log("Guide Final Amount:", tripDataToUse.guideFinalAmount);
-            console.log("Total Trip Cost:", tripDataToUse.totalTripCost);
-            console.log("Total Price Per Person:", tripDataToUse.totalPricePerPerson);
+            console.log("WhatsApp Link:", tripDataToUse.whatsappLink);
             console.log("==========================================");
             
             if (tripDataToUse.date) {
@@ -83,6 +85,65 @@ const PendingTripDetails02 = () => {
             });
         } catch (error) {
             return dateString;
+        }
+    };
+
+    // Add WhatsApp link update function
+    const handleUpdateWhatsappLink = async () => {
+        if (!upcomingTrip?.id) {
+            alert("No trip ID available to update WhatsApp link");
+            return;
+        }
+
+        if (!whatsappLink.trim()) {
+            alert("Please enter a valid WhatsApp link");
+            return;
+        }
+
+        try {
+            setIsUpdatingWhatsapp(true);
+            
+            console.log("=== UPDATING WHATSAPP LINK ===");
+            console.log("Trip ID:", upcomingTrip.id);
+            console.log("WhatsApp Link:", whatsappLink);
+            
+            const response = await axios.patch(
+                `${API_BASE_URL}/updateWhatsappLink/${upcomingTrip.id}`,
+                null,
+                {
+                    params: {
+                        whatsappLink: whatsappLink.trim()
+                    },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log("WhatsApp link updated successfully:", response.data);
+            
+            // Update the local state
+            setUpcomingTrip(response.data);
+            
+            // Update localStorage
+            localStorage.setItem('currentUpcomingTrip', JSON.stringify(response.data));
+            localStorage.setItem('upcomingTripForNextStep', JSON.stringify(response.data));
+            
+            setWhatsappUpdateSuccess(true);
+            setTimeout(() => setWhatsappUpdateSuccess(false), 3000);
+            
+        } catch (error) {
+            console.error("Error updating WhatsApp link:", error);
+            
+            if (error.response?.status === 404) {
+                alert("Trip not found. Please refresh and try again.");
+            } else if (error.response?.status === 400) {
+                alert("Invalid WhatsApp link format. Please check and try again.");
+            } else {
+                alert("Failed to update WhatsApp link. Please try again.");
+            }
+        } finally {
+            setIsUpdatingWhatsapp(false);
         }
     };
 
@@ -148,15 +209,25 @@ const PendingTripDetails02 = () => {
         window.location.href = href;
     };
 
-    const handleNext = () => {
-        console.log("Next button clicked");
+    // Change handleNext to handleDone and navigate to AllUpcomingTrip
+    const handleDone = () => {
+        console.log("Done button clicked");
+        
+        // Clear temporary localStorage items
+        localStorage.removeItem('upcomingTripForNextStep');
+        localStorage.removeItem('upcomingTripCreated');
+        
+        // Store the final trip data
         if (upcomingTrip) {
-            localStorage.setItem('finalUpcomingTrip', JSON.stringify(upcomingTrip));
+            localStorage.setItem('selectedUpcomingTripId', upcomingTrip.id);
+            localStorage.setItem('selectedUpcomingTrip', JSON.stringify(upcomingTrip));
         }
-        window.location.href = "/pendingtripdetails03";
+        
+        // Navigate to AllUpcomingTrip
+        window.location.href = "/allupcomingtrips";
     };
 
-    // Calculate totals
+    // Calculate totals function remains the same
     const calculateTotals = () => {
         if (!upcomingTrip) {
             return {
@@ -221,7 +292,6 @@ const PendingTripDetails02 = () => {
         );
     }
 
-
     return (
         <div className="flex min-h-screen bg-gray-100">
             <div className="flex-1 flex flex-col">
@@ -277,6 +347,68 @@ const PendingTripDetails02 = () => {
                                     <div>
                                         <span className="font-semibold text-gray-700">Check-out:</span>
                                         <span className="ml-2 text-gray-900">{formatDate(upcomingTrip.checkOutDate)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* WhatsApp Link Section */}
+                            <div className="mb-8 bg-green-50 border border-green-200 rounded-xl p-4 md:p-6">
+                                <h3 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                                    <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.531 3.542"/>
+                                    </svg>
+                                    WhatsApp Group Link
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-green-700 mb-2">
+                                            WhatsApp Group Link for Trip Coordination
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="url"
+                                                value={whatsappLink}
+                                                onChange={(e) => setWhatsappLink(e.target.value)}
+                                                placeholder="https://chat.whatsapp.com/..."
+                                                className="flex-1 px-3 py-2 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                disabled={isUpdatingWhatsapp}
+                                            />
+                                            <button
+                                                onClick={handleUpdateWhatsappLink}
+                                                disabled={isUpdatingWhatsapp || !whatsappLink.trim()}
+                                                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-medium rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+                                            >
+                                                {isUpdatingWhatsapp ? (
+                                                    <div className="flex items-center">
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                        Updating...
+                                                    </div>
+                                                ) : (
+                                                    'Update Link'
+                                                )}
+                                            </button>
+                                        </div>
+                                        {whatsappUpdateSuccess && (
+                                            <p className="text-sm text-green-600 mt-2 flex items-center">
+                                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                                WhatsApp link updated successfully!
+                                            </p>
+                                        )}
+                                        {upcomingTrip.whatsappLink && (
+                                            <div className="mt-2">
+                                                <p className="text-sm text-green-600">Current link:</p>
+                                                <a 
+                                                    href={upcomingTrip.whatsappLink} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-sm text-blue-600 hover:text-blue-800 underline break-all"
+                                                >
+                                                    {upcomingTrip.whatsappLink}
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -361,31 +493,34 @@ const PendingTripDetails02 = () => {
                                 </div>
                             </div>
 
-                            {/* Next Button */}
+                            {/* Done Button (Changed from Next) */}
                             <div className="flex justify-center mt-auto">
                                 <button
-                                    onClick={handleNext}
-                                    className="bg-yellow-300 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer"
+                                    onClick={handleDone}
+                                    className="bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg px-8 py-2 transition-colors duration-200 cursor-pointer flex items-center"
                                 >
-                                    Next
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Done
                                 </button>
                             </div>
                         </div>
 
-
-                        {/* Right Sidebar - Calendar */}
+                        {/* Right Sidebar - Calendar and Trip Info */}
                         <div className="flex-1 border-t lg:border-t-0 lg:border-l border-gray-200 pt-6 lg:pt-0 lg:pl-8 flex flex-col">
                             <div className="font-bold text-lg md:text-xl mb-4 text-center">
                                 {upcomingTrip.title}
                             </div>
+                            
                             {/* MUI Calendar */}
-                            <div className="bg-gray-100 rounded-xl p-4 w-full flex flex-col items-center">
+                            <div className="bg-gray-100 rounded-xl p-4 w-full flex flex-col items-center mb-6">
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DateCalendar />
+                                    <DateCalendar value={calendarDate} readOnly />
                                 </LocalizationProvider>
                             </div>
 
-                                {/* Additional Trip Information */}
+                            {/* Additional Trip Information */}
                             <div className="bg-gray-50 rounded-xl p-4">
                                 <h3 className="font-semibold text-gray-800 mb-3">Trip Details</h3>
                                 <div className="space-y-2 text-sm">
@@ -411,6 +546,14 @@ const PendingTripDetails02 = () => {
                                             {upcomingTrip.paymentStatus}
                                         </span>
                                     </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">WhatsApp Link:</span>
+                                        <span className={`font-medium px-2 py-1 rounded text-xs ${
+                                            upcomingTrip.whatsappLink ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                        }`}>
+                                            {upcomingTrip.whatsappLink ? 'Added' : 'Not Set'}
+                                        </span>
+                                    </div>
                                     <hr className="my-2" />
                                     <div className="flex justify-between font-semibold">
                                         <span>Services Selected:</span>
@@ -418,7 +561,6 @@ const PendingTripDetails02 = () => {
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>

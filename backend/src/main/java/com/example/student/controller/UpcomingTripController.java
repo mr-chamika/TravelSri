@@ -321,4 +321,23 @@ public class UpcomingTripController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // Update WhatsApp link
+    @PatchMapping("/updateWhatsappLink/{id}")
+    public ResponseEntity<UpcomingTrip> updateWhatsappLink(
+            @PathVariable("id") String upcomingTripId,
+            @RequestParam("whatsappLink") String whatsappLink) {
+        try {
+            if (whatsappLink == null) {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+
+            UpcomingTrip updatedTrip = upcomingTripService.updateWhatsappLink(upcomingTripId, whatsappLink);
+            return new ResponseEntity<>(updatedTrip, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

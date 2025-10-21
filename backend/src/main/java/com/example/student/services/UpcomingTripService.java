@@ -398,4 +398,22 @@ public class UpcomingTripService implements IUpcomingTripService {
         }
         throw new RuntimeException("Upcoming trip not found with id: " + upcomingTripId);
     }
+
+    @Override
+    public UpcomingTrip updateWhatsappLink(String upcomingTripId, String whatsappLink) {
+        Optional<UpcomingTrip> existingTrip = upcomingTripRepo.findById(upcomingTripId);
+        if (existingTrip.isPresent()) {
+            UpcomingTrip trip = existingTrip.get();
+            trip.setWhatsappLink(whatsappLink);
+            trip.setUpdatedAt(LocalDateTime.now());
+            
+            System.out.println("=== UPDATING WHATSAPP LINK ===");
+            System.out.println("Trip ID: " + upcomingTripId);
+            System.out.println("WhatsApp Link: " + whatsappLink);
+            System.out.println("==============================");
+            
+            return upcomingTripRepo.save(trip);
+        }
+        throw new RuntimeException("Upcoming trip not found with id: " + upcomingTripId);
+    }
 }

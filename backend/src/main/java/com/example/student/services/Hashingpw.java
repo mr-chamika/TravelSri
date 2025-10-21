@@ -95,6 +95,7 @@ public class Hashingpw {
                                 "/api/upcomingTrip/create",
                                 "/api/upcomingTrip/getall",
                                 "/api/upcomingTrip/get/{id}",
+                                "/api/upcomingTrip/updateWhatsappLink/{original_pending_trip_id}",
 //                                "/api/upcomingTrip/update/{id}",
 //                                "/api/upcomingTrip/delete/{id}",
 //
